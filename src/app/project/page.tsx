@@ -27,7 +27,12 @@ import { currentProjectId } from '@/lib/session'
 
 export const metadata = { title: 'Кабинет проекта — TinyArc Cloud Bureau' }
 
-export default async function ProjectPage() {
+export default async function ProjectPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ issued?: string }>
+}) {
+  const { issued } = await searchParams
   const projectId = await currentProjectId()
   if (!projectId) redirect('/enter')
 
@@ -54,6 +59,23 @@ export default async function ProjectPage() {
           <h1 style={{ maxWidth: '18ch' }}>{project.title}</h1>
           <span className="tag tag-accent">{PROJECT_STATUS_LABELS[project.status] ?? project.status}</span>
         </div>
+
+        {issued === '1' && (
+          <div className="panel panel-accent" style={{ marginTop: 32 }}>
+            <div className="label label-accent">Сохраните ключ доступа</div>
+            <p
+              className="num"
+              style={{ fontSize: '1.4rem', color: 'var(--accent)', margin: '14px 0' }}
+            >
+              {project.clientKey}
+            </p>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия
+              ушла на {project.clientEmail} — но если письмо не дойдёт, останется только этот
+              экран.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
           <Fact label="Типология" value={TYPOLOGY_LABELS[project.typology as Typology]} />

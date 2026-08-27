@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
+import { allow } from '@/lib/guard'
+import { sendAccessKey } from '@/lib/mail'
+import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
@@ -15,6 +18,11 @@ async function requireOperator(): Promise<void> {
 }
 
 export async function opsSignIn(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  // Пароль один на всех и живёт в окружении: без ограничения попыток его
+  // подбирают за вечер.
+  const verdict = await allow('opsLogin')
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
+
   const ok = await signInOperator(String(formData.get('password') ?? ''))
   if (!ok) return { error: 'Пароль не подошёл.' }
 
@@ -42,22 +50,28 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
     return { error: 'Рейтинг портфолио — число от 0 до 10.' }
   }
 
-  await prisma.specialist.update({
+  const passed = rating >= PORTFOLIO_THRESHOLD
+
+  const specialist = await prisma.specialist.update({
     where: { id },
-    data: {
-      portfolioRating: rating,
-      status: rating >= PORTFOLIO_THRESHOLD ? 'active' : 'rejected',
-    },
+    data: { portfolioRating: rating, status: passed ? 'active' : 'rejected' },
   })
 
   revalidatePath('/ops/applications')
   revalidatePath('/ops/pool')
 
-  return {
-    message:
-      rating >= PORTFOLIO_THRESHOLD
-        ? 'Специалист в пуле. Ключ доступа можно выдавать.'
-        : `Ниже порога ${PORTFOLIO_THRESHOLD}/10 — заявка не проходит.`,
+  if (!passed) return { message: `Ниже порога ${PORTFOLIO_THRESHOLD}/10 — заявка не проходит.` }
+
+  // Ключ выдаётся тем же каналом, которым с человеком разговаривали, и только
+  // после подтверждения: до него ключ существует, но не работает.
+  try {
+    await sendAccessKey(specialist.email, 'specialist', specialist.accessKey)
+    return { message: 'Специалист в пуле, ключ доступа отправлен на его адрес.' }
+  } catch (error) {
+    console.error('Письмо с ключом не ушло:', error)
+    return {
+      message: `Специалист в пуле, но письмо не ушло. Ключ: ${specialist.accessKey} — передайте вручную.`,
+    }
   }
 }
 

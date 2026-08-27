@@ -1,0 +1,9 @@
+# Надстройка над docker-compose.yml: тот же стенд, но с синтетическим пулом.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+#
+# Отдельным файлом, а не переменной, потому что разница именно в команде
+# запуска: сид — это действие, а не настройка.
+services:
+  app:
+    command: ['sh', './scripts/demo-start.sh']

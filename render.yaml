@@ -1,0 +1,43 @@
+# Разворачивание на Render — целиком из браузера, компьютер не нужен.
+#
+# На render.com: New → Blueprint → выбрать этот репозиторий. Render прочитает
+# файл, поднимет Postgres и приложение и спросит два секрета.
+#
+# Что здесь стоит и почему:
+#  · база и приложение в одном регионе, иначе каждый запрос идёт через океан;
+#  · строка подключения приходит из самой базы — руками её нигде нет;
+#  · BUREAU_MAIL=stub: письма не уходят, и это должно быть видно из
+#    конфигурации, а не выясняться на человеке, которому нужен ключ доступа.
+#    Ключ при этом показывается на экране, поэтому доступ не теряется.
+#  · dockerCommand — демонстрационный: с синтетическим пулом. Для боевого
+#    стенда замените на `sh ./scripts/start.sh`, и база останется пустой.
+
+databases:
+  - name: bureau-db
+    databaseName: bureau
+    user: bureau
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: tinyarc-bureau
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/health
+    dockerCommand: sh ./scripts/demo-start.sh
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bureau-db
+          property: connectionString
+      - key: BUREAU_MAIL
+        value: stub
+      # Render спросит значения при развёртывании и не станет хранить их в
+      # репозитории. Без них приложение откажется стартовать — намеренно.
+      - key: BUREAU_OPS_PASSWORD
+        sync: false
+      - key: BUREAU_SESSION_SECRET
+        sync: false

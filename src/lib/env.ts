@@ -1,0 +1,71 @@
+/**
+ * Секреты окружения.
+ *
+ * Правило одно: в бою недостающий секрет роняет приложение, а не подменяется
+ * значением по умолчанию. Значение по умолчанию, напечатанное в README, — это
+ * не значение по умолчанию, это опубликованный пароль.
+ *
+ * В разработке подстановка допустима и намеренно шумная: она видна в коде и
+ * работает только пока NODE_ENV не production.
+ */
+
+const DEV_FALLBACKS: Record<string, string> = {
+  BUREAU_OPS_PASSWORD: 'bureau-ops',
+  // Подпись cookie. В разработке она защищает ровно от того же, от чего в бою,
+  // но секрет одинаков у всех — поэтому в бою он обязателен.
+  BUREAU_SESSION_SECRET: 'bureau-dev-secret-not-for-production',
+}
+
+export function isProduction(env: Record<string, string | undefined> = process.env): boolean {
+  return env.NODE_ENV === 'production'
+}
+
+export function secret(
+  name: keyof typeof DEV_FALLBACKS,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  const value = env[name]?.trim()
+  if (value) return value
+
+  if (isProduction(env)) {
+    throw new Error(
+      `${name} не задан. В боевом окружении это обязательная переменная: значение по умолчанию лежит в открытом репозитории и паролем не является.`,
+    )
+  }
+
+  return DEV_FALLBACKS[name]
+}
+
+/**
+ * Проверка окружения перед стартом.
+ *
+ * Вызывается скриптом запуска, чтобы приложение падало на выкладке, а не на
+ * первом человеке, который открыл панель.
+ */
+export function preflight(env: Record<string, string | undefined> = process.env): string[] {
+  const problems: string[] = []
+
+  for (const name of Object.keys(DEV_FALLBACKS) as (keyof typeof DEV_FALLBACKS)[]) {
+    try {
+      secret(name, env)
+    } catch (error) {
+      problems.push(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  if (isProduction(env) && !env.DATABASE_URL?.trim()) {
+    problems.push('DATABASE_URL не задан: в бою база разработки недопустима.')
+  }
+
+  const mail = env.BUREAU_MAIL ?? 'stub'
+  if (mail !== 'stub' && mail !== 'resend') {
+    problems.push(`BUREAU_MAIL="${mail}": такого режима нет. Доступны "stub" и "resend".`)
+  }
+
+  if (mail === 'resend') {
+    if (!env.RESEND_API_KEY?.trim()) problems.push('BUREAU_MAIL="resend": не задан RESEND_API_KEY.')
+    if (!env.BUREAU_MAIL_FROM?.trim()) problems.push('BUREAU_MAIL="resend": не задан BUREAU_MAIL_FROM.')
+  }
+
+  return problems
+}

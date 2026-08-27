@@ -6,12 +6,15 @@
  * клиентом, а не перед прототипом. Написано так, чтобы замена была локальной:
  * всё общение с cookie живёт здесь.
  *
- * Ключ выдаётся тем же каналом, которым с человеком разговаривали: регистрации
- * как отдельного действия у специалиста нет — есть заявка и её подтверждение.
+ * Значение cookie подписано. Без подписи знание чужого идентификатора давало бы
+ * доступ: идентификаторы попадают в адреса страниц, в логи и в переписку, а
+ * серверной сессии, которую можно отозвать, у нас нет.
  */
 
 import { cookies } from 'next/headers'
 import { prisma } from './db'
+import { secret } from './env'
+import { secretsMatch, sign as signValue, unsign as unsignValue } from './signing'
 
 const CLIENT_COOKIE = 'bureau_client'
 const SPECIALIST_COOKIE = 'bureau_specialist'
@@ -31,11 +34,24 @@ function options(days: number): CookieOptions {
   }
 }
 
+function sign(value: string): string {
+  return signValue(value, secret('BUREAU_SESSION_SECRET'))
+}
+
+async function read(name: string): Promise<string | null> {
+  const jar = await cookies()
+  return unsignValue(jar.get(name)?.value, secret('BUREAU_SESSION_SECRET'))
+}
+
+async function write(name: string, value: string, days = SESSION_DAYS): Promise<void> {
+  const jar = await cookies()
+  jar.set(name, sign(value), options(days))
+}
+
 // --- Клиент ----------------------------------------------------------------
 
 export async function signInClient(projectId: string): Promise<void> {
-  const jar = await cookies()
-  jar.set(CLIENT_COOKIE, projectId, options(SESSION_DAYS))
+  await write(CLIENT_COOKIE, projectId)
 }
 
 export async function signOutClient(): Promise<void> {
@@ -44,8 +60,7 @@ export async function signOutClient(): Promise<void> {
 }
 
 export async function currentProjectId(): Promise<string | null> {
-  const jar = await cookies()
-  return jar.get(CLIENT_COOKIE)?.value ?? null
+  return read(CLIENT_COOKIE)
 }
 
 /** Проект по ключу из письма. Ключ — единственный способ попасть в кабинет. */
@@ -56,8 +71,7 @@ export async function projectByKey(clientKey: string) {
 // --- Специалист ------------------------------------------------------------
 
 export async function signInSpecialist(specialistId: string): Promise<void> {
-  const jar = await cookies()
-  jar.set(SPECIALIST_COOKIE, specialistId, options(SESSION_DAYS))
+  await write(SPECIALIST_COOKIE, specialistId)
 }
 
 export async function signOutSpecialist(): Promise<void> {
@@ -66,8 +80,7 @@ export async function signOutSpecialist(): Promise<void> {
 }
 
 export async function currentSpecialistId(): Promise<string | null> {
-  const jar = await cookies()
-  return jar.get(SPECIALIST_COOKIE)?.value ?? null
+  return read(SPECIALIST_COOKIE)
 }
 
 export async function currentSpecialist() {
@@ -83,11 +96,21 @@ export async function specialistByKey(accessKey: string) {
 // --- Бюро ------------------------------------------------------------------
 
 export async function signInOperator(password: string): Promise<boolean> {
-  const expected = process.env.BUREAU_OPS_PASSWORD ?? 'bureau-ops'
-  if (password !== expected) return false
+  const expected = secret('BUREAU_OPS_PASSWORD')
+
+  // Сравнение постоянного времени: пароль здесь один на всех, и разница в
+  // скорости ответа — это подсказка подбирающему.
+  if (!secretsMatch(password, expected)) return false
 
   const jar = await cookies()
-  jar.set(OPS_COOKIE, 'yes', { ...options(1), sameSite: 'strict', maxAge: 12 * 60 * 60 })
+  // Панель живёт короткой сессией и строгим sameSite: это не кабинет, куда
+  // заходят раз в месяц, а рабочий инструмент на смену.
+  jar.set(OPS_COOKIE, sign('yes'), {
+    ...options(1),
+    sameSite: 'strict',
+    maxAge: 12 * 60 * 60,
+  })
+
   return true
 }
 
@@ -97,6 +120,5 @@ export async function signOutOperator(): Promise<void> {
 }
 
 export async function isOperator(): Promise<boolean> {
-  const jar = await cookies()
-  return jar.get(OPS_COOKIE)?.value === 'yes'
+  return (await read(OPS_COOKIE)) === 'yes'
 }

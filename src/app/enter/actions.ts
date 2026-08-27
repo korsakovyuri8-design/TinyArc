@@ -1,6 +1,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { allow } from '@/lib/guard'
+import { retryMessage } from '@/lib/rate-limit'
 import {
   projectByKey,
   signInClient,
@@ -18,6 +20,10 @@ export type EnterState = { error?: string }
  * числится, — ключ сам знает, чей он.
  */
 export async function enterWithKey(_prev: EnterState, formData: FormData): Promise<EnterState> {
+  // Вход по ключу дёшев, но это перебор ключа: ограничиваем именно поэтому.
+  const verdict = await allow('enter')
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
+
   const key = String(formData.get('key') ?? '').trim()
   if (!key) return { error: 'Введите ключ доступа.' }
 

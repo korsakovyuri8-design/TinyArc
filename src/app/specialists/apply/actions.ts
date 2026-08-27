@@ -1,6 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/db'
+import { allow } from '@/lib/guard'
+import { retryMessage } from '@/lib/rate-limit'
 import {
   accessKey,
   applicationSchema,
@@ -37,6 +39,11 @@ export async function submitApplication(
   _prev: ApplicationState,
   formData: FormData,
 ): Promise<ApplicationState> {
+  const verdict = await allow('application')
+  if (!verdict.allowed) {
+    return { errors: { form: retryMessage(verdict.retryAfterSeconds) } }
+  }
+
   const raw = fromFormData(formData, MULTI)
   const parsed = applicationSchema.safeParse(raw)
 

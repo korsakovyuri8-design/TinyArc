@@ -214,6 +214,12 @@ export function BriefForm() {
         </Field>
       </fieldset>
 
+      {errors.form && (
+        <div className="note note-fail" style={{ marginBottom: 20 }}>
+          {errors.form}
+        </div>
+      )}
+
       <div className="row" style={{ gap: 16 }}>
         <Submit pending={pending}>Собрать команду</Submit>
         <span className="dim" style={{ fontSize: '0.85rem' }}>

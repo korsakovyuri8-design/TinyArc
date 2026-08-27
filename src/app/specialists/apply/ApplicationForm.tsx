@@ -266,6 +266,12 @@ export function ApplicationForm() {
         </div>
       </fieldset>
 
+      {errors.form && (
+        <div className="note note-fail" style={{ marginBottom: 20 }}>
+          {errors.form}
+        </div>
+      )}
+
       <Submit pending={pending}>Подать заявку</Submit>
     </form>
   )

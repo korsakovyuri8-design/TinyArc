@@ -3,8 +3,11 @@
 import { redirect } from 'next/navigation'
 import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
+import { allow } from '@/lib/guard'
+import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { toList } from '@/lib/rows'
+import { sendAccessKey } from '@/lib/mail'
 import { runAssembly } from '@/lib/services/matching'
 import { signInClient } from '@/lib/session'
 
@@ -16,6 +19,13 @@ export type BriefState = {
 const MULTI = ['software', 'languages']
 
 export async function submitBrief(_prev: BriefState, formData: FormData): Promise<BriefState> {
+  // Одна отправка запускает прогон по всему пулу и пишет сотни строк. Без
+  // ограничения публичная форма стоит отправителю нажатия, а нам — прогона.
+  const verdict = await allow('brief')
+  if (!verdict.allowed) {
+    return { errors: { form: retryMessage(verdict.retryAfterSeconds) }, values: fromFormData(formData, MULTI) }
+  }
+
   const raw = fromFormData(formData, MULTI)
   const parsed = briefSchema.safeParse(raw)
 
@@ -56,5 +66,14 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   await runAssembly(project.id)
   await signInClient(project.id)
 
-  redirect('/project')
+  // Письмо — это удобство, а не единственный путь: ключ показывается на
+  // экране следующим шагом. Поэтому упавшая почта не должна ронять бриф,
+  // над которым человек только что сидел двадцать минут.
+  try {
+    await sendAccessKey(project.clientEmail, 'client', project.clientKey)
+  } catch (error) {
+    console.error('Письмо с ключом не ушло:', error)
+  }
+
+  redirect('/project?issued=1')
 }

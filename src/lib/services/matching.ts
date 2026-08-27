@@ -161,14 +161,24 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
   return { runId, assembly }
 }
 
+/**
+ * Что клиенту можно знать о специалисте: имя и ничего сверх.
+ *
+ * Выбираем поимённо, а не `include: { specialist: true }`. Разница не
+ * теоретическая: полная строка несёт почту и ключ доступа, и стоит однажды
+ * передать её в клиентский компонент — клиент получит учётные данные всей своей
+ * команды (п.13).
+ */
+const VISIBLE_SPECIALIST = { select: { id: true, displayName: true } } as const
+
 /** Последний прогон проекта со всем разбором — это и есть «почему эта команда». */
 export async function latestRun(projectId: string) {
   return prisma.matchRun.findFirst({
     where: { projectId },
     orderBy: { createdAt: 'desc' },
     include: {
-      candidates: { include: { specialist: true } },
-      slots: { include: { specialist: true } },
+      candidates: { include: { specialist: VISIBLE_SPECIALIST } },
+      slots: { include: { specialist: VISIBLE_SPECIALIST } },
     },
   })
 }
