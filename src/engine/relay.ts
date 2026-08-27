@@ -131,6 +131,14 @@ const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
 
 const DEFAULT_SLA_HOURS = 48
 
+/**
+ * Срок на запрос смежника.
+ *
+ * Короткий намеренно: запрос — это не раздел, а вопрос, из-за которого у
+ * другого человека стоит работа. Сутки — это «до завтрашнего утра».
+ */
+export const REQUEST_SLA_HOURS = 24
+
 function tasksFor(stage: DocStage, discipline: Discipline): Task[] {
   return TASKS[stage]?.[discipline] ?? []
 }

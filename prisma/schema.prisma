@@ -101,6 +101,8 @@ model Specialist {
   tickets     Ticket[]
   comments    TicketComment[]
   portfolio   PortfolioItem[]
+  collaborationsA Collaboration[] @relation("collaborationA")
+  collaborationsB Collaboration[] @relation("collaborationB")
 
   @@index([status])
 }
@@ -293,6 +295,19 @@ model Ticket {
   /// Постановка задачи. Пишет бюро, не специалист.
   spec       String @default("")
 
+  /// planned — задача из плана выпуска; request — запрос от смежной дисциплины.
+  ///
+  /// Запрос нужен потому, что арбитраж для рабочего вопроса слишком тяжёл:
+  /// «сдвинь дверь на двести миллиметров» — это не спор, это работа. Прямого
+  /// канала при этом всё равно нет: запрос становится тикетом и идёт через
+  /// бюро, как всё остальное (п.11).
+  kind String @default("planned")
+
+  /// Тикет, из которого пришёл запрос. Ответ виден там же.
+  requestedFromId String?
+  requestedFrom   Ticket?  @relation("requests", fields: [requestedFromId], references: [id])
+  requests        Ticket[] @relation("requests")
+
   /// Кому назначен. Назначение идёт по слоту команды, а не выбором оператора.
   specialistId String?
   specialist   Specialist? @relation(fields: [specialistId], references: [id])
@@ -389,6 +404,35 @@ model Artifact {
   createdAt DateTime @default(now())
 
   @@index([ticketId])
+}
+
+/// Сработанность пары специалистов.
+///
+/// Считается из тикетов, а не из мнений: сколько проектов вместе, сколько
+/// запросов друг другу закрыли, сколько раз дошли до арбитра. Влияет только на
+/// порядок вариантов при сборке — кто проходит гейты, от этого не меняется.
+///
+/// Идентификаторы упорядочены (aId < bId), поэтому пара хранится один раз.
+model Collaboration {
+  id  String @id @default(cuid())
+  aId String
+  bId String
+
+  a Specialist @relation("collaborationA", fields: [aId], references: [id], onDelete: Cascade)
+  b Specialist @relation("collaborationB", fields: [bId], references: [id], onDelete: Cascade)
+
+  /// Проектов, где оба были в составе.
+  projects         Int @default(0)
+  /// Запросов друг к другу, закрытых приёмкой.
+  requestsAnswered Int @default(0)
+  /// Раз, когда рабочий вопрос между ними дошёл до арбитра.
+  conflicts        Int @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([aId, bId])
+  @@index([aId])
+  @@index([bId])
 }
 
 /// Работа в портфолио специалиста.

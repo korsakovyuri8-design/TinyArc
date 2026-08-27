@@ -6,13 +6,28 @@
  * автор бывает только двух видов — бюро и исполнитель этого тикета.
  */
 
-import { deliveryDeltaFor, dueDate, openable, type RelayTicket } from '@/engine/relay'
+import {
+  REQUEST_SLA_HOURS,
+  deliveryDeltaFor,
+  dueDate,
+  openable,
+  type RelayTicket,
+} from '@/engine/relay'
+import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '../db'
+import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
 
 export class NotYours extends Error {
   constructor() {
     super('Тикет назначен не вам.')
     this.name = 'NotYours'
+  }
+}
+
+export class NoSuchRole extends Error {
+  constructor(discipline: string) {
+    super(`В команде проекта нет дисциплины «${discipline}» — просить некого.`)
+    this.name = 'NoSuchRole'
   }
 }
 
@@ -104,6 +119,74 @@ export async function comment(
 }
 
 /**
+ * Запрос смежной дисциплине.
+ *
+ * Закрывает дыру между «сделал молча» и «пошёл к арбитру». Инженеру, которому
+ * вентканал упирается в дверь, не нужен спор — ему нужно, чтобы дверь сдвинули.
+ * Раньше на это в системе не было ничего: комментарий в своём тикете смежник
+ * не увидит, а конфликт — тяжёлая эскалация, останавливающая работу.
+ *
+ * Прямого канала при этом не появляется. Запрос становится обычным тикетом для
+ * той дисциплины: с исполнителем, сроком и приёмкой бюро — как всё остальное
+ * (п.11). Автор запроса виден адресату дисциплиной, а не именем.
+ */
+export async function requestFrom(
+  ticketId: string,
+  fromSpecialistId: string,
+  toDiscipline: Discipline,
+  title: string,
+  body: string,
+): Promise<string> {
+  const source = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+
+  if (source.specialistId !== fromSpecialistId) throw new NotYours()
+  if (source.status === 'blocked') throw new NotOpen(source.status)
+
+  const slot = await prisma.teamSlot.findUnique({
+    where: { projectId_discipline: { projectId: source.projectId, discipline: toDiscipline } },
+  })
+
+  if (!slot) throw new NoSuchRole(toDiscipline)
+
+  const now = new Date()
+
+  const created = await prisma.$transaction(async (tx) => {
+    const request = await tx.ticket.create({
+      data: {
+        projectId: source.projectId,
+        discipline: toDiscipline,
+        stage: source.stage,
+        kind: 'request',
+        requestedFromId: source.id,
+        title,
+        spec: body,
+        specialistId: slot.specialistId,
+        slaHours: REQUEST_SLA_HOURS,
+        // Запрос не ждёт гейта: он и появился потому, что работа уже идёт.
+        status: 'open',
+        openedAt: now,
+        dueAt: dueDate(now, REQUEST_SLA_HOURS),
+      },
+    })
+
+    // В исходном тикете остаётся след: спрашивавший должен видеть, что он
+    // спросил, не выходя из своей задачи.
+    await tx.ticketComment.create({
+      data: {
+        ticketId: source.id,
+        authorRole: 'specialist',
+        specialistId: fromSpecialistId,
+        body: `Запрос дисциплине «${toDiscipline}»: ${title}`,
+      },
+    })
+
+    return request
+  })
+
+  return created.id
+}
+
+/**
  * Арбитраж (концепт, п.11).
  *
  * Участники не договариваются между собой — договариваться им негде. Тот, кто
@@ -118,6 +201,14 @@ export async function raiseConflict(
 
   if (by.role === 'specialist' && ticket.specialistId !== by.specialistId) throw new NotYours()
   if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
+
+  // Спор на запросе — это спор между двумя конкретными людьми, и он должен
+  // осесть в их истории: пара, доходящая до арбитра на каждом объекте, стоит
+  // бюро рабочего времени.
+  if (ticket.kind === 'request' && ticket.requestedFromId && ticket.specialistId) {
+    const source = await prisma.ticket.findUnique({ where: { id: ticket.requestedFromId } })
+    if (source?.specialistId) await recordConflict(source.specialistId, ticket.specialistId)
+  }
 
   await prisma.$transaction([
     prisma.ticket.update({
@@ -226,26 +317,38 @@ export async function accept(ticketId: string): Promise<void> {
     }
   })
 
+  // Закрытый запрос — это сработанность: одна дисциплина спросила, другая
+  // ответила, и работа пошла дальше без бюро.
+  if (ticket.kind === 'request' && ticket.requestedFromId && ticket.specialistId) {
+    const source = await prisma.ticket.findUnique({ where: { id: ticket.requestedFromId } })
+    if (source?.specialistId) await recordRequestAnswered(source.specialistId, ticket.specialistId)
+  }
+
   await applyGates(ticket.projectId)
   await refreshProjectStatus(ticket.projectId)
 }
 
 /** Статус проекта выводится из тикетов, а не ставится руками. */
 export async function refreshProjectStatus(projectId: string): Promise<void> {
-  const tickets = await prisma.ticket.findMany({
-    where: { projectId },
-    select: { status: true },
-  })
+  const [before, tickets] = await Promise.all([
+    prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { status: true } }),
+    prisma.ticket.findMany({ where: { projectId }, select: { status: true } }),
+  ])
 
   if (tickets.length === 0) return
 
   const allAccepted = tickets.every((t) => t.status === 'accepted')
   const anyStarted = tickets.some((t) => t.status !== 'blocked')
+  const next = allAccepted ? 'delivered' : anyStarted ? 'delivering' : 'assembled'
 
-  await prisma.project.update({
-    where: { id: projectId },
-    data: { status: allAccepted ? 'delivered' : anyStarted ? 'delivering' : 'assembled' },
-  })
+  if (next === before.status) return
+
+  await prisma.project.update({ where: { id: projectId }, data: { status: next } })
+
+  // Совместный проект засчитывается на переходе в закрытое состояние, а не при
+  // каждом пересчёте: иначе один проект накрутил бы паре историю на ровном
+  // месте. «Работали вместе» — про доведённую работу, а не про общий список.
+  if (next === 'delivered') await recordProjectTogether(projectId)
 }
 
 /** Артефакт тикета: то, что гейт передаёт дальше по графу. */

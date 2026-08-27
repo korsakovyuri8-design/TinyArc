@@ -146,6 +146,8 @@ CREATE TABLE "Ticket" (
     "stage" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "spec" TEXT NOT NULL DEFAULT '',
+    "kind" TEXT NOT NULL DEFAULT 'planned',
+    "requestedFromId" TEXT,
     "specialistId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'blocked',
     "slaHours" INTEGER NOT NULL DEFAULT 24,
@@ -195,6 +197,19 @@ CREATE TABLE "Artifact" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Artifact_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Collaboration" (
+    "id" TEXT NOT NULL,
+    "aId" TEXT NOT NULL,
+    "bId" TEXT NOT NULL,
+    "projects" INTEGER NOT NULL DEFAULT 0,
+    "requestsAnswered" INTEGER NOT NULL DEFAULT 0,
+    "conflicts" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Collaboration_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -269,6 +284,15 @@ CREATE INDEX "TicketComment_ticketId_createdAt_idx" ON "TicketComment"("ticketId
 CREATE INDEX "Artifact_ticketId_idx" ON "Artifact"("ticketId");
 
 -- CreateIndex
+CREATE INDEX "Collaboration_aId_idx" ON "Collaboration"("aId");
+
+-- CreateIndex
+CREATE INDEX "Collaboration_bId_idx" ON "Collaboration"("bId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Collaboration_aId_bId_key" ON "Collaboration"("aId", "bId");
+
+-- CreateIndex
 CREATE INDEX "PortfolioItem_specialistId_idx" ON "PortfolioItem"("specialistId");
 
 -- AddForeignKey
@@ -296,6 +320,9 @@ ALTER TABLE "TeamSlot" ADD CONSTRAINT "TeamSlot_specialistId_fkey" FOREIGN KEY (
 ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_requestedFromId_fkey" FOREIGN KEY ("requestedFromId") REFERENCES "Ticket"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_specialistId_fkey" FOREIGN KEY ("specialistId") REFERENCES "Specialist"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -312,6 +339,12 @@ ALTER TABLE "TicketComment" ADD CONSTRAINT "TicketComment_specialistId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "Artifact" ADD CONSTRAINT "Artifact_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Collaboration" ADD CONSTRAINT "Collaboration_aId_fkey" FOREIGN KEY ("aId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Collaboration" ADD CONSTRAINT "Collaboration_bId_fkey" FOREIGN KEY ("bId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PortfolioItem" ADD CONSTRAINT "PortfolioItem_specialistId_fkey" FOREIGN KEY ("specialistId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;

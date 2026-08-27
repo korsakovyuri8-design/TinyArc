@@ -1,11 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { Discipline } from '@/engine/taxonomy'
 import {
   attachArtifact,
   claim,
   comment,
   raiseConflict,
+  requestFrom,
   submit,
 } from '@/lib/services/relay'
 import { currentSpecialistId } from '@/lib/session'
@@ -73,6 +75,29 @@ export async function raiseTicketConflict(
     (ticketId, specialistId) =>
       raiseConflict(ticketId, { role: 'specialist', specialistId }, note),
     'Конфликт передан бюро.',
+  )
+}
+
+/**
+ * Запрос смежной дисциплине.
+ *
+ * Не переписка: система заводит тикет для той дисциплины, с исполнителем и
+ * сроком. Прямого канала между специалистами по-прежнему нет.
+ */
+export async function askDiscipline(_prev: WorkState, formData: FormData): Promise<WorkState> {
+  const discipline = String(formData.get('discipline') ?? '') as Discipline
+  const title = String(formData.get('title') ?? '').trim()
+  const body = String(formData.get('body') ?? '').trim()
+
+  if (!discipline) return { error: 'Выберите дисциплину.' }
+  if (!title) return { error: 'Коротко назовите, что нужно.' }
+  if (!body) return { error: 'Опишите запрос: адресату нужно понять его без вас.' }
+
+  return act(
+    formData,
+    (ticketId, specialistId) =>
+      requestFrom(ticketId, specialistId, discipline, title, body).then(() => undefined),
+    'Запрос заведён как тикет для смежной дисциплины.',
   )
 }
 

@@ -5,7 +5,12 @@ import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { allow } from '@/lib/guard'
+import { assistant } from '@/lib/assist'
 import { sendAccessKey } from '@/lib/mail'
+import { chosenDirection } from '@/lib/services/direction'
+import { inboundArtifacts } from '@/lib/services/relay'
+import { parseList } from '@/lib/rows'
+import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
 import { runAssembly } from '@/lib/services/matching'
@@ -101,6 +106,110 @@ export async function setTicketSpec(_prev: OpsState, formData: FormData): Promis
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
   return { message: 'Постановка сохранена.' }
+}
+
+/**
+ * Черновик постановки.
+ *
+ * Пишется в тикет только если постановки там ещё нет: затирать написанное
+ * человеком помощник не должен ни при каких обстоятельствах. Дальше бюро
+ * правит текст и сохраняет его обычной формой — черновик не уходит никуда сам.
+ */
+export async function draftTicketSpec(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const ticketId = String(formData.get('ticketId') ?? '')
+
+  const ticket = await prisma.ticket.findUniqueOrThrow({
+    where: { id: ticketId },
+    include: { project: true },
+  })
+
+  if (ticket.spec.trim().length > 0) {
+    return { error: 'Постановка уже написана. Черновик её не перезаписывает — правьте вручную.' }
+  }
+
+  const [slot, direction, inbound] = await Promise.all([
+    prisma.teamSlot.findUnique({
+      where: { projectId_discipline: { projectId: ticket.projectId, discipline: ticket.discipline } },
+    }),
+    chosenDirection(ticket.projectId),
+    inboundArtifacts(ticket.id),
+  ])
+
+  try {
+    const draft = await assistant().draftSpec({
+      projectTitle: ticket.project.title,
+      typology: ticket.project.typology,
+      storeys: ticket.project.storeys,
+      areaSqm: ticket.project.areaSqm,
+      jurisdiction: ticket.project.jurisdiction,
+      terrain: ticket.project.terrain,
+      gridConnection: ticket.project.gridConnection,
+      materialSystem: ticket.project.materialSystem,
+      stage: ticket.stage,
+      discipline: ticket.discipline,
+      specializations: slot
+        ? parseList<Specialization>(slot.roleSpecializationsJson, SPECIALIZATIONS)
+        : [],
+      ticketTitle: ticket.title,
+      direction: direction ? { title: direction.title, summary: direction.summary } : null,
+      inboundArtifacts: inbound.map((a) => a.name),
+    })
+
+    const spec = [draft.spec, '', 'Проверить на приёмке:', ...draft.checklist.map((c) => `— ${c}`)]
+      .join('\n')
+      .trim()
+
+    await prisma.ticket.update({ where: { id: ticketId }, data: { spec } })
+    revalidatePath(`/ops/projects/${ticket.projectId}`)
+
+    return { message: 'Черновик записан. Прочитайте и поправьте — он не готовая постановка.' }
+  } catch (error) {
+    console.error('Черновик постановки не получен:', error)
+    return { error: 'Помощник не ответил. Постановку можно написать руками — поле ниже.' }
+  }
+}
+
+/**
+ * Сводка спора для арбитра.
+ *
+ * Только позиции сторон и вопрос. Кто прав — не её дело: решение принимает
+ * человек, и подсказка тут была бы решением, замаскированным под пересказ.
+ */
+export async function summariseTicketConflict(
+  _prev: OpsState,
+  formData: FormData,
+): Promise<OpsState> {
+  await requireOperator()
+
+  const ticketId = String(formData.get('ticketId') ?? '')
+
+  const ticket = await prisma.ticket.findUniqueOrThrow({
+    where: { id: ticketId },
+    include: { comments: { orderBy: { createdAt: 'asc' } } },
+  })
+
+  try {
+    const summary = await assistant().summariseConflict({
+      ticketTitle: ticket.title,
+      conflictNote: ticket.conflictNote,
+      comments: ticket.comments.map((c) => ({
+        author: c.authorRole === 'bureau' ? ('bureau' as const) : ('specialist' as const),
+        body: c.body,
+      })),
+    })
+
+    return {
+      message: [
+        ...summary.positions.map((p, i) => `Сторона ${i + 1}: ${p}`),
+        `Вопрос: ${summary.question}`,
+      ].join(' · '),
+    }
+  } catch (error) {
+    console.error('Сводка спора не получена:', error)
+    return { error: 'Помощник не ответил. Переписка по тикету — выше.' }
+  }
 }
 
 export async function acceptTicket(_prev: OpsState, formData: FormData): Promise<OpsState> {

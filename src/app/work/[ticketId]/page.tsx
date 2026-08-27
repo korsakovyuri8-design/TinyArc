@@ -18,6 +18,7 @@ import {
   ClaimWork,
   CommentForm,
   ConflictForm,
+  RequestForm,
   SubmitWork,
 } from './TicketActions'
 
@@ -35,6 +36,9 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
       comments: { orderBy: { createdAt: 'asc' } },
       artifacts: { orderBy: { createdAt: 'asc' } },
       dependsOn: { include: { prerequisite: { select: { discipline: true, status: true } } } },
+      // Запросы, отправленные из этого тикета, и их состояние.
+      requests: { select: { id: true, title: true, discipline: true, status: true } },
+      requestedFrom: { select: { discipline: true } },
     },
   })
 
@@ -75,6 +79,17 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           </span>
           <span className="tag">{TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}</span>
         </div>
+
+        {ticket.kind === 'request' && (
+          <div className="row" style={{ marginTop: 12, gap: 10 }}>
+            <span className="tag tag-accent">запрос смежника</span>
+            {ticket.requestedFrom && (
+              <span className="dim" style={{ fontSize: '0.85rem' }}>
+                от дисциплины «{DISCIPLINE_LABELS[ticket.requestedFrom.discipline as Discipline]}»
+              </span>
+            )}
+          </div>
+        )}
 
         <h1 style={{ marginTop: 14, fontSize: 'clamp(1.8rem, 4vw, 2.6rem)' }}>{ticket.title}</h1>
         <p className="dim" style={{ marginTop: 10 }}>
@@ -241,9 +256,53 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               </div>
             )}
 
+            {ticket.requests.length > 0 && (
+              <div className="panel" style={{ marginTop: 24 }}>
+                <div className="label">Ваши запросы смежникам</div>
+                <ul className="clean" style={{ marginTop: 12 }}>
+                  {ticket.requests.map((request) => (
+                    <li
+                      key={request.id}
+                      className="row"
+                      style={{ justifyContent: 'space-between', padding: '8px 0', gap: 12 }}
+                    >
+                      <span style={{ fontSize: '0.9rem' }}>
+                        {request.title}
+                        <span className="dim" style={{ marginLeft: 8, fontSize: '0.8rem' }}>
+                          {DISCIPLINE_LABELS[request.discipline as Discipline]}
+                        </span>
+                      </span>
+                      <span className={`tag ${request.status === 'accepted' ? 'tag-pass' : ''}`}>
+                        {TICKET_STATUS_LABELS[request.status] ?? request.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {ticket.status !== 'accepted' && roles.length > 0 && (
+              <>
+                <div className="divider" />
+                <div className="label label-accent">Нужно что-то от смежной дисциплины</div>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                  Это не спор и не переписка. Запрос станет тикетом для нужной дисциплины —
+                  с исполнителем, сроком и приёмкой, как всякая другая работа.
+                </p>
+                <RequestForm ticketId={ticket.id} disciplines={roles} />
+              </>
+            )}
+
             {!ticket.conflictRaisedAt && ticket.status !== 'accepted' && (
               <>
                 <div className="divider" />
+                <div className="label" style={{ color: 'var(--fail)' }}>
+                  Если договориться нельзя
+                </div>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                  Арбитраж останавливает работу по тикету. Для рабочего вопроса используйте
+                  запрос выше.
+                </p>
                 <ConflictForm ticketId={ticket.id} />
               </>
             )}

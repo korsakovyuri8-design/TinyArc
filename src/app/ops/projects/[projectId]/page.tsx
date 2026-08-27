@@ -30,10 +30,12 @@ import { isOperator } from '@/lib/session'
 import {
   acceptTicket,
   bureauComment,
+  draftTicketSpec,
   rerunAssembly,
   resolveTicketConflict,
   returnTicket,
   setTicketSpec,
+  summariseTicketConflict,
 } from '../../actions'
 import { OpsAction } from '../../OpsForms'
 
@@ -202,9 +204,12 @@ export default async function OpsProjectPage({
                       {DOC_STAGE_LABELS[ticket.stage as DocStage]} ·{' '}
                       {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
                     </span>
-                    <span className="tag">
-                      {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
-                    </span>
+                    <div className="row" style={{ gap: 8 }}>
+                      {ticket.kind === 'request' && <span className="tag tag-accent">запрос</span>}
+                      <span className="tag">
+                        {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
+                      </span>
+                    </div>
                   </div>
 
                   <h3 style={{ marginTop: 12 }}>{ticket.title}</h3>
@@ -233,6 +238,14 @@ export default async function OpsProjectPage({
                         бюро.
                       </p>
 
+                      <div style={{ marginBottom: 16 }}>
+                        <OpsAction
+                          action={summariseTicketConflict}
+                          hidden={{ ticketId: ticket.id }}
+                          label="Свести к позициям"
+                        />
+                      </div>
+
                       <OpsAction
                         action={resolveTicketConflict}
                         hidden={{ ticketId: ticket.id }}
@@ -252,6 +265,20 @@ export default async function OpsProjectPage({
                   )}
 
                   <div style={{ marginTop: 20 }}>
+                    {ticket.spec.trim().length === 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <OpsAction
+                          action={draftTicketSpec}
+                          hidden={{ ticketId: ticket.id }}
+                          label="Черновик постановки"
+                        />
+                        <p className="hint" style={{ marginTop: 8 }}>
+                          Помощник соберёт черновик из фактов проекта. Это заготовка, которую
+                          надо прочитать и поправить, — постановку пишет бюро.
+                        </p>
+                      </div>
+                    )}
+
                     <OpsAction
                       action={setTicketSpec}
                       hidden={{ ticketId: ticket.id }}

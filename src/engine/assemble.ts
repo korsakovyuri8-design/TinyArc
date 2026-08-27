@@ -10,6 +10,7 @@
  */
 
 import { requiredRoles, type Discipline, type RequiredRole } from './taxonomy'
+import { teamFactor, type PairHistory } from './collaboration'
 import { failedGate, worksInStack } from './filter'
 import { availability, scoreFor } from './score'
 import { validateProject } from './validate'
@@ -108,6 +109,7 @@ function search(
   byRole: Map<RequiredRole, ScoredCandidate[]>,
   requirements: ProjectRequirements,
   requireSignatory: boolean,
+  history: Map<string, PairHistory>,
 ): Assignment[] | null {
   const order = [...roles].sort((a, b) => {
     if (a.discipline === LEAD_DISCIPLINE) return -1
@@ -135,8 +137,12 @@ function search(
         if (!signs) return
       }
 
-      if (total > bestScore) {
-        bestScore = total
+      // Сработанность применяется к собранному составу, а не к отдельному
+      // человеку: она свойство пар, и в отрыве от команды её не существует.
+      const weighted = total * teamFactor(chosen.map((a) => a.candidate.specialist.id), history)
+
+      if (weighted > bestScore) {
+        bestScore = weighted
         best = chosen.map((a) => ({ ...a }))
       }
 
@@ -175,7 +181,16 @@ function search(
   return best
 }
 
-export function assemble(pool: SpecialistProfile[], requirements: ProjectRequirements): Assembly {
+export function assemble(
+  pool: SpecialistProfile[],
+  requirements: ProjectRequirements,
+  /**
+   * История совместной работы по парам. Влияет только на порядок вариантов:
+   * кто проходит гейты, от неё не зависит. Пустая карта — обычный случай для
+   * нового пула, и результат тогда полностью определяется баллами.
+   */
+  history: Map<string, PairHistory> = new Map(),
+): Assembly {
   const validation = validateProject(requirements)
   const roles = requiredRoles(shapeOf(requirements))
 
@@ -211,7 +226,7 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
     ]),
   )
 
-  const withSignatory = search(roles, byRole, requirements, true)
+  const withSignatory = search(roles, byRole, requirements, true, history)
 
   if (withSignatory) {
     return { ...base, outcome: 'ok', notes: '', team: toTeam(withSignatory, requirements) }
@@ -219,7 +234,7 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
 
   // Состав не собрался. Различаем две причины: людей нет вовсе или они есть,
   // но подписать пакет некому. Для клиента это разные ответы.
-  const withoutSignatory = search(roles, byRole, requirements, false)
+  const withoutSignatory = search(roles, byRole, requirements, false, history)
 
   if (withoutSignatory) {
     return {

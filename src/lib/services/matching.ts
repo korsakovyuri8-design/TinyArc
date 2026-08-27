@@ -12,6 +12,7 @@ import type { Assembly } from '@/engine/types'
 import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '../db'
 import { toList, toProfile, toRequirements } from '../rows'
+import { historyFor } from './collaboration'
 import { applyGates } from './relay'
 
 /** Пул, из которого вообще можно выбирать: только подтверждённые специалисты. */
@@ -38,7 +39,11 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
   if (!REASSEMBLABLE.has(project.status)) throw new AssemblyLocked(project.status)
 
   const pool = await activePool()
-  const assembly = assemble(pool, toRequirements(project))
+
+  // Сработанность читается один раз на прогон и влияет только на порядок
+  // вариантов: кто проходит гейты, от неё не зависит.
+  const history = await historyFor(pool.map((s) => s.id))
+  const assembly = assemble(pool, toRequirements(project), history)
 
   const runId = await prisma.$transaction(async (tx) => {
     const run = await tx.matchRun.create({

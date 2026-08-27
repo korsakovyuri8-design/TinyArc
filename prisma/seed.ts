@@ -24,6 +24,7 @@ import {
   claim,
   comment,
   raiseConflict,
+  requestFrom,
   submit,
 } from '../src/lib/services/relay'
 
@@ -251,6 +252,10 @@ async function main() {
   )
   console.log('  Бюро:       /ops, пароль из BUREAU_OPS_PASSWORD (по умолчанию bureau-ops)')
   console.log('  Направления: BUREAU_IMAGES=stub — это схемы объёма, а не изображения')
+  console.log('  Помощники:   BUREAU_ASSIST=stub — черновики по шаблону, без модели')
+
+  const pairs = await prisma.collaboration.count()
+  console.log(`  Сработанность: пар с историей — ${pairs}`)
 }
 
 /**
@@ -293,6 +298,37 @@ async function advanceFirstProject(projectId: string): Promise<void> {
     await accept(open.id)
 
     console.log(`  принят тикет: ${open.title}`)
+  }
+
+  // Живой запрос смежнику: рабочий ход между «сделал молча» и арбитражем.
+  // Пример взят из переписки: вентканал упирается в дверной проём.
+  const asking = await prisma.ticket.findFirst({
+    where: { projectId, status: 'accepted', discipline: 'architecture', specialistId: { not: null } },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  if (asking?.specialistId) {
+    const requestId = await requestFrom(
+      asking.id,
+      asking.specialistId,
+      'structural',
+      'Проверить проём в осях 3–4',
+      'Вентканал 200×400 по стене в осях 3–4 упирается в дверной проём. Нужно подтвердить, что проём можно сдвинуть на 200 мм к оси 4 без усиления перемычки.',
+    )
+
+    const request = await prisma.ticket.findUniqueOrThrow({ where: { id: requestId } })
+
+    if (request.specialistId) {
+      await claim(requestId, request.specialistId)
+      await comment(
+        requestId,
+        { role: 'specialist', specialistId: request.specialistId },
+        'Сдвиг на 200 мм проходит, перемычка без изменений.',
+      )
+      await submit(requestId, request.specialistId)
+      await accept(requestId)
+      console.log('  запрос смежнику закрыт: сработанность засчитана')
+    }
   }
 
   // Один живой конфликт на стенде: арбитраж должно быть на чём показать.

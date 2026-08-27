@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assemble, rankFor } from './assemble'
+import { pairKey } from './collaboration'
 import { fullPool, requirements, role, specialist } from './fixtures'
 
 describe('сборка Tiny Team', () => {
@@ -249,5 +250,82 @@ describe('исчерпывающий подбор', () => {
     ]
 
     expect(assemble(pool, requirements({ requiredHoursPerWeek: 10 })).outcome).toBe('incomplete')
+  })
+})
+
+describe('сработанность в подборе', () => {
+  const pool = () => [
+    specialist({ id: 'arch', disciplines: ['architecture'], weeklyCapacityHours: 40 }),
+    // Два конструктора с одинаковым баллом: выбор решает только история.
+    specialist({ id: 'struct-new', disciplines: ['structural'], weeklyCapacityHours: 40 }),
+    specialist({ id: 'struct-proven', disciplines: ['structural'], weeklyCapacityHours: 40 }),
+    specialist({ id: 'mep', disciplines: ['mep'], weeklyCapacityHours: 40 }),
+    specialist({ id: 'viz', disciplines: ['visualization'], weeklyCapacityHours: 40 }),
+  ]
+
+  const req = () => requirements({ targetStage: 'concept' })
+
+  it('при равном балле предпочитает того, с кем уже сдавали', () => {
+    const history = new Map([
+      [pairKey('arch', 'struct-proven'), { projects: 3, requestsAnswered: 6, conflicts: 0 }],
+    ])
+
+    const result = assemble(pool(), req(), history)
+
+    expect(result.outcome).toBe('ok')
+    expect(result.team.find((m) => m.discipline === 'structural')?.specialist.id).toBe(
+      'struct-proven',
+    )
+  })
+
+  it('пара, доходящая до арбитра, проигрывает незнакомой', () => {
+    const history = new Map([
+      [pairKey('arch', 'struct-proven'), { projects: 2, requestsAnswered: 0, conflicts: 5 }],
+    ])
+
+    const result = assemble(pool(), req(), history)
+
+    expect(result.team.find((m) => m.discipline === 'structural')?.specialist.id).toBe('struct-new')
+  })
+
+  it('не пускает мимо гейтов и не перебивает разницу в баллах', () => {
+    // Сработанность узкая по диапазону: она довод при равенстве, а не аргумент
+    // против порога и не замена качеству.
+    const weak = specialist({
+      id: 'struct-weak',
+      disciplines: ['structural'],
+      portfolioRating: 7.9,
+      weeklyCapacityHours: 40,
+    })
+    const strong = specialist({
+      id: 'struct-strong',
+      disciplines: ['structural'],
+      portfolioRating: 9.8,
+      weeklyCapacityHours: 40,
+    })
+
+    const history = new Map([
+      [pairKey('arch', 'struct-weak'), { projects: 99, requestsAnswered: 99, conflicts: 0 }],
+    ])
+
+    const result = assemble(
+      [...pool().filter((s) => !s.disciplines.includes('structural')), weak, strong],
+      req(),
+      history,
+    )
+
+    // Ниже порога — не в выборке, сколько бы совместных проектов ни было.
+    expect(result.team.find((m) => m.discipline === 'structural')?.specialist.id).toBe(
+      'struct-strong',
+    )
+  })
+
+  it('без истории собирает то же, что и раньше', () => {
+    const withEmpty = assemble(pool(), req(), new Map())
+    const withDefault = assemble(pool(), req())
+
+    expect(withDefault.team.map((m) => m.specialist.id)).toEqual(
+      withEmpty.team.map((m) => m.specialist.id),
+    )
   })
 })

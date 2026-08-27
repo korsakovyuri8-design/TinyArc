@@ -1,9 +1,11 @@
 'use client'
 
 import { useActionState } from 'react'
-import { ARTIFACT_KIND_LABELS } from '@/lib/labels'
+import type { Discipline } from '@/engine/taxonomy'
+import { ARTIFACT_KIND_LABELS, DISCIPLINE_LABELS } from '@/lib/labels'
 import {
   addArtifact,
+  askDiscipline,
   claimTicket,
   postComment,
   raiseTicketConflict,
@@ -99,6 +101,50 @@ export function ConflictForm({ ticketId }: { ticketId: string }) {
         />
         <div className="hint">
           Договариваться со смежником напрямую негде и не нужно. Решает бюро.
+        </div>
+      </div>
+    </Form>
+  )
+}
+
+export function RequestForm({
+  ticketId,
+  disciplines,
+}: {
+  ticketId: string
+  disciplines: Discipline[]
+}) {
+  if (disciplines.length === 0) return null
+
+  return (
+    <Form action={askDiscipline} ticketId={ticketId} label="Отправить запрос">
+      <div className="grid grid-2" style={{ gap: 12 }}>
+        <div className="field">
+          <label htmlFor="discipline">Кому</label>
+          <select id="discipline" name="discipline" defaultValue={disciplines[0]}>
+            {disciplines.map((d) => (
+              <option key={d} value={d}>
+                {DISCIPLINE_LABELS[d]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="title">Что нужно</label>
+          <input id="title" name="title" placeholder="Сдвинуть дверь в осях 3–4" />
+        </div>
+      </div>
+      <div className="field">
+        <label htmlFor="body">Подробно</label>
+        <textarea
+          id="body"
+          name="body"
+          placeholder="Вентканал 200×400 идёт по стене в осях 3–4 и упирается в дверной проём. Нужно сдвинуть проём на 200 мм к оси 4."
+          style={{ minHeight: 90 }}
+        />
+        <div className="hint">
+          Станет тикетом для этой дисциплины со сроком в сутки. Переписки не будет: адресат
+          должен понять запрос без вас.
         </div>
       </div>
     </Form>

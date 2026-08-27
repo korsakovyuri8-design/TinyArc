@@ -76,5 +76,16 @@ export function preflight(env: Record<string, string | undefined> = process.env)
     problems.push('BUREAU_IMAGES="openai": не задан OPENAI_API_KEY.')
   }
 
+  const assist = env.BUREAU_ASSIST ?? 'stub'
+  if (assist !== 'stub' && assist !== 'anthropic') {
+    problems.push(`BUREAU_ASSIST="${assist}": такого режима нет. Доступны "stub" и "anthropic".`)
+  }
+
+  if (assist === 'anthropic' && !env.ANTHROPIC_API_KEY?.trim() && !env.ANTHROPIC_AUTH_TOKEN?.trim()) {
+    problems.push(
+      'BUREAU_ASSIST="anthropic": не задан ни ANTHROPIC_API_KEY, ни ANTHROPIC_AUTH_TOKEN.',
+    )
+  }
+
   return problems
 }
