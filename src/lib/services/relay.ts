@@ -14,6 +14,7 @@ import {
   type RelayTicket,
 } from '@/engine/relay'
 import type { Discipline } from '@/engine/taxonomy'
+import { images } from '../images'
 import { prisma } from '../db'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
 
@@ -355,7 +356,7 @@ export async function refreshProjectStatus(projectId: string): Promise<void> {
 export async function attachArtifact(
   ticketId: string,
   specialistId: string,
-  artifact: { name: string; url: string; kind: string },
+  artifact: { name: string; url: string; kind: string; source?: string },
 ): Promise<void> {
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
@@ -363,6 +364,38 @@ export async function attachArtifact(
   if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
 
   await prisma.artifact.create({ data: { ticketId, ...artifact } })
+}
+
+/**
+ * Изображение к тикету.
+ *
+ * Кладётся тем же путём, что и любой другой файл, но с пометкой происхождения:
+ * это материал, полученный генератором, и в записях он отличим от ручной
+ * работы. Что с ним делать — брать в работу, переделывать или выбросить —
+ * решает специалист; предъявляет он то, за что готов отвечать.
+ */
+export async function generateRender(
+  ticketId: string,
+  specialistId: string,
+  prompt: string,
+  name: string,
+): Promise<void> {
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+
+  if (ticket.specialistId !== specialistId) throw new NotYours()
+  if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
+
+  const image = await images().generate({ key: ticket.discipline, title: name, prompt })
+
+  await prisma.artifact.create({
+    data: {
+      ticketId,
+      name,
+      url: image.url,
+      kind: 'render',
+      source: image.source === 'stub' ? 'generated' : `generated:${image.source}`,
+    },
+  })
 }
 
 /**

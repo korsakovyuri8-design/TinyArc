@@ -9,7 +9,7 @@ import { assistant } from '@/lib/assist'
 import { sendAccessKey } from '@/lib/mail'
 import { chosenDirection } from '@/lib/services/direction'
 import { inboundArtifacts } from '@/lib/services/relay'
-import { parseList } from '@/lib/rows'
+import { parseList, toProfile } from '@/lib/rows'
 import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
@@ -209,6 +209,99 @@ export async function summariseTicketConflict(
   } catch (error) {
     console.error('Сводка спора не получена:', error)
     return { error: 'Помощник не ответил. Переписка по тикету — выше.' }
+  }
+}
+
+/**
+ * Предложение рейтинга портфолио.
+ *
+ * В базу оно не пишется: помощник смотрит профиль и говорит, что видит, а
+ * рейтинг ставит человек той же формой, что и раньше. Порог допуска — восемь,
+ * и цена ошибки в обе стороны слишком высока, чтобы число проставлялось само.
+ */
+export async function proposeRating(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const id = String(formData.get('specialistId') ?? '')
+
+  const row = await prisma.specialist.findUniqueOrThrow({
+    where: { id },
+    include: { portfolio: { orderBy: { createdAt: 'asc' } } },
+  })
+
+  const profile = toProfile(row)
+
+  try {
+    const proposal = await assistant().proposePortfolioRating({
+      displayName: profile.displayName,
+      portfolioUrl: row.portfolioUrl,
+      disciplines: profile.disciplines,
+      specializations: profile.specializations,
+      jurisdictions: profile.jurisdictions,
+      maxStoreys: profile.maxStoreys,
+      works: row.portfolio.map((w) => ({
+        title: w.title,
+        kind: w.kind,
+        roleDescription: w.roleDescription,
+        areaSqm: w.areaSqm,
+      })),
+    })
+
+    const gaps = proposal.gaps.length > 0 ? ` Пробелы: ${proposal.gaps.join('; ')}.` : ''
+
+    return {
+      message: `Предложение: ${proposal.rating.toFixed(1)}. ${proposal.reasoning}${gaps} Рейтинг ставите вы — полем ниже.`,
+    }
+  } catch (error) {
+    console.error('Предложение рейтинга не получено:', error)
+    return { error: 'Помощник не ответил. Смотрите портфолио сами — ссылка выше.' }
+  }
+}
+
+/**
+ * Проверка комплектности перед приёмкой.
+ *
+ * Не принимает и не отклоняет: называет то, что по постановке должно быть, а в
+ * приложенном не видно. Кнопку «принять» жмёт человек, и он же решает, что
+ * делать с замечаниями.
+ */
+export async function checkTicketCompleteness(
+  _prev: OpsState,
+  formData: FormData,
+): Promise<OpsState> {
+  await requireOperator()
+
+  const ticketId = String(formData.get('ticketId') ?? '')
+
+  const ticket = await prisma.ticket.findUniqueOrThrow({
+    where: { id: ticketId },
+    include: { artifacts: true },
+  })
+
+  try {
+    const check = await assistant().checkCompleteness({
+      ticketTitle: ticket.title,
+      spec: ticket.spec,
+      discipline: ticket.discipline,
+      stage: ticket.stage,
+      artifacts: ticket.artifacts.map((a) => ({ name: a.name, kind: a.kind })),
+    })
+
+    if (check.missing.length === 0 && check.worthChecking.length === 0) {
+      return { message: 'По постановке расхождений не видно. Содержимое файлов смотрите сами.' }
+    }
+
+    return {
+      message: [
+        check.missing.length > 0 ? `Не хватает: ${check.missing.join('; ')}.` : null,
+        check.worthChecking.length > 0 ? `Посмотреть глазами: ${check.worthChecking.join('; ')}.` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    }
+  } catch (error) {
+    console.error('Проверка комплектности не выполнена:', error)
+    return { error: 'Помощник не ответил. Приложенное — в списке выше.' }
   }
 }
 

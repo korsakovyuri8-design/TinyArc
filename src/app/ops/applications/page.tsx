@@ -11,7 +11,7 @@ import { prisma } from '@/lib/db'
 import { DISCIPLINE_LABELS, PORTFOLIO_KIND_LABELS, SPECIALIZATION_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
-import { reviewApplication } from '../actions'
+import { proposeRating, reviewApplication } from '../actions'
 import { OpsAction } from '../OpsForms'
 
 export const metadata = { title: 'Заявки — панель бюро' }
@@ -103,6 +103,14 @@ export default async function ApplicationsPage() {
                   </div>
 
                   <div className="divider" style={{ margin: '18px 0' }} />
+
+                  <div style={{ marginBottom: 14 }}>
+                    <OpsAction
+                      action={proposeRating}
+                      hidden={{ specialistId: row.id }}
+                      label="Что видно в портфолио"
+                    />
+                  </div>
 
                   <OpsAction
                     action={reviewApplication}

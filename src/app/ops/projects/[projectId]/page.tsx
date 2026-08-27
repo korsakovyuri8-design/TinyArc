@@ -30,6 +30,7 @@ import { isOperator } from '@/lib/session'
 import {
   acceptTicket,
   bureauComment,
+  checkTicketCompleteness,
   draftTicketSpec,
   rerunAssembly,
   resolveTicketConflict,
@@ -344,7 +345,21 @@ export default async function OpsProjectPage({
                   )}
 
                   {ticket.status === 'submitted' && (
-                    <div className="grid grid-2" style={{ marginTop: 24, gap: 20 }}>
+                    <div style={{ marginTop: 24 }}>
+                      <OpsAction
+                        action={checkTicketCompleteness}
+                        hidden={{ ticketId: ticket.id }}
+                        label="Сверить с постановкой"
+                      />
+                      <p className="hint" style={{ marginTop: 8 }}>
+                        Помощник называет расхождения по списку файлов. Содержимое смотрите
+                        сами — принимаете вы.
+                      </p>
+                    </div>
+                  )}
+
+                  {ticket.status === 'submitted' && (
+                    <div className="grid grid-2" style={{ marginTop: 20, gap: 20 }}>
                       <OpsAction
                         action={acceptTicket}
                         hidden={{ ticketId: ticket.id }}

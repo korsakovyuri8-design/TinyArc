@@ -194,6 +194,7 @@ CREATE TABLE "Artifact" (
     "name" TEXT NOT NULL,
     "url" TEXT NOT NULL DEFAULT '',
     "kind" TEXT NOT NULL DEFAULT 'sheet',
+    "source" TEXT NOT NULL DEFAULT 'human',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Artifact_pkey" PRIMARY KEY ("id")

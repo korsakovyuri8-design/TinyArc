@@ -97,7 +97,6 @@ export type GateName =
   | 'jurisdiction'
   | 'storeys'
   | 'doc_stage'
-  | 'software_exchange'
   | 'language'
   | 'timezone_overlap'
   | 'availability'

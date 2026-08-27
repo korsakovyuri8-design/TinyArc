@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { failedGate, passes, worksInStack } from './filter'
+import { failedGate, narrowPackages, passes, sharesPackage } from './filter'
 import { requirements, role, specialist } from './fixtures'
 
 describe('жёсткие гейты', () => {
@@ -35,29 +35,35 @@ describe('жёсткие гейты', () => {
     expect(failedGate(conceptOnly, requirements({ targetStage: 'concept' }), role('architecture'))).toBeNull()
   })
 
-  it('технологический шлюз: координация по IFC не отменяет совпадения пакета', () => {
-    // Гений на ArchiCAD в проекте на Revit не проходит, каким бы ни был IFC.
-    expect(worksInStack({ software: ['archicad'] }, ['revit'])).toBe(false)
-    expect(worksInStack({ software: ['revit'] }, ['revit'])).toBe(true)
-    // Пакет не задан — шлюза нет.
-    expect(worksInStack({ software: ['rhino'] }, [])).toBe(true)
+  it('не отсекает специалиста за пакет, заявленный клиентом', () => {
+    // Клиент покупает комплект, а не право выбирать, в чём его начертят.
+    // Сильный конструктор в другом пакете — потеря для проекта, а не нарушение.
+    const other = specialist({ software: ['archicad'], portfolioRating: 10 })
+
+    expect(failedGate(other, requirements({ software: ['revit'] }), role('architecture'))).toBeNull()
   })
 
-  it('отсекает по пакету, даже если специалист координируется по IFC', () => {
-    const brilliant = specialist({
-      software: ['archicad'],
-      ifcLevel: 'coordination',
-      portfolioRating: 10,
-    })
-
-    expect(failedGate(brilliant, requirements({ software: ['revit'] }), role('architecture'))).toBe(
-      'software_exchange',
-    )
+  it('общий пакет проверяется по набору команды, а не по клиенту', () => {
+    expect(sharesPackage({ software: ['archicad'] }, ['revit'])).toBe(false)
+    expect(sharesPackage({ software: ['archicad', 'revit'] }, ['revit'])).toBe(true)
+    // Команда ещё не начата — ограничивать нечем.
+    expect(sharesPackage({ software: ['rhino'] }, [])).toBe(true)
   })
 
-  it('пропускает по пакету, когда клиент его не задал', () => {
-    const isolated = specialist({ software: ['rhino'], ifcLevel: 'none' })
-    expect(failedGate(isolated, requirements({ software: [] }), role('architecture'))).toBeNull()
+  it('общий набор сужается с каждым участником, а не остаётся набором ведущего', () => {
+    // Ведущий с тремя пакетами: если не сужать, двое смежников пройдут каждый
+    // по своему и останутся без общего между собой.
+    const lead = narrowPackages({ software: ['revit', 'archicad', 'autocad'] }, null)
+    expect(lead.sort()).toEqual(['archicad', 'autocad', 'revit'])
+
+    const afterSecond = narrowPackages({ software: ['archicad', 'autocad'] }, lead)
+    expect(afterSecond.sort()).toEqual(['archicad', 'autocad'])
+
+    const afterThird = narrowPackages({ software: ['autocad'] }, afterSecond)
+    expect(afterThird).toEqual(['autocad'])
+
+    // Четвёртый только на Revit общего с командой уже не имеет.
+    expect(sharesPackage({ software: ['revit'] }, afterThird)).toBe(false)
   })
 
   it('отсекает, когда дисциплина та, а специализация не та', () => {

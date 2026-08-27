@@ -142,7 +142,7 @@ export function BriefForm() {
         <Field
           label="Софт"
           error={errors.software}
-          hint="Если нет требований — не отмечайте ничего: обмен пойдёт по IFC"
+          hint="Справочно: отметьте, если у вас уже есть модель от прежнего подрядчика. Состав команды это не ограничивает — команда сама сходится на одном пакете"
         >
           <Choices name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
         </Field>

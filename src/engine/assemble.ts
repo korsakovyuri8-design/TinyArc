@@ -9,9 +9,9 @@
  * получить другой состав — изменить требования проекта или пул.
  */
 
-import { requiredRoles, type Discipline, type RequiredRole } from './taxonomy'
+import { requiredRoles, type Discipline, type RequiredRole, type Software } from './taxonomy'
 import { teamFactor, type PairHistory } from './collaboration'
-import { failedGate, worksInStack } from './filter'
+import { failedGate, narrowPackages, sharesPackage } from './filter'
 import { availability, scoreFor } from './score'
 import { validateProject } from './validate'
 import type {
@@ -124,7 +124,7 @@ function search(
   const taken = new Map<string, number>()
   const chosen: Assignment[] = []
 
-  function step(depth: number, total: number, stack: readonly string[] | null): void {
+  function step(depth: number, total: number, stack: readonly Software[] | null): void {
     if (visited >= SEARCH_LIMIT) return
 
     if (depth === order.length) {
@@ -161,15 +161,17 @@ function search(
       const factor = availability(specialist, requirements, busy)
       if (factor <= 0) continue
 
-      // Технологический шлюз внутри команды: все работают в пакете ведущего.
-      if (stack && !worksInStack(specialist, stack)) continue
+      // Единый пакет внутри команды. Сверяемся с общим набором, а не с
+      // набором ведущего: у ведущего пакетов может быть три, и двое смежников
+      // прошли бы каждый по своему, не имея общего между собой.
+      if (stack && !sharesPackage(specialist, stack)) continue
 
       const score = scoreFor(specialist, requirements, busy).score
 
       chosen.push({ role, candidate, score })
       taken.set(specialist.id, busy + requirements.requiredHoursPerWeek)
 
-      step(depth + 1, total + score, stack ?? specialist.software)
+      step(depth + 1, total + score, narrowPackages(specialist, stack))
 
       taken.set(specialist.id, busy)
       chosen.pop()

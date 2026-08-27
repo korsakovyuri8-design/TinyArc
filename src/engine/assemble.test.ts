@@ -329,3 +329,63 @@ describe('сработанность в подборе', () => {
     )
   })
 })
+
+describe('единый пакет внутри команды', () => {
+  it('не разваливает команду на два пакета через широкий набор ведущего', () => {
+    // Ведущий работает в трёх пакетах. Двое смежников не пересекаются между
+    // собой — с набором ведущего каждый совместим, друг с другом нет.
+    const pool = [
+      specialist({
+        id: 'arch',
+        disciplines: ['architecture'],
+        software: ['revit', 'archicad', 'autocad'],
+        portfolioRating: 9.5,
+      }),
+      specialist({
+        id: 'struct-archicad',
+        disciplines: ['structural'],
+        software: ['archicad'],
+        portfolioRating: 9.4,
+      }),
+      specialist({
+        id: 'mep-revit',
+        disciplines: ['mep'],
+        software: ['revit'],
+        portfolioRating: 9.3,
+      }),
+      specialist({
+        id: 'mep-archicad',
+        disciplines: ['mep'],
+        software: ['archicad'],
+        portfolioRating: 8.2,
+      }),
+      specialist({ id: 'viz', disciplines: ['visualization'], software: ['archicad', 'revit'] }),
+    ]
+
+    const result = assemble(pool, requirements({ targetStage: 'concept', software: [] }))
+
+    expect(result.outcome).toBe('ok')
+
+    // Балл выше у MEP на Revit, но общего пакета с конструктором у него нет.
+    const packages = result.team.map((m) => new Set(m.specialist.software))
+    const common = [...packages[0]].filter((p) => packages.every((set) => set.has(p)))
+
+    expect(common.length).toBeGreaterThan(0)
+    expect(result.team.find((m) => m.discipline === 'mep')?.specialist.id).toBe('mep-archicad')
+  })
+
+  it('пакет, заявленный клиентом, состав не ограничивает', () => {
+    // Вся команда на ArchiCAD, клиент написал Revit: это справка, не гейт.
+    const pool = [
+      specialist({ id: 'arch', disciplines: ['architecture'], software: ['archicad'] }),
+      specialist({ id: 'struct', disciplines: ['structural'], software: ['archicad'] }),
+      specialist({ id: 'mep', disciplines: ['mep'], software: ['archicad'] }),
+      specialist({ id: 'viz', disciplines: ['visualization'], software: ['archicad'] }),
+    ]
+
+    const result = assemble(pool, requirements({ targetStage: 'concept', software: ['revit'] }))
+
+    expect(result.outcome).toBe('ok')
+    expect(result.team).toHaveLength(4)
+  })
+})

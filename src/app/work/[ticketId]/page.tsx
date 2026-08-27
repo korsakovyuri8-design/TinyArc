@@ -18,6 +18,7 @@ import {
   ClaimWork,
   CommentForm,
   ConflictForm,
+  RenderForm,
   RequestForm,
   SubmitWork,
 } from './TicketActions'
@@ -188,6 +189,11 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
                         {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
                       </span>
+                      {file.source.startsWith('generated') && (
+                        <span className="tag" style={{ marginLeft: 10 }}>
+                          сгенерировано
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -198,6 +204,26 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <div style={{ marginTop: 28 }}>
                 <ArtifactForm ticketId={ticket.id} />
               </div>
+            )}
+
+            {working && (
+              <>
+                <div className="divider" />
+                <div className="label label-accent">Изображение</div>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                  Черновой материал для работы. В записях он помечен как сгенерированный —
+                  ответственность за сданное остаётся на вас.
+                </p>
+                <RenderForm
+                  ticketId={ticket.id}
+                  hint={[
+                    ticket.project.title,
+                    direction ? `Направление: ${direction.title}. ${direction.summary}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join('. ')}
+                />
+              </>
             )}
 
             <div className="divider" />

@@ -5,12 +5,15 @@
  * готовит текст, который человек читает и правит, и не производит ничего, что
  * уходит клиенту или в комплект документации.
  *
- * Что сюда не попадает и не попадёт:
+ * Что сюда не попадает:
  *
- *  · отбор специалистов — он взвешенный и объяснимый, и подмена его моделью
- *    убила бы разбор балла, на котором держится доверие клиента (п.9);
- *  · приёмка работы — принимает бюро, и это ответственность, а не операция;
- *  · проектные разделы — чертежи и расчёты делают люди (п.12а).
+ *  · сам отбор — формула взвешенная и объяснимая, и подмена её моделью убила
+ *    бы разбор балла, на котором держится ответ клиенту «почему не я выбираю»
+ *    (п.9). Рейтинг портфолио при этом помощник предлагать может: это одно
+ *    число на входе, которое подтверждает человек, и объяснимость цела;
+ *  · нажатие «принять» — это ответственность, а не операция. Проверить
+ *    комплектность перед ним помощник может и должен;
+ *  · проектные разделы — чертежи, нагрузки и разводку делают люди (п.12а).
  */
 
 export type SpecInput = {
@@ -53,8 +56,84 @@ export type ConflictSummary = {
   question: string
 }
 
+/** Свободный текст клиента → черновик полей брифа. */
+export type BriefInput = { text: string }
+
+export type BriefFields = {
+  typology?: string
+  storeys?: number
+  areaSqm?: number
+  jurisdiction?: string
+  terrain?: string
+  gridConnection?: string
+  materialSystem?: string
+  targetStage?: string
+}
+
+export type BriefParse = {
+  fields: BriefFields
+  /** Чего в тексте не было. Клиент дозаполняет сам — додумывать нельзя. */
+  missing: string[]
+  notes: string
+}
+
+export type PortfolioInput = {
+  displayName: string
+  portfolioUrl: string
+  disciplines: string[]
+  specializations: string[]
+  jurisdictions: string[]
+  maxStoreys: number
+  works: { title: string; kind: string; roleDescription: string; areaSqm?: number | null }[]
+}
+
+export type PortfolioProposal = {
+  /** Предложение, 0–10. Ставит его в базу человек, а не помощник. */
+  rating: number
+  /** На чём основано. Без этого предложение непроверяемо. */
+  reasoning: string
+  /** Чего в портфолио не хватает, чтобы судить увереннее. */
+  gaps: string[]
+}
+
+export type CompletenessInput = {
+  ticketTitle: string
+  spec: string
+  discipline: string
+  stage: string
+  artifacts: { name: string; kind: string }[]
+}
+
+export type CompletenessCheck = {
+  /** Чего не хватает по постановке. Пусто — замечаний нет. */
+  missing: string[]
+  /** Что стоит посмотреть глазами перед приёмкой. */
+  worthChecking: string[]
+}
+
+export type RequestDraftInput = {
+  fromDiscipline: string
+  toDiscipline: string
+  ticketTitle: string
+  /** Как специалист описал проблему своими словами. */
+  rough: string
+}
+
+export type RequestDraft = {
+  title: string
+  body: string
+}
+
 export interface Assistant {
   readonly mode: string
   draftSpec(input: SpecInput): Promise<SpecDraft>
   summariseConflict(input: ConflictInput): Promise<ConflictSummary>
+  /** Разбор свободного описания клиента в поля брифа. */
+  parseBrief(input: BriefInput): Promise<BriefParse>
+  /** Предложение рейтинга портфолио для разбора заявки. Решает человек. */
+  proposePortfolioRating(input: PortfolioInput): Promise<PortfolioProposal>
+  /** Что не сходится с постановкой до того, как бюро нажало «принять». */
+  checkCompleteness(input: CompletenessInput): Promise<CompletenessCheck>
+  /** Черновик запроса смежнику: адресат должен понять его без автора. */
+  draftRequest(input: RequestDraftInput): Promise<RequestDraft>
 }

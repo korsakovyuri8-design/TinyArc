@@ -16,6 +16,7 @@ import {
   DOC_STAGE_ORDER,
   coversRole,
   type RequiredRole,
+  type Software,
 } from './taxonomy'
 import { availability, timezoneOverlapHours } from './score'
 import type { GateName, ProjectRequirements, SpecialistProfile } from './types'
@@ -27,31 +28,44 @@ export const GATE_LABELS: Record<GateName, string> = {
   jurisdiction: 'Не проходил согласования в этой стране',
   storeys: 'Нет подтверждённого опыта на такой этажности',
   doc_stage: 'Не ведёт документацию до нужной стадии',
-  software_exchange: 'Не работает в пакете проекта',
   language: 'Нет общего языка с клиентом или с органами',
   timezone_overlap: 'Пересечение по времени меньше рабочего минимума',
   availability: 'Нет свободной ёмкости или не успевает выйти к сроку',
 }
 
 /**
- * Технологический шлюз (Tech Gate).
+ * Технологический шлюз: единый пакет внутри команды.
  *
- * Если клиент указал пакет, специалист обязан в нём работать. Обмена по IFC как
- * обхода здесь нет намеренно: команда, говорящая на разных цифровых языках,
- * теряет данные модели на каждой передаче, а отвечаем за комплект мы. Гений на
- * ArchiCAD в проекте на Revit не проходит — это правило, а не недоразумение.
+ * Требование одно — вся собранная команда работает в одном пакете. Какой это
+ * пакет, решает не клиент и не бюро: он выпадает сам, когда сходится состав.
  *
- * Уровень IFC остаётся в профиле и виден в интерфейсе: он важен на хендоффе,
- * просто не отменяет совпадения пакета.
+ * Отдельного отсева по пакету, заявленному клиентом, здесь нет намеренно.
+ * Клиент покупает комплект документации, а не право выбирать, в чём его
+ * начертят; сильный конструктор, работающий в другом пакете, — это потеря для
+ * проекта, а не соблюдение требования. Заявленный клиентом пакет остаётся в
+ * брифе как справка для бюро.
+ *
+ * Уровень обмена по IFC остаётся в профиле: он важен на передаче между
+ * разделами и виден в интерфейсе.
  */
-export function worksInStack(
+export function sharesPackage(
   specialist: Pick<SpecialistProfile, 'software'>,
-  software: readonly string[],
+  packages: readonly Software[],
 ): boolean {
-  // Пакет не задан — клиенту всё равно, в чём считают. Тогда шлюза нет.
-  if (software.length === 0) return true
+  // Пустой набор — команда ещё не начата: ограничивать нечем.
+  if (packages.length === 0) return true
 
-  return specialist.software.some((s) => software.includes(s))
+  return specialist.software.some((s) => packages.includes(s))
+}
+
+/** Пакеты, которые останутся общими после добавления специалиста в команду. */
+export function narrowPackages(
+  specialist: Pick<SpecialistProfile, 'software'>,
+  packages: readonly Software[] | null,
+): Software[] {
+  if (!packages) return [...specialist.software]
+
+  return packages.filter((p) => specialist.software.includes(p))
 }
 
 /** Первый непройденный гейт, либо null. Null означает «в выборке». */
@@ -75,8 +89,6 @@ export function failedGate(
     (s) => DOC_STAGE_ORDER[s] >= DOC_STAGE_ORDER[requirements.targetStage],
   )
   if (!covers) return 'doc_stage'
-
-  if (!worksInStack(specialist, requirements.software)) return 'software_exchange'
 
   const sharesClientLanguage = specialist.languages.some((l) => requirements.languages.includes(l))
   if (!sharesClientLanguage) return 'language'

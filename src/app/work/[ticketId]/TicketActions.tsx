@@ -7,6 +7,7 @@ import {
   addArtifact,
   askDiscipline,
   claimTicket,
+  makeRender,
   postComment,
   raiseTicketConflict,
   submitTicket,
@@ -145,6 +146,25 @@ export function RequestForm({
         <div className="hint">
           Станет тикетом для этой дисциплины со сроком в сутки. Переписки не будет: адресат
           должен понять запрос без вас.
+        </div>
+      </div>
+    </Form>
+  )
+}
+
+export function RenderForm({ ticketId, hint }: { ticketId: string; hint: string }) {
+  return (
+    <Form action={makeRender} ticketId={ticketId} label="Сгенерировать">
+      <div className="field">
+        <label htmlFor="name">Название</label>
+        <input id="name" name="name" placeholder="Экстерьер, вечер, вид с подъезда" />
+      </div>
+      <div className="field">
+        <label htmlFor="prompt">Что должно быть на изображении</label>
+        <textarea id="prompt" name="prompt" defaultValue={hint} style={{ minHeight: 90 }} />
+        <div className="hint">
+          Ляжет в тикет с пометкой, что сгенерировано. Это материал для работы: предъявляете
+          вы то, за что готовы отвечать.
         </div>
       </div>
     </Form>

@@ -6,6 +6,7 @@ import {
   attachArtifact,
   claim,
   comment,
+  generateRender,
   raiseConflict,
   requestFrom,
   submit,
@@ -98,6 +99,26 @@ export async function askDiscipline(_prev: WorkState, formData: FormData): Promi
     (ticketId, specialistId) =>
       requestFrom(ticketId, specialistId, discipline, title, body).then(() => undefined),
     'Запрос заведён как тикет для смежной дисциплины.',
+  )
+}
+
+/**
+ * Изображение к тикету.
+ *
+ * Материал для работы, а не сданная работа: он ложится в тикет с пометкой
+ * происхождения, и предъявляет специалист то, за что готов отвечать.
+ */
+export async function makeRender(_prev: WorkState, formData: FormData): Promise<WorkState> {
+  const prompt = String(formData.get('prompt') ?? '').trim()
+  const name = String(formData.get('name') ?? '').trim()
+
+  if (!prompt) return { error: 'Опишите, что нужно на изображении.' }
+
+  return act(
+    formData,
+    (ticketId, specialistId) =>
+      generateRender(ticketId, specialistId, prompt, name || 'Изображение'),
+    'Изображение приложено к тикету с пометкой, что оно сгенерировано.',
   )
 }
 
