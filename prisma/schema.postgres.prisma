@@ -1,0 +1,322 @@
+// СГЕНЕРИРОВАННЫЙ ФАЙЛ. Не редактируйте: правьте prisma/schema.prisma и
+// выполните npm run db:schema. Отличие от исходной схемы ровно одно —
+// провайдер datasource.
+
+// TinyArc Cloud Bureau — схема данных.
+//
+// Три принципа концепта, которые видны прямо здесь:
+//
+//  1. Команду собирает движок (п.7). В схеме нет ни одного поля, которым
+//     оператор мог бы назначить специалиста в команду вручную: слот команды
+//     создаётся только прогоном и хранит разбор балла, по которому создан.
+//
+//  2. Blind Relay (п.11). Модели прямого сообщения между специалистами не
+//     существует. Единственный носитель коммуникации — TicketComment, и он
+//     привязан к тикету. Это не «не рекомендуется», это нечего вызвать.
+//
+//  3. Метрики математические (п.12). Поля «оценка специалиста» нет ни у
+//     клиента, ни у оператора. Всё качество считается из событий тикетов.
+//
+// Перечисления заданы строками, а не enum: одна и та же схема должна лежать и
+// на SQLite (разработка), и на Postgres (бой). Допустимые значения —
+// union-типами в src/engine/taxonomy.ts.
+//
+// prisma/schema.postgres.prisma генерируется отсюда: npm run db:schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Предложение: специалисты ----------------------------------------------
+
+/// Специалист пула. Двенадцать измерений таксономии (п.8) плюс метрики.
+model Specialist {
+  id          String @id @default(cuid())
+  /// Публичное имя. Клиенту видно; другим специалистам — нет (п.11).
+  displayName String
+  /// Ключ доступа. Выдаётся после подтверждения заявки, как в закрытом круге.
+  accessKey   String @unique
+  email       String @unique
+  /// pending — заявка, active — в пуле, paused — снят по своей просьбе,
+  /// rejected — не прошёл порог портфолио.
+  status      String @default("pending")
+
+  // 1. Дисциплина
+  disciplinesJson     String @default("[]")
+  // 2. Типология
+  typologiesJson      String @default("[]")
+  // 3. Масштаб
+  scaleBandsJson      String @default("[]")
+  // 4. Этажность: максимум, на который есть подтверждённый опыт
+  maxStoreys          Int    @default(1)
+  // 5. Материальная система
+  materialSystemsJson String @default("[]")
+  // 6. Климатическая зона
+  climateZonesJson    String @default("[]")
+  // 7. Юрисдикция
+  jurisdictionsJson   String @default("[]")
+  /// Страны, где у специалиста есть право подписи. Подмножество jurisdictions.
+  signsInJson         String @default("[]")
+  // 8. Софт
+  softwareJson        String @default("[]")
+  ifcLevel            String @default("none")
+  // 9. Стадия документации
+  docStagesJson       String @default("[]")
+  // 10. Регуляторный трек
+  regulatoryTracksJson String @default("[]")
+  // 11. Язык
+  languagesJson       String @default("[]")
+  // 12. Режим работы
+  workMode            String @default("remote")
+  /// Смещение от UTC в часах. Пересечение считается по нему.
+  utcOffset           Int    @default(0)
+  /// Свободная ёмкость, часов в неделю.
+  weeklyCapacityHours Int    @default(0)
+  /// Через сколько дней специалист может выйти на задачу.
+  leadTimeDays        Int    @default(0)
+
+  /// Рейтинг портфолио, 0–10. Ставится при разборе портфолио на входе.
+  /// Порог 8/10 — гейт до скоринга (п.9), а не слагаемое внутри него.
+  portfolioRating Float  @default(0)
+  portfolioUrl    String @default("")
+
+  /// Счётчики поставки. Из них считаются метрики (п.12); руками не правятся.
+  deliveredTickets      Int @default(0)
+  onTimeTickets         Int @default(0)
+  firstTimeRightTickets Int @default(0)
+  responseMinutesTotal  Int @default(0)
+  revisionRoundsTotal   Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  candidacies Candidate[]
+  slots       TeamSlot[]
+  tickets     Ticket[]
+  comments    TicketComment[]
+
+  @@index([status])
+}
+
+// --- Спрос: проекты --------------------------------------------------------
+
+/// Проект клиента. Бриф, разобранный в требования (п.7, стадия Validate).
+model Project {
+  id        String @id @default(cuid())
+  /// Ключ доступа клиента к кабинету проекта.
+  clientKey String @unique
+  title     String
+  /// Контакт клиента. Специалистам не выдаётся ни при каких условиях (п.13).
+  clientName  String
+  clientEmail String
+
+  // Требования проекта в тех же измерениях, что и таксономия специалиста.
+  typology        String
+  storeys         Int
+  areaSqm         Int
+  jurisdiction    String
+  climateZone     String
+  materialSystem  String
+  regulatoryTrack String @default("light")
+  targetStage     String @default("permit")
+  softwareJson    String @default("[]")
+  languagesJson   String @default("[]")
+  /// Требуемая занятость специалиста, часов в неделю.
+  requiredHoursPerWeek Int @default(10)
+  /// Горизонт выхода на задачу, дней. Из него считается фактор доступности.
+  horizonDays          Int @default(30)
+  utcOffset            Int @default(1)
+
+  /// Свободный текст брифа. Команде выдаётся в объёме задачи, не целиком (п.13).
+  briefNotes String @default("")
+
+  /// draft — бриф принят; rejected — вне продуктовой границы (п.5);
+  /// assembled — команда собрана; delivering — идёт выпуск; delivered — закрыт.
+  status String @default("draft")
+  /// Почему отказали, если статус rejected. Заполняет движок, не человек.
+  rejectionReason String @default("")
+
+  createdAt DateTime @default(now())
+
+  runs    MatchRun[]
+  slots   TeamSlot[]
+  tickets Ticket[]
+
+  @@index([status])
+}
+
+// --- Сборка ----------------------------------------------------------------
+
+/// Прогон сборки команды. Хранит вход и результат, чтобы решение можно было
+/// воспроизвести и объяснить клиенту (п.9, прозрачность как фича).
+model MatchRun {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  /// Сколько специалистов было в пуле до фильтра и сколько прошло.
+  pooledCount   Int @default(0)
+  survivedCount Int @default(0)
+  /// ok — команда собрана; incomplete — дисциплина не закрыта; no_signatory —
+  /// в юрисдикции нет подписи (п.10, гейт).
+  outcome       String @default("ok")
+  notes         String @default("")
+
+  candidates Candidate[]
+  slots      TeamSlot[]
+
+  @@index([projectId])
+}
+
+/// Кандидат прогона с полным разбором балла. Это то, что показывается клиенту
+/// как score breakdown (п.9).
+model Candidate {
+  id     String   @id @default(cuid())
+  runId  String
+  run    MatchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  discipline String
+  /// Прошёл ли жёсткие гейты и какой из них не прошёл.
+  passed        Boolean
+  failedGate    String @default("")
+
+  /// Разбор балла. Все слагаемые сохраняются, а не пересчитываются потом:
+  /// метрики специалиста меняются, а объяснение решения меняться не должно.
+  portfolioRating Float @default(0)
+  deliveryScore   Float @default(0)
+  historyWeight   Float @default(0)
+  relevance       Float @default(0)
+  quality         Float @default(0)
+  availability    Float @default(0)
+  score           Float @default(0)
+  /// Ранг внутри дисциплины в этом прогоне.
+  rank            Int   @default(0)
+
+  @@index([runId, discipline])
+  @@unique([runId, specialistId, discipline])
+}
+
+/// Место в Tiny Team. Создаётся только прогоном (п.7): руками назначить
+/// специалиста в команду нечем — поля для этого нет.
+model TeamSlot {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runId     String
+  run       MatchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  discipline String
+  /// Этот специалист подписывает пакет в юрисдикции проекта.
+  isSignatory Boolean @default(false)
+  score       Float   @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, discipline])
+  @@index([specialistId])
+}
+
+// --- Выпуск: Blind Relay Protocol ------------------------------------------
+
+/// Задача. Единица работы и единственное место, где вообще есть коммуникация.
+model Ticket {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  discipline String
+  stage      String
+  title      String
+  /// Постановка задачи. Пишет бюро, не специалист.
+  spec       String @default("")
+
+  /// Кому назначен. Назначение идёт по слоту команды, а не выбором оператора.
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+
+  /// blocked — ждёт зависимости; open — выдан; submitted — предъявлен;
+  /// revision — возвращён на круг; accepted — принят.
+  status String @default("blocked")
+
+  /// Срок в днях от открытия. По нему считается SLA compliance (п.12).
+  slaDays Int @default(7)
+
+  openedAt        DateTime?
+  firstResponseAt DateTime?
+  submittedAt     DateTime?
+  acceptedAt      DateTime?
+  dueAt           DateTime?
+  /// Сколько раз возвращали на круг. Питает Revision Rate (п.12).
+  revisionRounds  Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  comments   TicketComment[]
+  /// Тикеты, от которых зависит этот.
+  dependsOn  TicketDependency[] @relation("dependent")
+  /// Тикеты, которые ждут этот.
+  blocks     TicketDependency[] @relation("prerequisite")
+  artifacts  Artifact[]
+
+  @@index([projectId, status])
+  @@index([specialistId, status])
+}
+
+/// Ребро графа зависимостей. Стадийный гейт (п.11): пока prerequisite не
+/// accepted, dependent не открывается.
+model TicketDependency {
+  id String @id @default(cuid())
+
+  dependentId String
+  dependent   Ticket @relation("dependent", fields: [dependentId], references: [id], onDelete: Cascade)
+
+  prerequisiteId String
+  prerequisite   Ticket @relation("prerequisite", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@unique([dependentId, prerequisiteId])
+  @@index([prerequisiteId])
+}
+
+/// Комментарий на уровне тикета. Единственный канал коммуникации в системе.
+///
+/// Модели личного сообщения в этой схеме нет и не должно появиться: прямой
+/// контакт между специалистами — это и канал утечки проекта мимо бюро, и
+/// конец измеримости метрик (п.11).
+model TicketComment {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  /// bureau — бюро; specialist — исполнитель тикета.
+  /// Клиента среди авторов нет: с командой он не переписывается.
+  authorRole   String
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+/// Артефакт тикета: то, что гейт передаёт дальше по графу.
+model Artifact {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  name      String
+  /// Ссылка на файл. Сами файлы бюро у себя не держит (п.13).
+  url       String @default("")
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}

@@ -1,0 +1,47 @@
+{
+  "name": "tinyarc-cloud-bureau",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TinyArc Cloud Bureau — AI-native архитектурное бюро",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:push": "prisma db push",
+    "db:schema": "tsx scripts/schema-postgres.ts",
+    "db:schema:check": "tsx scripts/schema-postgres.ts --check",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "setup": "prisma generate && prisma db push && npm run db:seed",
+    "demo": "npm run setup && next dev"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.9.1",
+    "dotenv": "^17.4.2",
+    "next": "^16.3.2",
+    "pg": "^8.23.0",
+    "prisma": "^7.9.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tsx": "^4.23.12",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.9.1",
+    "@types/node": "^26.3.0",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "better-sqlite3": "^13.0.3",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

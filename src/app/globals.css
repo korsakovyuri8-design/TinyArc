@@ -1,0 +1,545 @@
+/*
+ * Dark Disruptor — визуальная система Bureau (концепт, п.23).
+ *
+ * Четыре правила, и они не обсуждаются:
+ *   фон #0A0E14 · единственный акцент cyan #00C9E4 · без градиентов · без скруглений.
+ *
+ * Playfair Display — заголовки, DM Sans — текст, Space Mono — лейблы и числа.
+ * У DM Sans и Space Mono нет кириллицы, поэтому в стеке текста за DM Sans идёт
+ * Golos Text: браузер подставляет гарнитуру поглифно (см. src/app/layout.tsx).
+ */
+
+:root {
+  --bg: #0a0e14;
+  --surface: #0f141c;
+  --surface-raised: #131a24;
+  --border: #1e2733;
+  --border-strong: #2b3746;
+
+  --text: #e6edf5;
+  --text-muted: #8b9aad;
+  --text-dim: #5d6b7d;
+
+  --accent: #00c9e4;
+  --accent-dim: #0a7a8a;
+  --accent-wash: rgba(0, 201, 228, 0.08);
+
+  /* Состояния. Оттенки приглушены: акцент в системе один. */
+  --pass: #4ade80;
+  --fail: #f87171;
+  --wait: #a68a4a;
+
+  --serif: var(--font-playfair), Georgia, serif;
+  --sans: var(--font-dm-sans), var(--font-golos), system-ui, -apple-system, sans-serif;
+  --mono: var(--font-space-mono), var(--font-golos), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --gap: 24px;
+  --measure: 68ch;
+}
+
+* {
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--serif);
+  font-weight: 500;
+  line-height: 1.15;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 6vw, 4rem);
+}
+h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+}
+h3 {
+  font-size: 1.25rem;
+}
+
+p {
+  margin: 0 0 1em;
+  max-width: var(--measure);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* --- Лейблы: Space Mono, латиница и цифры ------------------------------- */
+
+.label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.label-accent {
+  color: var(--accent);
+}
+
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Каркас -------------------------------------------------------------- */
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 48px);
+}
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.site-header .shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  height: 68px;
+}
+
+.brand {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+  border-bottom: none;
+}
+
+.brand:hover {
+  border-bottom: none;
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nav a {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.nav a:hover {
+  color: var(--accent);
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 96px;
+  padding: 40px 0 64px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+main {
+  min-height: 60vh;
+}
+
+section {
+  padding: clamp(56px, 9vw, 104px) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+section:last-of-type {
+  border-bottom: none;
+}
+
+/* --- Сетки --------------------------------------------------------------- */
+
+.grid {
+  display: grid;
+  gap: var(--gap);
+}
+
+.grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 80px);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* --- Панели -------------------------------------------------------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+}
+
+.panel-raised {
+  background: var(--surface-raised);
+}
+
+.panel-accent {
+  border-color: var(--accent-dim);
+}
+
+.panel h3 {
+  margin-bottom: 8px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.dim {
+  color: var(--text-dim);
+}
+
+.lead {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+}
+
+/* --- Кнопки -------------------------------------------------------------- */
+
+.btn {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 14px 26px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 120ms linear, color 120ms linear;
+}
+
+.btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+  border-bottom-color: var(--accent);
+}
+
+.btn-solid {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-solid:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn-quiet {
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+.btn-quiet:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* --- Формы --------------------------------------------------------------- */
+
+label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  padding: 11px 13px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin: 0 0 var(--gap);
+}
+
+legend {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0 8px;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* Множественный выбор чекбоксами: значений мало и они фиксированы. */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: var(--sans);
+  margin: 0;
+}
+
+.choice:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+}
+
+.choice input {
+  width: auto;
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-wash);
+}
+
+/* --- Таблицы ------------------------------------------------------------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 400;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* --- Метки состояния ----------------------------------------------------- */
+
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tag-pass {
+  border-color: var(--pass);
+  color: var(--pass);
+}
+
+.tag-fail {
+  border-color: var(--fail);
+  color: var(--fail);
+}
+
+.tag-wait {
+  border-color: var(--wait);
+  color: var(--wait);
+}
+
+.tag-accent {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* --- Полоса значения ----------------------------------------------------- */
+
+.bar {
+  height: 4px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.bar-dim span {
+  background: var(--accent-dim);
+}
+
+/* --- Заметки и предупреждения -------------------------------------------- */
+
+.note {
+  border-left: 2px solid var(--accent);
+  padding: 4px 0 4px 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: var(--measure);
+}
+
+.note-fail {
+  border-left-color: var(--fail);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--gap) 0;
+}
+
+/* --- Служебное ----------------------------------------------------------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+ul.clean {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: block;
+}
