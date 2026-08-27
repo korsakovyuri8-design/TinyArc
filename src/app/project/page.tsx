@@ -21,6 +21,8 @@ import {
 import { SPECIALIZATIONS } from '@/engine/taxonomy'
 import { parseList } from '@/lib/rows'
 import { BreakdownRow } from '@/components/Breakdown'
+import { ChosenDirection } from '@/components/ChosenDirection'
+import { chosenDirection } from '@/lib/services/direction'
 import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
 import { currentProjectId } from '@/lib/session'
@@ -48,7 +50,10 @@ export default async function ProjectPage({
 
   if (!project) redirect('/enter')
 
-  const run = await latestRun(project.id)
+  const [run, direction] = await Promise.all([
+    latestRun(project.id),
+    chosenDirection(project.id),
+  ])
   const team = run?.slots ?? []
 
   return (
@@ -106,6 +111,19 @@ export default async function ProjectPage({
             </div>
             <p style={{ marginTop: 12, marginBottom: 0 }}>{run.notes}</p>
           </div>
+        )}
+
+        {direction ? (
+          <div style={{ marginTop: 40 }}>
+            <ChosenDirection direction={direction} audience="client" />
+          </div>
+        ) : (
+          project.status !== 'rejected' && (
+            <div className="note" style={{ marginTop: 40 }}>
+              Направление проекта ещё не выбрано.{' '}
+              <Link href="/project/direction">Выбрать →</Link>
+            </div>
+          )
         )}
 
         {project.tickets.length > 0 && (

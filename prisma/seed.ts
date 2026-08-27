@@ -15,6 +15,7 @@ import { adapterFor } from '../src/lib/db-adapter'
 import { databaseUrl } from '../src/lib/db-provider'
 import { DEMO_POOL_SIZE, demoPool } from '../src/lib/demo-pool'
 import { toList } from '../src/lib/rows'
+import { chooseDirection, prepareDirections } from '../src/lib/services/direction'
 import { runAssembly } from '../src/lib/services/matching'
 import {
   accept,
@@ -207,6 +208,8 @@ async function main() {
         materialSystem: seed.materialSystem,
         regulatoryTrack: 'light',
         targetStage: seed.targetStage,
+        terrain: seed.terrain,
+        gridConnection: seed.gridConnection,
         softwareJson: toList(seed.software),
         languagesJson: toList(seed.languages),
         requiredHoursPerWeek: seed.requiredHoursPerWeek,
@@ -219,7 +222,24 @@ async function main() {
     createdIds.push(project.id)
 
     const { assembly } = await runAssembly(project.id)
-    console.log(`  ${seed.title}: ${assembly.outcome}${assembly.notes ? ` — ${assembly.notes}` : ''}`)
+    await prepareDirections(project.id)
+
+    const directions = await prisma.designDirection.findMany({ where: { projectId: project.id } })
+    console.log(
+      `  ${seed.title}: ${assembly.outcome}, направлений ${directions.length}${assembly.notes ? ` — ${assembly.notes}` : ''}`,
+    )
+  }
+
+  // На первом проекте направление уже выбрано: команда должна его видеть, а
+  // стенд — показывать не только форму выбора, но и её последствие.
+  const first = await prisma.designDirection.findFirst({
+    where: { projectId: createdIds[0] },
+    orderBy: { position: 'asc' },
+  })
+
+  if (first) {
+    await chooseDirection(createdIds[0], first.key)
+    console.log(`  направление первого проекта: ${first.title}`)
   }
 
   await advanceFirstProject(createdIds[0])
@@ -230,6 +250,7 @@ async function main() {
     `  Специалист: ключи seed-key-01 … seed-key-${DEMO_POOL_SIZE} (входят только подтверждённые)`,
   )
   console.log('  Бюро:       /ops, пароль из BUREAU_OPS_PASSWORD (по умолчанию bureau-ops)')
+  console.log('  Направления: BUREAU_IMAGES=stub — это схемы объёма, а не изображения')
 }
 
 /**

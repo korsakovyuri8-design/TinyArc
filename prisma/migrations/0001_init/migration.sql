@@ -70,6 +70,24 @@ CREATE TABLE "Project" (
 );
 
 -- CreateTable
+CREATE TABLE "DesignDirection" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    "title" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "tradeoff" TEXT NOT NULL,
+    "prompt" TEXT NOT NULL DEFAULT '',
+    "imageUrl" TEXT NOT NULL DEFAULT '',
+    "source" TEXT NOT NULL DEFAULT 'stub',
+    "chosen" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DesignDirection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "MatchRun" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
@@ -212,6 +230,12 @@ CREATE UNIQUE INDEX "Project_clientKey_key" ON "Project"("clientKey");
 CREATE INDEX "Project_status_idx" ON "Project"("status");
 
 -- CreateIndex
+CREATE INDEX "DesignDirection_projectId_idx" ON "DesignDirection"("projectId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DesignDirection_projectId_key_key" ON "DesignDirection"("projectId", "key");
+
+-- CreateIndex
 CREATE INDEX "MatchRun_projectId_idx" ON "MatchRun"("projectId");
 
 -- CreateIndex
@@ -246,6 +270,9 @@ CREATE INDEX "Artifact_ticketId_idx" ON "Artifact"("ticketId");
 
 -- CreateIndex
 CREATE INDEX "PortfolioItem_specialistId_idx" ON "PortfolioItem"("specialistId");
+
+-- AddForeignKey
+ALTER TABLE "DesignDirection" ADD CONSTRAINT "DesignDirection_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "MatchRun" ADD CONSTRAINT "MatchRun_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

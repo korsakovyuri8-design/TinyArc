@@ -23,6 +23,8 @@ import {
 } from '@/lib/labels'
 import { parseList } from '@/lib/rows'
 import { SPECIALIZATIONS } from '@/engine/taxonomy'
+import { ChosenDirection } from '@/components/ChosenDirection'
+import { chosenDirection } from '@/lib/services/direction'
 import { latestRun } from '@/lib/services/matching'
 import { isOperator } from '@/lib/session'
 import {
@@ -62,7 +64,10 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const run = await latestRun(project.id)
+  const [run, direction] = await Promise.all([
+    latestRun(project.id),
+    chosenDirection(project.id),
+  ])
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -92,6 +97,12 @@ export default async function OpsProjectPage({
             <p style={{ marginTop: 10, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
               {project.briefNotes}
             </p>
+          </div>
+        )}
+
+        {direction && (
+          <div style={{ marginTop: 32 }}>
+            <ChosenDirection direction={direction} audience="team" />
           </div>
         )}
 

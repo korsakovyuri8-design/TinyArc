@@ -76,6 +76,105 @@ export function rankFor(
   return scored
 }
 
+/**
+ * Сколько кандидатов на роль вообще рассматривается при переборе.
+ *
+ * Ограничение нужно только чтобы поиск оставался предсказуемым по времени.
+ * Кандидат, стоящий девятым по баллу в своей роли, в лучшем составе не
+ * окажется: чтобы он туда попал, все восемь выше должны одновременно
+ * конфликтовать с остальной командой.
+ */
+const CANDIDATES_PER_ROLE = 8
+
+/** Потолок обхода. Упирается в него только вырожденный пул; берём лучшее найденное. */
+const SEARCH_LIMIT = 20_000
+
+type Assignment = { role: RequiredRole; candidate: ScoredCandidate; score: number }
+
+/**
+ * Подбор состава перебором с возвратом.
+ *
+ * Жадный проход здесь неверен, и это не теория. Если лучший архитектор
+ * оказывается единственным, кто закрывает согласования, жадность отдаёт его
+ * архитектуре и объявляет состав несобранным — при том что валидный состав
+ * есть: поставить архитектором второго и отдать согласования ему.
+ *
+ * Роли обходятся от самых дефицитных к свободным, чтобы тупик обнаруживался
+ * рано. Ведущая дисциплина идёт первой независимо от дефицита: её пакет задаёт
+ * формат обмена для остальных.
+ */
+function search(
+  roles: RequiredRole[],
+  byRole: Map<RequiredRole, ScoredCandidate[]>,
+  requirements: ProjectRequirements,
+  requireSignatory: boolean,
+): Assignment[] | null {
+  const order = [...roles].sort((a, b) => {
+    if (a.discipline === LEAD_DISCIPLINE) return -1
+    if (b.discipline === LEAD_DISCIPLINE) return 1
+    return (byRole.get(a)?.length ?? 0) - (byRole.get(b)?.length ?? 0)
+  })
+
+  let best: Assignment[] | null = null
+  let bestScore = -1
+  let visited = 0
+
+  const taken = new Map<string, number>()
+  const chosen: Assignment[] = []
+
+  function step(depth: number, total: number, stack: readonly string[] | null): void {
+    if (visited >= SEARCH_LIMIT) return
+
+    if (depth === order.length) {
+      visited += 1
+
+      if (requireSignatory) {
+        const signs = chosen.some((a) =>
+          a.candidate.specialist.signsIn.includes(requirements.jurisdiction),
+        )
+        if (!signs) return
+      }
+
+      if (total > bestScore) {
+        bestScore = total
+        best = chosen.map((a) => ({ ...a }))
+      }
+
+      return
+    }
+
+    const role = order[depth]
+
+    for (const candidate of byRole.get(role) ?? []) {
+      if (visited >= SEARCH_LIMIT) return
+
+      const specialist = candidate.specialist
+      const busy = taken.get(specialist.id) ?? 0
+
+      // Часов не осталось: второй слот тому же человеку не бесплатен.
+      const factor = availability(specialist, requirements, busy)
+      if (factor <= 0) continue
+
+      // Технологический шлюз внутри команды: все работают в пакете ведущего.
+      if (stack && !worksInStack(specialist, stack)) continue
+
+      const score = scoreFor(specialist, requirements, busy).score
+
+      chosen.push({ role, candidate, score })
+      taken.set(specialist.id, busy + requirements.requiredHoursPerWeek)
+
+      step(depth + 1, total + score, stack ?? specialist.software)
+
+      taken.set(specialist.id, busy)
+      chosen.pop()
+    }
+  }
+
+  step(0, 0, null)
+
+  return best
+}
+
 export function assemble(pool: SpecialistProfile[], requirements: ProjectRequirements): Assembly {
   const validation = validateProject(requirements)
   const roles = requiredRoles(shapeOf(requirements))
@@ -102,136 +201,75 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
     candidates,
   }
 
-  const team: TeamMember[] = []
-  /** Часы, уже занятые специалистом в этой же команде: второй слот не бесплатен. */
-  const taken = new Map<string, number>()
-
-  for (const role of selectionOrder(roles)) {
-    const ranked = candidates
-      .filter((c) => c.discipline === role.discipline && c.passed)
-      .sort((a, b) => a.rank - b.rank)
-
-    const picked = ranked.find((c) => {
-      const busy = taken.get(c.specialist.id) ?? 0
-
-      // Ёмкости не осталось — специалист недоступен, каким бы высоким ни был
-      // его балл в отрыве от уже занятых им слотов.
-      if (availability(c.specialist, requirements, busy) <= 0) return false
-
-      // Технологический шлюз на уровне команды: все говорят на одном языке.
-      // Кандидат, ломающий это, уступает место следующему — даже с более
-      // высоким баллом (п.10).
-      if (team.length > 0 && !worksInStack(c.specialist, team[0].specialist.software)) return false
-
-      return true
-    })
-
-    if (!picked) {
-      return {
-        ...base,
-        outcome: 'incomplete',
-        notes: describeGap(role),
-        team,
-      }
-    }
-
-    const busy = taken.get(picked.specialist.id) ?? 0
-
-    team.push({
-      specialist: picked.specialist,
+  const byRole = new Map<RequiredRole, ScoredCandidate[]>(
+    roles.map((role) => [
       role,
-      discipline: role.discipline,
-      isSignatory: false,
-      score: scoreFor(picked.specialist, requirements, busy).score,
-    })
+      candidates
+        .filter((c) => c.role === role && c.passed)
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, CANDIDATES_PER_ROLE),
+    ]),
+  )
 
-    taken.set(picked.specialist.id, busy + requirements.requiredHoursPerWeek)
+  const withSignatory = search(roles, byRole, requirements, true)
+
+  if (withSignatory) {
+    return { ...base, outcome: 'ok', notes: '', team: toTeam(withSignatory, requirements) }
   }
 
-  const signed = signOff(team, candidates, requirements, taken)
+  // Состав не собрался. Различаем две причины: людей нет вовсе или они есть,
+  // но подписать пакет некому. Для клиента это разные ответы.
+  const withoutSignatory = search(roles, byRole, requirements, false)
 
-  if (!signed) {
+  if (withoutSignatory) {
     return {
       ...base,
       outcome: 'no_signatory',
       notes:
-        'В команде нет специалиста с правом подписи в юрисдикции проекта. Пакет без локальной подписи не имеет силы, поэтому проект не берётся (п.10, п.21).',
-      team,
+        'Состав собирается, но ни в одном варианте нет специалиста с правом подписи в юрисдикции проекта. Пакет без локальной подписи не имеет силы, поэтому проект не берётся (п.10, п.21).',
+      team: toTeam(withoutSignatory, requirements),
     }
   }
 
-  return { ...base, outcome: 'ok', notes: '', team: signed }
+  return { ...base, outcome: 'incomplete', notes: describeGap(roles, byRole), team: [] }
 }
 
-function describeGap(role: RequiredRole): string {
-  const what =
-    role.specializations.length === 0
-      ? `дисциплина «${role.discipline}»`
-      : `«${role.discipline}» со специализацией ${role.specializations.join(role.mode === 'all' ? ' + ' : ' / ')}`
+function toTeam(assignments: Assignment[], requirements: ProjectRequirements): TeamMember[] {
+  // Подписывающий помечается один: если их в составе несколько, ответственность
+  // должна быть на конкретном человеке, а не «на ком-то из команды».
+  let marked = false
 
-  return `Роль не закрыта: ${what}. В пуле нет специалиста, проходящего гейты и совместимого с командой по пакету.`
-}
+  return assignments.map((a) => {
+    const signs = !marked && a.candidate.specialist.signsIn.includes(requirements.jurisdiction)
+    if (signs) marked = true
 
-/**
- * Право подписи — гейт, а не пожелание (п.10). Если в собранной команде
- * подписывающего нет, ищем замену с наименьшей потерей балла; не находим —
- * проект не берётся.
- */
-function signOff(
-  team: TeamMember[],
-  candidates: ScoredCandidate[],
-  requirements: ProjectRequirements,
-  taken: Map<string, number>,
-): TeamMember[] | null {
-  const alreadySigns = team.find((m) => m.specialist.signsIn.includes(requirements.jurisdiction))
-
-  if (alreadySigns) {
-    return team.map((m) => (m === alreadySigns ? { ...m, isSignatory: true } : m))
-  }
-
-  const stack = team[0]?.specialist.software ?? []
-
-  type Swap = { index: number; member: TeamMember; loss: number }
-  let best: Swap | null = null
-
-  team.forEach((current, index) => {
-    const replacement = candidates
-      .filter(
-        (c) =>
-          c.discipline === current.discipline &&
-          c.passed &&
-          c.specialist.signsIn.includes(requirements.jurisdiction) &&
-          (index === 0 || worksInStack(c.specialist, stack)),
-      )
-      .sort((a, b) => a.rank - b.rank)
-      .find((c) => {
-        const busy = taken.get(c.specialist.id) ?? 0
-        return availability(c.specialist, requirements, busy) > 0
-      })
-
-    if (!replacement) return
-
-    const busy = taken.get(replacement.specialist.id) ?? 0
-    const score = scoreFor(replacement.specialist, requirements, busy).score
-    const loss = current.score - score
-
-    if (!best || loss < best.loss) {
-      best = {
-        index,
-        member: {
-          specialist: replacement.specialist,
-          role: current.role,
-          discipline: current.discipline,
-          isSignatory: true,
-          score,
-        },
-        loss,
-      }
+    return {
+      specialist: a.candidate.specialist,
+      role: a.role,
+      discipline: a.role.discipline,
+      isSignatory: signs,
+      score: a.score,
     }
   })
+}
 
-  if (!best) return null
+/** Роль, на которой поиск упирается раньше всего: с неё и начинать разбор. */
+function describeGap(
+  roles: RequiredRole[],
+  byRole: Map<RequiredRole, ScoredCandidate[]>,
+): string {
+  const scarcest = [...roles].sort(
+    (a, b) => (byRole.get(a)?.length ?? 0) - (byRole.get(b)?.length ?? 0),
+  )[0]
 
-  const swap: Swap = best
-  return team.map((m, i) => (i === swap.index ? swap.member : m))
+  const count = byRole.get(scarcest)?.length ?? 0
+
+  const what =
+    scarcest.specializations.length === 0
+      ? `дисциплина «${scarcest.discipline}»`
+      : `«${scarcest.discipline}» со специализацией ${scarcest.specializations.join(scarcest.mode === 'all' ? ' + ' : ' / ')}`
+
+  return count === 0
+    ? `Роль не закрыта: ${what}. В пуле нет ни одного специалиста, проходящего гейты.`
+    : `Состав не собирается. Самая дефицитная роль — ${what}: кандидатов ${count}, и ни один вариант не проходит по ёмкости и пакету одновременно.`
 }

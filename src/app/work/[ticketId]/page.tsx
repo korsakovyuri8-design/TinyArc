@@ -9,6 +9,8 @@ import {
   DOC_STAGE_LABELS,
   TICKET_STATUS_LABELS,
 } from '@/lib/labels'
+import { ChosenDirection } from '@/components/ChosenDirection'
+import { chosenDirection } from '@/lib/services/direction'
 import { inboundArtifacts } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
 import {
@@ -39,12 +41,13 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   // Чужой тикет неотличим от несуществующего: знать, что он есть, тоже незачем.
   if (!ticket || ticket.specialistId !== specialist.id) notFound()
 
-  const [slots, inbound] = await Promise.all([
+  const [slots, inbound, direction] = await Promise.all([
     prisma.teamSlot.findMany({
       where: { projectId: ticket.projectId },
       select: { discipline: true, specialistId: true },
     }),
     inboundArtifacts(ticket.id),
+    chosenDirection(ticket.projectId),
   ])
 
   // Соседи по команде — роли, не люди (п.11).
@@ -106,7 +109,13 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           </div>
         ) : (
           <>
-            <div className="panel" style={{ marginTop: 32 }}>
+            {direction && (
+              <div style={{ marginTop: 32 }}>
+                <ChosenDirection direction={direction} audience="team" />
+              </div>
+            )}
+
+            <div className="panel" style={{ marginTop: 24 }}>
               <div className="label">Постановка</div>
               <p style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
                 {ticket.spec || 'Бюро ещё не дописало постановку — задайте вопрос в комментарии.'}

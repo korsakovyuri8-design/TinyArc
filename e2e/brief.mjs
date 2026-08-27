@@ -46,16 +46,37 @@ await page.fill('#clientName', 'Проверка')
 await page.fill('#clientEmail', 'probe@example.com')
 await page.check('input[name="languages"][value="en"]')
 
-await Promise.all([page.waitForURL('**/project**'), page.click('button[type="submit"]')])
+await Promise.all([
+  page.waitForURL('**/project/direction**'),
+  page.click('button[type="submit"]'),
+])
 
-check(page.url().includes('issued=1'), 'после брифа ведёт в кабинет с пометкой о выдаче ключа')
+check(page.url().includes('issued=1'), 'после брифа ведёт к выбору направления')
 
-const body = await page.textContent('body')
-check(body.includes('Сохраните ключ доступа'), 'ключ показан на экране, а не только в письме')
-check(body.includes('Вилла на Луштице'), 'кабинет открыт по свежей сессии')
+const directionBody = await page.textContent('body')
+check(directionBody.includes('Ключ доступа'), 'ключ показан на экране, а не только в письме')
+check(
+  directionBody.includes('не проект и не обещание'),
+  'направление помечено как необязывающее',
+)
 
 const key = await page.textContent('.panel-accent .num')
 check(/^brief-[a-z2-9]+$/.test(key.trim()), `ключ выдан: ${key.trim()}`)
+
+// Варианты выводятся из брифа: участок ровный, значит террасирования быть не должно.
+const options = await page.$$eval('form label.panel h3', (nodes) =>
+  nodes.map((n) => n.textContent.trim()),
+)
+check(options.length === 4, `предложено вариантов: ${options.length}`)
+check(!options.includes('Террасирование'), 'на ровном участке террасирование не предлагается')
+
+// Выбор одного варианта и переход в кабинет.
+await page.click('form label.panel')
+await Promise.all([page.waitForURL('**/project?**'), page.click('button[type="submit"]')])
+
+const body = await page.textContent('body')
+check(body.includes('Вилла на Луштице'), 'кабинет открыт по свежей сессии')
+check(body.includes('Направление проекта'), 'выбранное направление показано в кабинете')
 
 // Утечка учётных данных команды в кабинет клиента (концепт, п.13).
 check(!/seed-key-/.test(body), 'ключи специалистов в кабинет клиента не попадают')
@@ -69,7 +90,7 @@ await freshPage.goto(`${BASE}/project`)
 check(freshPage.url().includes('/enter'), 'без cookie кабинет закрыт')
 
 await freshPage.fill('#key', key.trim())
-await Promise.all([freshPage.waitForURL('**/project**'), freshPage.click('button[type="submit"]')])
+await Promise.all([freshPage.waitForURL('**/project'), freshPage.click('button[type="submit"]')])
 check(
   (await freshPage.textContent('body')).includes('Вилла на Луштице'),
   'вход по ключу возвращает в тот же проект с чистого браузера',

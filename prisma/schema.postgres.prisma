@@ -154,11 +154,51 @@ model Project {
 
   createdAt DateTime @default(now())
 
-  runs    MatchRun[]
-  slots   TeamSlot[]
-  tickets Ticket[]
+  runs       MatchRun[]
+  slots      TeamSlot[]
+  tickets    Ticket[]
+  directions DesignDirection[]
 
   @@index([status])
+}
+
+/// Направление проекта: как здание относится к участку.
+///
+/// Клиент выбирает одно после брифа, и выбор уходит команде до того, как
+/// кто-то начал рисовать. Это фиксация намерения, а не проектное решение.
+///
+/// Почему это отдельная модель, а не Artifact: артефакты передаются по графу
+/// и складываются в комплект документации, а направление в комплект не входит
+/// и входить не должно. Разные сущности с разной судьбой не должны лежать в
+/// одной таблице — иначе однажды направление уедет заказчику как часть пакета.
+model DesignDirection {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Ключ из каталога направлений (src/engine/direction.ts).
+  key      String
+  /// Порядок показа. Каталог отсортирован от самого характерного для этого
+  /// участка к наименее; метка времени этот порядок не сохраняет — строки
+  /// создаются одной транзакцией и делят её.
+  position Int     @default(0)
+  title    String
+  summary  String
+  /// Чем оплачивается это направление. Клиент выбирает с открытыми глазами.
+  tradeoff String
+
+  /// Описание, которым получено изображение. Хранится, чтобы решение можно
+  /// было воспроизвести и объяснить.
+  prompt   String  @default("")
+  imageUrl String  @default("")
+  /// Чем получено: "stub" — схема объёма, не изображение.
+  source   String  @default("stub")
+
+  chosen    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, key])
+  @@index([projectId])
 }
 
 // --- Сборка ----------------------------------------------------------------

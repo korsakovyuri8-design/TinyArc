@@ -200,3 +200,54 @@ describe('ранжирование и разбор', () => {
     expect(result.candidates).toHaveLength(4)
   })
 })
+
+describe('исчерпывающий подбор', () => {
+  /**
+   * Жадный проход берёт верхнего по баллу в каждой роли независимо. Если
+   * верхний в ранней роли — единственный, кто закрывает позднюю, состав
+   * рассыпается там, где он существует.
+   */
+  it('не отдаёт раннюю роль тому, кто один закрывает позднюю', () => {
+    const pool = [
+      // Лучший архитектор, и он же единственный согласователь. Ёмкости ровно
+      // на один слот: взять его дважды нельзя.
+      specialist({
+        id: 'generalist',
+        disciplines: ['architecture', 'permitting'],
+        weeklyCapacityHours: 10,
+        portfolioRating: 10,
+      }),
+      specialist({ id: 'other-architect', portfolioRating: 8.5, weeklyCapacityHours: 40 }),
+      specialist({ id: 'structural', disciplines: ['structural'], weeklyCapacityHours: 40 }),
+      specialist({ id: 'mep', disciplines: ['mep'], weeklyCapacityHours: 40 }),
+      specialist({ id: 'survey', disciplines: ['survey'], weeklyCapacityHours: 40 }),
+      specialist({ id: 'viz', disciplines: ['visualization'], weeklyCapacityHours: 40 }),
+    ]
+
+    const result = assemble(pool, requirements({ requiredHoursPerWeek: 10 }))
+
+    expect(result.outcome).toBe('ok')
+    expect(result.team.find((m) => m.discipline === 'permitting')?.specialist.id).toBe('generalist')
+    expect(result.team.find((m) => m.discipline === 'architecture')?.specialist.id).toBe(
+      'other-architect',
+    )
+  })
+
+  it('всё-таки отказывает, когда валидного состава нет', () => {
+    // Тот же дефицит, но замены архитектору не существует.
+    const pool = [
+      specialist({
+        id: 'generalist',
+        disciplines: ['architecture', 'permitting'],
+        weeklyCapacityHours: 10,
+        portfolioRating: 10,
+      }),
+      specialist({ id: 'structural', disciplines: ['structural'], weeklyCapacityHours: 40 }),
+      specialist({ id: 'mep', disciplines: ['mep'], weeklyCapacityHours: 40 }),
+      specialist({ id: 'survey', disciplines: ['survey'], weeklyCapacityHours: 40 }),
+      specialist({ id: 'viz', disciplines: ['visualization'], weeklyCapacityHours: 40 }),
+    ]
+
+    expect(assemble(pool, requirements({ requiredHoursPerWeek: 10 })).outcome).toBe('incomplete')
+  })
+})

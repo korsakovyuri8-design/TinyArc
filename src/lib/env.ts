@@ -67,5 +67,14 @@ export function preflight(env: Record<string, string | undefined> = process.env)
     if (!env.BUREAU_MAIL_FROM?.trim()) problems.push('BUREAU_MAIL="resend": не задан BUREAU_MAIL_FROM.')
   }
 
+  const pictures = env.BUREAU_IMAGES ?? 'stub'
+  if (pictures !== 'stub' && pictures !== 'openai') {
+    problems.push(`BUREAU_IMAGES="${pictures}": такого режима нет. Доступны "stub" и "openai".`)
+  }
+
+  if (pictures === 'openai' && !env.OPENAI_API_KEY?.trim()) {
+    problems.push('BUREAU_IMAGES="openai": не задан OPENAI_API_KEY.')
+  }
+
   return problems
 }

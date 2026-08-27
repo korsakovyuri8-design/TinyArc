@@ -8,6 +8,7 @@ import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { toList } from '@/lib/rows'
 import { sendAccessKey } from '@/lib/mail'
+import { prepareDirections } from '@/lib/services/direction'
 import { runAssembly } from '@/lib/services/matching'
 import { signInClient } from '@/lib/session'
 
@@ -64,6 +65,11 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   // Сборка запускается сразу: клиент должен увидеть решение движка, а не
   // сообщение «мы с вами свяжемся».
   await runAssembly(project.id)
+
+  // Направления готовятся после сборки и на неё не влияют: состав команды
+  // определяется инженерией проекта, а не тем, какой облик ближе клиенту.
+  await prepareDirections(project.id)
+
   await signInClient(project.id)
 
   // Письмо — это удобство, а не единственный путь: ключ показывается на
@@ -75,5 +81,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
     console.error('Письмо с ключом не ушло:', error)
   }
 
-  redirect('/project?issued=1')
+  // Сначала направление, потом кабинет: выбор нужен команде до того, как
+  // откроется первый тикет, а не когда по нему уже что-то нарисовали.
+  redirect('/project/direction?issued=1')
 }
