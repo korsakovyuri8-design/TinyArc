@@ -1,9 +1,20 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics, deliveryScore, historyWeight } from '@/engine/metrics'
-import { PORTFOLIO_THRESHOLD, type Discipline, type Jurisdiction } from '@/engine/taxonomy'
+import {
+  PORTFOLIO_THRESHOLD,
+  type Discipline,
+  type Jurisdiction,
+  type Specialization,
+} from '@/engine/taxonomy'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
-import { DISCIPLINE_LABELS, SPECIALIST_STATUS_LABELS } from '@/lib/labels'
+import {
+  AVAILABILITY_LABELS,
+  DISCIPLINE_LABELS,
+  SPECIALIST_STATUS_LABELS,
+  SPECIALIZATION_LABELS,
+} from '@/lib/labels'
+import { AvailabilityForm } from './AvailabilityForm'
 import { toProfile } from '@/lib/rows'
 import { currentSpecialist } from '@/lib/session'
 
@@ -47,7 +58,24 @@ export default async function ProfilePage() {
           <Stat
             value={String(profile.weeklyCapacityHours)}
             label="ч/нед свободно"
-            note={profile.weeklyCapacityHours === 0 ? 'при нуле балл обнуляется' : `выход за ${profile.leadTimeDays} дн.`}
+            note={
+              profile.weeklyCapacityHours === 0
+                ? 'при нуле вас нет в выборке'
+                : `${AVAILABILITY_LABELS[row.availabilityStatus] ?? row.availabilityStatus}, выход за ${profile.leadTimeDays} дн.`
+            }
+          />
+        </div>
+
+        <div className="divider" style={{ marginTop: 44 }} />
+
+        <h2>Доступность</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>
+          Единственное, чем вы управляете напрямую. Балл считает движок, время считаете вы.
+        </p>
+        <div className="panel" style={{ maxWidth: 460 }}>
+          <AvailabilityForm
+            status={row.availabilityStatus}
+            hours={profile.weeklyCapacityHours}
           />
         </div>
 
@@ -100,6 +128,12 @@ export default async function ProfilePage() {
         <h2>Что о вас знает движок</h2>
         <div className="grid grid-2" style={{ marginTop: 24 }}>
           <Row label="Дисциплины" value={profile.disciplines.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')} />
+          <Row
+            label="Специализация"
+            value={profile.specializations
+              .map((x) => SPECIALIZATION_LABELS[x as Specialization])
+              .join(', ')}
+          />
           <Row label="Юрисдикции" value={profile.jurisdictions.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')} />
           <Row
             label="Право подписи"

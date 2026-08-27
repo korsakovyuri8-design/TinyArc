@@ -19,8 +19,12 @@ import {
   REGULATORY_TRACKS,
   SCALE_BANDS,
   SOFTWARE,
+  SPECIALIZATIONS,
+  TERRAINS,
   TYPOLOGIES,
   WORK_MODES,
+  GRID_CONNECTIONS,
+  DISCIPLINE_SPECIALIZATIONS,
 } from '@/engine/taxonomy'
 
 const trimmed = z.string().trim()
@@ -38,6 +42,8 @@ export const briefSchema = z.object({
   materialSystem: z.enum(MATERIAL_SYSTEMS),
   regulatoryTrack: z.enum(REGULATORY_TRACKS),
   targetStage: z.enum(DOC_STAGES),
+  terrain: z.enum(TERRAINS),
+  gridConnection: z.enum(GRID_CONNECTIONS),
 
   software: z.array(z.enum(SOFTWARE)),
   languages: z.array(z.enum(LANGUAGES)).min(1, 'Укажите хотя бы один язык'),
@@ -56,6 +62,9 @@ export const applicationSchema = z.object({
   portfolioUrl: z.url('Ссылка на портфолио обязательна: это главный вход отбора'),
 
   disciplines: z.array(z.enum(DISCIPLINES)).min(1, 'Выберите хотя бы одну дисциплину'),
+  specializations: z
+    .array(z.enum(SPECIALIZATIONS))
+    .min(1, 'Отметьте, чем именно вы занимаетесь внутри дисциплины'),
   typologies: z.array(z.enum(TYPOLOGIES)).min(1, 'С какими типологиями работали'),
   scaleBands: z.array(z.enum(SCALE_BANDS)).min(1, 'Какой масштаб вели'),
   maxStoreys: z.coerce.number().int().min(1).max(60),
@@ -82,6 +91,25 @@ export type ApplicationInput = z.infer<typeof applicationSchema>
  */
 export function signaturesWithinJurisdictions(input: ApplicationInput): boolean {
   return input.signsIn.every((j) => input.jurisdictions.includes(j))
+}
+
+/**
+ * Специализация обязана принадлежать заявленной дисциплине.
+ *
+ * Иначе в профиле появляется конструктор по бетону, который «немного ландшафт»,
+ * и роль закрывается человеком, которого на неё никто не звал.
+ */
+export function specializationsWithinDisciplines(input: ApplicationInput): boolean {
+  const allowed = new Set(input.disciplines.flatMap((d) => DISCIPLINE_SPECIALIZATIONS[d]))
+  return input.specializations.every((s) => allowed.has(s))
+}
+
+/** Дисциплины, у которых есть словарь специализаций, требуют хотя бы одну. */
+export function everyDisciplineCovered(input: ApplicationInput): boolean {
+  return input.disciplines.every((d) => {
+    const own = DISCIPLINE_SPECIALIZATIONS[d]
+    return own.length === 0 || own.some((s) => input.specializations.includes(s))
+  })
 }
 
 /** Значения формы в объект: множественные поля приходят из getAll. */

@@ -7,14 +7,37 @@ import { currentSpecialist } from '@/lib/session'
 
 export const metadata = { title: 'Мои задачи — TinyArc Cloud Bureau' }
 
+type Ticket = Awaited<ReturnType<typeof ticketsOf>>[number]
+
 export default async function WorkPage() {
   const specialist = await currentSpecialist()
   if (!specialist) redirect('/enter')
 
   const tickets = await ticketsOf(specialist.id)
-  const open = tickets.filter((t) => t.status === 'open' || t.status === 'revision')
-  const waiting = tickets.filter((t) => t.status === 'blocked')
-  const done = tickets.filter((t) => t.status === 'submitted' || t.status === 'accepted')
+
+  // Канбан: ждёт гейта → открыт → в работе → сдано.
+  const columns: { title: string; note: string; tickets: Ticket[] }[] = [
+    {
+      title: 'Ждёт гейта',
+      note: 'Зависимости ещё не приняты',
+      tickets: tickets.filter((t) => t.status === 'blocked'),
+    },
+    {
+      title: 'К взятию',
+      note: 'Открыт, но не взят в работу',
+      tickets: tickets.filter((t) => t.status === 'open'),
+    },
+    {
+      title: 'В работе',
+      note: 'Взят или вернулся на круг',
+      tickets: tickets.filter((t) => t.status === 'in_progress' || t.status === 'revision'),
+    },
+    {
+      title: 'Сдано',
+      note: 'Предъявлено или принято',
+      tickets: tickets.filter((t) => t.status === 'submitted' || t.status === 'accepted'),
+    },
+  ]
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -38,85 +61,99 @@ export default async function WorkPage() {
             </p>
           </div>
         ) : (
-          <>
-            <Group title="В работе" tickets={open} empty="Сейчас открытых тикетов нет." />
-            <Group
-              title="Ждут зависимости"
-              tickets={waiting}
-              empty="Ничего не заблокировано."
-              muted
-            />
-            <Group title="Предъявлено и принято" tickets={done} empty="Пока ничего." muted />
-          </>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 20,
+              marginTop: 40,
+              alignItems: 'start',
+            }}
+          >
+            {columns.map((column) => (
+              <div key={column.title}>
+                <div
+                  className="row"
+                  style={{
+                    justifyContent: 'space-between',
+                    borderBottom: '1px solid var(--border-strong)',
+                    paddingBottom: 10,
+                  }}
+                >
+                  <span className="label label-accent">{column.title}</span>
+                  <span className="num dim">{column.tickets.length}</span>
+                </div>
+                <div className="label" style={{ marginTop: 8 }}>
+                  {column.note}
+                </div>
+
+                <div className="stack" style={{ marginTop: 16, gap: 12 }}>
+                  {column.tickets.length === 0 && (
+                    <p className="dim" style={{ fontSize: '0.85rem' }}>
+                      Пусто.
+                    </p>
+                  )}
+                  {column.tickets.map((ticket) => (
+                    <Card key={ticket.id} ticket={ticket} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </section>
   )
 }
 
-type Ticket = Awaited<ReturnType<typeof ticketsOf>>[number]
+function Card({ ticket }: { ticket: Ticket }) {
+  const overdue = ticket.dueAt && ticket.status !== 'accepted' && ticket.dueAt < new Date()
 
-function Group({
-  title,
-  tickets,
-  empty,
-  muted,
-}: {
-  title: string
-  tickets: Ticket[]
-  empty: string
-  muted?: boolean
-}) {
   return (
-    <div style={{ marginTop: 44 }}>
-      <div className="label label-accent">{title}</div>
+    <Link
+      href={`/work/${ticket.id}`}
+      className="panel"
+      style={{
+        display: 'block',
+        color: 'var(--text)',
+        padding: 16,
+        borderColor: ticket.conflictRaisedAt
+          ? 'var(--fail)'
+          : overdue
+            ? 'var(--wait)'
+            : undefined,
+      }}
+    >
+      <div className="label">
+        {DOC_STAGE_LABELS[ticket.stage as DocStage]} ·{' '}
+        {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
+      </div>
 
-      {tickets.length === 0 ? (
-        <p className="dim" style={{ marginTop: 12 }}>
-          {empty}
-        </p>
-      ) : (
-        <div className="grid grid-2" style={{ marginTop: 18 }}>
-          {tickets.map((ticket) => (
-            <Link
-              key={ticket.id}
-              href={`/work/${ticket.id}`}
-              className="panel"
-              style={{
-                borderBottom: '1px solid var(--border)',
-                opacity: muted ? 0.75 : 1,
-                display: 'block',
-                color: 'var(--text)',
-              }}
-            >
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="label">
-                  {DOC_STAGE_LABELS[ticket.stage as DocStage]} ·{' '}
-                  {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
-                </span>
-                <span className="tag">{TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}</span>
-              </div>
+      <div style={{ marginTop: 10, fontSize: '0.95rem' }}>{ticket.title}</div>
 
-              <h3 style={{ marginTop: 12 }}>{ticket.title}</h3>
-              <p className="dim" style={{ marginTop: 8, marginBottom: 0, fontSize: '0.85rem' }}>
-                {ticket.project.title}
-                {ticket.waitingOn.length > 0 && (
-                  <>
-                    <br />
-                    Ждёт: {ticket.waitingOn.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')}
-                  </>
-                )}
-                {ticket.dueAt && ticket.status !== 'accepted' && (
-                  <>
-                    <br />
-                    Срок: {ticket.dueAt.toLocaleDateString('ru-RU')}
-                  </>
-                )}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="dim" style={{ marginTop: 8, fontSize: '0.8rem' }}>
+        {ticket.project.title}
+        {ticket.waitingOn.length > 0 && (
+          <>
+            <br />
+            Ждёт: {ticket.waitingOn.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')}
+          </>
+        )}
+        {ticket.dueAt && ticket.status !== 'accepted' && (
+          <>
+            <br />
+            Срок: {ticket.dueAt.toLocaleString('ru-RU')}
+          </>
+        )}
+      </div>
+
+      <div className="row" style={{ marginTop: 12, gap: 8 }}>
+        <span className={`tag ${ticket.status === 'accepted' ? 'tag-pass' : ''}`}>
+          {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
+        </span>
+        {ticket.conflictRaisedAt && <span className="tag tag-fail">конфликт</span>}
+        {overdue && !ticket.conflictRaisedAt && <span className="tag tag-wait">просрочен</span>}
+      </div>
+    </Link>
   )
 }

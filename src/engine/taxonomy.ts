@@ -23,6 +23,62 @@ export const DISCIPLINES = [
 ] as const
 export type Discipline = (typeof DISCIPLINES)[number]
 
+/**
+ * Второй уровень дисциплины — специализация.
+ *
+ * Дисциплины одной плоским списком мало: «позовём инженера» заканчивается тем,
+ * что бетонщик проектирует деревянный дом и рисует бункер. Конструкторы делятся
+ * по материалу, MEP — по системам, архитекторы — по масштабу, ландшафт — по
+ * инженерной сложности, интерьеры — по типу пространства.
+ *
+ * Отдельные роли, которые в спецификации помечены как «разберёмся позже»
+ * (сметчик, DFMA-технолог, консультант по энергоэффективности), сюда
+ * намеренно не заведены: пустой словарь хуже отсутствующего.
+ */
+export const SPECIALIZATIONS = [
+  // Конструкции — по материалу. Главное деление: скелет здания.
+  'structural_concrete',
+  'structural_steel',
+  'structural_timber',
+  // MEP — по системам.
+  'mep_hvac',
+  'mep_electrical',
+  'mep_plumbing',
+  'mep_off_grid',
+  'mep_smart_home',
+  // Архитектура — по масштабу.
+  'arch_small_scale',
+  'arch_large_scale',
+  // Ландшафт — по масштабу и инженерной сложности.
+  'landscape_garden',
+  'landscape_master_planning',
+  'landscape_grading',
+  // Интерьеры — по типу пространства.
+  'interiors_residential',
+  'interiors_product',
+  'interiors_horeca',
+  // Визуализация — по подаче.
+  'viz_photoreal',
+  'viz_artistic',
+  // Согласования.
+  'permit_zoning',
+  'permit_flood',
+] as const
+export type Specialization = (typeof SPECIALIZATIONS)[number]
+
+/** Какие специализации вообще осмысленны внутри дисциплины. */
+export const DISCIPLINE_SPECIALIZATIONS: Record<Discipline, Specialization[]> = {
+  architecture: ['arch_small_scale', 'arch_large_scale'],
+  structural: ['structural_concrete', 'structural_steel', 'structural_timber'],
+  mep: ['mep_hvac', 'mep_electrical', 'mep_plumbing', 'mep_off_grid', 'mep_smart_home'],
+  landscape: ['landscape_garden', 'landscape_master_planning', 'landscape_grading'],
+  interiors: ['interiors_residential', 'interiors_product', 'interiors_horeca'],
+  permitting: ['permit_zoning', 'permit_flood'],
+  // Геодезия не делится: подоснова есть подоснова.
+  survey: [],
+  visualization: ['viz_photoreal', 'viz_artistic'],
+}
+
 // --- 2. Типология ----------------------------------------------------------
 
 export const TYPOLOGIES = ['villa', 'townhouse', 'multi_family', 'mixed_use'] as const
@@ -96,8 +152,11 @@ export const SOFTWARE = ['revit', 'archicad', 'autocad', 'rhino', 'tekla'] as co
 export type Software = (typeof SOFTWARE)[number]
 
 /**
- * Уровень обмена по IFC. Общий формат заменяет общий пакет: специалист на
- * ArchiCAD совместим с командой на Revit, если умеет координироваться по IFC.
+ * Уровень обмена по IFC.
+ *
+ * Совпадения пакета он не отменяет — Tech Gate жёсткий (см. filter.ts). Уровень
+ * важен на хендоффе: кто умеет координироваться, тот отдаёт модель дальше без
+ * потерь, и это видно в профиле и в ранжировании.
  */
 export const IFC_LEVELS = ['none', 'import', 'exchange', 'coordination'] as const
 export type IfcLevel = (typeof IFC_LEVELS)[number]
@@ -109,8 +168,6 @@ export const IFC_RANK: Record<IfcLevel, number> = {
   coordination: 3,
 }
 
-/** Минимум, при котором несовпадение пакетов перестаёт быть блокирующим. */
-export const IFC_EXCHANGE_MINIMUM: IfcLevel = 'exchange'
 
 // --- 9. Стадия документации ------------------------------------------------
 
@@ -168,30 +225,154 @@ export const FULL_TIMEZONE_OVERLAP_HOURS = 4
 /** Порог по портфолио (концепт, п.9). Стоит до скоринга, а не внутри него. */
 export const PORTFOLIO_THRESHOLD = 8
 
+// --- Условия участка -------------------------------------------------------
+
+/**
+ * Рельеф и риск участка. Это не украшение брифа, а прямой вход матчинга:
+ * склон требует вертикальной планировки, подтопление — согласований по риску.
+ */
+export const TERRAINS = ['flat', 'slope', 'flood_prone'] as const
+export type Terrain = (typeof TERRAINS)[number]
+
+/** Подключение к сетям. Автономка — это другая инженерия, а не та же со звёздочкой. */
+export const GRID_CONNECTIONS = ['grid', 'off_grid'] as const
+export type GridConnection = (typeof GRID_CONNECTIONS)[number]
+
 // --- Состав команды --------------------------------------------------------
 
 /**
- * Какие дисциплины обязательны под типологию (концепт, п.10). Вилле не нужен
- * тот же набор, что mixed-use, — состав определяется проектом, а не шаблоном.
+ * Роль в команде: дисциплина плюс требование к специализации.
+ *
+ * `mode: 'any'` — достаточно одной специализации из списка (конструктор по
+ * бетону ИЛИ по гибридным системам). `mode: 'all'` — нужны все: MEP-инженер
+ * обязан вести и отопление, и электрику, и воду, иначе это не один слот, а три.
  */
-export const REQUIRED_DISCIPLINES: Record<Typology, Discipline[]> = {
-  villa: ['architecture', 'structural', 'mep'],
-  townhouse: ['architecture', 'structural', 'mep'],
-  multi_family: ['architecture', 'structural', 'mep', 'landscape'],
-  mixed_use: ['architecture', 'structural', 'mep', 'landscape', 'interiors'],
+export type RequiredRole = {
+  discipline: Discipline
+  specializations: Specialization[]
+  mode: 'any' | 'all'
+}
+
+/** Форма проекта, из которой выводится состав команды. */
+export type ProjectShape = {
+  typology: Typology
+  targetStage: DocStage
+  materialSystem: MaterialSystem
+  terrain: Terrain
+  gridConnection: GridConnection
 }
 
 /**
- * Дисциплины, которые добавляет стадия, а не типология. Согласования и
- * геодезия не нужны концепции и обязательны с разрешения.
+ * Архитектор малых форм и архитектор городской застройки — разные профессии.
+ * Вилла и townhouse идут к первому, multi-family и mixed-use ко второму.
  */
-export const STAGE_DISCIPLINES: Partial<Record<DocStage, Discipline[]>> = {
-  permit: ['permitting', 'survey'],
+const ARCH_SCALE: Record<Typology, Specialization> = {
+  villa: 'arch_small_scale',
+  townhouse: 'arch_small_scale',
+  multi_family: 'arch_large_scale',
+  mixed_use: 'arch_large_scale',
 }
 
-export function requiredDisciplines(typology: Typology, targetStage: DocStage): Discipline[] {
-  const fromStage = stagesUpTo(targetStage).flatMap((s) => STAGE_DISCIPLINES[s] ?? [])
-  return unique([...REQUIRED_DISCIPLINES[typology], ...fromStage])
+/**
+ * Материал проекта решает, какого конструктора звать. Гибрид открывает всех
+ * троих: это опыт стыковки систем, а не отдельный материал. Кладку ведёт
+ * конструктор по монолиту — расчётный аппарат тот же.
+ */
+const STRUCTURAL_BY_MATERIAL: Record<MaterialSystem, Specialization[]> = {
+  concrete: ['structural_concrete'],
+  masonry: ['structural_concrete'],
+  timber: ['structural_timber'],
+  steel: ['structural_steel'],
+  hybrid: ['structural_concrete', 'structural_steel', 'structural_timber'],
+}
+
+/**
+ * Состав команды под конкретный проект (сценарная матрица).
+ *
+ * Это и есть правило «IF Project_Type → Required_Tags»: состав определяется
+ * проектом, а не шаблоном бюро. Вилле на ровном участке не нужен тот же набор,
+ * что mixed-use на склоне.
+ */
+export function requiredRoles(shape: ProjectShape): RequiredRole[] {
+  const stages = stagesUpTo(shape.targetStage)
+  const roles: RequiredRole[] = []
+
+  roles.push({
+    discipline: 'architecture',
+    specializations: [ARCH_SCALE[shape.typology]],
+    mode: 'any',
+  })
+
+  roles.push({
+    discipline: 'structural',
+    specializations: STRUCTURAL_BY_MATERIAL[shape.materialSystem],
+    mode: 'any',
+  })
+
+  // Один MEP-инженер обязан закрывать все три системы: разводить их по разным
+  // людям на объекте до пяти этажей — это накладные расходы, а не экспертиза.
+  const mep: Specialization[] = ['mep_hvac', 'mep_electrical', 'mep_plumbing']
+  if (shape.gridConnection === 'off_grid') mep.push('mep_off_grid')
+  roles.push({ discipline: 'mep', specializations: mep, mode: 'all' })
+
+  // Ландшафт нужен там, где есть общая территория, и там, где есть склон.
+  const needsLandscape =
+    shape.typology === 'multi_family' || shape.typology === 'mixed_use' || shape.terrain === 'slope'
+
+  if (needsLandscape) {
+    const landscape: Specialization[] =
+      shape.typology === 'villa' || shape.typology === 'townhouse'
+        ? ['landscape_garden']
+        : ['landscape_master_planning']
+
+    // Склон — жёсткое требование вертикальной планировки. Без неё проект
+    // не «чуть хуже», а смывается дождём.
+    if (shape.terrain === 'slope') {
+      roles.push({
+        discipline: 'landscape',
+        specializations: [...landscape, 'landscape_grading'],
+        mode: 'all',
+      })
+    } else {
+      roles.push({ discipline: 'landscape', specializations: landscape, mode: 'any' })
+    }
+  }
+
+  if (shape.typology === 'mixed_use') {
+    roles.push({
+      discipline: 'interiors',
+      specializations: ['interiors_residential', 'interiors_horeca'],
+      mode: 'any',
+    })
+  }
+
+  // Концепция — стадия продажи: без подачи её нечем утверждать.
+  if (stages.includes('concept')) {
+    roles.push({
+      discipline: 'visualization',
+      specializations: ['viz_photoreal', 'viz_artistic'],
+      mode: 'any',
+    })
+  }
+
+  if (stages.includes('permit')) {
+    roles.push({ discipline: 'survey', specializations: [], mode: 'any' })
+
+    const permit: Specialization[] = ['permit_zoning']
+    if (shape.terrain === 'flood_prone') permit.push('permit_flood')
+    roles.push({ discipline: 'permitting', specializations: permit, mode: 'all' })
+  }
+
+  return roles
+}
+
+/** Проходит ли специалист требование роли по специализации. */
+export function coversRole(specializations: Specialization[], role: RequiredRole): boolean {
+  if (role.specializations.length === 0) return true
+
+  return role.mode === 'all'
+    ? role.specializations.every((s) => specializations.includes(s))
+    : role.specializations.some((s) => specializations.includes(s))
 }
 
 export function unique<T>(items: T[]): T[] {

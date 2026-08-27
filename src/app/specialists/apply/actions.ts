@@ -4,9 +4,11 @@ import { prisma } from '@/lib/db'
 import {
   accessKey,
   applicationSchema,
+  everyDisciplineCovered,
   fieldErrors,
   fromFormData,
   signaturesWithinJurisdictions,
+  specializationsWithinDisciplines,
 } from '@/lib/forms'
 import { toList } from '@/lib/rows'
 
@@ -18,6 +20,7 @@ export type ApplicationState = {
 
 const MULTI = [
   'disciplines',
+  'specializations',
   'typologies',
   'scaleBands',
   'materialSystems',
@@ -48,6 +51,23 @@ export async function submitApplication(
     }
   }
 
+  if (!specializationsWithinDisciplines(input)) {
+    return {
+      errors: { specializations: 'Специализация должна принадлежать выбранной дисциплине.' },
+      values: raw,
+    }
+  }
+
+  if (!everyDisciplineCovered(input)) {
+    return {
+      errors: {
+        specializations:
+          'В каждой выбранной дисциплине отметьте хотя бы одну специализацию — иначе движку нечем вас отличить.',
+      },
+      values: raw,
+    }
+  }
+
   const existing = await prisma.specialist.findUnique({ where: { email: input.email } })
   if (existing) {
     return { errors: { email: 'Заявка с этим адресом уже есть.' }, values: raw }
@@ -66,6 +86,7 @@ export async function submitApplication(
       portfolioUrl: input.portfolioUrl,
 
       disciplinesJson: toList(input.disciplines),
+      specializationsJson: toList(input.specializations),
       typologiesJson: toList(input.typologies),
       scaleBandsJson: toList(input.scaleBands),
       maxStoreys: input.maxStoreys,

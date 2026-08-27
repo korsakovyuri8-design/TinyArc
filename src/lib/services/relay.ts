@@ -53,11 +53,29 @@ export async function applyGates(projectId: string): Promise<string[]> {
 
     await prisma.ticket.update({
       where: { id },
-      data: { status: 'open', openedAt: now, dueAt: dueDate(now, ticket.slaDays) },
+      data: { status: 'open', openedAt: now, dueAt: dueDate(now, ticket.slaHours) },
     })
   }
 
   return ready
+}
+
+/**
+ * Взять тикет в работу.
+ *
+ * Отдельное действие, а не побочный эффект первого комментария: время до
+ * принятия задачи — это метрика (п.12), и она должна отмечаться явно.
+ */
+export async function claim(ticketId: string, specialistId: string): Promise<void> {
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+
+  if (ticket.specialistId !== specialistId) throw new NotYours()
+  if (ticket.status !== 'open') throw new NotOpen(ticket.status)
+
+  await prisma.ticket.update({
+    where: { id: ticketId },
+    data: { status: 'in_progress', claimedAt: new Date() },
+  })
 }
 
 /** Комментарий на уровне тикета — единственный канал коммуникации в системе. */
@@ -65,6 +83,7 @@ export async function comment(
   ticketId: string,
   author: { role: 'bureau' | 'specialist'; specialistId?: string },
   body: string,
+  options: { isConflict?: boolean } = {},
 ): Promise<void> {
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
@@ -79,13 +98,59 @@ export async function comment(
       authorRole: author.role,
       specialistId: author.role === 'specialist' ? author.specialistId : null,
       body,
+      isConflict: options.isConflict ?? false,
     },
   })
+}
 
-  // Время отклика считается по первому содержательному ответу исполнителя (п.12).
-  if (author.role === 'specialist' && ticket.openedAt && !ticket.firstResponseAt) {
-    await prisma.ticket.update({ where: { id: ticketId }, data: { firstResponseAt: new Date() } })
-  }
+/**
+ * Арбитраж (концепт, п.11).
+ *
+ * Участники не договариваются между собой — договариваться им негде. Тот, кто
+ * упёрся, поднимает конфликт, система сигналит бюро, решает бюро.
+ */
+export async function raiseConflict(
+  ticketId: string,
+  by: { role: 'bureau' | 'specialist'; specialistId?: string },
+  note: string,
+): Promise<void> {
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+
+  if (by.role === 'specialist' && ticket.specialistId !== by.specialistId) throw new NotYours()
+  if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
+
+  await prisma.$transaction([
+    prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        conflictRaisedAt: new Date(),
+        conflictBy: by.role === 'specialist' ? (by.specialistId ?? null) : null,
+        conflictNote: note,
+      },
+    }),
+    prisma.ticketComment.create({
+      data: {
+        ticketId,
+        authorRole: by.role,
+        specialistId: by.role === 'specialist' ? by.specialistId : null,
+        body: note,
+        isConflict: true,
+      },
+    }),
+  ])
+}
+
+/** Решение арбитра. Снимает флаг и остаётся в переписке тикета как ответ. */
+export async function resolveConflict(ticketId: string, ruling: string): Promise<void> {
+  await prisma.$transaction([
+    prisma.ticket.update({
+      where: { id: ticketId },
+      data: { conflictRaisedAt: null, conflictBy: null, conflictNote: '' },
+    }),
+    prisma.ticketComment.create({
+      data: { ticketId, authorRole: 'bureau', body: `Решение бюро: ${ruling}` },
+    }),
+  ])
 }
 
 /** Предъявление работы. Приёмка — отдельное действие и делает её бюро. */
@@ -93,7 +158,7 @@ export async function submit(ticketId: string, specialistId: string): Promise<vo
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (ticket.specialistId !== specialistId) throw new NotYours()
-  if (ticket.status !== 'open' && ticket.status !== 'revision') throw new NotOpen(ticket.status)
+  if (ticket.status !== 'in_progress' && ticket.status !== 'revision') throw new NotOpen(ticket.status)
 
   const now = new Date()
 
@@ -102,7 +167,8 @@ export async function submit(ticketId: string, specialistId: string): Promise<vo
     data: {
       status: 'submitted',
       submittedAt: now,
-      firstResponseAt: ticket.firstResponseAt ?? now,
+      // Сдал, не отметив принятие в работу, — время реакции считается по сдаче.
+      claimedAt: ticket.claimedAt ?? now,
     },
   })
 }
@@ -134,7 +200,7 @@ export async function accept(ticketId: string): Promise<void> {
   const acceptedAt = new Date()
   const delta = deliveryDeltaFor({
     openedAt: ticket.openedAt,
-    firstResponseAt: ticket.firstResponseAt,
+    claimedAt: ticket.claimedAt,
     acceptedAt,
     dueAt: ticket.dueAt,
     revisionRounds: ticket.revisionRounds,
@@ -182,6 +248,20 @@ export async function refreshProjectStatus(projectId: string): Promise<void> {
   })
 }
 
+/** Артефакт тикета: то, что гейт передаёт дальше по графу. */
+export async function attachArtifact(
+  ticketId: string,
+  specialistId: string,
+  artifact: { name: string; url: string; kind: string },
+): Promise<void> {
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+
+  if (ticket.specialistId !== specialistId) throw new NotYours()
+  if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
+
+  await prisma.artifact.create({ data: { ticketId, ...artifact } })
+}
+
 /**
  * Что специалист видит по своим тикетам.
  *
@@ -206,4 +286,33 @@ export async function ticketsOf(specialistId: string) {
       .filter((d) => d.prerequisite.status !== 'accepted')
       .map((d) => d.prerequisite.discipline),
   }))
+}
+
+/**
+ * Входные артефакты тикета: то, что сдали предшественники по графу.
+ *
+ * Это и есть хендофф — архитектор выкладывает модель, смежник её забирает.
+ * Имени автора здесь нет, только дисциплина.
+ */
+export async function inboundArtifacts(ticketId: string) {
+  const dependencies = await prisma.ticketDependency.findMany({
+    where: { dependentId: ticketId },
+    include: {
+      prerequisite: {
+        select: { discipline: true, status: true, artifacts: true },
+      },
+    },
+  })
+
+  return dependencies
+    .filter((d) => d.prerequisite.status === 'accepted')
+    .flatMap((d) =>
+      d.prerequisite.artifacts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        url: a.url,
+        kind: a.kind,
+        fromDiscipline: d.prerequisite.discipline,
+      })),
+    )
 }

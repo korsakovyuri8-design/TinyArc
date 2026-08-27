@@ -11,7 +11,7 @@ import { planTickets } from '@/engine/relay'
 import type { Assembly } from '@/engine/types'
 import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '../db'
-import { toProfile, toRequirements } from '../rows'
+import { toList, toProfile, toRequirements } from '../rows'
 import { applyGates } from './relay'
 
 /** Пул, из которого вообще можно выбирать: только подтверждённые специалисты. */
@@ -59,6 +59,8 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
           runId: run.id,
           specialistId: candidate.specialist.id,
           discipline: candidate.discipline,
+          roleSpecializationsJson: toList(candidate.role.specializations),
+          roleMode: candidate.role.mode,
           passed: candidate.passed,
           failedGate: candidate.failedGate ?? '',
           portfolioRating: candidate.breakdown.portfolioRating,
@@ -97,6 +99,8 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
           runId: run.id,
           specialistId: member.specialist.id,
           discipline: member.discipline,
+          roleSpecializationsJson: toList(member.role.specializations),
+          roleMode: member.role.mode,
           isSignatory: member.isSignatory,
           score: member.score,
         },
@@ -108,7 +112,6 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
     )
 
     const plans = planTickets(
-      toRequirements(project).typology,
       toRequirements(project).targetStage,
       assembly.team.map((m) => m.discipline),
     )
@@ -123,7 +126,7 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
           stage: plan.stage,
           title: plan.title,
           spec: plan.spec,
-          slaDays: plan.slaDays,
+          slaHours: plan.slaHours,
           specialistId: assignee.get(plan.discipline) ?? null,
           status: 'blocked',
         },

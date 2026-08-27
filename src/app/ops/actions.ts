@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
-import { accept, comment, requestRevision } from '@/lib/services/relay'
+import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 
@@ -120,6 +120,28 @@ export async function returnTicket(_prev: OpsState, formData: FormData): Promise
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Не получилось.' }
   }
+}
+
+/**
+ * Решение арбитра (концепт, п.11).
+ *
+ * Спор между смежниками разрешает бюро — не потому, что оно умнее, а потому что
+ * между собой им спорить негде: канала нет, и «договорились устно» в системе не
+ * существует.
+ */
+export async function resolveTicketConflict(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const ticketId = String(formData.get('ticketId') ?? '')
+  const ruling = String(formData.get('ruling') ?? '').trim()
+
+  if (!ruling) return { error: 'Решение без текста ничего не решает.' }
+
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+  await resolveConflict(ticketId, ruling)
+  revalidatePath(`/ops/projects/${ticket.projectId}`)
+
+  return { message: 'Решение записано в тикет, конфликт снят.' }
 }
 
 export async function bureauComment(_prev: OpsState, formData: FormData): Promise<OpsState> {

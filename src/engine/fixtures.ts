@@ -5,13 +5,38 @@
  * ломает ровно одно измерение и проверяет ровно один эффект.
  */
 
+import type { Discipline, RequiredRole, Specialization } from './taxonomy'
 import type { ProjectRequirements, SpecialistProfile } from './types'
 
+/** Роль в удобной для теста форме. */
+export function role(
+  discipline: Discipline,
+  specializations: Specialization[] = [],
+  mode: 'any' | 'all' = 'any',
+): RequiredRole {
+  return { discipline, specializations, mode }
+}
+
+/** Специализации, которыми закрывается дисциплина «по умолчанию». */
+const DEFAULT_SPECIALIZATIONS: Record<Discipline, Specialization[]> = {
+  architecture: ['arch_small_scale', 'arch_large_scale'],
+  structural: ['structural_concrete'],
+  mep: ['mep_hvac', 'mep_electrical', 'mep_plumbing'],
+  landscape: ['landscape_garden', 'landscape_master_planning', 'landscape_grading'],
+  interiors: ['interiors_residential', 'interiors_horeca'],
+  permitting: ['permit_zoning', 'permit_flood'],
+  survey: [],
+  visualization: ['viz_photoreal'],
+}
+
 export function specialist(patch: Partial<SpecialistProfile> = {}): SpecialistProfile {
+  const disciplines = patch.disciplines ?? ['architecture']
+
   return {
     id: patch.id ?? 'spec-1',
     displayName: 'Специалист',
-    disciplines: ['architecture'],
+    disciplines,
+    specializations: disciplines.flatMap((d) => DEFAULT_SPECIALIZATIONS[d]),
     typologies: ['villa'],
     scaleBands: ['250_1000'],
     maxStoreys: 5,
@@ -50,6 +75,8 @@ export function requirements(patch: Partial<ProjectRequirements> = {}): ProjectR
     materialSystem: 'concrete',
     regulatoryTrack: 'light',
     targetStage: 'permit',
+    terrain: 'flat',
+    gridConnection: 'grid',
     software: ['archicad'],
     languages: ['en'],
     requiredHoursPerWeek: 10,
@@ -59,9 +86,9 @@ export function requirements(patch: Partial<ProjectRequirements> = {}): ProjectR
   }
 }
 
-/** Пул, закрывающий все дисциплины виллы на стадии разрешения. */
+/** Пул, закрывающий все роли виллы на стадии разрешения. */
 export function fullPool(): SpecialistProfile[] {
-  const disciplines = [
+  const disciplines: Discipline[] = [
     'architecture',
     'structural',
     'mep',
@@ -69,7 +96,8 @@ export function fullPool(): SpecialistProfile[] {
     'interiors',
     'permitting',
     'survey',
-  ] as const
+    'visualization',
+  ]
 
   return disciplines.map((d, i) =>
     specialist({

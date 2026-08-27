@@ -12,7 +12,7 @@
  */
 
 import type { SpecialistProfile } from '@/engine/types'
-import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
+import { DISCIPLINE_SPECIALIZATIONS, JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import type {
   ClimateZone,
   Discipline,
@@ -24,6 +24,7 @@ import type {
   RegulatoryTrack,
   ScaleBand,
   Software,
+  Specialization,
   Typology,
   WorkMode,
 } from '@/engine/taxonomy'
@@ -141,12 +142,29 @@ export function demoPool(seed = 20260824): DemoSpecialist[] {
         const first = pick(random, FIRST_NAMES[home])
         const last = pick(random, LAST_NAMES[home])
 
+        /*
+         * Специализации. Надёжный берёт свою дисциплину целиком — он и есть
+         * покрытие рынка, и роли с режимом «нужны все» (MEP обязан вести
+         * отопление, электрику и воду) закрываются именно им. Остальные берут
+         * кусок: так в пуле появляются те, у кого дисциплина та, а
+         * специализация не та.
+         */
+        const own = DISCIPLINE_SPECIALIZATIONS[discipline]
+        const specializations: Specialization[] = reliable
+          ? [...own]
+          : own.length > 0
+            ? some(random, own, 0.5)
+            : []
+
         const disciplines: Discipline[] = [discipline]
         // Часть людей ведёт две дисциплины: универсал должен встречаться, иначе
         // ветка «один закрывает несколько слотов» никогда не показывается.
         if (!reliable && random() < 0.25) {
           const extra = pick(random, ALL_DISCIPLINES)
-          if (extra !== discipline) disciplines.push(extra)
+          if (extra !== discipline) {
+            disciplines.push(extra)
+            specializations.push(...some(random, DISCIPLINE_SPECIALIZATIONS[extra], 0.5))
+          }
         }
 
         const portfolioRating = reliable
@@ -181,6 +199,7 @@ export function demoPool(seed = 20260824): DemoSpecialist[] {
           status: !reliable && random() < 0.15 ? 'pending' : 'active',
 
           disciplines,
+          specializations,
           typologies: reliable ? [...ALL_TYPOLOGIES] : some(random, ALL_TYPOLOGIES, 0.5),
           scaleBands: reliable ? [...ALL_SCALES] : some(random, ALL_SCALES, 0.45),
           maxStoreys: reliable ? 5 : 1 + Math.floor(random() * 5),
@@ -193,7 +212,13 @@ export function demoPool(seed = 20260824): DemoSpecialist[] {
               : [CLIMATE_BASE[home], pick(random, ['continental', 'alpine', 'arid'] as ClimateZone[])],
           jurisdictions: [home, ...alsoWorksIn],
           signsIn: signs,
-          software: pick(random, SOFTWARE_MIXES),
+          /*
+           * Технологический шлюз жёсткий: пакет проекта обязан совпасть, и
+           * команда обязана говорить на одном языке. Поэтому тот, кто держит
+           * покрытие рынка, работает в нескольких пакетах — так и отбирают
+           * людей в живой пул. Остальные берут узкий набор и на шлюзе сыплются.
+           */
+          software: reliable ? ['revit', 'archicad', 'autocad'] : pick(random, SOFTWARE_MIXES),
           // Координация по IFC у надёжного: он не должен ломать обмен в команде.
           ifcLevel: reliable ? 'coordination' : pick(random, IFC_MIX),
           docStages: reliable ? ['concept', 'permit', 'tender', 'construction'] : pick(random, STAGE_MIX),

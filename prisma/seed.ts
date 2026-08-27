@@ -16,7 +16,15 @@ import { databaseUrl } from '../src/lib/db-provider'
 import { DEMO_POOL_SIZE, demoPool } from '../src/lib/demo-pool'
 import { toList } from '../src/lib/rows'
 import { runAssembly } from '../src/lib/services/matching'
-import { accept, applyGates, comment, submit } from '../src/lib/services/relay'
+import {
+  accept,
+  applyGates,
+  attachArtifact,
+  claim,
+  comment,
+  raiseConflict,
+  submit,
+} from '../src/lib/services/relay'
 
 const prisma = new PrismaClient({ adapter: adapterFor(databaseUrl()) })
 
@@ -32,13 +40,16 @@ const SEED_PROJECTS = [
     jurisdiction: 'ME',
     climateZone: 'mediterranean',
     materialSystem: 'concrete',
+    terrain: 'slope',
+    gridConnection: 'grid',
     targetStage: 'permit',
     software: ['archicad'],
     languages: ['en', 'ru'],
     requiredHoursPerWeek: 10,
     horizonDays: 45,
     utcOffset: 1,
-    briefNotes: 'Участок с уклоном к морю. Важен вид с верхнего этажа и теневой двор.',
+    briefNotes:
+      'Участок с уклоном к морю. Важен вид с верхнего этажа и теневой двор. Склон крутой — нужна вертикальная планировка.',
   },
   {
     clientKey: 'seed-brief-novisad',
@@ -51,6 +62,8 @@ const SEED_PROJECTS = [
     jurisdiction: 'RS',
     climateZone: 'continental',
     materialSystem: 'masonry',
+    terrain: 'flat',
+    gridConnection: 'grid',
     targetStage: 'permit',
     software: ['revit'],
     languages: ['sr', 'en'],
@@ -70,6 +83,8 @@ const SEED_PROJECTS = [
     jurisdiction: 'GR',
     climateZone: 'mediterranean',
     materialSystem: 'hybrid',
+    terrain: 'flood_prone',
+    gridConnection: 'off_grid',
     targetStage: 'concept',
     software: [],
     languages: ['el', 'en'],
@@ -90,6 +105,8 @@ const SEED_PROJECTS = [
     jurisdiction: 'ME',
     climateZone: 'mediterranean',
     materialSystem: 'concrete',
+    terrain: 'flat',
+    gridConnection: 'grid',
     targetStage: 'permit',
     software: ['revit'],
     languages: ['en'],
@@ -122,6 +139,7 @@ async function main() {
         portfolioUrl: person.portfolioUrl,
 
         disciplinesJson: toList(person.disciplines),
+        specializationsJson: toList(person.specializations),
         typologiesJson: toList(person.typologies),
         scaleBandsJson: toList(person.scaleBands),
         maxStoreys: person.maxStoreys,
@@ -138,12 +156,34 @@ async function main() {
         utcOffset: person.utcOffset,
         weeklyCapacityHours: person.weeklyCapacityHours,
         leadTimeDays: person.leadTimeDays,
+        availabilityStatus:
+          person.weeklyCapacityHours === 0
+            ? 'busy'
+            : person.weeklyCapacityHours < 15
+              ? 'part_time'
+              : 'available',
 
         deliveredTickets: person.delivery.deliveredTickets,
         onTimeTickets: person.delivery.onTimeTickets,
         firstTimeRightTickets: person.delivery.firstTimeRightTickets,
         responseMinutesTotal: person.delivery.responseMinutesTotal,
         revisionRoundsTotal: person.delivery.revisionRoundsTotal,
+
+        // Портфолио: у конструктора нет красивых картинок, у него узлы и
+        // скриншоты модели. Поэтому важнее картинки — что человек делал.
+        portfolio: {
+          create: [
+            {
+              title: 'Работа из портфолио',
+              kind: person.disciplines.includes('visualization') ? 'render' : 'drawing',
+              url: person.portfolioUrl,
+              roleDescription: 'Вёл раздел целиком: от постановки до выпуска.',
+              softwareJson: toList(person.software),
+              areaSqm: 480,
+              durationMonths: 4,
+            },
+          ],
+        },
       },
     })
   }
@@ -193,17 +233,20 @@ async function main() {
 }
 
 /**
- * Доводит первый проект до живой истории: комментарий, предъявление, приёмка.
- * После этого у части специалистов появляются настоящие метрики, а гейт успевает
- * открыть следующий тикет.
+ * Доводит первый проект до живой истории: взятие в работу, файл, предъявление,
+ * приёмка. После этого у части специалистов появляются настоящие метрики, гейт
+ * успевает открыть следующие тикеты, а на стенде видно движение эстафеты.
+ *
+ * Последний тикет намеренно оставляется в конфликте: панель бюро должна
+ * показывать не только счастливый путь.
  */
 async function advanceFirstProject(projectId: string): Promise<void> {
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project || project.status === 'rejected') return
 
-  console.log('Сид: прогоняем первые тикеты через гейты…')
+  console.log('Сид: прогоняем тикеты через гейты…')
 
-  for (let step = 0; step < 3; step += 1) {
+  for (let step = 0; step < 5; step += 1) {
     await applyGates(projectId)
 
     const open = await prisma.ticket.findFirst({
@@ -218,11 +261,34 @@ async function advanceFirstProject(projectId: string): Promise<void> {
       data: { spec: 'Постановка из сида: состав, границы и что передаётся дальше по графу.' },
     })
 
+    await claim(open.id, open.specialistId)
     await comment(open.id, { role: 'specialist', specialistId: open.specialistId }, 'Взял в работу.')
+    await attachArtifact(open.id, open.specialistId, {
+      name: `${open.title}.ifc`,
+      url: 'https://example.com/files/handoff.ifc',
+      kind: 'model',
+    })
     await submit(open.id, open.specialistId)
     await accept(open.id)
 
     console.log(`  принят тикет: ${open.title}`)
+  }
+
+  // Один живой конфликт на стенде: арбитраж должно быть на чём показать.
+  await applyGates(projectId)
+  const next = await prisma.ticket.findFirst({
+    where: { projectId, status: 'open', specialistId: { not: null } },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  if (next?.specialistId) {
+    await claim(next.id, next.specialistId)
+    await raiseConflict(
+      next.id,
+      { role: 'specialist', specialistId: next.specialistId },
+      'Вентканал по инженерному разделу проходит там, где по архитектуре стоит дверь. Нужно решение, что двигать.',
+    )
+    console.log(`  поднят конфликт: ${next.title}`)
   }
 }
 

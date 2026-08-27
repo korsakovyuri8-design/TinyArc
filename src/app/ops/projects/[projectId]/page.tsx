@@ -5,20 +5,34 @@ import {
   type Discipline,
   type DocStage,
   type Jurisdiction,
+  type Specialization,
+  type Terrain,
   type Typology,
 } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import {
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
+  GRID_LABELS,
   OUTCOME_LABELS,
   PROJECT_STATUS_LABELS,
+  SPECIALIZATION_LABELS,
+  TERRAIN_LABELS,
   TICKET_STATUS_LABELS,
   TYPOLOGY_LABELS,
 } from '@/lib/labels'
+import { parseList } from '@/lib/rows'
+import { SPECIALIZATIONS } from '@/engine/taxonomy'
 import { latestRun } from '@/lib/services/matching'
 import { isOperator } from '@/lib/session'
-import { acceptTicket, bureauComment, rerunAssembly, returnTicket, setTicketSpec } from '../../actions'
+import {
+  acceptTicket,
+  bureauComment,
+  rerunAssembly,
+  resolveTicketConflict,
+  returnTicket,
+  setTicketSpec,
+} from '../../actions'
 import { OpsAction } from '../../OpsForms'
 
 export const metadata = { title: 'Проект — панель бюро' }
@@ -67,7 +81,9 @@ export default async function OpsProjectPage({
         <p className="dim" style={{ marginTop: 10 }}>
           {TYPOLOGY_LABELS[project.typology as Typology]} ·{' '}
           {JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} · {project.storeys} эт. ·{' '}
-          {project.areaSqm} м² · до стадии «{DOC_STAGE_LABELS[project.targetStage as DocStage]}»
+          {project.areaSqm} м² · {TERRAIN_LABELS[project.terrain as Terrain]} ·{' '}
+          {GRID_LABELS[project.gridConnection as 'grid' | 'off_grid']} · до стадии «
+          {DOC_STAGE_LABELS[project.targetStage as DocStage]}»
         </p>
 
         {project.briefNotes && (
@@ -116,7 +132,27 @@ export default async function OpsProjectPage({
 
                   return (
                     <tr key={slot.id}>
-                      <td>{DISCIPLINE_LABELS[slot.discipline as Discipline]}</td>
+                      <td>
+                        {DISCIPLINE_LABELS[slot.discipline as Discipline]}
+                        {(() => {
+                          const need = parseList<Specialization>(
+                            slot.roleSpecializationsJson,
+                            SPECIALIZATIONS,
+                          )
+                          if (need.length === 0) return null
+
+                          return (
+                            <>
+                              <br />
+                              <span className="dim" style={{ fontSize: '0.78rem' }}>
+                                {need
+                                  .map((x) => SPECIALIZATION_LABELS[x])
+                                  .join(slot.roleMode === 'all' ? ' + ' : ' / ')}
+                              </span>
+                            </>
+                          )
+                        })()}
+                      </td>
                       <td>
                         {slot.specialist.displayName}
                         {slot.isSignatory && (
@@ -162,8 +198,8 @@ export default async function OpsProjectPage({
 
                   <h3 style={{ marginTop: 12 }}>{ticket.title}</h3>
                   <p className="dim" style={{ marginTop: 6, fontSize: '0.85rem' }}>
-                    {ticket.specialist?.displayName ?? 'не назначен'}
-                    {ticket.dueAt && ` · срок ${ticket.dueAt.toLocaleDateString('ru-RU')}`}
+                    {ticket.specialist?.displayName ?? 'не назначен'} · SLA {ticket.slaHours} ч
+                    {ticket.dueAt && ` · до ${ticket.dueAt.toLocaleString('ru-RU')}`}
                     {ticket.revisionRounds > 0 && ` · кругов правок: ${ticket.revisionRounds}`}
                     {ticket.status === 'blocked' &&
                       ` · ждёт: ${ticket.dependsOn
@@ -171,6 +207,38 @@ export default async function OpsProjectPage({
                         .map((d) => DISCIPLINE_LABELS[d.prerequisite.discipline as Discipline])
                         .join(', ')}`}
                   </p>
+
+                  {ticket.conflictRaisedAt && (
+                    <div
+                      className="panel"
+                      style={{ marginTop: 18, borderColor: 'var(--fail)', padding: 18 }}
+                    >
+                      <div className="label" style={{ color: 'var(--fail)' }}>
+                        Conflict Detected · {ticket.conflictRaisedAt.toLocaleString('ru-RU')}
+                      </div>
+                      <p style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>{ticket.conflictNote}</p>
+                      <p className="hint" style={{ marginBottom: 14 }}>
+                        Работа по тикету стоит. Между собой участники не договариваются — решает
+                        бюро.
+                      </p>
+
+                      <OpsAction
+                        action={resolveTicketConflict}
+                        hidden={{ ticketId: ticket.id }}
+                        label="Вынести решение"
+                        solid
+                      >
+                        <div className="field">
+                          <label htmlFor={`ruling-${ticket.id}`}>Решение арбитра</label>
+                          <textarea
+                            id={`ruling-${ticket.id}`}
+                            name="ruling"
+                            style={{ minHeight: 70 }}
+                          />
+                        </div>
+                      </OpsAction>
+                    </div>
+                  )}
 
                   <div style={{ marginTop: 20 }}>
                     <OpsAction

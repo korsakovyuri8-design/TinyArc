@@ -1,7 +1,25 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, PROJECT_STATUS_LABELS, TICKET_STATUS_LABELS, TYPOLOGY_LABELS, OUTCOME_LABELS } from '@/lib/labels'
-import { JURISDICTION_NAMES, type Discipline, type DocStage, type Jurisdiction, type Typology } from '@/engine/taxonomy'
+import {
+  DISCIPLINE_LABELS,
+  DOC_STAGE_LABELS,
+  OUTCOME_LABELS,
+  PROJECT_STATUS_LABELS,
+  SPECIALIZATION_LABELS,
+  TICKET_STATUS_LABELS,
+  TYPOLOGY_LABELS,
+} from '@/lib/labels'
+import {
+  JURISDICTION_NAMES,
+  stagesUpTo,
+  type Discipline,
+  type DocStage,
+  type Jurisdiction,
+  type Specialization,
+  type Typology,
+} from '@/engine/taxonomy'
+import { SPECIALIZATIONS } from '@/engine/taxonomy'
+import { parseList } from '@/lib/rows'
 import { BreakdownRow } from '@/components/Breakdown'
 import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
@@ -68,6 +86,46 @@ export default async function ProjectPage() {
           </div>
         )}
 
+        {project.tickets.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+            <h2>Где сейчас проект</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>
+              Стадия закрывается, когда приняты все её задачи. Пропустить стадию нельзя: гейт
+              просто не откроет следующую.
+            </p>
+
+            <div className="grid grid-2">
+              {stagesUpTo(project.targetStage as DocStage).map((stage) => {
+                const inStage = project.tickets.filter((t) => t.stage === stage)
+                const done = inStage.filter((t) => t.status === 'accepted').length
+                const share = inStage.length === 0 ? 0 : done / inStage.length
+
+                return (
+                  <div key={stage} className="panel">
+                    <div className="row" style={{ justifyContent: 'space-between' }}>
+                      <span className="label label-accent">{DOC_STAGE_LABELS[stage]}</span>
+                      <span className="num dim">
+                        {done} / {inStage.length}
+                      </span>
+                    </div>
+                    <div className="bar" style={{ marginTop: 12 }}>
+                      <span style={{ width: `${share * 100}%` }} />
+                    </div>
+                    <div className="dim" style={{ marginTop: 10, fontSize: '0.82rem' }}>
+                      {share === 1
+                        ? 'Стадия закрыта'
+                        : inStage.some((t) => t.status !== 'blocked')
+                          ? 'Идёт работа'
+                          : 'Ждёт предыдущей стадии'}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+
         {run && team.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
@@ -91,6 +149,21 @@ export default async function ProjectPage() {
                       </span>
                       {slot.isSignatory && <span className="tag tag-accent">подпись</span>}
                     </div>
+                    {(() => {
+                      const need = parseList<Specialization>(
+                        slot.roleSpecializationsJson,
+                        SPECIALIZATIONS,
+                      )
+                      if (need.length === 0) return null
+
+                      return (
+                        <div className="dim" style={{ fontSize: '0.8rem', marginTop: 6 }}>
+                          {need
+                            .map((x) => SPECIALIZATION_LABELS[x])
+                            .join(slot.roleMode === 'all' ? ' + ' : ' / ')}
+                        </div>
+                      )
+                    })()}
                     <h3 style={{ marginTop: 10, marginBottom: 16 }}>{slot.specialist.displayName}</h3>
                     {candidate && (
                       <BreakdownRow

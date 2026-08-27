@@ -11,11 +11,22 @@ import {
   type RelayTicket,
 } from './relay'
 
-const TEAM = ['architecture', 'structural', 'mep', 'survey', 'permitting'] as const
+const TEAM = ['architecture', 'structural', 'mep', 'survey', 'permitting', 'visualization'] as const
 
 describe('план графа тикетов', () => {
+  it('дробит работу на атомарные задачи, а не на разделы', () => {
+    const plan = planTickets('permit', [...TEAM])
+    const architectureAtPermit = plan.filter(
+      (t) => t.stage === 'permit' && t.discipline === 'architecture',
+    )
+
+    // Планы, фасады, разрезы, записка — четыре тикета, а не один «раздел».
+    expect(architectureAtPermit.length).toBeGreaterThan(1)
+    expect(architectureAtPermit.map((t) => t.title)).toContain('Фасады')
+  })
+
   it('не заводит работу, которую некому делать', () => {
-    const plan = planTickets('villa', 'permit', ['architecture', 'structural'])
+    const plan = planTickets('permit', ['architecture', 'structural'])
     const disciplines = new Set(plan.map((t) => t.discipline))
 
     expect(disciplines.has('permitting')).toBe(false)
@@ -24,38 +35,50 @@ describe('план графа тикетов', () => {
   })
 
   it('ведёт проект по стадиям до целевой', () => {
-    const plan = planTickets('villa', 'permit', [...TEAM])
-    expect(stagesOf(plan)).toEqual(['concept', 'permit'])
+    expect(stagesOf(planTickets('permit', [...TEAM]))).toEqual(['concept', 'permit'])
+    expect(stagesOf(planTickets('construction', [...TEAM]))).toEqual([
+      'concept',
+      'permit',
+      'tender',
+      'construction',
+    ])
+  })
 
-    const long = planTickets('villa', 'construction', [...TEAM])
-    expect(stagesOf(long)).toEqual(['concept', 'permit', 'tender', 'construction'])
+  it('внутри дисциплины ведёт задачи цепочкой', () => {
+    const plan = planTickets('permit', [...TEAM])
+    const arch = plan.filter((t) => t.stage === 'permit' && t.discipline === 'architecture')
+
+    // Фасады рисуют по планам, а не одновременно с ними.
+    expect(arch[1].dependsOn).toEqual([arch[0].key])
+    expect(arch[2].dependsOn).toEqual([arch[1].key])
   })
 
   it('ставит геодезию раньше архитектуры, а согласования — последними', () => {
-    const plan = planTickets('villa', 'permit', [...TEAM])
-    const byKey = new Map(plan.map((t) => [t.key, t]))
+    const plan = planTickets('permit', [...TEAM])
+    const at = (d: string) => plan.filter((t) => t.stage === 'permit' && t.discipline === d)
 
-    expect(byKey.get('permit:survey')!.dependsOn).not.toContain('permit:architecture')
-    expect(byKey.get('permit:architecture')!.dependsOn).toContain('permit:survey')
-    expect(byKey.get('permit:structural')!.dependsOn).toContain('permit:architecture')
+    const survey = at('survey')
+    const arch = at('architecture')
+    const permitting = at('permitting')
 
-    const permitting = byKey.get('permit:permitting')!
-    expect(permitting.dependsOn).toEqual(
-      expect.arrayContaining(['permit:architecture', 'permit:structural', 'permit:mep']),
-    )
-    expect(permitting.dependsOn).not.toContain('permit:permitting')
+    // Голова архитектуры ждёт хвост геодезии.
+    expect(arch[0].dependsOn).toEqual([survey[survey.length - 1].key])
+    // Согласования ждут хвосты всех остальных дисциплин стадии.
+    expect(permitting[0].dependsOn).toContain(arch[arch.length - 1].key)
+    expect(permitting[0].dependsOn).not.toContain(permitting[0].key)
   })
 
   it('связывает стадии: следующая входит в предыдущую', () => {
-    const plan = planTickets('villa', 'permit', [...TEAM])
-    const survey = plan.find((t) => t.key === 'permit:survey')!
+    const plan = planTickets('permit', [...TEAM])
+    const survey = plan.filter((t) => t.stage === 'permit' && t.discipline === 'survey')
+    const conceptKeys = plan.filter((t) => t.stage === 'concept').map((t) => t.key)
 
-    // Геодезия — вход стадии разрешения, значит ждёт конца концепции.
-    expect(survey.dependsOn).toContain('concept:architecture')
+    expect(survey[0].dependsOn.length).toBeGreaterThan(0)
+    for (const dependency of survey[0].dependsOn) expect(conceptKeys).toContain(dependency)
   })
 
   it('строит граф без циклов', () => {
-    const plan = planTickets('mixed_use', 'construction', [
+    const plan = planTickets('construction', [
       'architecture',
       'structural',
       'mep',
@@ -66,22 +89,30 @@ describe('план графа тикетов', () => {
       'visualization',
     ])
 
-    const asTickets: RelayTicket[] = plan.map((t) => ({
+    const tickets: RelayTicket[] = plan.map((t) => ({
       id: t.key,
       status: 'blocked',
       dependsOn: t.dependsOn,
     }))
 
-    expect(topologicalOrder(asTickets)).toHaveLength(plan.length)
+    expect(topologicalOrder(tickets)).toHaveLength(plan.length)
   })
 
   it('замечает цикл, а не зацикливается', () => {
-    const cyclic: RelayTicket[] = [
-      { id: 'a', status: 'blocked', dependsOn: ['b'] },
-      { id: 'b', status: 'blocked', dependsOn: ['a'] },
-    ]
+    expect(
+      topologicalOrder([
+        { id: 'a', status: 'blocked', dependsOn: ['b'] },
+        { id: 'b', status: 'blocked', dependsOn: ['a'] },
+      ]),
+    ).toEqual([])
+  })
 
-    expect(topologicalOrder(cyclic)).toEqual([])
+  it('даёт разным задачам разные сроки', () => {
+    const plan = planTickets('permit', [...TEAM])
+    const slas = new Set(plan.map((t) => t.slaHours))
+
+    // Посадка на участок и подача в органы — работа разного веса.
+    expect(slas.size).toBeGreaterThan(1)
   })
 })
 
@@ -90,6 +121,7 @@ describe('стадийные гейты', () => {
     expect(canOpen([])).toBe(true)
     expect(canOpen(['accepted', 'accepted'])).toBe(true)
     expect(canOpen(['accepted', 'submitted'])).toBe(false)
+    expect(canOpen(['in_progress'])).toBe(false)
     expect(canOpen(['revision'])).toBe(false)
   })
 
@@ -106,29 +138,30 @@ describe('стадийные гейты', () => {
   })
 
   it('не открывает тикет, у которого принята только часть зависимостей', () => {
-    const tickets: RelayTicket[] = [
-      { id: 'arch', status: 'accepted', dependsOn: [] },
-      { id: 'struct', status: 'open', dependsOn: ['arch'] },
-      { id: 'permitting', status: 'blocked', dependsOn: ['arch', 'struct'] },
-    ]
-
-    expect(openable(tickets)).toEqual([])
+    expect(
+      openable([
+        { id: 'arch', status: 'accepted', dependsOn: [] },
+        { id: 'struct', status: 'in_progress', dependsOn: ['arch'] },
+        { id: 'permitting', status: 'blocked', dependsOn: ['arch', 'struct'] },
+      ]),
+    ).toEqual([])
   })
 })
 
 describe('счётчики поставки', () => {
   const opened = new Date('2026-03-01T09:00:00Z')
 
-  it('считает срок от открытия по SLA', () => {
-    expect(dueDate(opened, 7).toISOString()).toBe('2026-03-08T09:00:00.000Z')
+  it('считает срок от открытия по SLA в часах', () => {
+    expect(dueDate(opened, 24).toISOString()).toBe('2026-03-02T09:00:00.000Z')
+    expect(dueDate(opened, 48).toISOString()).toBe('2026-03-03T09:00:00.000Z')
   })
 
-  it('засчитывает приёмку в срок и с первого раза', () => {
+  it('меряет время реакции до принятия задачи, а не до первой реплики', () => {
     const delta = deliveryDeltaFor({
       openedAt: opened,
-      firstResponseAt: new Date('2026-03-01T11:00:00Z'),
-      acceptedAt: new Date('2026-03-05T09:00:00Z'),
-      dueAt: dueDate(opened, 7),
+      claimedAt: new Date('2026-03-01T11:00:00Z'),
+      acceptedAt: new Date('2026-03-02T08:00:00Z'),
+      dueAt: dueDate(opened, 24),
       revisionRounds: 0,
     })
 
@@ -144,9 +177,9 @@ describe('счётчики поставки', () => {
   it('не засчитывает просрочку и круги правок', () => {
     const delta = deliveryDeltaFor({
       openedAt: opened,
-      firstResponseAt: new Date('2026-03-03T09:00:00Z'),
+      claimedAt: new Date('2026-03-03T09:00:00Z'),
       acceptedAt: new Date('2026-03-20T09:00:00Z'),
-      dueAt: dueDate(opened, 7),
+      dueAt: dueDate(opened, 24),
       revisionRounds: 2,
     })
 
@@ -156,31 +189,31 @@ describe('счётчики поставки', () => {
     expect(delta.deliveredTickets).toBe(1)
   })
 
-  it('не выдумывает время отклика, если ответа не было', () => {
-    const delta = deliveryDeltaFor({
-      openedAt: opened,
-      firstResponseAt: null,
-      acceptedAt: new Date('2026-03-05T09:00:00Z'),
-      dueAt: dueDate(opened, 7),
-      revisionRounds: 0,
-    })
-
-    expect(delta.responseMinutes).toBe(0)
+  it('не выдумывает время реакции, если тикет не брали в работу', () => {
+    expect(
+      deliveryDeltaFor({
+        openedAt: opened,
+        claimedAt: null,
+        acceptedAt: new Date('2026-03-02T08:00:00Z'),
+        dueAt: dueDate(opened, 24),
+        revisionRounds: 0,
+      }).responseMinutes,
+    ).toBe(0)
   })
 })
 
 describe('обезличивание', () => {
   it('отдаёт роли соседей, а не людей', () => {
-    const team = [
-      { specialist: { id: 'me' }, discipline: 'architecture' as const },
-      { specialist: { id: 'other' }, discipline: 'structural' as const },
-      { specialist: { id: 'third' }, discipline: 'mep' as const },
-    ]
-
-    const roles = teammateRoles(team, 'me')
+    const roles = teammateRoles(
+      [
+        { specialist: { id: 'me' }, discipline: 'architecture' },
+        { specialist: { id: 'other' }, discipline: 'structural' },
+        { specialist: { id: 'third' }, discipline: 'mep' },
+      ],
+      'me',
+    )
 
     expect(roles).toEqual(['structural', 'mep'])
-    // Возвращается дисциплина и только она: ни идентификатора, ни имени.
     expect(JSON.stringify(roles)).not.toContain('other')
   })
 })

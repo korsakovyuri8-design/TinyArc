@@ -46,8 +46,11 @@ model Specialist {
   /// rejected — не прошёл порог портфолио.
   status      String @default("pending")
 
-  // 1. Дисциплина
+  // 1. Дисциплина и специализация внутри неё
   disciplinesJson     String @default("[]")
+  /// Второй уровень дисциплины: конструктор по материалу, MEP по системам,
+  /// архитектор по масштабу. Без этого бетонщик уходит на деревянный дом.
+  specializationsJson String @default("[]")
   // 2. Типология
   typologiesJson      String @default("[]")
   // 3. Масштаб
@@ -79,6 +82,9 @@ model Specialist {
   weeklyCapacityHours Int    @default(0)
   /// Через сколько дней специалист может выйти на задачу.
   leadTimeDays        Int    @default(0)
+  /// available — свободен, part_time — частично, busy — снят с отбора.
+  /// Занятость руками не отменяет расчёта: она задаёт ёмкость, а не балл.
+  availabilityStatus  String @default("available")
 
   /// Рейтинг портфолио, 0–10. Ставится при разборе портфолио на входе.
   /// Порог 8/10 — гейт до скоринга (п.9), а не слагаемое внутри него.
@@ -98,6 +104,7 @@ model Specialist {
   slots       TeamSlot[]
   tickets     Ticket[]
   comments    TicketComment[]
+  portfolio   PortfolioItem[]
 
   @@index([status])
 }
@@ -123,6 +130,11 @@ model Project {
   materialSystem  String
   regulatoryTrack String @default("light")
   targetStage     String @default("permit")
+  /// flat — ровный, slope — склон (нужна вертикальная планировка),
+  /// flood_prone — риск подтопления (нужны согласования по риску).
+  terrain         String @default("flat")
+  /// grid — городские сети, off_grid — автономка. Это разная инженерия.
+  gridConnection  String @default("grid")
   softwareJson    String @default("[]")
   languagesJson   String @default("[]")
   /// Требуемая занятость специалиста, часов в неделю.
@@ -183,6 +195,11 @@ model Candidate {
   specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
 
   discipline String
+  /// Требование роли, под которое считался кандидат. Хранится вместе с
+  /// результатом: состав ролей зависит от проекта, и объяснение решения должно
+  /// пережить любое изменение сценарной матрицы.
+  roleSpecializationsJson String @default("[]")
+  roleMode                String @default("any")
   /// Прошёл ли жёсткие гейты и какой из них не прошёл.
   passed        Boolean
   failedGate    String @default("")
@@ -214,7 +231,9 @@ model TeamSlot {
   specialistId String
   specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
 
-  discipline String
+  discipline              String
+  roleSpecializationsJson String @default("[]")
+  roleMode                String @default("any")
   /// Этот специалист подписывает пакет в юрисдикции проекта.
   isSignatory Boolean @default(false)
   score       Float   @default(0)
@@ -242,20 +261,30 @@ model Ticket {
   specialistId String?
   specialist   Specialist? @relation(fields: [specialistId], references: [id])
 
-  /// blocked — ждёт зависимости; open — выдан; submitted — предъявлен;
-  /// revision — возвращён на круг; accepted — принят.
+  /// blocked — ждёт зависимости; open — выдан, но не взят; in_progress — взят
+  /// в работу; submitted — предъявлен; revision — возвращён на круг;
+  /// accepted — принят.
   status String @default("blocked")
 
-  /// Срок в днях от открытия. По нему считается SLA compliance (п.12).
-  slaDays Int @default(7)
+  /// Срок в часах от открытия. Тикет атомарный, дни здесь слишком крупная
+  /// единица. По нему считается SLA compliance (п.12).
+  slaHours Int @default(24)
 
-  openedAt        DateTime?
-  firstResponseAt DateTime?
-  submittedAt     DateTime?
-  acceptedAt      DateTime?
-  dueAt           DateTime?
+  openedAt    DateTime?
+  /// Когда специалист взял тикет в работу. Response Time — это именно время до
+  /// принятия задачи, а не до первой реплики в переписке (п.12).
+  claimedAt   DateTime?
+  submittedAt DateTime?
+  acceptedAt  DateTime?
+  dueAt       DateTime?
   /// Сколько раз возвращали на круг. Питает Revision Rate (п.12).
   revisionRounds  Int @default(0)
+
+  /// Арбитраж. Специалист или бюро поднимает конфликт по тикету — система
+  /// сигналит бюро, решает бюро. Спорить между собой участникам негде и незачем.
+  conflictRaisedAt DateTime?
+  conflictBy       String?
+  conflictNote     String    @default("")
 
   createdAt DateTime @default(now())
 
@@ -298,6 +327,8 @@ model TicketComment {
   /// bureau — бюро; specialist — исполнитель тикета.
   /// Клиента среди авторов нет: с командой он не переписывается.
   authorRole   String
+  /// Комментарий поднял конфликт: он же виден бюро в списке арбитража.
+  isConflict   Boolean @default(false)
   specialistId String?
   specialist   Specialist? @relation(fields: [specialistId], references: [id])
 
@@ -316,7 +347,38 @@ model Artifact {
   name      String
   /// Ссылка на файл. Сами файлы бюро у себя не держит (п.13).
   url       String @default("")
+  /// model — BIM-модель или DWG для следующего по графу; sheet — чертёж;
+  /// render — визуализация; report — расчёт или записка.
+  kind      String @default("sheet")
   createdAt DateTime @default(now())
 
   @@index([ticketId])
+}
+
+/// Работа в портфолио специалиста.
+///
+/// Одной картинки мало: у конструктора красивых картинок нет вовсе, у него узлы
+/// и скриншоты из модели. Поэтому важнее картинки — что именно человек делал,
+/// в чём и на каких параметрах.
+model PortfolioItem {
+  id           String     @id @default(cuid())
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  title String
+  /// render — 3D; drawing — чертежи и разрезы; bim — скриншоты модели;
+  /// site — фото со стройки.
+  kind  String @default("render")
+  url   String @default("")
+
+  /// Что именно делал: придумал концепцию или чертил узлы.
+  roleDescription String @default("")
+  softwareJson    String @default("[]")
+  areaSqm         Int?
+  budgetEur       Int?
+  durationMonths  Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([specialistId])
 }

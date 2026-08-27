@@ -19,6 +19,9 @@ import type {
   RegulatoryTrack,
   ScaleBand,
   Software,
+  Specialization,
+  Terrain,
+  GridConnection,
   Typology,
   WorkMode,
 } from '@/engine/taxonomy'
@@ -55,6 +58,7 @@ import {
   REGULATORY_TRACKS,
   SCALE_BANDS,
   SOFTWARE,
+  SPECIALIZATIONS,
 } from '@/engine/taxonomy'
 
 export function toProfile(row: Specialist): SpecialistProfile {
@@ -62,6 +66,7 @@ export function toProfile(row: Specialist): SpecialistProfile {
     id: row.id,
     displayName: row.displayName,
     disciplines: parseList<Discipline>(row.disciplinesJson, DISCIPLINES),
+    specializations: parseList<Specialization>(row.specializationsJson, SPECIALIZATIONS),
     typologies: parseList<Typology>(row.typologiesJson, ['villa', 'townhouse', 'multi_family', 'mixed_use']),
     scaleBands: parseList<ScaleBand>(row.scaleBandsJson, SCALE_BANDS),
     maxStoreys: row.maxStoreys,
@@ -99,6 +104,8 @@ export function toRequirements(row: Project): ProjectRequirements {
     materialSystem: row.materialSystem as MaterialSystem,
     regulatoryTrack: row.regulatoryTrack as RegulatoryTrack,
     targetStage: row.targetStage as DocStage,
+    terrain: row.terrain as Terrain,
+    gridConnection: row.gridConnection as GridConnection,
     software: parseList<Software>(row.softwareJson, SOFTWARE),
     languages: parseList<Language>(row.languagesJson, LANGUAGES),
     requiredHoursPerWeek: row.requiredHoursPerWeek,

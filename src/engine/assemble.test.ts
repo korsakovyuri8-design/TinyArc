@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { assemble, rankFor } from './assemble'
-import { fullPool, requirements, specialist } from './fixtures'
+import { fullPool, requirements, role, specialist } from './fixtures'
 
 describe('сборка Tiny Team', () => {
-  it('собирает команду под все обязательные дисциплины', () => {
+  it('собирает команду под все обязательные роли', () => {
     const result = assemble(fullPool(), requirements({ targetStage: 'permit' }))
 
     expect(result.outcome).toBe('ok')
     expect(result.team.map((m) => m.discipline).sort()).toEqual(
-      ['architecture', 'mep', 'permitting', 'structural', 'survey'].sort(),
+      ['architecture', 'mep', 'permitting', 'structural', 'survey', 'visualization'].sort(),
     )
   })
 
@@ -20,7 +20,30 @@ describe('сборка Tiny Team', () => {
     expect(result.candidates).toHaveLength(0)
   })
 
-  it('сообщает, какая дисциплина не закрыта', () => {
+  it('меняет состав команды вслед за формой проекта', () => {
+    const flat = assemble(fullPool(), requirements({ terrain: 'flat' }))
+    const slope = assemble(fullPool(), requirements({ terrain: 'slope' }))
+
+    expect(flat.team.some((m) => m.discipline === 'landscape')).toBe(false)
+    expect(slope.team.some((m) => m.discipline === 'landscape')).toBe(true)
+  })
+
+  it('не берёт конструктора по бетону на деревянный дом', () => {
+    const pool = fullPool().map((s) =>
+      s.disciplines.includes('structural')
+        ? { ...s, specializations: ['structural_concrete' as const] }
+        : s,
+    )
+
+    const concrete = assemble(pool, requirements({ materialSystem: 'concrete' }))
+    const timber = assemble(pool, requirements({ materialSystem: 'timber' }))
+
+    expect(concrete.outcome).toBe('ok')
+    expect(timber.outcome).toBe('incomplete')
+    expect(timber.notes).toContain('structural_timber')
+  })
+
+  it('сообщает, какая роль не закрыта', () => {
     const withoutMep = fullPool().filter((s) => !s.disciplines.includes('mep'))
     const result = assemble(withoutMep, requirements())
 
@@ -46,7 +69,6 @@ describe('сборка Tiny Team', () => {
   })
 
   it('меняет состав ради подписи с наименьшей потерей балла', () => {
-    // Все верхние кандидаты без подписи; подписывает только слабый конструктор.
     const pool = [
       ...fullPool().map((s) => ({ ...s, signsIn: [] as never[] })),
       specialist({
@@ -59,53 +81,51 @@ describe('сборка Tiny Team', () => {
     ]
 
     const result = assemble(pool, requirements())
+    const signatory = result.team.find((m) => m.isSignatory)
 
     expect(result.outcome).toBe('ok')
-    const signatory = result.team.find((m) => m.isSignatory)
     expect(signatory?.specialist.id).toBe('signing-structural')
-    expect(signatory?.discipline).toBe('structural')
   })
 
-  it('уступает место следующему, если кандидат ломает обмен моделями', () => {
-    // Архитектор ведёт на Revit. Верхний конструктор — Rhino без IFC.
+  it('уступает место следующему, если кандидат вне пакета команды', () => {
+    // Клиент пакета не задал, поэтому шлюз проекта молчит — но команда всё
+    // равно обязана говорить на одном языке с ведущим архитектором.
     const pool = [
       specialist({ id: 'arch', disciplines: ['architecture'], software: ['revit'], portfolioRating: 9.5 }),
       specialist({
         id: 'isolated-structural',
         disciplines: ['structural'],
         software: ['rhino'],
-        ifcLevel: 'none',
         portfolioRating: 9.9,
       }),
       specialist({
-        id: 'exchanging-structural',
+        id: 'same-stack-structural',
         disciplines: ['structural'],
-        software: ['tekla'],
-        ifcLevel: 'coordination',
+        software: ['revit'],
         portfolioRating: 8.5,
       }),
       specialist({ id: 'mep', disciplines: ['mep'], software: ['revit'] }),
+      specialist({ id: 'viz', disciplines: ['visualization'], software: ['revit'] }),
     ]
 
     const result = assemble(pool, requirements({ targetStage: 'concept', software: [] }))
     const structural = result.team.find((m) => m.discipline === 'structural')
 
     expect(result.outcome).toBe('ok')
-    // Балл выше у изолированного, но в команду идёт тот, кто обменивается.
-    expect(structural?.specialist.id).toBe('exchanging-structural')
+    // Балл выше у изолированного, но в команду идёт тот, кто в пакете команды.
+    expect(structural?.specialist.id).toBe('same-stack-structural')
   })
 
   it('не выдаёт один и тот же час дважды', () => {
-    // Один универсал на две дисциплины, ёмкости хватает ровно на один слот.
     const generalist = specialist({
       id: 'generalist',
-      disciplines: ['architecture', 'structural', 'mep'],
+      disciplines: ['architecture', 'structural', 'mep', 'visualization'],
       weeklyCapacityHours: 10,
       portfolioRating: 10,
     })
     const backup = specialist({
       id: 'backup',
-      disciplines: ['structural', 'mep'],
+      disciplines: ['structural', 'mep', 'visualization'],
       weeklyCapacityHours: 40,
       portfolioRating: 8,
     })
@@ -116,14 +136,13 @@ describe('сборка Tiny Team', () => {
     )
 
     expect(result.outcome).toBe('ok')
-    const byGeneralist = result.team.filter((m) => m.specialist.id === 'generalist')
-    expect(byGeneralist).toHaveLength(1)
+    expect(result.team.filter((m) => m.specialist.id === 'generalist')).toHaveLength(1)
   })
 
-  it('позволяет универсалу закрыть несколько дисциплин, когда ёмкости хватает', () => {
+  it('позволяет универсалу закрыть несколько ролей, когда ёмкости хватает', () => {
     const generalist = specialist({
       id: 'generalist',
-      disciplines: ['architecture', 'structural', 'mep'],
+      disciplines: ['architecture', 'structural', 'mep', 'visualization'],
       weeklyCapacityHours: 40,
       portfolioRating: 10,
     })
@@ -131,7 +150,7 @@ describe('сборка Tiny Team', () => {
     const result = assemble([generalist], requirements({ targetStage: 'concept' }))
 
     expect(result.outcome).toBe('ok')
-    expect(result.team).toHaveLength(3)
+    expect(result.team).toHaveLength(4)
     expect(new Set(result.team.map((m) => m.specialist.id)).size).toBe(1)
   })
 })
@@ -143,13 +162,12 @@ describe('ранжирование и разбор', () => {
       specialist({ id: 'weak', portfolioRating: 6 }),
     ]
 
-    const ranked = rankFor(pool, requirements(), 'architecture')
+    const ranked = rankFor(pool, requirements(), role('architecture', ['arch_small_scale']))
     const weak = ranked.find((c) => c.specialist.id === 'weak')
 
     expect(ranked).toHaveLength(2)
     expect(weak?.passed).toBe(false)
     expect(weak?.failedGate).toBe('portfolio_threshold')
-    // Отсеянному ранг не присваивается.
     expect(weak?.rank).toBe(0)
   })
 
@@ -160,7 +178,7 @@ describe('ранжирование и разбор', () => {
       specialist({ id: 'third', portfolioRating: 8.1 }),
     ]
 
-    const ranked = rankFor(pool, requirements(), 'architecture')
+    const ranked = rankFor(pool, requirements(), role('architecture'))
       .filter((c) => c.passed)
       .sort((a, b) => a.rank - b.rank)
 
@@ -171,7 +189,7 @@ describe('ранжирование и разбор', () => {
   it('считает выживших по людям, а не по кандидатурам', () => {
     const generalist = specialist({
       id: 'generalist',
-      disciplines: ['architecture', 'structural', 'mep'],
+      disciplines: ['architecture', 'structural', 'mep', 'visualization'],
       weeklyCapacityHours: 40,
     })
 
@@ -179,7 +197,6 @@ describe('ранжирование и разбор', () => {
 
     expect(result.pooledCount).toBe(1)
     expect(result.survivedCount).toBe(1)
-    // Кандидатур при этом три — по одной на дисциплину.
-    expect(result.candidates).toHaveLength(3)
+    expect(result.candidates).toHaveLength(4)
   })
 })

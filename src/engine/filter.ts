@@ -10,53 +10,62 @@
  */
 
 import {
-  IFC_EXCHANGE_MINIMUM,
-  IFC_RANK,
   MIN_TIMEZONE_OVERLAP_HOURS,
   OFFICIAL_LANGUAGE,
   PORTFOLIO_THRESHOLD,
   DOC_STAGE_ORDER,
-  type Discipline,
+  coversRole,
+  type RequiredRole,
 } from './taxonomy'
-import { timezoneOverlapHours } from './score'
+import { availability, timezoneOverlapHours } from './score'
 import type { GateName, ProjectRequirements, SpecialistProfile } from './types'
 
 export const GATE_LABELS: Record<GateName, string> = {
   portfolio_threshold: `Портфолио ниже ${PORTFOLIO_THRESHOLD}/10`,
   discipline: 'Не работает в этой дисциплине',
+  specialization: 'Дисциплина та, специализация не та',
   jurisdiction: 'Не проходил согласования в этой стране',
   storeys: 'Нет подтверждённого опыта на такой этажности',
   doc_stage: 'Не ведёт документацию до нужной стадии',
-  software_exchange: 'Не обменивается моделями с командой',
+  software_exchange: 'Не работает в пакете проекта',
   language: 'Нет общего языка с клиентом или с органами',
   timezone_overlap: 'Пересечение по времени меньше рабочего минимума',
+  availability: 'Нет свободной ёмкости или не успевает выйти к сроку',
 }
 
 /**
- * Совместим ли специалист по обмену моделями с требованием проекта.
+ * Технологический шлюз (Tech Gate).
  *
- * Общий формат заменяет общий пакет: специалист на ArchiCAD совместим с
- * командой на Revit, если умеет координироваться по IFC (п.8).
+ * Если клиент указал пакет, специалист обязан в нём работать. Обмена по IFC как
+ * обхода здесь нет намеренно: команда, говорящая на разных цифровых языках,
+ * теряет данные модели на каждой передаче, а отвечаем за комплект мы. Гений на
+ * ArchiCAD в проекте на Revit не проходит — это правило, а не недоразумение.
+ *
+ * Уровень IFC остаётся в профиле и виден в интерфейсе: он важен на хендоффе,
+ * просто не отменяет совпадения пакета.
  */
-export function exchangesWith(
-  specialist: Pick<SpecialistProfile, 'software' | 'ifcLevel'>,
+export function worksInStack(
+  specialist: Pick<SpecialistProfile, 'software'>,
   software: readonly string[],
 ): boolean {
+  // Пакет не задан — клиенту всё равно, в чём считают. Тогда шлюза нет.
   if (software.length === 0) return true
-  if (specialist.software.some((s) => software.includes(s))) return true
 
-  return IFC_RANK[specialist.ifcLevel] >= IFC_RANK[IFC_EXCHANGE_MINIMUM]
+  return specialist.software.some((s) => software.includes(s))
 }
 
 /** Первый непройденный гейт, либо null. Null означает «в выборке». */
 export function failedGate(
   specialist: SpecialistProfile,
   requirements: ProjectRequirements,
-  discipline: Discipline,
+  role: RequiredRole,
 ): GateName | null {
   if (specialist.portfolioRating < PORTFOLIO_THRESHOLD) return 'portfolio_threshold'
 
-  if (!specialist.disciplines.includes(discipline)) return 'discipline'
+  if (!specialist.disciplines.includes(role.discipline)) return 'discipline'
+
+  // Дисциплина совпала, но конструктор по бетону не считает деревянный дом.
+  if (!coversRole(specialist.specializations, role)) return 'specialization'
 
   if (!specialist.jurisdictions.includes(requirements.jurisdiction)) return 'jurisdiction'
 
@@ -67,14 +76,14 @@ export function failedGate(
   )
   if (!covers) return 'doc_stage'
 
-  if (!exchangesWith(specialist, requirements.software)) return 'software_exchange'
+  if (!worksInStack(specialist, requirements.software)) return 'software_exchange'
 
   const sharesClientLanguage = specialist.languages.some((l) => requirements.languages.includes(l))
   if (!sharesClientLanguage) return 'language'
 
   // Согласования идут в органах, а органы говорят на своём языке. Для этой
   // дисциплины язык юрисдикции — жёсткое требование, а не удобство.
-  if (discipline === 'permitting') {
+  if (role.discipline === 'permitting') {
     if (!specialist.languages.includes(OFFICIAL_LANGUAGE[requirements.jurisdiction])) {
       return 'language'
     }
@@ -83,13 +92,18 @@ export function failedGate(
   const overlap = timezoneOverlapHours(specialist.utcOffset, requirements.utcOffset)
   if (overlap < MIN_TIMEZONE_OVERLAP_HOURS) return 'timezone_overlap'
 
+  // Ноль часов в неделю или выход позже горизонта — специалиста в выборке нет.
+  // Это гейт, а не низкий балл: «свободен через полгода» не ранжируется, он
+  // просто не подходит проекту с датой.
+  if (availability(specialist, requirements) <= 0) return 'availability'
+
   return null
 }
 
 export function passes(
   specialist: SpecialistProfile,
   requirements: ProjectRequirements,
-  discipline: Discipline,
+  role: RequiredRole,
 ): boolean {
-  return failedGate(specialist, requirements, discipline) === null
+  return failedGate(specialist, requirements, role) === null
 }

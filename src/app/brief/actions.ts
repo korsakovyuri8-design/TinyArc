@@ -39,6 +39,8 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       materialSystem: input.materialSystem,
       regulatoryTrack: input.regulatoryTrack,
       targetStage: input.targetStage,
+      terrain: input.terrain,
+      gridConnection: input.gridConnection,
       softwareJson: toList(input.software),
       languagesJson: toList(input.languages),
       requiredHoursPerWeek: input.requiredHoursPerWeek,

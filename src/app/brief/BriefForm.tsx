@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import {
   CLIMATE_ZONES,
   DOC_STAGES,
+  GRID_CONNECTIONS,
   JURISDICTIONS,
   JURISDICTION_NAMES,
   LANGUAGES,
@@ -12,11 +13,14 @@ import {
   MAX_STOREYS,
   REGULATORY_TRACKS,
   SOFTWARE,
+  TERRAINS,
   TYPOLOGIES,
 } from '@/engine/taxonomy'
 import {
   CLIMATE_LABELS,
   DOC_STAGE_LABELS,
+  GRID_LABELS,
+  TERRAIN_LABELS,
   MATERIAL_LABELS,
   REGULATORY_LABELS,
   SOFTWARE_LABELS,
@@ -104,6 +108,29 @@ export function BriefForm() {
               options={DOC_STAGES}
               labels={DOC_STAGE_LABELS}
               defaultValue="permit"
+            />
+          </Field>
+
+          <Field
+            label="Участок"
+            name="terrain"
+            error={errors.terrain}
+            hint="Склон требует вертикальной планировки, подтопление — отдельных согласований"
+          >
+            <Select name="terrain" options={TERRAINS} labels={TERRAIN_LABELS} defaultValue="flat" />
+          </Field>
+
+          <Field
+            label="Сети"
+            name="gridConnection"
+            error={errors.gridConnection}
+            hint="Автономка — это другая инженерия, а не та же со звёздочкой"
+          >
+            <Select
+              name="gridConnection"
+              options={GRID_CONNECTIONS}
+              labels={GRID_LABELS}
+              defaultValue="grid"
             />
           </Field>
         </div>

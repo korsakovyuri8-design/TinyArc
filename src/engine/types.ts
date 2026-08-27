@@ -2,13 +2,17 @@ import type {
   ClimateZone,
   Discipline,
   DocStage,
+  GridConnection,
   IfcLevel,
   Jurisdiction,
   Language,
   MaterialSystem,
   RegulatoryTrack,
+  RequiredRole,
   ScaleBand,
   Software,
+  Specialization,
+  Terrain,
   Typology,
   WorkMode,
 } from './taxonomy'
@@ -28,6 +32,8 @@ export type SpecialistProfile = {
   displayName: string
   // 1–12, в порядке концепта (п.8)
   disciplines: Discipline[]
+  /** Второй уровень первого измерения: чем именно человек занимается внутри дисциплины. */
+  specializations: Specialization[]
   typologies: Typology[]
   scaleBands: ScaleBand[]
   maxStoreys: number
@@ -59,6 +65,8 @@ export type ProjectRequirements = {
   materialSystem: MaterialSystem
   regulatoryTrack: RegulatoryTrack
   targetStage: DocStage
+  terrain: Terrain
+  gridConnection: GridConnection
   software: Software[]
   languages: Language[]
   requiredHoursPerWeek: number
@@ -85,15 +93,18 @@ export type ScoreBreakdown = {
 export type GateName =
   | 'portfolio_threshold'
   | 'discipline'
+  | 'specialization'
   | 'jurisdiction'
   | 'storeys'
   | 'doc_stage'
   | 'software_exchange'
   | 'language'
   | 'timezone_overlap'
+  | 'availability'
 
 export type ScoredCandidate = {
   specialist: SpecialistProfile
+  role: RequiredRole
   discipline: Discipline
   passed: boolean
   failedGate: GateName | null
@@ -103,6 +114,7 @@ export type ScoredCandidate = {
 
 export type TeamMember = {
   specialist: SpecialistProfile
+  role: RequiredRole
   discipline: Discipline
   isSignatory: boolean
   score: number
@@ -115,7 +127,7 @@ export type Assembly = {
   notes: string
   pooledCount: number
   survivedCount: number
-  requiredDisciplines: Discipline[]
+  requiredRoles: RequiredRole[]
   candidates: ScoredCandidate[]
   team: TeamMember[]
 }

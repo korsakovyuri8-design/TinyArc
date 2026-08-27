@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import {
   CLIMATE_ZONES,
   DISCIPLINES,
+  DISCIPLINE_SPECIALIZATIONS,
   DOC_STAGES,
   IFC_LEVELS,
   JURISDICTIONS,
@@ -21,6 +22,7 @@ import {
 import {
   CLIMATE_LABELS,
   DISCIPLINE_LABELS,
+  SPECIALIZATION_LABELS,
   DOC_STAGE_LABELS,
   IFC_LABELS,
   MATERIAL_LABELS,
@@ -92,6 +94,27 @@ export function ApplicationForm() {
 
         <Field label="Дисциплины" error={errors.disciplines}>
           <Choices name="disciplines" options={DISCIPLINES} labels={DISCIPLINE_LABELS} />
+        </Field>
+
+        <Field
+          label="Специализация"
+          error={errors.specializations}
+          hint="Отметьте только то, что вели сами. Конструктор по монолиту на деревянном доме — это не «почти то же самое», и движок разводит их специально"
+        >
+          <div className="stack" style={{ gap: 16 }}>
+            {DISCIPLINES.filter((d) => DISCIPLINE_SPECIALIZATIONS[d].length > 0).map((d) => (
+              <div key={d}>
+                <div className="label" style={{ marginBottom: 8 }}>
+                  {DISCIPLINE_LABELS[d]}
+                </div>
+                <Choices
+                  name="specializations"
+                  options={DISCIPLINE_SPECIALIZATIONS[d]}
+                  labels={SPECIALIZATION_LABELS}
+                />
+              </div>
+            ))}
+          </div>
         </Field>
 
         <Field label="Типологии" error={errors.typologies}>

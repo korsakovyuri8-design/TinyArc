@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { availability, quality, relevance, scoreFor, timezoneOverlapHours } from './score'
+import {
+  MIN_AVAILABILITY,
+  asHundred,
+  availability,
+  quality,
+  relevance,
+  scoreFor,
+  timezoneOverlapHours,
+} from './score'
 import { deliveryMetrics, deliveryScore, historyWeight } from './metrics'
 import { requirements, specialist } from './fixtures'
 
@@ -108,6 +116,20 @@ describe('доступность', () => {
     expect(availability(soon, req)).toBeGreaterThan(availability(late, req))
   })
 
+  it('держит нижнюю границу для занятого, но не пустого специалиста', () => {
+    // Один свободный час против десяти требуемых, выход почти на горизонте.
+    const squeezed = specialist({ weeklyCapacityHours: 1, leadTimeDays: 28 })
+    const factor = availability(squeezed, requirements({ horizonDays: 30 }))
+
+    expect(factor).toBeGreaterThanOrEqual(MIN_AVAILABILITY)
+    expect(factor).toBeLessThan(0.5)
+  })
+
+  it('не поднимает до границы того, кто не выйдет к сроку', () => {
+    const tooLate = specialist({ leadTimeDays: 60 })
+    expect(availability(tooLate, requirements({ horizonDays: 30 }))).toBe(0)
+  })
+
   it('вычитает часы, уже занятые в этой же команде', () => {
     const person = specialist({ weeklyCapacityHours: 12 })
     const req = requirements({ requiredHoursPerWeek: 10 })
@@ -167,5 +189,43 @@ describe('Quality × Availability', () => {
       score: expect.any(Number),
     })
     expect(breakdown.score).toBeCloseTo(breakdown.quality * breakdown.availability)
+  })
+})
+
+describe('балл в сотне', () => {
+  it('воспроизводит спецификацию отбора: гений на два часа проигрывает свободному профи', () => {
+    // Архитектор А: скилл 98, доступность 0.3. Архитектор Б: скилл 90, 1.0.
+    const genius = asHundred({
+      portfolioRating: 9.8,
+      deliveryScore: 0,
+      historyWeight: 0,
+      relevance: 1,
+      quality: 9.8,
+      availability: 0.3,
+      score: 9.8 * 0.3,
+    })
+
+    const free = asHundred({
+      portfolioRating: 9,
+      deliveryScore: 0,
+      historyWeight: 0,
+      relevance: 1,
+      quality: 9,
+      availability: 1,
+      score: 9,
+    })
+
+    expect(genius.skill).toBeCloseTo(98)
+    expect(genius.final).toBeCloseTo(29.4)
+    expect(free.skill).toBeCloseTo(90)
+    expect(free.final).toBeCloseTo(90)
+
+    // Алгоритм выдаёт Архитектора Б.
+    expect(free.final).toBeGreaterThan(genius.final)
+  })
+
+  it('показывает совпадение процентом', () => {
+    const breakdown = scoreFor(specialist({ portfolioRating: 10, weeklyCapacityHours: 40 }), requirements())
+    expect(asHundred(breakdown).matchPercent).toBeGreaterThan(90)
   })
 })

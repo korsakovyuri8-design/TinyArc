@@ -3,9 +3,21 @@ import { notFound, redirect } from 'next/navigation'
 import { teammateRoles } from '@/engine/relay'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
-import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib/labels'
+import {
+  ARTIFACT_KIND_LABELS,
+  DISCIPLINE_LABELS,
+  DOC_STAGE_LABELS,
+  TICKET_STATUS_LABELS,
+} from '@/lib/labels'
+import { inboundArtifacts } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
-import { CommentForm, SubmitWork } from './TicketActions'
+import {
+  ArtifactForm,
+  ClaimWork,
+  CommentForm,
+  ConflictForm,
+  SubmitWork,
+} from './TicketActions'
 
 export const metadata = { title: 'Тикет — TinyArc Cloud Bureau' }
 
@@ -18,7 +30,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
     where: { id: ticketId },
     include: {
       project: { select: { id: true, title: true } },
-      comments: { orderBy: { createdAt: 'asc' }, include: { specialist: { select: { id: true } } } },
+      comments: { orderBy: { createdAt: 'asc' } },
+      artifacts: { orderBy: { createdAt: 'asc' } },
       dependsOn: { include: { prerequisite: { select: { discipline: true, status: true } } } },
     },
   })
@@ -26,10 +39,13 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   // Чужой тикет неотличим от несуществующего: знать, что он есть, тоже незачем.
   if (!ticket || ticket.specialistId !== specialist.id) notFound()
 
-  const slots = await prisma.teamSlot.findMany({
-    where: { projectId: ticket.projectId },
-    select: { discipline: true, specialistId: true },
-  })
+  const [slots, inbound] = await Promise.all([
+    prisma.teamSlot.findMany({
+      where: { projectId: ticket.projectId },
+      select: { discipline: true, specialistId: true },
+    }),
+    inboundArtifacts(ticket.id),
+  ])
 
   // Соседи по команде — роли, не люди (п.11).
   const roles = teammateRoles(
@@ -38,7 +54,9 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   )
 
   const blocked = ticket.status === 'blocked'
-  const canSubmit = ticket.status === 'open' || ticket.status === 'revision'
+  const canClaim = ticket.status === 'open'
+  const canSubmit = ticket.status === 'in_progress' || ticket.status === 'revision'
+  const working = canSubmit || ticket.status === 'submitted'
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -57,10 +75,22 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
         <h1 style={{ marginTop: 14, fontSize: 'clamp(1.8rem, 4vw, 2.6rem)' }}>{ticket.title}</h1>
         <p className="dim" style={{ marginTop: 10 }}>
-          {ticket.project.title}
-          {ticket.dueAt && ` · срок ${ticket.dueAt.toLocaleDateString('ru-RU')}`}
+          {ticket.project.title} · срок {ticket.slaHours} ч
+          {ticket.dueAt && ` · до ${ticket.dueAt.toLocaleString('ru-RU')}`}
           {ticket.revisionRounds > 0 && ` · кругов правок: ${ticket.revisionRounds}`}
         </p>
+
+        {ticket.conflictRaisedAt && (
+          <div className="panel" style={{ marginTop: 24, borderColor: 'var(--fail)' }}>
+            <div className="label" style={{ color: 'var(--fail)' }}>
+              Конфликт передан арбитру
+            </div>
+            <p style={{ marginTop: 10, marginBottom: 0 }}>{ticket.conflictNote}</p>
+            <p className="hint" style={{ marginTop: 10 }}>
+              Работа по тикету стоит, пока бюро не вынесет решение.
+            </p>
+          </div>
+        )}
 
         {blocked ? (
           <div className="panel" style={{ marginTop: 32 }}>
@@ -71,7 +101,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 .filter((d) => d.prerequisite.status !== 'accepted')
                 .map((d) => DISCIPLINE_LABELS[d.prerequisite.discipline as Discipline])
                 .join(', ') || '—'}
-              . Постановка и входные артефакты появятся здесь, когда тикет откроется.
+              . Постановка и входные файлы появятся здесь, когда тикет откроется.
             </p>
           </div>
         ) : (
@@ -83,11 +113,67 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               </p>
             </div>
 
+            {inbound.length > 0 && (
+              <div className="panel" style={{ marginTop: 20 }}>
+                <div className="label label-accent">Входные файлы</div>
+                <p className="hint" style={{ marginTop: 8 }}>
+                  То, что сдали предшественники по графу. Автор указан дисциплиной.
+                </p>
+                <ul className="clean" style={{ marginTop: 12 }}>
+                  {inbound.map((file) => (
+                    <li key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <a href={file.url} target="_blank" rel="noreferrer noopener">
+                        {file.name}
+                      </a>
+                      <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
+                        {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind} ·{' '}
+                        {DISCIPLINE_LABELS[file.fromDiscipline as Discipline]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {roles.length > 0 && (
               <p className="hint" style={{ marginTop: 16 }}>
                 Смежники на проекте: {roles.map((r) => DISCIPLINE_LABELS[r]).join(', ')}. Их
                 контактов в системе нет — всё через бюро.
               </p>
+            )}
+
+            {canClaim && (
+              <div style={{ marginTop: 28 }}>
+                <ClaimWork ticketId={ticket.id} />
+                <p className="hint" style={{ marginTop: 10 }}>
+                  Время до принятия задачи — это метрика. Тикет, открытый и не взятый, видит
+                  цифровой менеджер и напоминает.
+                </p>
+              </div>
+            )}
+
+            {ticket.artifacts.length > 0 && (
+              <div className="panel" style={{ marginTop: 24 }}>
+                <div className="label">Ваши файлы по тикету</div>
+                <ul className="clean" style={{ marginTop: 12 }}>
+                  {ticket.artifacts.map((file) => (
+                    <li key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <a href={file.url} target="_blank" rel="noreferrer noopener">
+                        {file.name}
+                      </a>
+                      <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
+                        {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {working && (
+              <div style={{ marginTop: 28 }}>
+                <ArtifactForm ticketId={ticket.id} />
+              </div>
             )}
 
             <div className="divider" />
@@ -101,14 +187,18 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                   className="panel"
                   style={{
                     padding: 16,
-                    borderLeft:
-                      c.authorRole === 'bureau'
+                    borderLeft: c.isConflict
+                      ? '2px solid var(--fail)'
+                      : c.authorRole === 'bureau'
                         ? '2px solid var(--accent)'
                         : '2px solid var(--border-strong)',
                   }}
                 >
                   <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <span className="label">{c.authorRole === 'bureau' ? 'Бюро' : 'Вы'}</span>
+                    <span className="label">
+                      {c.authorRole === 'bureau' ? 'Бюро' : 'Вы'}
+                      {c.isConflict && ' · конфликт'}
+                    </span>
                     <span className="label">{c.createdAt.toLocaleDateString('ru-RU')}</span>
                   </div>
                   <p style={{ marginTop: 10, marginBottom: 0, whiteSpace: 'pre-wrap' }}>{c.body}</p>
@@ -140,6 +230,13 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <div className="note" style={{ marginTop: 28 }}>
                 Тикет принят. Зависящие от него задачи гейт откроет сам.
               </div>
+            )}
+
+            {!ticket.conflictRaisedAt && ticket.status !== 'accepted' && (
+              <>
+                <div className="divider" />
+                <ConflictForm ticketId={ticket.id} />
+              </>
             )}
           </>
         )}

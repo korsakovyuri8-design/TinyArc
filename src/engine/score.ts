@@ -23,6 +23,16 @@ import type { ProjectRequirements, ScoreBreakdown, SpecialistProfile } from './t
 export const WORKING_DAY_HOURS = 8
 
 /**
+ * Нижняя граница фактора доступности.
+ *
+ * Занятой специалист не исчезает из выборки — он проигрывает свободному. Ноль
+ * означал бы «нет в пуле», а это отдельное решение и отдельный гейт: тот, у
+ * кого нет ни часа или кто не успеет выйти к сроку, отсекается фильтром, а не
+ * получает балл 0.1 и место в хвосте списка.
+ */
+export const MIN_AVAILABILITY = 0.1
+
+/**
  * Нижняя граница соответствия. Одно несовпадение по мягкому измерению не должно
  * обнулять сильного специалиста — мягкие сигналы ранжируют, а не отсеивают
  * (п.8).
@@ -97,13 +107,20 @@ export function availability(
   takenHoursPerWeek = 0,
 ): number {
   const free = Math.max(0, specialist.weeklyCapacityHours - takenHoursPerWeek)
+
+  // Ни одного свободного часа — это не «низкий фактор», это отсутствие в
+  // выборке. Возвращаем ноль, чтобы сборка команды такого не брала.
+  if (free <= 0) return 0
+
   const capacityFactor = clamp01(free / Math.max(1, requirements.requiredHoursPerWeek))
   const leadTimeFactor = clamp01(1 - specialist.leadTimeDays / Math.max(1, requirements.horizonDays))
 
   const overlap = timezoneOverlapHours(specialist.utcOffset, requirements.utcOffset)
   const timezoneFactor = 0.8 + 0.2 * clamp01(overlap / FULL_TIMEZONE_OVERLAP_HOURS)
 
-  return capacityFactor * leadTimeFactor * timezoneFactor
+  const factor = capacityFactor * leadTimeFactor * timezoneFactor
+
+  return factor <= 0 ? 0 : Math.max(MIN_AVAILABILITY, factor)
 }
 
 /**
@@ -144,5 +161,29 @@ export function scoreFor(
     quality: q.quality,
     availability: a,
     score: q.quality * a,
+  }
+}
+
+/**
+ * Балл в сотне — так, как он записан в спецификации отбора.
+ *
+ * Внутри движок считает в десятках, потому что в десятках задан порог по
+ * портфолио. Наружу показывается сотня: «Скилл 98 × доступность 0.3 = 29.4»
+ * читается без пересчёта в уме.
+ */
+export function asHundred(breakdown: ScoreBreakdown): {
+  skill: number
+  availability: number
+  final: number
+  matchPercent: number
+} {
+  const skill = breakdown.quality * 10
+
+  return {
+    skill,
+    availability: breakdown.availability,
+    final: breakdown.score * 10,
+    // Совпадение с проектом: сколько процентов от идеального кандидата.
+    matchPercent: Math.round(breakdown.score * 10),
   }
 }

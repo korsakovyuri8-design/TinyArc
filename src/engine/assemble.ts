@@ -1,15 +1,16 @@
 /**
  * Стадия Assemble (концепт, п.7 и п.10). Публичное имя стадии — Score.
  *
- * Из ранжированных списков по дисциплинам собирается Tiny Team — минимальная
- * достаточная команда под конкретный проект, а не полный штат бюро.
+ * Из ранжированных списков по ролям собирается Tiny Team — минимальная
+ * достаточная команда под конкретный проект, а не полный штат бюро. Состав
+ * ролей выводит сценарная матрица (taxonomy.requiredRoles), а не шаблон.
  *
  * Человек в этой функции не участвует ни в каком виде. Единственный способ
  * получить другой состав — изменить требования проекта или пул.
  */
 
-import { requiredDisciplines, type Discipline } from './taxonomy'
-import { exchangesWith, failedGate } from './filter'
+import { requiredRoles, type Discipline, type RequiredRole } from './taxonomy'
+import { failedGate, worksInStack } from './filter'
 import { availability, scoreFor } from './score'
 import { validateProject } from './validate'
 import type {
@@ -22,30 +23,41 @@ import type {
 
 /**
  * Архитектура идёт первой не по важности, а по механике: её пакет задаёт
- * базовый формат обмена, с которым сверяются остальные (п.10).
+ * рабочий формат, с которым сверяются остальные (п.10).
  */
 const LEAD_DISCIPLINE: Discipline = 'architecture'
 
-function selectionOrder(disciplines: Discipline[]): Discipline[] {
-  return [...disciplines].sort((a, b) => {
-    if (a === LEAD_DISCIPLINE) return -1
-    if (b === LEAD_DISCIPLINE) return 1
+function selectionOrder(roles: RequiredRole[]): RequiredRole[] {
+  return [...roles].sort((a, b) => {
+    if (a.discipline === LEAD_DISCIPLINE) return -1
+    if (b.discipline === LEAD_DISCIPLINE) return 1
     return 0
   })
 }
 
-/** Все кандидаты по одной дисциплине с разбором балла и рангом. */
+function shapeOf(requirements: ProjectRequirements) {
+  return {
+    typology: requirements.typology,
+    targetStage: requirements.targetStage,
+    materialSystem: requirements.materialSystem,
+    terrain: requirements.terrain,
+    gridConnection: requirements.gridConnection,
+  }
+}
+
+/** Все кандидаты на одну роль с разбором балла и рангом. */
 export function rankFor(
   pool: SpecialistProfile[],
   requirements: ProjectRequirements,
-  discipline: Discipline,
+  role: RequiredRole,
 ): ScoredCandidate[] {
   const scored = pool.map((specialist) => {
-    const gate = failedGate(specialist, requirements, discipline)
+    const gate = failedGate(specialist, requirements, role)
 
     return {
       specialist,
-      discipline,
+      role,
+      discipline: role.discipline,
       passed: gate === null,
       failedGate: gate,
       breakdown: scoreFor(specialist, requirements),
@@ -66,7 +78,7 @@ export function rankFor(
 
 export function assemble(pool: SpecialistProfile[], requirements: ProjectRequirements): Assembly {
   const validation = validateProject(requirements)
-  const required = requiredDisciplines(requirements.typology, requirements.targetStage)
+  const roles = requiredRoles(shapeOf(requirements))
 
   if (!validation.ok) {
     return {
@@ -74,30 +86,29 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
       notes: validation.reason,
       pooledCount: pool.length,
       survivedCount: 0,
-      requiredDisciplines: required,
+      requiredRoles: roles,
       candidates: [],
       team: [],
     }
   }
 
-  const candidates = required.flatMap((d) => rankFor(pool, requirements, d))
+  const candidates = roles.flatMap((role) => rankFor(pool, requirements, role))
   const survived = new Set(candidates.filter((c) => c.passed).map((c) => c.specialist.id))
 
   const base = {
     pooledCount: pool.length,
     survivedCount: survived.size,
-    requiredDisciplines: required,
+    requiredRoles: roles,
     candidates,
   }
 
   const team: TeamMember[] = []
   /** Часы, уже занятые специалистом в этой же команде: второй слот не бесплатен. */
   const taken = new Map<string, number>()
-  let leadSoftware: readonly string[] | null = null
 
-  for (const discipline of selectionOrder(required)) {
+  for (const role of selectionOrder(roles)) {
     const ranked = candidates
-      .filter((c) => c.discipline === discipline && c.passed)
+      .filter((c) => c.discipline === role.discipline && c.passed)
       .sort((a, b) => a.rank - b.rank)
 
     const picked = ranked.find((c) => {
@@ -107,9 +118,10 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
       // его балл в отрыве от уже занятых им слотов.
       if (availability(c.specialist, requirements, busy) <= 0) return false
 
-      // Кандидат, ломающий обмен моделями, уступает место следующему — даже с
-      // более высоким баллом (п.10).
-      if (leadSoftware && !exchangesWith(c.specialist, leadSoftware)) return false
+      // Технологический шлюз на уровне команды: все говорят на одном языке.
+      // Кандидат, ломающий это, уступает место следующему — даже с более
+      // высоким баллом (п.10).
+      if (team.length > 0 && !worksInStack(c.specialist, team[0].specialist.software)) return false
 
       return true
     })
@@ -118,26 +130,25 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
       return {
         ...base,
         outcome: 'incomplete',
-        notes: `Дисциплина «${discipline}» не закрыта: в пуле нет специалиста, проходящего гейты и совместимого с командой.`,
+        notes: describeGap(role),
         team,
       }
     }
 
     const busy = taken.get(picked.specialist.id) ?? 0
-    const slotScore = scoreFor(picked.specialist, requirements, busy).score
 
     team.push({
       specialist: picked.specialist,
-      discipline,
+      role,
+      discipline: role.discipline,
       isSignatory: false,
-      score: slotScore,
+      score: scoreFor(picked.specialist, requirements, busy).score,
     })
 
     taken.set(picked.specialist.id, busy + requirements.requiredHoursPerWeek)
-    if (!leadSoftware) leadSoftware = picked.specialist.software
   }
 
-  const signed = signOff(team, candidates, requirements, taken, leadSoftware)
+  const signed = signOff(team, candidates, requirements, taken)
 
   if (!signed) {
     return {
@@ -152,6 +163,15 @@ export function assemble(pool: SpecialistProfile[], requirements: ProjectRequire
   return { ...base, outcome: 'ok', notes: '', team: signed }
 }
 
+function describeGap(role: RequiredRole): string {
+  const what =
+    role.specializations.length === 0
+      ? `дисциплина «${role.discipline}»`
+      : `«${role.discipline}» со специализацией ${role.specializations.join(role.mode === 'all' ? ' + ' : ' / ')}`
+
+  return `Роль не закрыта: ${what}. В пуле нет специалиста, проходящего гейты и совместимого с командой по пакету.`
+}
+
 /**
  * Право подписи — гейт, а не пожелание (п.10). Если в собранной команде
  * подписывающего нет, ищем замену с наименьшей потерей балла; не находим —
@@ -162,13 +182,14 @@ function signOff(
   candidates: ScoredCandidate[],
   requirements: ProjectRequirements,
   taken: Map<string, number>,
-  leadSoftware: readonly string[] | null,
 ): TeamMember[] | null {
   const alreadySigns = team.find((m) => m.specialist.signsIn.includes(requirements.jurisdiction))
 
   if (alreadySigns) {
     return team.map((m) => (m === alreadySigns ? { ...m, isSignatory: true } : m))
   }
+
+  const stack = team[0]?.specialist.software ?? []
 
   type Swap = { index: number; member: TeamMember; loss: number }
   let best: Swap | null = null
@@ -180,7 +201,7 @@ function signOff(
           c.discipline === current.discipline &&
           c.passed &&
           c.specialist.signsIn.includes(requirements.jurisdiction) &&
-          (!leadSoftware || exchangesWith(c.specialist, leadSoftware)),
+          (index === 0 || worksInStack(c.specialist, stack)),
       )
       .sort((a, b) => a.rank - b.rank)
       .find((c) => {
@@ -199,6 +220,7 @@ function signOff(
         index,
         member: {
           specialist: replacement.specialist,
+          role: current.role,
           discipline: current.discipline,
           isSignatory: true,
           score,

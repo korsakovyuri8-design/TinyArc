@@ -7,6 +7,7 @@ import { planTickets } from '@/engine/relay'
 import {
   CLIMATE_ZONES,
   DOC_STAGES,
+  GRID_CONNECTIONS,
   JURISDICTIONS,
   JURISDICTION_NAMES,
   LANGUAGES,
@@ -15,15 +16,19 @@ import {
   MAX_STOREYS,
   PORTFOLIO_THRESHOLD,
   SOFTWARE,
+  TERRAINS,
   TYPOLOGIES,
-  requiredDisciplines,
+  requiredRoles,
   type ClimateZone,
   type Discipline,
   type DocStage,
+  type GridConnection,
   type Jurisdiction,
   type Language,
   type MaterialSystem,
+  type RequiredRole,
   type Software,
+  type Terrain,
   type Typology,
 } from '@/engine/taxonomy'
 import type { GateName, ProjectRequirements } from '@/engine/types'
@@ -32,8 +37,11 @@ import {
   CLIMATE_LABELS,
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
+  GRID_LABELS,
   MATERIAL_LABELS,
   SOFTWARE_LABELS,
+  SPECIALIZATION_LABELS,
+  TERRAIN_LABELS,
   TYPOLOGY_LABELS,
 } from '@/lib/labels'
 import { BreakdownRow } from './Breakdown'
@@ -47,6 +55,8 @@ const DEFAULT: ProjectRequirements = {
   materialSystem: 'concrete',
   regulatoryTrack: 'light',
   targetStage: 'permit',
+  terrain: 'flat',
+  gridConnection: 'grid',
   software: ['archicad'],
   languages: ['en'],
   requiredHoursPerWeek: 10,
@@ -59,9 +69,17 @@ export function AlgorithmDemo() {
   const pool = useMemo(() => demoActivePool(), [])
   const assembly = useMemo(() => assemble(pool, requirements), [pool, requirements])
 
-  const required = requiredDisciplines(requirements.typology, requirements.targetStage)
+  const required = requiredRoles({
+    typology: requirements.typology,
+    targetStage: requirements.targetStage,
+    materialSystem: requirements.materialSystem,
+    terrain: requirements.terrain,
+    gridConnection: requirements.gridConnection,
+  })
+
   const [focus, setFocus] = useState<Discipline>('architecture')
-  const focused = required.includes(focus) ? focus : required[0]
+  const focusedRole = required.find((r) => r.discipline === focus) ?? required[0]
+  const focused = focusedRole.discipline
 
   const inFocus = assembly.candidates.filter((c) => c.discipline === focused)
   const passed = inFocus.filter((c) => c.passed).sort((a, b) => a.rank - b.rank)
@@ -83,11 +101,10 @@ export function AlgorithmDemo() {
   const patch = (next: Partial<ProjectRequirements>) =>
     setRequirements((current) => ({ ...current, ...next }))
 
-  const tickets = assembly.outcome === 'ok' ? planTickets(
-    requirements.typology,
-    requirements.targetStage,
-    assembly.team.map((m) => m.discipline),
-  ) : []
+  const tickets =
+    assembly.outcome === 'ok'
+      ? planTickets(requirements.targetStage, assembly.team.map((m) => m.discipline))
+      : []
 
   return (
     <div>
@@ -181,6 +198,32 @@ export function AlgorithmDemo() {
             </select>
           </Field>
 
+          <Field label="Участок" hint="Склон требует вертикальной планировки">
+            <select
+              value={requirements.terrain}
+              onChange={(e) => patch({ terrain: e.target.value as Terrain })}
+            >
+              {TERRAINS.map((t) => (
+                <option key={t} value={t}>
+                  {TERRAIN_LABELS[t]}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Сети">
+            <select
+              value={requirements.gridConnection}
+              onChange={(e) => patch({ gridConnection: e.target.value as GridConnection })}
+            >
+              {GRID_CONNECTIONS.map((g) => (
+                <option key={g} value={g}>
+                  {GRID_LABELS[g]}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Занятость, ч/нед">
             <input
               type="number"
@@ -262,19 +305,19 @@ export function AlgorithmDemo() {
           <div className="grid grid-3" style={{ marginBottom: 28 }}>
             <Counter value={assembly.pooledCount} label="в пуле" />
             <Counter value={assembly.survivedCount} label="прошли гейты" accent />
-            <Counter value={required.length} label="дисциплин нужно" />
+            <Counter value={required.length} label="ролей в команде" />
           </div>
 
           <div className="row" style={{ gap: 8, marginBottom: 20 }}>
-            {required.map((d) => (
+            {required.map((r) => (
               <button
-                key={d}
+                key={r.discipline}
                 type="button"
-                className={d === focused ? 'btn' : 'btn btn-quiet'}
+                className={r.discipline === focused ? 'btn' : 'btn btn-quiet'}
                 style={{ padding: '9px 16px' }}
-                onClick={() => setFocus(d)}
+                onClick={() => setFocus(r.discipline)}
               >
-                {DISCIPLINE_LABELS[d]}
+                {DISCIPLINE_LABELS[r.discipline]}
               </button>
             ))}
           </div>
@@ -312,8 +355,8 @@ export function AlgorithmDemo() {
               </div>
             </div>
             <p className="hint" style={{ marginTop: 16 }}>
-              Порог по портфолио — {PORTFOLIO_THRESHOLD}/10. Он стоит до скоринга, а не внутри
-              него: это гейт, а не слагаемое.
+              {describeRole(focusedRole)} Порог по портфолио — {PORTFOLIO_THRESHOLD}/10, и он
+              стоит до скоринга: это гейт, а не слагаемое.
             </p>
           </div>
 
@@ -358,7 +401,7 @@ export function AlgorithmDemo() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Дисциплина</th>
+                        <th>Роль</th>
                         <th>Специалист</th>
                         <th>Софт</th>
                         <th style={{ textAlign: 'right' }}>Балл</th>
@@ -367,7 +410,19 @@ export function AlgorithmDemo() {
                     <tbody>
                       {assembly.team.map((member) => (
                         <tr key={member.discipline}>
-                          <td>{DISCIPLINE_LABELS[member.discipline]}</td>
+                          <td>
+                            {DISCIPLINE_LABELS[member.discipline]}
+                            {member.role.specializations.length > 0 && (
+                              <>
+                                <br />
+                                <span className="dim" style={{ fontSize: '0.78rem' }}>
+                                  {member.role.specializations
+                                    .map((x) => SPECIALIZATION_LABELS[x])
+                                    .join(member.role.mode === 'all' ? ' + ' : ' / ')}
+                                </span>
+                              </>
+                            )}
+                          </td>
                           <td>
                             {member.specialist.displayName}
                             {member.isSignatory && (
@@ -380,7 +435,7 @@ export function AlgorithmDemo() {
                             {member.specialist.software.map((s) => SOFTWARE_LABELS[s]).join(', ')}
                           </td>
                           <td className="num" style={{ textAlign: 'right', color: 'var(--accent)' }}>
-                            {member.score.toFixed(2)}
+                            {(member.score * 10).toFixed(1)}
                           </td>
                         </tr>
                       ))}
@@ -416,12 +471,14 @@ export function AlgorithmDemo() {
                         <span className="dim" style={{ fontSize: '0.8rem' }}>
                           {DOC_STAGE_LABELS[ticket.stage]} · {DISCIPLINE_LABELS[ticket.discipline]}
                           {ticket.dependsOn.length > 0 && ' · ждёт: '}
-                          {ticket.dependsOn
-                            .map((k) => DISCIPLINE_LABELS[k.split(':')[1] as Discipline])
-                            .join(', ')}
+                          {unique(
+                            ticket.dependsOn.map(
+                              (k) => DISCIPLINE_LABELS[k.split(':')[1] as Discipline],
+                            ),
+                          ).join(', ')}
                         </span>
                       </span>
-                      <span className="tag">{ticket.slaDays} дн.</span>
+                      <span className="tag">{ticket.slaHours} ч</span>
                     </li>
                   ))}
                 </ul>
@@ -439,6 +496,22 @@ export function AlgorithmDemo() {
       )}
     </div>
   )
+}
+
+function unique<T>(items: T[]): T[] {
+  return [...new Set(items)]
+}
+
+function describeRole(role: RequiredRole): string {
+  if (role.specializations.length === 0) return 'Специализация в этой роли не требуется.'
+
+  const list = role.specializations
+    .map((s) => SPECIALIZATION_LABELS[s])
+    .join(role.mode === 'all' ? ' + ' : ' или ')
+
+  return role.mode === 'all'
+    ? `Роль требует всё сразу: ${list}.`
+    : `Роль требует специализацию: ${list}.`
 }
 
 function Field({

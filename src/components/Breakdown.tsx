@@ -1,3 +1,4 @@
+import { asHundred } from '@/engine/score'
 import type { ScoreBreakdown } from '@/engine/types'
 
 /**
@@ -8,6 +9,7 @@ import type { ScoreBreakdown } from '@/engine/types'
  */
 export function BreakdownRow({ breakdown }: { breakdown: ScoreBreakdown }) {
   const historyPercent = Math.round(breakdown.historyWeight * 100)
+  const hundred = asHundred(breakdown)
 
   return (
     <div className="stack" style={{ gap: 8 }}>
@@ -38,20 +40,28 @@ export function BreakdownRow({ breakdown }: { breakdown: ScoreBreakdown }) {
         fill={breakdown.availability}
       />
       <div
-        className="row"
         style={{
-          justifyContent: 'space-between',
           borderTop: '1px solid var(--border-strong)',
           paddingTop: 8,
           marginTop: 2,
         }}
       >
-        <span className="label">
-          Quality {breakdown.quality.toFixed(2)} × Availability {breakdown.availability.toFixed(2)}
-        </span>
-        <span className="num" style={{ color: 'var(--accent)', fontSize: '1.05rem' }}>
-          {breakdown.score.toFixed(2)}
-        </span>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <span className="label">
+            Skill {hundred.skill.toFixed(0)} × Availability {hundred.availability.toFixed(2)}
+          </span>
+          <span className="num" style={{ color: 'var(--accent)', fontSize: '1.05rem' }}>
+            {hundred.final.toFixed(1)}
+          </span>
+        </div>
+        <div className="row" style={{ justifyContent: 'space-between', marginTop: 4 }}>
+          <span className="dim" style={{ fontSize: '0.78rem' }}>
+            Совпадение с проектом
+          </span>
+          <span className="num dim" style={{ fontSize: '0.78rem' }}>
+            {hundred.matchPercent}%
+          </span>
+        </div>
       </div>
     </div>
   )

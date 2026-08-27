@@ -1,12 +1,19 @@
 /**
  * Blind Relay Protocol (концепт, п.11). Публичное имя стадии — Relay.
  *
- * Три правила протокола:
+ * Четыре правила протокола:
  *
  *  1. Никаких прямых чатов между специалистами. В схеме нет модели личного
  *     сообщения — здесь нет функции, которая бы её создала.
  *  2. Вся коммуникация привязана к тикету.
  *  3. Тикет не открывается, пока не приняты тикеты, от которых он зависит.
+ *  4. Спор решает арбитр — бюро. Договариваться между собой участникам негде.
+ *
+ * Проект не выдаётся специалисту целиком: он разбирается на атомарные
+ * микро-задачи. «Архитектурный раздел» — это не тикет, а папка; тикет — это
+ * «фасады» или «разводка электрики». Мелкая единица нужна не для порядка, а
+ * чтобы SLA и доля переделок вообще что-то значили: на задаче в три недели обе
+ * метрики превращаются в шум.
  *
  * Этот модуль — чистая логика: план графа, гейты и переходы состояния. Записью
  * в базу занимается src/lib/services/relay.ts.
@@ -18,10 +25,9 @@ import {
   unique,
   type Discipline,
   type DocStage,
-  type Typology,
 } from './taxonomy'
 
-export type TicketStatus = 'blocked' | 'open' | 'submitted' | 'revision' | 'accepted'
+export type TicketStatus = 'blocked' | 'open' | 'in_progress' | 'submitted' | 'revision' | 'accepted'
 
 export type TicketPlan = {
   /** Устойчивый ключ внутри плана: по нему связываются зависимости. */
@@ -30,17 +36,11 @@ export type TicketPlan = {
   stage: DocStage
   title: string
   spec: string
-  slaDays: number
+  slaHours: number
   dependsOn: string[]
 }
 
-/** Какие дисциплины работают на какой стадии. */
-const STAGE_SCOPE: Record<DocStage, Discipline[]> = {
-  concept: ['architecture', 'visualization'],
-  permit: ['survey', 'architecture', 'structural', 'mep', 'landscape', 'permitting'],
-  tender: ['architecture', 'structural', 'mep'],
-  construction: ['architecture', 'structural', 'mep', 'interiors'],
-}
+type Task = { title: string; slaHours: number }
 
 /**
  * Порядок внутри стадии. Он же задаёт зависимости: геодезия даёт подоснову,
@@ -57,47 +57,82 @@ const INTRA_STAGE_ORDER: Discipline[] = [
   'permitting',
 ]
 
-const SLA_DAYS: Partial<Record<Discipline, number>> = {
-  survey: 5,
-  architecture: 14,
-  structural: 10,
-  mep: 10,
-  landscape: 7,
-  interiors: 10,
-  visualization: 7,
-  permitting: 21,
-}
-
-const DEFAULT_SLA_DAYS = 10
-
-const TITLES: Record<DocStage, Partial<Record<Discipline, string>>> = {
+/**
+ * Атомарные задачи по стадиям и дисциплинам.
+ *
+ * Сроки в часах и разные: посадка на участок и подача в органы — работа разного
+ * веса, и один общий срок врал бы про обе.
+ */
+const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
   concept: {
-    architecture: 'Концепция объёма и посадка на участок',
-    visualization: 'Визуализация концепции',
+    architecture: [
+      { title: 'Посадка на участок и пятно застройки', slaHours: 24 },
+      { title: 'Объёмно-планировочное решение', slaHours: 48 },
+      { title: 'Черновые планировки этажей', slaHours: 48 },
+    ],
+    visualization: [
+      { title: 'Визуализация экстерьера', slaHours: 48 },
+      { title: 'Ключевой кадр интерьера', slaHours: 24 },
+    ],
   },
   permit: {
-    survey: 'Геодезическая подоснова',
-    architecture: 'Архитектурный раздел на разрешение',
-    structural: 'Конструктивная схема',
-    mep: 'Инженерные разделы',
-    landscape: 'Благоустройство участка',
-    permitting: 'Комплектование и подача на разрешение',
+    survey: [
+      { title: 'Топографическая съёмка участка', slaHours: 48 },
+      { title: 'Отчёт по грунтам', slaHours: 48 },
+    ],
+    architecture: [
+      { title: 'Планы этажей', slaHours: 48 },
+      { title: 'Фасады', slaHours: 24 },
+      { title: 'Разрезы', slaHours: 24 },
+      { title: 'Пояснительная записка', slaHours: 24 },
+    ],
+    structural: [
+      { title: 'Конструктивная схема', slaHours: 48 },
+      { title: 'Расчёт нагрузок', slaHours: 48 },
+      { title: 'Фундамент', slaHours: 24 },
+    ],
+    mep: [
+      { title: 'Отопление и вентиляция', slaHours: 48 },
+      { title: 'Электрика и освещение', slaHours: 48 },
+      { title: 'Водоснабжение и канализация', slaHours: 48 },
+    ],
+    landscape: [
+      { title: 'Схема благоустройства', slaHours: 48 },
+      { title: 'Вертикальная планировка и дренаж', slaHours: 48 },
+    ],
+    interiors: [{ title: 'Планировочное решение интерьеров', slaHours: 48 }],
+    permitting: [
+      { title: 'Проверка зонирования участка', slaHours: 24 },
+      { title: 'Комплектование пакета', slaHours: 48 },
+      { title: 'Подача и сопровождение', slaHours: 168 },
+    ],
   },
   tender: {
-    architecture: 'Тендерная спецификация, архитектура',
-    structural: 'Тендерная спецификация, конструкции',
-    mep: 'Тендерная спецификация, инженерия',
+    architecture: [
+      { title: 'Спецификация отделки', slaHours: 48 },
+      { title: 'Ведомость проёмов', slaHours: 24 },
+    ],
+    structural: [{ title: 'Ведомость материалов и объёмов', slaHours: 48 }],
+    mep: [{ title: 'Спецификация оборудования', slaHours: 48 }],
   },
   construction: {
-    architecture: 'Рабочая документация, архитектура',
-    structural: 'Рабочая документация, конструкции',
-    mep: 'Рабочая документация, инженерия',
-    interiors: 'Рабочая документация, интерьеры',
+    architecture: [
+      { title: 'Рабочие планы', slaHours: 48 },
+      { title: 'Узлы и детали', slaHours: 72 },
+    ],
+    structural: [
+      { title: 'Рабочие чертежи конструкций', slaHours: 72 },
+      { title: 'Армирование', slaHours: 48 },
+    ],
+    mep: [{ title: 'Рабочие схемы сетей', slaHours: 72 }],
+    interiors: [{ title: 'Рабочая документация интерьеров', slaHours: 72 }],
   },
 }
 
-function titleFor(stage: DocStage, discipline: Discipline): string {
-  return TITLES[stage]?.[discipline] ?? `${discipline} — ${stage}`
+const DEFAULT_SLA_HOURS = 48
+
+function tasksFor(stage: DocStage, discipline: Discipline): Task[] {
+  return TASKS[stage]?.[discipline] ?? []
 }
 
 /**
@@ -106,11 +141,7 @@ function titleFor(stage: DocStage, discipline: Discipline): string {
  * Тикет заводится только на ту дисциплину, которая в команде есть: план не
  * выдумывает работу, которую некому делать.
  */
-export function planTickets(
-  typology: Typology,
-  targetStage: DocStage,
-  teamDisciplines: Discipline[],
-): TicketPlan[] {
+export function planTickets(targetStage: DocStage, teamDisciplines: Discipline[]): TicketPlan[] {
   const inTeam = new Set(teamDisciplines)
   const plans: TicketPlan[] = []
   /** Тикеты предыдущей стадии, которых никто внутри неё не ждёт. */
@@ -118,38 +149,63 @@ export function planTickets(
 
   for (const stage of stagesUpTo(targetStage)) {
     const disciplines = INTRA_STAGE_ORDER.filter(
-      (d) => STAGE_SCOPE[stage].includes(d) && inTeam.has(d),
+      (d) => inTeam.has(d) && tasksFor(stage, d).length > 0,
     )
     if (disciplines.length === 0) continue
 
-    const stageStart = plans.length
-    const keyOf = (d: Discipline) => `${stage}:${d}`
+    const chains = new Map<Discipline, string[]>()
+    const stagePlans: TicketPlan[] = []
 
     for (const discipline of disciplines) {
-      plans.push({
-        key: keyOf(discipline),
-        discipline,
-        stage,
-        title: titleFor(stage, discipline),
-        spec: '',
-        slaDays: SLA_DAYS[discipline] ?? DEFAULT_SLA_DAYS,
-        dependsOn: intraStageDependencies(discipline, disciplines).map(keyOf),
+      const keys: string[] = []
+
+      tasksFor(stage, discipline).forEach((task, index) => {
+        const key = `${stage}:${discipline}:${index}`
+
+        stagePlans.push({
+          key,
+          discipline,
+          stage,
+          title: task.title,
+          spec: '',
+          slaHours: task.slaHours || DEFAULT_SLA_HOURS,
+          // Внутри дисциплины задачи идут цепочкой: фасады рисуют по планам,
+          // а не параллельно им.
+          dependsOn: index === 0 ? [] : [keys[index - 1]],
+        })
+
+        keys.push(key)
       })
+
+      chains.set(discipline, keys)
     }
 
-    const stagePlans = plans.slice(stageStart)
+    const byKey = new Map(stagePlans.map((p) => [p.key, p]))
 
-    // Стадия входит в предыдущую: то, что ничего не ждёт внутри стадии, ждёт
-    // завершения предыдущей.
-    for (const plan of stagePlans) {
-      if (plan.dependsOn.length === 0) plan.dependsOn = [...previousTerminals]
+    // Голова цепочки ждёт хвосты дисциплин, от которых зависит.
+    for (const discipline of disciplines) {
+      const keys = chains.get(discipline)!
+      const upstream = intraStageDependencies(discipline, disciplines)
+      const head = byKey.get(keys[0])!
+
+      head.dependsOn =
+        upstream.length > 0
+          ? upstream.map((d) => last(chains.get(d)!))
+          : // Вход стадии ждёт завершения предыдущей.
+            [...previousTerminals]
     }
+
+    plans.push(...stagePlans)
 
     const awaited = new Set(stagePlans.flatMap((p) => p.dependsOn))
     previousTerminals = stagePlans.filter((p) => !awaited.has(p.key)).map((p) => p.key)
   }
 
   return plans
+}
+
+function last<T>(items: T[]): T {
+  return items[items.length - 1]
 }
 
 function intraStageDependencies(discipline: Discipline, present: Discipline[]): Discipline[] {
@@ -228,14 +284,15 @@ export type DeliveryDelta = {
 
 export function deliveryDeltaFor(ticket: {
   openedAt: Date | null
-  firstResponseAt: Date | null
+  /** Когда специалист взял тикет в работу — это и есть время реакции (п.12). */
+  claimedAt: Date | null
   acceptedAt: Date
   dueAt: Date | null
   revisionRounds: number
 }): DeliveryDelta {
   const responseMinutes =
-    ticket.openedAt && ticket.firstResponseAt
-      ? Math.max(0, Math.round((ticket.firstResponseAt.getTime() - ticket.openedAt.getTime()) / 60_000))
+    ticket.openedAt && ticket.claimedAt
+      ? Math.max(0, Math.round((ticket.claimedAt.getTime() - ticket.openedAt.getTime()) / 60_000))
       : 0
 
   return {
@@ -247,8 +304,8 @@ export function deliveryDeltaFor(ticket: {
   }
 }
 
-export function dueDate(openedAt: Date, slaDays: number): Date {
-  return new Date(openedAt.getTime() + slaDays * 24 * 60 * 60 * 1000)
+export function dueDate(openedAt: Date, slaHours: number): Date {
+  return new Date(openedAt.getTime() + slaHours * 60 * 60 * 1000)
 }
 
 // --- Обезличивание ---------------------------------------------------------

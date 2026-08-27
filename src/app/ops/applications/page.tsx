@@ -1,8 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { PORTFOLIO_THRESHOLD, JURISDICTION_NAMES, type Discipline, type Jurisdiction } from '@/engine/taxonomy'
+import {
+  PORTFOLIO_THRESHOLD,
+  JURISDICTION_NAMES,
+  type Discipline,
+  type Jurisdiction,
+  type Specialization,
+} from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
-import { DISCIPLINE_LABELS } from '@/lib/labels'
+import { DISCIPLINE_LABELS, PORTFOLIO_KIND_LABELS, SPECIALIZATION_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
 import { reviewApplication } from '../actions'
@@ -16,6 +22,7 @@ export default async function ApplicationsPage() {
   const rows = await prisma.specialist.findMany({
     where: { status: 'pending' },
     orderBy: { createdAt: 'asc' },
+    include: { portfolio: { orderBy: { createdAt: 'asc' } } },
   })
 
   return (
@@ -52,8 +59,39 @@ export default async function ApplicationsPage() {
                     </a>
                   </p>
 
+                  {row.portfolio.length > 0 && (
+                    <div
+                      className="stack"
+                      style={{ gap: 10, marginBottom: 16, paddingLeft: 12, borderLeft: '1px solid var(--border-strong)' }}
+                    >
+                      {row.portfolio.map((work) => (
+                        <div key={work.id}>
+                          <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
+                            <a href={work.url} target="_blank" rel="noreferrer noopener">
+                              {work.title}
+                            </a>
+                            <span className="tag">
+                              {PORTFOLIO_KIND_LABELS[work.kind] ?? work.kind}
+                            </span>
+                          </div>
+                          <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                            {work.roleDescription}
+                            {work.areaSqm ? ` · ${work.areaSqm} м²` : ''}
+                            {work.durationMonths ? ` · ${work.durationMonths} мес.` : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="stack" style={{ gap: 6, fontSize: '0.85rem' }}>
                     <Line label="Дисциплины" value={profile.disciplines.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')} />
+                    <Line
+                      label="Специализация"
+                      value={profile.specializations
+                        .map((x) => SPECIALIZATION_LABELS[x as Specialization])
+                        .join(', ')}
+                    />
                     <Line label="Юрисдикции" value={profile.jurisdictions.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')} />
                     <Line
                       label="Подпись"
