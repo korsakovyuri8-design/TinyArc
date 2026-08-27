@@ -26,11 +26,14 @@ import { SPECIALIZATIONS } from '@/engine/taxonomy'
 import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { latestRun } from '@/lib/services/matching'
+import { alertsForProject } from '@/lib/services/pm'
+import { ALERT_LABELS, isNudgeKind } from '@/engine/pm'
 import { isOperator } from '@/lib/session'
 import {
   acceptTicket,
   bureauComment,
   checkTicketCompleteness,
+  draftTicketNudge,
   draftTicketSpec,
   rerunAssembly,
   resolveTicketConflict,
@@ -67,10 +70,17 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction] = await Promise.all([
+  const [run, direction, alerts] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
+    alertsForProject(project.id),
   ])
+
+  // Сигналы, по которым бюро пишет исполнителю. Кнопка напоминания появляется
+  // только там, где менеджер уже сказал, что работа встала.
+  const nudgeable = new Map(
+    alerts.filter((a) => isNudgeKind(a.kind)).map((a) => [a.ticketId, a]),
+  )
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -262,6 +272,26 @@ export default async function OpsProjectPage({
                           />
                         </div>
                       </OpsAction>
+                    </div>
+                  )}
+
+                  {nudgeable.has(ticket.id) && (
+                    <div style={{ marginTop: 18 }}>
+                      <span className="tag tag-wait">
+                        {ALERT_LABELS[nudgeable.get(ticket.id)!.kind]} ·{' '}
+                        {Math.round(nudgeable.get(ticket.id)!.hours)} ч
+                      </span>
+                      <div style={{ marginTop: 12 }}>
+                        <OpsAction
+                          action={draftTicketNudge}
+                          hidden={{ ticketId: ticket.id }}
+                          label="Черновик напоминания"
+                        />
+                        <p className="hint" style={{ marginTop: 8 }}>
+                          Помощник напишет черновик. Отправляете вы — комментарием в тикет:
+                          другого канала до исполнителя нет.
+                        </p>
+                      </div>
                     </div>
                   )}
 

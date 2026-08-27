@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import { ALERT_LABELS, alertAudience } from '@/engine/pm'
+import { ALERT_ACTIONS, ALERT_LABELS, alertAudience, projectHeat } from '@/engine/pm'
 import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { DISCIPLINE_LABELS } from '@/lib/labels'
 import { alertsForBureau } from '@/lib/services/pm'
 import { isOperator } from '@/lib/session'
-import { OpsSignIn } from './OpsForms'
+import { planBureauQueue } from './actions'
+import { OpsAction, OpsSignIn } from './OpsForms'
 
 export const metadata = { title: 'Панель бюро — TinyArc Cloud Bureau' }
 
@@ -38,6 +39,8 @@ export default async function OpsPage() {
   ])
 
   const conflicts = alerts.filter((a) => a.kind === 'conflict')
+  const heat = projectHeat(alerts)
+  const titles = new Map(alerts.map((a) => [a.projectId, a.projectTitle]))
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -69,6 +72,32 @@ export default async function OpsPage() {
         {alerts.length === 0 ? (
           <p className="dim">Тихо: сроки в порядке, всё взято в работу, приёмка не копится.</p>
         ) : (
+          <>
+            {heat.length > 1 && (
+              <div className="stack" style={{ gap: 8, marginBottom: 24 }}>
+                <div className="label">Где встало</div>
+                {heat.map((h) => (
+                  <div key={h.projectId} className="row" style={{ gap: 12, alignItems: 'baseline' }}>
+                    <Link href={`/ops/projects/${h.projectId}`}>{titles.get(h.projectId)}</Link>
+                    <span className="dim" style={{ fontSize: '0.85rem' }}>
+                      {ALERT_LABELS[h.worst].toLowerCase()} · сигналов {h.total} · {Math.round(h.hours)} ч
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginBottom: 24 }}>
+              <OpsAction action={planBureauQueue} label="Разобрать очередь" />
+              <p className="hint" style={{ marginTop: 8 }}>
+                Помощник переведёт очередь в список действий на сегодня. Порядок срочности
+                считает движок — помощник его не пересчитывает.
+              </p>
+            </div>
+          </>
+        )}
+
+        {alerts.length > 0 && (
           <div className="table-scroll panel" style={{ padding: 0 }}>
             <table>
               <thead>
@@ -78,6 +107,7 @@ export default async function OpsPage() {
                   <th>Проект</th>
                   <th>Часов</th>
                   <th>Кому</th>
+                  <th>Что делать</th>
                 </tr>
               </thead>
               <tbody>
@@ -102,6 +132,7 @@ export default async function OpsPage() {
                     <td className="dim">
                       {alertAudience(alert.kind) === 'bureau' ? 'бюро' : 'специалисту'}
                     </td>
+                    <td className="dim">{ALERT_ACTIONS[alert.kind]}</td>
                   </tr>
                 ))}
               </tbody>

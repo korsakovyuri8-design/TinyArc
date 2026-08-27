@@ -13,6 +13,8 @@ import { parseList, toProfile } from '@/lib/rows'
 import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
+import { alertsForBureau, alertsForProject } from '@/lib/services/pm'
+import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 
@@ -302,6 +304,84 @@ export async function checkTicketCompleteness(
   } catch (error) {
     console.error('Проверка комплектности не выполнена:', error)
     return { error: 'Помощник не ответил. Приложенное — в списке выше.' }
+  }
+}
+
+/**
+ * Разбор очереди цифрового менеджера.
+ *
+ * Порядок срочности считает движок, и помощник его не пересчитывает: он
+ * переводит очередь в список действий на сегодня. Это меняет не решение, а
+ * скорость, с которой человек до него доходит.
+ */
+export async function planBureauQueue(_prev: OpsState, _formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const alerts = await alertsForBureau()
+
+  if (alerts.length === 0) return { message: 'Очередь пуста — разбирать нечего.' }
+
+  try {
+    const plan = await assistant().planQueue({
+      alerts: alerts.map((a) => ({
+        kind: a.kind,
+        title: a.title,
+        projectTitle: a.projectTitle,
+        discipline: a.discipline,
+        hours: a.hours,
+      })),
+    })
+
+    return {
+      message: [
+        `Первое: ${plan.first}`,
+        ...plan.steps.map((step, i) => `${i + 1}. ${step}`),
+        plan.notes,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    }
+  } catch (error) {
+    console.error('Очередь не разобрана:', error)
+    return { error: 'Помощник не ответил. Очередь ниже — она отсортирована движком.' }
+  }
+}
+
+/**
+ * Черновик напоминания по вставшей задаче.
+ *
+ * Причину пишем не с чужих слов: вид сигнала берётся из движка по текущему
+ * состоянию тикета, а не из формы. Отправляет напоминание человек — обычным
+ * комментарием в тикет, потому что другого канала до исполнителя нет (п.11).
+ */
+export async function draftTicketNudge(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const ticketId = String(formData.get('ticketId') ?? '')
+
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+  const alerts = await alertsForProject(ticket.projectId)
+  const alert = alerts.find((a) => a.ticketId === ticketId && isNudgeKind(a.kind))
+
+  if (!alert || !isNudgeKind(alert.kind)) {
+    return { error: 'По этой задаче писать пока не о чем: срок в порядке и работа идёт.' }
+  }
+
+  try {
+    const draft = await assistant().draftNudge({
+      ticketTitle: ticket.title,
+      discipline: ticket.discipline,
+      kind: alert.kind,
+      hours: alert.hours,
+      spec: ticket.spec,
+    })
+
+    return {
+      message: `Черновик: ${draft.body.replace(/\n+/g, ' ')} Прочитайте и отправьте формой ниже — сам он никуда не уходит.`,
+    }
+  } catch (error) {
+    console.error('Черновик напоминания не получен:', error)
+    return { error: 'Помощник не ответил. Напишите в тикет сами — форма ниже.' }
   }
 }
 

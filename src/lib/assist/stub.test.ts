@@ -178,3 +178,51 @@ describe('черновик запроса без модели', () => {
     expect(draft.body).toContain('Отопление и вентиляция')
   })
 })
+
+describe('помощники менеджера без модели', () => {
+  it('пишет напоминание по причине и всегда заканчивает вопросом', async () => {
+    const draft = await new StubAssistant().draftNudge({
+      ticketTitle: 'Фасады',
+      discipline: 'architecture',
+      kind: 'unclaimed',
+      hours: 9.4,
+      spec: 'Выпустить фасады в осях.',
+    })
+
+    expect(draft.body).toContain('открыта 9 ч')
+    expect(draft.body).toContain(draft.ask)
+    expect(draft.ask).toContain('?')
+  })
+
+  it('в напоминании о просрочке просит дату, а не объяснение', async () => {
+    const draft = await new StubAssistant().draftNudge({
+      ticketTitle: 'Фасады',
+      discipline: 'architecture',
+      kind: 'overdue',
+      hours: 30,
+      spec: '',
+    })
+
+    expect(draft.ask).toContain('дату')
+  })
+
+  it('переводит очередь в действия, сохраняя порядок движка', async () => {
+    const plan = await new StubAssistant().planQueue({
+      alerts: [
+        { kind: 'conflict', title: 'Кровля', projectTitle: 'Вилла в Тивате', discipline: 'structure', hours: 3 },
+        { kind: 'due_soon', title: 'Фасады', projectTitle: 'Вилла в Тивате', discipline: 'architecture', hours: 5 },
+      ],
+    })
+
+    expect(plan.first).toContain('Кровля')
+    expect(plan.steps).toHaveLength(2)
+    expect(plan.steps[0]).toContain('решение')
+    expect(plan.steps[1]).toContain('Фасады')
+  })
+
+  it('на пустой очереди не выдумывает план', async () => {
+    const plan = await new StubAssistant().planQueue({ alerts: [] })
+
+    expect(plan.steps).toEqual([])
+  })
+})

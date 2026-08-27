@@ -9,8 +9,12 @@ import type {
   CompletenessInput,
   ConflictInput,
   ConflictSummary,
+  NudgeDraft,
+  NudgeInput,
   PortfolioInput,
   PortfolioProposal,
+  QueueInput,
+  QueuePlan,
   RequestDraft,
   RequestDraftInput,
   SpecDraft,
@@ -80,6 +84,17 @@ const CompletenessSchema = z.object({
 const RequestSchema = z.object({
   title: z.string().describe('Короткое название запроса, до семидесяти знаков.'),
   body: z.string().describe('Запрос так, чтобы адресат понял его без автора.'),
+})
+
+const NudgeSchema = z.object({
+  body: z.string().describe('Комментарий в тикет. Без упрёков и без общих слов.'),
+  ask: z.string().describe('Один вопрос, на который исполнитель должен ответить.'),
+})
+
+const QueueSchema = z.object({
+  first: z.string().describe('С чего начать. Одна строка: действие, задача, проект.'),
+  steps: z.array(z.string()).describe('Шаги на сегодня по порядку. Каждый — действие.'),
+  notes: z.string().describe('Что здесь может подождать, хоть и выглядит срочным.'),
 })
 
 const ConflictSchema = z.object({
@@ -226,6 +241,54 @@ export class AnthropicAssistant implements Assistant {
         input.rough,
       ].join('\n'),
       RequestSchema,
+      2000,
+    )
+  }
+
+  async draftNudge(input: NudgeInput): Promise<NudgeDraft> {
+    const why = {
+      unclaimed: `задача открыта ${Math.round(input.hours)} ч и никем не взята в работу`,
+      overdue: `срок по задаче прошёл ${Math.round(input.hours)} ч назад`,
+      due_soon: `до срока по задаче осталось ${Math.round(input.hours)} ч`,
+    }[input.kind]
+
+    return this.ask<NudgeDraft>(
+      [
+        'Напиши черновик комментария бюро в тикет по вставшей задаче.',
+        'Цель — сдвинуть работу, а не назначить виноватого: без упрёков и без оценок человека.',
+        'Причина у исполнителя может быть уважительной, и ты её не знаешь — не предполагай её.',
+        'Заканчивай одним вопросом, на который он обязан ответить.',
+        '',
+        `Задача: ${input.ticketTitle} (${input.discipline})`,
+        `Почему пишем: ${why}`,
+        '',
+        'Постановка:',
+        input.spec || '(постановка не написана)',
+      ].join('\n'),
+      NudgeSchema,
+      1500,
+    )
+  }
+
+  async planQueue(input: QueueInput): Promise<QueuePlan> {
+    return this.ask<QueuePlan>(
+      [
+        'Разбери очередь сигналов менеджера в план на сегодня.',
+        'Порядок срочности уже посчитан и передан как есть — не переставляй его без причины,',
+        'а если причина есть, назови её. Каждый шаг — действие бюро, а не наблюдение.',
+        'Ты не пишешь исполнителям и ничего не принимаешь: план читает человек.',
+        '',
+        'Очередь:',
+        input.alerts.length > 0
+          ? input.alerts
+              .map(
+                (a) =>
+                  `— [${a.kind}] «${a.title}» (${a.discipline}), проект «${a.projectTitle}», ${Math.round(a.hours)} ч`,
+              )
+              .join('\n')
+          : '(пусто)',
+      ].join('\n'),
+      QueueSchema,
       2000,
     )
   }

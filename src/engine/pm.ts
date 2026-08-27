@@ -69,6 +69,31 @@ export const ALERT_LABELS: Record<AlertKind, string> = {
   due_soon: 'Срок близко',
 }
 
+/**
+ * Что делать по сигналу.
+ *
+ * Действие на каждый вид ровно одно: сигнал, на который есть три равноценных
+ * ответа, — это не сигнал, а повод подумать, и в очередь менеджера он попадать
+ * не должен. Формулировки нарочно в повелительном наклонении: строку читает
+ * человек, который разбирает очередь, а не отчёт.
+ */
+export const ALERT_ACTIONS: Record<AlertKind, string> = {
+  conflict: 'Прочитать позиции сторон и вынести решение',
+  overdue: 'Написать в тикет: срок прошёл, нужна новая дата',
+  unclaimed: 'Написать в тикет или пересобрать роль',
+  awaiting_acceptance: 'Принять или вернуть на круг',
+  due_soon: 'Спросить в тикете, успевает ли к сроку',
+}
+
+/** Виды, по которым бюро пишет исполнителю. Остальное решается у нас. */
+export const NUDGE_KINDS = ['unclaimed', 'overdue', 'due_soon'] as const
+
+export type NudgeKind = (typeof NUDGE_KINDS)[number]
+
+export function isNudgeKind(kind: AlertKind): kind is NudgeKind {
+  return (NUDGE_KINDS as readonly AlertKind[]).includes(kind)
+}
+
 function hoursBetween(from: Date, to: Date): number {
   return Math.max(0, (to.getTime() - from.getTime()) / 3_600_000)
 }
@@ -113,6 +138,50 @@ export function pmAlerts(tickets: PmTicket[], now: Date): Alert[] {
   }
 
   return alerts.sort((a, b) => SEVERITY[a.kind] - SEVERITY[b.kind] || b.hours - a.hours)
+}
+
+/**
+ * Проекты, отсортированные по тому, насколько в них встала работа.
+ *
+ * Плоский список тикетов отвечает на вопрос «что горит», но не на вопрос «где
+ * горит»: пять сигналов на одном проекте и пять сигналов на пяти разных — это
+ * разные ситуации, и разбирать их надо по-разному. Менеджер сводит очередь до
+ * проектов, потому что клиенту он отвечает за проект целиком.
+ */
+export type ProjectHeat = {
+  projectId: string
+  /** Худший сигнал по проекту — по нему проект и стоит в очереди. */
+  worst: AlertKind
+  /** Сколько сигналов всего. */
+  total: number
+  /** Часы по самому старому сигналу: сколько уже стоит. */
+  hours: number
+}
+
+export function projectHeat(alerts: Alert[]): ProjectHeat[] {
+  const byProject = new Map<string, ProjectHeat>()
+
+  for (const alert of alerts) {
+    const current = byProject.get(alert.projectId)
+
+    if (!current) {
+      byProject.set(alert.projectId, {
+        projectId: alert.projectId,
+        worst: alert.kind,
+        total: 1,
+        hours: alert.hours,
+      })
+      continue
+    }
+
+    current.total += 1
+    if (SEVERITY[alert.kind] < SEVERITY[current.worst]) current.worst = alert.kind
+    if (alert.hours > current.hours) current.hours = alert.hours
+  }
+
+  return [...byProject.values()].sort(
+    (a, b) => SEVERITY[a.worst] - SEVERITY[b.worst] || b.hours - a.hours,
+  )
 }
 
 /**

@@ -1,3 +1,4 @@
+import { ALERT_ACTIONS, ALERT_LABELS } from '@/engine/pm'
 import type {
   Assistant,
   BriefInput,
@@ -6,8 +7,12 @@ import type {
   CompletenessInput,
   ConflictInput,
   ConflictSummary,
+  NudgeDraft,
+  NudgeInput,
   PortfolioInput,
   PortfolioProposal,
+  QueueInput,
+  QueuePlan,
   RequestDraft,
   RequestDraftInput,
   SpecDraft,
@@ -179,6 +184,47 @@ export class StubAssistant implements Assistant {
         '',
         `Контекст: задача «${input.ticketTitle}», раздел ${input.fromDiscipline}.`,
       ].join('\n'),
+    }
+  }
+
+  async draftNudge(input: NudgeInput): Promise<NudgeDraft> {
+    // Без модели напоминание собирается из того, что и так известно: почему
+    // пишем, сколько это длится и по какой задаче. Упрёка в шаблоне нет —
+    // напоминание должно сдвинуть работу, а не открыть спор.
+    const hours = Math.round(input.hours)
+
+    const opening = {
+      unclaimed: `Задача «${input.ticketTitle}» открыта ${hours} ч и не взята в работу.`,
+      overdue: `По задаче «${input.ticketTitle}» прошёл срок — ${hours} ч назад.`,
+      due_soon: `По задаче «${input.ticketTitle}» срок через ${hours} ч.`,
+    }[input.kind]
+
+    const ask = {
+      unclaimed: 'Берёте задачу или её передать другому исполнителю?',
+      overdue: 'Назовите дату, к которой работа будет предъявлена.',
+      due_soon: 'Успеваете к сроку? Если нет — что мешает.',
+    }[input.kind]
+
+    return { body: `${opening}\n\n${ask}`, ask }
+  }
+
+  async planQueue(input: QueueInput): Promise<QueuePlan> {
+    // Порядок сигналов уже посчитан движком, и переставлять его здесь нечем.
+    // Заглушка честно делает одно: превращает очередь в список действий.
+    if (input.alerts.length === 0) {
+      return { first: 'Очередь пуста.', steps: [], notes: '' }
+    }
+
+    const head = input.alerts[0]!
+
+    return {
+      first: `${ALERT_ACTIONS[head.kind]} — «${head.title}», ${head.projectTitle}.`,
+      steps: input.alerts
+        .slice(0, 8)
+        .map((a) => `${ALERT_ACTIONS[a.kind]}: «${a.title}» (${a.projectTitle}, ${Math.round(a.hours)} ч).`),
+      notes:
+        'Без модели очередь не разбирается — это её пересказ по порядку срочности, ' +
+        `посчитанному движком: ${ALERT_LABELS[head.kind].toLowerCase()} идёт первым.`,
     }
   }
 

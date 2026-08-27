@@ -3,7 +3,10 @@ import {
   ACCEPTANCE_SLA_HOURS,
   UNCLAIMED_AFTER_HOURS,
   alertAudience,
+  isNudgeKind,
   pmAlerts,
+  projectHeat,
+  type Alert,
   type PmTicket,
 } from './pm'
 
@@ -105,5 +108,59 @@ describe('цифровой менеджер', () => {
     )
 
     expect(alerts.map((a) => a.kind)).toEqual(['conflict', 'overdue', 'due_soon'])
+  })
+})
+
+describe('очередь по проектам', () => {
+  const alert = (patch: Partial<Alert>): Alert => ({
+    kind: 'due_soon',
+    ticketId: 't1',
+    projectId: 'p1',
+    title: 'Фасады',
+    hours: 2,
+    ...patch,
+  })
+
+  it('сводит сигналы к проектам и берёт худший', () => {
+    const heat = projectHeat([
+      alert({ projectId: 'p1', kind: 'due_soon', hours: 2 }),
+      alert({ projectId: 'p1', kind: 'overdue', hours: 30 }),
+      alert({ projectId: 'p2', kind: 'unclaimed', hours: 12 }),
+    ])
+
+    expect(heat).toHaveLength(2)
+    expect(heat[0]).toMatchObject({ projectId: 'p1', worst: 'overdue', total: 2, hours: 30 })
+    expect(heat[1]).toMatchObject({ projectId: 'p2', worst: 'unclaimed', total: 1 })
+  })
+
+  it('ставит проект со спором впереди проекта с просрочкой', () => {
+    const heat = projectHeat([
+      alert({ projectId: 'p1', kind: 'overdue', hours: 100 }),
+      alert({ projectId: 'p2', kind: 'conflict', hours: 1 }),
+    ])
+
+    expect(heat.map((h) => h.projectId)).toEqual(['p2', 'p1'])
+  })
+
+  it('пустая очередь не даёт ни одного проекта', () => {
+    expect(projectHeat([])).toEqual([])
+  })
+})
+
+describe('кому пишет бюро', () => {
+  it('напоминание уходит только по сигналам исполнителя', () => {
+    // Инвариант: напоминание пишут тому, от кого ждут действия. Приёмка и спор
+    // ждут бюро — напоминать по ним исполнителю не о чем.
+    expect(isNudgeKind('unclaimed')).toBe(true)
+    expect(isNudgeKind('overdue')).toBe(true)
+    expect(isNudgeKind('due_soon')).toBe(true)
+    expect(isNudgeKind('awaiting_acceptance')).toBe(false)
+    expect(isNudgeKind('conflict')).toBe(false)
+  })
+
+  it('всё, по чему пишут исполнителю, и адресовано исполнителю', () => {
+    for (const kind of ['unclaimed', 'overdue', 'due_soon'] as const) {
+      expect(alertAudience(kind)).toBe('specialist')
+    }
   })
 })

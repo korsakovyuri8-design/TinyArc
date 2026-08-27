@@ -9,13 +9,14 @@ type Action = (prev: OpsState, formData: FormData) => Promise<OpsState>
 /** Одна форма на все действия панели: кнопка, скрытые поля, строка ответа. */
 export function OpsAction({
   action,
-  hidden,
+  hidden = {},
   label,
   solid,
   children,
 }: {
   action: Action
-  hidden: Record<string, string>
+  /** Пусто, если действие ни к чему не привязано, — например, разбор общей очереди. */
+  hidden?: Record<string, string>
   label: string
   solid?: boolean
   children?: React.ReactNode

@@ -16,6 +16,8 @@
  *  · проектные разделы — чертежи, нагрузки и разводку делают люди (п.12а).
  */
 
+import type { AlertKind, NudgeKind } from '@/engine/pm'
+
 export type SpecInput = {
   projectTitle: string
   typology: string
@@ -124,6 +126,50 @@ export type RequestDraft = {
   body: string
 }
 
+/**
+ * Напоминание исполнителю по вставшей задаче.
+ *
+ * Уходит комментарием в тикет, а не в личку: прямых каналов между участниками
+ * не существует, и напоминание — не исключение (п.11). Черновик показывается
+ * бюро, отправляет его человек своей рукой.
+ */
+export type NudgeInput = {
+  ticketTitle: string
+  discipline: string
+  /** Почему пишем: не взят, просрочен, срок близко. */
+  kind: NudgeKind
+  /** Сколько часов длится ситуация. */
+  hours: number
+  spec: string
+}
+
+export type NudgeDraft = {
+  /** Текст комментария. Без упрёков: цель — сдвинуть работу, а не назначить виноватого. */
+  body: string
+  /** Один вопрос, на который исполнитель должен ответить. Без него это не напоминание. */
+  ask: string
+}
+
+/** Очередь менеджера на разбор: сигналы как они есть, без вывода. */
+export type QueueInput = {
+  alerts: {
+    kind: AlertKind
+    title: string
+    projectTitle: string
+    discipline: string
+    hours: number
+  }[]
+}
+
+export type QueuePlan = {
+  /** С чего начать. Одна строка — это и есть ответ на «что первое». */
+  first: string
+  /** Шаги на сегодня, по порядку. Каждый — действие, а не наблюдение. */
+  steps: string[]
+  /** Что здесь может подождать, хоть и выглядит срочным. */
+  notes: string
+}
+
 export interface Assistant {
   readonly mode: string
   draftSpec(input: SpecInput): Promise<SpecDraft>
@@ -136,4 +182,8 @@ export interface Assistant {
   checkCompleteness(input: CompletenessInput): Promise<CompletenessCheck>
   /** Черновик запроса смежнику: адресат должен понять его без автора. */
   draftRequest(input: RequestDraftInput): Promise<RequestDraft>
+  /** Черновик напоминания по вставшей задаче. Отправляет его человек. */
+  draftNudge(input: NudgeInput): Promise<NudgeDraft>
+  /** Разбор очереди сигналов в план на сегодня. Порядок сигналов считает движок. */
+  planQueue(input: QueueInput): Promise<QueuePlan>
 }
