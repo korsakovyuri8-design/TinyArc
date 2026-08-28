@@ -63,3 +63,25 @@ describe('секреты окружения', () => {
     ).toEqual([])
   })
 })
+
+describe('адрес продукта в окружении', () => {
+  it('молчит, когда переменной нет: адрес по умолчанию канонический', () => {
+    expect(preflight({ NODE_ENV: 'test' })).toEqual([])
+  })
+
+  it('ловит строку, которая не адрес', () => {
+    const problems = preflight({ NODE_ENV: 'test', BUREAU_PUBLIC_URL: 'tinyarc.korsakovgroup.com' })
+
+    expect(problems.join(' ')).toContain('это не адрес')
+  })
+
+  it('не пускает http вне localhost: по этому адресу ходят ключи доступа', () => {
+    const problems = preflight({ NODE_ENV: 'test', BUREAU_PUBLIC_URL: 'http://tinyarc.korsakovgroup.com' })
+
+    expect(problems.join(' ')).toContain('https')
+  })
+
+  it('на localhost http допустим', () => {
+    expect(preflight({ NODE_ENV: 'test', BUREAU_PUBLIC_URL: 'http://localhost:3000' })).toEqual([])
+  })
+})

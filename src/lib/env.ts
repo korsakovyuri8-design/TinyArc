@@ -57,6 +57,23 @@ export function preflight(env: Record<string, string | undefined> = process.env)
     problems.push('DATABASE_URL не задан: в бою база разработки недопустима.')
   }
 
+  // Адрес продукта: по умолчанию канонический, но если его переопределили —
+  // значение должно быть разбираемым. Кривой BUREAU_PUBLIC_URL уронил бы
+  // приложение при первом же рендере страницы, а не на выкладке.
+  const publicUrl = env.BUREAU_PUBLIC_URL?.trim()
+  if (publicUrl) {
+    try {
+      const parsed = new URL(publicUrl)
+      if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') {
+        problems.push(
+          `BUREAU_PUBLIC_URL="${publicUrl}": вне localhost адрес продукта обязан быть https — по нему ходят ключи доступа.`,
+        )
+      }
+    } catch {
+      problems.push(`BUREAU_PUBLIC_URL="${publicUrl}": это не адрес. Ожидается схема и хост целиком.`)
+    }
+  }
+
   const mail = env.BUREAU_MAIL ?? 'stub'
   if (mail !== 'stub' && mail !== 'resend') {
     problems.push(`BUREAU_MAIL="${mail}": такого режима нет. Доступны "stub" и "resend".`)

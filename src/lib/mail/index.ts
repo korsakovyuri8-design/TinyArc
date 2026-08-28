@@ -7,6 +7,7 @@
  * которым выдаётся доступ.
  */
 
+import { absolute, siteUrl } from '../site'
 import { ResendMailer, configFromEnv } from './resend'
 import { StubMailer } from './stub'
 import type { Mailer } from './types'
@@ -52,10 +53,11 @@ export async function sendAccessKey(
     body: [
       `Ключ доступа: ${key}`,
       '',
-      `Введите его на странице входа, чтобы открыть ${where}.`,
+      `Введите его на ${absolute('/enter')}, чтобы открыть ${where}.`,
       'Ключ заменяет пароль — не пересылайте его.',
       '',
       'TinyArc Cloud Bureau',
+      siteUrl(),
     ].join('\n'),
   })
 }

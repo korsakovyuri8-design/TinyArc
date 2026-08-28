@@ -10,7 +10,11 @@
 #    конфигурации, а не выясняться на человеке, которому нужен ключ доступа.
 #    Ключ при этом показывается на экране, поэтому доступ не теряется.
 #  · dockerCommand — демонстрационный: с синтетическим пулом. Для боевого
-#    стенда замените на `sh ./scripts/start.sh`, и база останется пустой.
+#    стенда замените на `sh ./scripts/start.sh`, и база останется пустой;
+#  · domains — адрес продукта. Render выпустит сертификат сам, но только после
+#    того, как в DNS появится запись: CNAME tinyarc → <имя сервиса>.onrender.com
+#    в панели регистратора korsakovgroup.com. Точное значение Render показывает
+#    на вкладке Settings → Custom Domains — берите его оттуда, не отсюда.
 
 databases:
   - name: bureau-db
@@ -28,6 +32,8 @@ services:
     region: frankfurt
     healthCheckPath: /api/health
     dockerCommand: sh ./scripts/demo-start.sh
+    domains:
+      - tinyarc.korsakovgroup.com
     envVars:
       - key: DATABASE_URL
         fromDatabase:

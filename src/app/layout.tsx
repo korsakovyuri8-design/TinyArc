@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { DM_Sans, Golos_Text, Playfair_Display, Space_Mono } from 'next/font/google'
 import Link from 'next/link'
 import './globals.css'
+import { siteUrl } from '@/lib/site'
 
 /*
  * Гарнитуры зафиксированы концептом (п.23): Playfair Display — заголовки,
@@ -39,10 +40,28 @@ const spaceMono = Space_Mono({
   display: 'swap',
 })
 
+const DESCRIPTION =
+  'Бюро, которое заканчивает бюро. Алгоритм отбирает специалистов по фактам, собирает команду под проект и ведёт её до пакета документации. Здания до пяти этажей в Черногории, Сербии и Греции.'
+
+/*
+ * metadataBase задаёт хост, относительно которого Next разворачивает
+ * относительные ссылки в разметке — канонические адреса и og:image. Без него
+ * страница, открытая по любому другому адресу (превью Render, IP), уводит
+ * поисковик и мессенджер на себя, а не на домен продукта.
+ */
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: 'TinyArc Cloud Bureau — AI-native архитектурное бюро',
-  description:
-    'Бюро, которое заканчивает бюро. Алгоритм отбирает специалистов по фактам, собирает команду под проект и ведёт её до пакета документации. Здания до пяти этажей в Черногории, Сербии и Греции.',
+  description: DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    siteName: 'TinyArc Cloud Bureau',
+    locale: 'ru_RU',
+    title: 'TinyArc Cloud Bureau — AI-native архитектурное бюро',
+    description: DESCRIPTION,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
