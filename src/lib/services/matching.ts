@@ -53,6 +53,7 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
         survivedCount: assembly.survivedCount,
         outcome: assembly.outcome,
         notes: assembly.notes,
+        gapJson: assembly.gap ? JSON.stringify(assembly.gap) : '',
       },
     })
 

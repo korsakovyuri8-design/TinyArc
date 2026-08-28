@@ -98,6 +98,7 @@ CREATE TABLE "MatchRun" (
     "survivedCount" INTEGER NOT NULL DEFAULT 0,
     "outcome" TEXT NOT NULL DEFAULT 'ok',
     "notes" TEXT NOT NULL DEFAULT '',
+    "gapJson" TEXT NOT NULL DEFAULT '',
 
     CONSTRAINT "MatchRun_pkey" PRIMARY KEY ("id")
 );

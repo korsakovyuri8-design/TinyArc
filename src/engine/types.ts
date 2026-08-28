@@ -121,9 +121,29 @@ export type TeamMember = {
 
 export type AssemblyOutcome = 'ok' | 'incomplete' | 'no_signatory' | 'rejected'
 
+/**
+ * Роль, из-за которой состав не собрался.
+ *
+ * Структура, а не готовая фраза. Фраза, собранная в движке, неминуемо
+ * оказывается на языке движка: клиент читал в своём кабинете «дисциплина
+ * "mep" со специализацией mep_hvac + mep_electrical». Движок считает,
+ * интерфейс называет — и называет по-русски, теми же словарями, что и везде.
+ */
+export type AssemblyGap = {
+  discipline: Discipline
+  specializations: Specialization[]
+  /** all — нужны все перечисленные, any — достаточно одной. */
+  mode: 'all' | 'any'
+  /** Сколько кандидатов прошло гейты на эту роль. Ноль — роль пуста. */
+  candidates: number
+}
+
 export type Assembly = {
   outcome: AssemblyOutcome
+  /** Техническая записка для бюро. Клиенту показывается gap, а не это. */
   notes: string
+  /** Чего не хватило. Пусто, когда команда собралась. */
+  gap: AssemblyGap | null
   pooledCount: number
   survivedCount: number
   requiredRoles: RequiredRole[]

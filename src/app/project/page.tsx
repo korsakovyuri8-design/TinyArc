@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import {
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
-  OUTCOME_LABELS,
   PROJECT_STATUS_LABELS,
   SPECIALIZATION_LABELS,
   TICKET_STATUS_LABELS,
@@ -19,12 +18,14 @@ import {
   type Typology,
 } from '@/engine/taxonomy'
 import { SPECIALIZATIONS } from '@/engine/taxonomy'
+import type { AssemblyGap } from '@/engine/types'
 import { parseList } from '@/lib/rows'
 import { BreakdownRow } from '@/components/Breakdown'
 import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
+import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
 
 export const metadata = { title: 'Кабинет проекта — TinyArc Cloud Bureau' }
@@ -105,12 +106,11 @@ export default async function ProjectPage({
         )}
 
         {run && run.outcome !== 'ok' && project.status !== 'rejected' && (
-          <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-            <div className="label" style={{ color: 'var(--fail)' }}>
-              {OUTCOME_LABELS[run.outcome] ?? run.outcome}
-            </div>
-            <p style={{ marginTop: 12, marginBottom: 0 }}>{run.notes}</p>
-          </div>
+          <IncompleteRun
+            outcome={run.outcome}
+            gap={parseGap(run.gapJson)}
+            jurisdiction={project.jurisdiction as Jurisdiction}
+          />
         )}
 
         {direction ? (
@@ -290,6 +290,69 @@ function Fact({ label, value, mono }: { label: string; value: string; mono?: boo
       <div className={mono ? 'num' : ''} style={{ marginTop: 6 }}>
         {value}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Что видит заказчик, когда команда не собралась.
+ *
+ * Это самый вероятный экран первых недель: пул ещё тонкий, а брифы уже идут.
+ * Раньше здесь стояла записка движка с именами словарей — «дисциплина "mep" со
+ * специализацией mep_hvac» — и ни одного слова о том, что будет дальше.
+ *
+ * Нехватка подписи выделена отдельно: людей мы нашли, но пакет без локальной
+ * подписи не имеет силы, и это не та новость, которую можно смешивать с
+ * «никого нет».
+ */
+function IncompleteRun({
+  outcome,
+  gap,
+  jurisdiction,
+}: {
+  outcome: string
+  gap: AssemblyGap | null
+  jurisdiction: Jurisdiction
+}) {
+  if (outcome === 'no_signatory') {
+    return (
+      <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
+        <div className="label" style={{ color: 'var(--fail)' }}>
+          Команда пока не собрана
+        </div>
+        <p style={{ marginTop: 12, marginBottom: 0 }}>
+          Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране
+          «{JURISDICTION_NAMES[jurisdiction] ?? jurisdiction}». Пакет документации без местной
+          подписи не имеет силы — его не примут в органах, и браться за проект без неё значит
+          продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь
+          в проект.
+        </p>
+      </div>
+    )
+  }
+
+  if (!gap) {
+    return (
+      <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
+        <div className="label" style={{ color: 'var(--fail)' }}>
+          Команда пока не собрана
+        </div>
+        <p style={{ marginTop: 12, marginBottom: 0 }}>
+          Состав под ваш проект не сошёлся. Бюро разбирается; ключ доступа у вас, по нему вы
+          вернётесь в проект.
+        </p>
+      </div>
+    )
+  }
+
+  const { headline, body } = clientExplanation(gap, jurisdiction)
+
+  return (
+    <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
+      <div className="label" style={{ color: 'var(--fail)' }}>
+        {headline}
+      </div>
+      <p style={{ marginTop: 12, marginBottom: 0 }}>{body}</p>
     </div>
   )
 }

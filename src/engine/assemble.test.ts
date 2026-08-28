@@ -42,6 +42,11 @@ describe('сборка Tiny Team', () => {
     expect(concrete.outcome).toBe('ok')
     expect(timber.outcome).toBe('incomplete')
     expect(timber.notes).toContain('structural_timber')
+    expect(timber.gap).toMatchObject({
+      discipline: 'structural',
+      candidates: 0,
+    })
+    expect(timber.gap?.specializations).toContain('structural_timber')
   })
 
   it('сообщает, какая роль не закрыта', () => {
@@ -50,6 +55,23 @@ describe('сборка Tiny Team', () => {
 
     expect(result.outcome).toBe('incomplete')
     expect(result.notes).toContain('mep')
+
+    // Структура, а не фраза: называть роль по-русски — дело интерфейса, и
+    // собранная в движке фраза уезжала клиенту на языке движка.
+    expect(result.gap).toMatchObject({ discipline: 'mep', candidates: 0 })
+  })
+
+  it('на собранной команде пробела нет', () => {
+    expect(assemble(fullPool(), requirements()).gap).toBeNull()
+  })
+
+  it('пробел указывает на самую дефицитную роль, а не на первую попавшуюся', () => {
+    // Конструкторов нет вовсе, визуализаторов двое: назвать надо конструктора.
+    const pool = fullPool().filter((s) => !s.disciplines.includes('structural'))
+    const result = assemble(pool, requirements())
+
+    expect(result.gap?.discipline).toBe('structural')
+    expect(result.gap?.candidates).toBe(0)
   })
 
   it('не берёт проект без права подписи в юрисдикции', () => {

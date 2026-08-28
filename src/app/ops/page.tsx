@@ -4,6 +4,9 @@ import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { DISCIPLINE_LABELS } from '@/lib/labels'
 import { alertsForBureau } from '@/lib/services/pm'
+import { lostProjects } from '@/lib/services/demand'
+import { roleName } from '@/lib/gap'
+import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import { isOperator } from '@/lib/session'
 import { planBureauQueue } from './actions'
 import { OpsAction, OpsSignIn } from './OpsForms'
@@ -37,6 +40,8 @@ export default async function OpsPage() {
     prisma.ticket.count({ where: { status: 'submitted' } }),
     alertsForBureau(),
   ])
+
+  const lost = await lostProjects()
 
   const conflicts = alerts.filter((a) => a.kind === 'conflict')
   const heat = projectHeat(alerts)
@@ -133,6 +138,58 @@ export default async function OpsPage() {
                       {alertAudience(alert.kind) === 'bureau' ? 'бюро' : 'специалисту'}
                     </td>
                     <td className="dim">{ALERT_ACTIONS[alert.kind]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="divider" style={{ marginTop: 48 }} />
+
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h2>Не смогли взять</h2>
+          {lost.length > 0 && <span className="tag tag-fail">{lost.length}</span>}
+        </div>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+          Брифы, под которые состав не собрался. Это не список ошибок, а список найма — и
+          самый дорогой, какой есть: не «кого бы нанять вообще», а за какой заказ нам уже
+          заплатили бы, будь у нас этот человек.
+        </p>
+
+        {lost.length === 0 ? (
+          <p className="dim">Все брифы, дошедшие до прогона, собрались.</p>
+        ) : (
+          <div className="table-scroll panel" style={{ padding: 0 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Проект</th>
+                  <th>Страна</th>
+                  <th>Кого не хватило</th>
+                  <th>Ждёт</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lost.map((row) => (
+                  <tr key={row.projectId}>
+                    <td>{row.title}</td>
+                    <td className="dim">{JURISDICTION_NAMES[row.jurisdiction] ?? row.jurisdiction}</td>
+                    <td>
+                      {row.outcome === 'no_signatory' ? (
+                        <span className="tag tag-fail">некому подписать</span>
+                      ) : row.gap ? (
+                        <span className="dim" style={{ fontSize: '0.85rem' }}>
+                          {roleName(row.gap)}
+                          {row.gap.candidates > 0 && ` · кандидатов ${row.gap.candidates}`}
+                        </span>
+                      ) : (
+                        <span className="dim">состав не сошёлся</span>
+                      )}
+                    </td>
+                    <td className="num dim">
+                      {Math.max(0, Math.floor((Date.now() - row.since.getTime()) / 86_400_000))} дн.
+                    </td>
                   </tr>
                 ))}
               </tbody>
