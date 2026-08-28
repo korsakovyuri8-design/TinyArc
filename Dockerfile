@@ -45,6 +45,9 @@ COPY --chown=node:node package.json package-lock.json ./
 # Установки здесь нет: зависимости приезжают собранными из сборочной стадии.
 COPY --chown=node:node --from=build /app/node_modules ./node_modules
 
+# public/ пуст и держится файлом-заглушкой. Каталог существует не ради
+# содержимого, а ради этой строки: убрать её — значит однажды положить туда
+# favicon и не понять, почему в образе его нет.
 COPY --chown=node:node public ./public
 COPY --chown=node:node src ./src
 COPY --chown=node:node prisma ./prisma
