@@ -19,6 +19,7 @@ import {
   CommentForm,
   ConflictForm,
   RenderForm,
+  LeaveForm,
   RequestForm,
   SubmitWork,
 } from './TicketActions'
@@ -332,6 +333,29 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 <ConflictForm ticketId={ticket.id} />
               </>
             )}
+
+          </>
+        )}
+
+        {/*
+          Выход из роли живёт вне ветки статуса намеренно.
+          Он про роль, а не про задачу, и доступен в том числе на
+          заблокированном тикете — а это ровно то состояние, в котором человек
+          и понимает, что не потянет: работа ещё не началась, зависимости не
+          пришли, и сказать об этом надо сейчас, а не когда срок загорится.
+        */}
+        {ticket.status !== 'accepted' && (
+          <>
+            <div className="divider" style={{ marginTop: 40 }} />
+            <div className="label" style={{ color: 'var(--fail)' }}>
+              Если не сможете вести
+            </div>
+            <p className="hint" style={{ marginTop: 8, marginBottom: 16, maxWidth: '58ch' }}>
+              Болезнь, чужой срок, недооценённый объём — это бывает, и молчание здесь хуже
+              отказа. Сказать заранее значит дать проекту найти замену, пока срок ещё не
+              горит.
+            </p>
+            <LeaveForm projectId={ticket.projectId} />
           </>
         )}
       </div>

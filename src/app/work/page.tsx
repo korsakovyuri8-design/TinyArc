@@ -9,7 +9,13 @@ export const metadata = { title: 'Мои задачи — TinyArc Cloud Bureau' 
 
 type Ticket = Awaited<ReturnType<typeof ticketsOf>>[number]
 
-export default async function WorkPage() {
+export default async function WorkPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ left?: string }>
+}) {
+  const { left } = await searchParams
+
   const specialist = await currentSpecialist()
   if (!specialist) redirect('/enter')
 
@@ -18,6 +24,15 @@ export default async function WorkPage() {
   if (specialist.status === 'invited') redirect('/work/profile/complete')
 
   const tickets = await ticketsOf(specialist.id)
+
+  // Подтверждение выхода показывается здесь, а не на тикете: после выхода
+  // тикет уже не его, и страница ушла бы из-под ног ошибкой доступа.
+  const leftNotice =
+    left === 'passed'
+      ? 'Вы вышли из проекта. Роль передана следующему по рангу из того же прогона, ваши незакрытые задачи по нему перешли к нему же.'
+      : left === 'orphaned'
+        ? 'Вы вышли из проекта. Замены в прогоне не нашлось — роль вернулась бюро, и оно ищет исполнителя.'
+        : null
 
   // Канбан: ждёт гейта → открыт → в работе → сдано.
   const columns: { title: string; note: string; tickets: Ticket[] }[] = [
@@ -55,6 +70,15 @@ export default async function WorkPage() {
             Профиль и метрики
           </Link>
         </div>
+
+        {leftNotice && (
+          <div className="panel panel-accent" style={{ marginTop: 28 }}>
+            <div className="label label-accent">Выход оформлен</div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              {leftNotice}
+            </p>
+          </div>
+        )}
 
         {tickets.length === 0 ? (
           <div className="panel" style={{ marginTop: 40 }}>

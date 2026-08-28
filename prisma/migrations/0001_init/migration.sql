@@ -126,6 +126,19 @@ CREATE TABLE "Candidate" (
 );
 
 -- CreateTable
+CREATE TABLE "Withdrawal" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "specialistId" TEXT NOT NULL,
+    "discipline" TEXT NOT NULL,
+    "reason" TEXT NOT NULL DEFAULT '',
+    "replacedById" TEXT NOT NULL DEFAULT '',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Withdrawal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "TeamSlot" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
@@ -264,6 +277,12 @@ CREATE INDEX "Candidate_runId_discipline_idx" ON "Candidate"("runId", "disciplin
 CREATE UNIQUE INDEX "Candidate_runId_specialistId_discipline_key" ON "Candidate"("runId", "specialistId", "discipline");
 
 -- CreateIndex
+CREATE INDEX "Withdrawal_projectId_idx" ON "Withdrawal"("projectId");
+
+-- CreateIndex
+CREATE INDEX "Withdrawal_specialistId_idx" ON "Withdrawal"("specialistId");
+
+-- CreateIndex
 CREATE INDEX "TeamSlot_specialistId_idx" ON "TeamSlot"("specialistId");
 
 -- CreateIndex
@@ -310,6 +329,12 @@ ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_runId_fkey" FOREIGN KEY ("runI
 
 -- AddForeignKey
 ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_specialistId_fkey" FOREIGN KEY ("specialistId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Withdrawal" ADD CONSTRAINT "Withdrawal_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Withdrawal" ADD CONSTRAINT "Withdrawal_specialistId_fkey" FOREIGN KEY ("specialistId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TeamSlot" ADD CONSTRAINT "TeamSlot_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

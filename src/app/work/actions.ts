@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect, unstable_rethrow } from 'next/navigation'
 import type { Discipline } from '@/engine/taxonomy'
 import {
   attachArtifact,
@@ -11,6 +12,7 @@ import {
   requestFrom,
   submit,
 } from '@/lib/services/relay'
+import { HandoverRefused, stepOut } from '@/lib/services/handover'
 import { currentSpecialistId } from '@/lib/session'
 
 export type WorkState = { error?: string; message?: string }
@@ -134,4 +136,50 @@ export async function addArtifact(_prev: WorkState, formData: FormData): Promise
     (ticketId, specialistId) => attachArtifact(ticketId, specialistId, { name, url, kind }),
     'Файл приложен. Смежники получат его, когда тикет примут.',
   )
+}
+
+/**
+ * Выход из роли на проекте.
+ *
+ * Не «отказ от тикета»: тикеты в роли связаны графом, и бросить один, оставив
+ * соседние, значит оставить проект в состоянии, которое никто не разберёт.
+ * Человек выходит из роли целиком, и алгоритм ищет замену там же, где искал
+ * состав — в ранжированном списке того же прогона.
+ *
+ * Кнопка стоит на задаче, потому что именно там человек понимает, что не
+ * потянет. Но действие шире задачи, и текст рядом с кнопкой говорит об этом
+ * прямо: соглашаться вслепую тут нечему.
+ */
+export async function leaveProject(_prev: WorkState, formData: FormData): Promise<WorkState> {
+  const specialistId = await currentSpecialistId()
+  if (!specialistId) return { error: 'Сначала войдите по ключу.' }
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const reason = String(formData.get('reason') ?? '').trim()
+
+  if (!reason) {
+    return { error: 'Напишите причину: её увидит и бюро, и тот, кто придёт на замену.' }
+  }
+
+  try {
+    const result = await stepOut(specialistId, projectId, reason)
+
+    revalidatePath('/work')
+    revalidatePath('/work/profile')
+
+    // Уводим на доску, а не оставляем на тикете: тикет уже не его, и страница
+    // ушла бы из-под ног ошибкой доступа вместо подтверждения. Что именно
+    // произошло, доска скажет по метке в адресе.
+    redirect(result.replaced ? '/work?left=passed' : '/work?left=orphaned')
+  } catch (error) {
+    // redirect работает через исключение, и try/catch его глушит: без этой
+    // строки человек увидел бы «не получилось» после успешного выхода.
+    // Способ публичный, из документации этой версии Next.
+    unstable_rethrow(error)
+
+    if (error instanceof HandoverRefused) return { error: error.message }
+
+    console.error('Выход из проекта не выполнен:', error)
+    return { error: 'Не получилось. Напишите в тикет — бюро разберёт вручную.' }
+  }
 }

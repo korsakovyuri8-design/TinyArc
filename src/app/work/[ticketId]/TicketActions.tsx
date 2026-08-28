@@ -7,6 +7,7 @@ import {
   addArtifact,
   askDiscipline,
   claimTicket,
+  leaveProject,
   makeRender,
   postComment,
   raiseTicketConflict,
@@ -198,5 +199,51 @@ export function ArtifactForm({ ticketId }: { ticketId: string }) {
         </div>
       </div>
     </Form>
+  )
+}
+
+/**
+ * Выход из роли на проекте.
+ *
+ * Стоит на задаче, потому что именно здесь человек понимает, что не потянет.
+ * Но действие шире задачи, и текст говорит это прямо: уходит роль целиком, со
+ * всеми незакрытыми задачами. Бросить одну, оставив соседние, нельзя — они
+ * связаны графом, и такой проект потом никто не разберёт.
+ *
+ * Форма отдельная от Form: там скрытым полем идёт тикет, а здесь — проект.
+ */
+export function LeaveForm({ projectId }: { projectId: string }) {
+  const [state, formAction, pending] = useActionState<WorkState, FormData>(leaveProject, {})
+
+  return (
+    <form action={formAction}>
+      <input type="hidden" name="projectId" value={projectId} />
+
+      <div className="field">
+        <label htmlFor="reason">Почему выходите</label>
+        <textarea
+          id="reason"
+          name="reason"
+          style={{ minHeight: 70 }}
+          placeholder="Заболел, выхожу не раньше чем через три недели"
+        />
+        <div className="hint">
+          Причину увидит бюро и тот, кто придёт на замену. Оценкой она не станет — поля
+          оценки специалиста в системе нет.
+        </div>
+      </div>
+
+      <button type="submit" className="btn btn-quiet" disabled={pending}>
+        {pending ? '…' : 'Выйти из проекта'}
+      </button>
+
+      <p className="hint" style={{ marginTop: 10 }}>
+        Уйдёт роль целиком: все ваши незакрытые задачи по этому проекту перейдут следующему
+        по рангу из того же прогона. Принятая работа останется вашей — она уже в ваших
+        метриках, и переписывать её никто не будет.
+      </p>
+
+      <Status state={state} />
+    </form>
   )
 }

@@ -112,6 +112,7 @@ model Specialist {
   portfolio   PortfolioItem[]
   collaborationsA Collaboration[] @relation("collaborationA")
   collaborationsB Collaboration[] @relation("collaborationB")
+  withdrawals     Withdrawal[]
 
   @@index([status])
 }
@@ -161,10 +162,11 @@ model Project {
 
   createdAt DateTime @default(now())
 
-  runs       MatchRun[]
-  slots      TeamSlot[]
-  tickets    Ticket[]
-  directions DesignDirection[]
+  runs        MatchRun[]
+  slots       TeamSlot[]
+  tickets     Ticket[]
+  directions  DesignDirection[]
+  withdrawals Withdrawal[]
 
   @@index([status])
 }
@@ -274,6 +276,29 @@ model Candidate {
 
 /// Место в Tiny Team. Создаётся только прогоном (п.7): руками назначить
 /// специалиста в команду нечем — поля для этого нет.
+/// Выход специалиста из роли на проекте.
+///
+/// Не оценка человека — поля оценки в системе нет (п.12), — а факт, нужный по
+/// двум причинам. Первая: тот, кто уже вышел из проекта, не должен снова
+/// оказаться первым в очереди на ту же роль. Вторая: бюро видит, кто выпал,
+/// когда и почему, а без записи это знание живёт только в комментариях.
+model Withdrawal {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  discipline String
+  reason     String @default("")
+  /// Кто принял роль. Пусто — замены не нашлось, роль вернулась бюро.
+  replacedById String @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([projectId])
+  @@index([specialistId])
+}
+
 model TeamSlot {
   id        String   @id @default(cuid())
   projectId String

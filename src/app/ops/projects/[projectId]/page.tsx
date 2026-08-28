@@ -70,11 +70,25 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction, alerts] = await Promise.all([
+  const [run, direction, alerts, withdrawals] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     alertsForProject(project.id),
+    prisma.withdrawal.findMany({
+      where: { projectId: project.id },
+      orderBy: { createdAt: 'asc' },
+      include: { specialist: { select: { displayName: true } } },
+    }),
   ])
+
+  const replacedBy = new Map(
+    (
+      await prisma.specialist.findMany({
+        where: { id: { in: withdrawals.map((w) => w.replacedById).filter(Boolean) } },
+        select: { id: true, displayName: true },
+      })
+    ).map((s) => [s.id, s.displayName]),
+  )
 
   // Сигналы, по которым бюро пишет исполнителю. Кнопка напоминания появляется
   // только там, где менеджер уже сказал, что работа встала.
@@ -202,6 +216,39 @@ export default async function OpsProjectPage({
         {project.tickets.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 44 }} />
+            {withdrawals.length > 0 && (
+              <div className="panel" style={{ marginBottom: 32, borderColor: 'var(--fail)' }}>
+                <div className="label" style={{ color: 'var(--fail)' }}>
+                  Кто вышел из проекта
+                </div>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                  Это не оценка людей — поля оценки в системе нет. Это факт, по которому видно,
+                  где состав держался на одном человеке.
+                </p>
+                <div className="stack" style={{ gap: 12 }}>
+                  {withdrawals.map((w) => (
+                    <div key={w.id}>
+                      <div className="row" style={{ gap: 10, alignItems: 'baseline' }}>
+                        <strong>{w.specialist.displayName}</strong>
+                        <span className="dim" style={{ fontSize: '0.82rem' }}>
+                          {DISCIPLINE_LABELS[w.discipline as Discipline] ?? w.discipline} ·{' '}
+                          {w.createdAt.toLocaleDateString('ru-RU')}
+                        </span>
+                        <span className={w.replacedById ? 'tag' : 'tag tag-fail'}>
+                          {w.replacedById
+                            ? `роль принял ${replacedBy.get(w.replacedById) ?? '—'}`
+                            : 'замены не нашлось'}
+                        </span>
+                      </div>
+                      <p className="muted" style={{ margin: '6px 0 0', fontSize: '0.88rem' }}>
+                        {w.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <h2>Тикеты</h2>
             <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>
               Постановку пишет бюро. Гейты открывают тикеты сами — руками статус не ставится.
