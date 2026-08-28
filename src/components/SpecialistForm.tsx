@@ -56,12 +56,24 @@ export function SpecialistForm({
   defaults = {},
   submitLabel = 'Подать заявку',
   done,
+  hidden = {},
+  showCapacity = true,
 }: {
   action: SpecialistFormAction
   defaults?: Record<string, string | string[]>
   submitLabel?: string
   /** Что показать после успешной отправки. */
   done?: React.ReactNode
+  /** Скрытые поля: к чему относится отправка, если запись уже существует. */
+  hidden?: Record<string, string>
+  /**
+   * Показывать ли свободную ёмкость.
+   *
+   * Своим временем распоряжается специалист, и в правке из панели бюро это
+   * поле было бы обманкой: видно, вводится, ни на что не влияет. Значение
+   * всё равно уходит скрытым — схема проверяет форму целиком.
+   */
+  showCapacity?: boolean
 }) {
   const [state, action, pending] = useActionState<ApplicationState, FormData>(submit, {})
 
@@ -98,6 +110,10 @@ export function SpecialistForm({
 
   return (
     <form action={action}>
+      {Object.entries(hidden).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
+
       <fieldset>
         <legend>Кто вы</legend>
 
@@ -279,21 +295,29 @@ export function SpecialistForm({
             />
           </Field>
 
-          <Field
-            label="Свободная ёмкость, ч/нед"
-            name="weeklyCapacityHours"
-            error={errors.weeklyCapacityHours}
-            hint="Ноль означает, что в отборе вы не участвуете: формула — произведение"
-          >
-            <input
-              id="weeklyCapacityHours"
+          {showCapacity ? (
+            <Field
+              label="Свободная ёмкость, ч/нед"
               name="weeklyCapacityHours"
-              type="number"
-              min={0}
-              max={60}
-              defaultValue={values.weeklyCapacityHours ?? 20}
+              error={errors.weeklyCapacityHours}
+              hint="Ноль означает, что в отборе вы не участвуете: формула — произведение"
+            >
+              <input
+                id="weeklyCapacityHours"
+                name="weeklyCapacityHours"
+                type="number"
+                min={0}
+                max={60}
+                defaultValue={values.weeklyCapacityHours ?? 20}
+              />
+            </Field>
+          ) : (
+            <input
+              type="hidden"
+              name="weeklyCapacityHours"
+              value={values.weeklyCapacityHours ?? 20}
             />
-          </Field>
+          )}
 
           <Field
             label="Срок выхода на задачу, дней"

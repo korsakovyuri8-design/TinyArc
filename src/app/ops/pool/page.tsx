@@ -221,7 +221,9 @@ export default async function PoolPage() {
 
                 return (
                   <tr key={row.id}>
-                    <td>{profile.displayName}</td>
+                    <td>
+                      <Link href={`/ops/pool/${row.id}`}>{profile.displayName}</Link>
+                    </td>
                     <td className="dim">
                       {profile.disciplines.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')}
                     </td>

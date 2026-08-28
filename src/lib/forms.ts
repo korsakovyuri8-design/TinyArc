@@ -62,9 +62,15 @@ export const applicationSchema = z.object({
   portfolioUrl: z.url('Ссылка на портфолио обязательна: это главный вход отбора'),
 
   disciplines: z.array(z.enum(DISCIPLINES)).min(1, 'Выберите хотя бы одну дисциплину'),
-  specializations: z
-    .array(z.enum(SPECIALIZATIONS))
-    .min(1, 'Отметьте, чем именно вы занимаетесь внутри дисциплины'),
+  /**
+   * Минимума по списку здесь нет намеренно.
+   *
+   * У геодезии словаря специализаций нет: подоснова есть подоснова, делить её
+   * не на что. Требование «хотя бы одна» закрывало геодезисту вход целиком —
+   * отметить в форме нечего, а форма требует отметить. Обязательность решается
+   * не длиной списка, а словарём дисциплины: см. everyDisciplineCovered.
+   */
+  specializations: z.array(z.enum(SPECIALIZATIONS)),
   typologies: z.array(z.enum(TYPOLOGIES)).min(1, 'С какими типологиями работали'),
   scaleBands: z.array(z.enum(SCALE_BANDS)).min(1, 'Какой масштаб вели'),
   maxStoreys: z.coerce.number().int().min(1).max(60),
