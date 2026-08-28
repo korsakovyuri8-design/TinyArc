@@ -26,7 +26,7 @@ npm run demo       # генерация клиента + схема + сид + �
 npm test           # модульные тесты движка и обвязки
 npm run typecheck
 npm run build
-npm run e2e        # сквозные пути: клиент и приём базы (e2e/README.md).
+npm run e2e        # сквозные пути: клиент, приём базы, вёрстка на телефоне.
                    # Нужен запущенный сервер и BUREAU_OPS_PASSWORD в окружении
 ```
 

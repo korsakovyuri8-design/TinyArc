@@ -215,6 +215,45 @@ section:last-of-type {
   }
 }
 
+/*
+ * Шапка на узком экране.
+ *
+ * Одной строкой логотип и пять ссылок не помещаются, а высота шапки была
+ * фиксированной: навигация переносилась во вторую строку и уезжала за нижнюю
+ * границу — часть ссылок просто пропадала. Здесь она встаёт под логотип и
+ * прокручивается вбок, вместо того чтобы переноситься: перенос в ленте ссылок
+ * читается как обрывок, прокрутка — как продолжение.
+ */
+@media (max-width: 720px) {
+  .site-header .shell {
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-top: 14px;
+    padding-bottom: 10px;
+  }
+
+  .nav {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 20px;
+    /* Полоса прокрутки под навигацией — визуальный шум; прокрутка остаётся. */
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav a {
+    white-space: nowrap;
+    /* Палец толще строки: без этого цель нажатия — двадцать три пиксела. */
+    padding: 8px 0;
+  }
+}
+
 .stack {
   display: flex;
   flex-direction: column;
