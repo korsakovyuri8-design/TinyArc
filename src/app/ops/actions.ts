@@ -14,7 +14,7 @@ import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
 import { alertsForBureau, alertsForProject } from '@/lib/services/pm'
-import { importDrafts, reinvite } from '@/lib/services/intake'
+import { MAX_IMPORT_ROWS, importDrafts, inviteWaiting, reinvite } from '@/lib/services/intake'
 import { readIntake } from '@/lib/intake/map'
 import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
@@ -509,19 +509,20 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
 }
 
 /**
- * Заведение базы и рассылка приглашений.
+ * Заведение записей.
  *
  * Строки с ошибкой пропускаются, а не роняют импорт: в базе на двести человек
  * всегда найдётся тот, у кого вместо адреса телеграм, и останавливать из-за
  * него остальных незачем. Отчёт называет, сколько пропущено.
+ *
+ * Письма отсюда не уходят. Рассылка — отдельная кнопка: вставка записей это
+ * один запрос, а письмо — сетевой вызов на человека, и связывать их значит
+ * ставить заведение базы в зависимость от почтового провайдера.
  */
 export async function runIntake(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
-  const text = String(formData.get('csv') ?? '')
-  const invite = String(formData.get('invite') ?? '') === 'on'
-
-  const intake = readIntake(text)
+  const intake = readIntake(String(formData.get('csv') ?? ''))
   const drafts = intake.rows.flatMap((r) => (r.ok ? [r.draft] : []))
 
   if (drafts.length === 0) {
@@ -529,8 +530,9 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
   }
 
   try {
-    const outcome = await importDrafts(drafts, { invite })
+    const outcome = await importDrafts(drafts)
 
+    revalidatePath('/ops/import')
     revalidatePath('/ops/applications')
     revalidatePath('/ops/pool')
     revalidatePath('/ops')
@@ -538,12 +540,47 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
     const parts = [
       `Заведено: ${outcome.created}.`,
       outcome.existing > 0 ? `Уже были в базе и не тронуты: ${outcome.existing}.` : '',
-      invite ? 'Приглашения отправлены.' : 'Приглашения не отправлялись — ключи выданы молча.',
+      outcome.skipped > 0
+        ? `Сверх потолка в ${MAX_IMPORT_ROWS} строк осталось ${outcome.skipped} — вставьте их следующим заходом.`
+        : '',
+      outcome.created > 0 ? 'Приглашения ещё не отправлены — кнопка ниже.' : '',
+    ]
+
+    return { message: parts.filter(Boolean).join(' ') }
+  } catch (error) {
+    console.error('Импорт не выполнен:', error)
+    return { error: error instanceof Error ? error.message : 'Импорт не выполнен.' }
+  }
+}
+
+/**
+ * Рассылка тем, кого завели и ещё не звали.
+ *
+ * Идёт порциями и не отмечает приглашённым того, до кого письмо не дошло:
+ * иначе он молча выпал бы из рассылки навсегда. Незаконченная очередь не
+ * теряется — следующий заход берёт её же.
+ */
+export async function sendInvites(_prev: OpsState, _formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  try {
+    const outcome = await inviteWaiting()
+
+    revalidatePath('/ops/import')
+    revalidatePath('/ops/applications')
+
+    if (outcome.sent === 0 && outcome.unsent.length === 0) {
+      return { message: 'Звать некого: все заведённые уже приглашены.' }
+    }
+
+    const parts = [
+      `Отправлено: ${outcome.sent}.`,
+      outcome.waiting > 0 ? `Ждут очереди: ${outcome.waiting} — нажмите ещё раз.` : '',
     ]
 
     if (outcome.unsent.length > 0) {
       parts.push(
-        `Не ушло писем: ${outcome.unsent.length}. Ключи — ` +
+        `Не ушло: ${outcome.unsent.length}. Ключи — ` +
           outcome.unsent.map((u) => `${u.email}: ${u.accessKey}`).join('; ') +
           ' — передайте вручную.',
       )
@@ -551,8 +588,8 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
 
     return { message: parts.filter(Boolean).join(' ') }
   } catch (error) {
-    console.error('Импорт не выполнен:', error)
-    return { error: error instanceof Error ? error.message : 'Импорт не выполнен.' }
+    console.error('Рассылка не выполнена:', error)
+    return { error: 'Рассылка не выполнена. Ключи видны в списке приглашённых.' }
   }
 }
 

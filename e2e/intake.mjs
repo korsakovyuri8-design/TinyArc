@@ -67,7 +67,9 @@ check(text.includes('ставка'), 'называет столбец, кото�
 await bureau.fill('#csv-run', CSV)
 await bureau.click('form:has(#csv-run) button[type=submit]')
 await bureau.waitForTimeout(2500)
-check((await bureau.textContent('body')).includes('Заведено: 1'), 'заведена одна запись')
+text = await bureau.textContent('body')
+check(text.includes('Заведено: 1'), 'заведена одна запись')
+check(text.includes('Приглашения ещё не отправлены'), 'заведение не рассылает писем само')
 
 await bureau.fill('#csv-run', CSV)
 await bureau.click('form:has(#csv-run) button[type=submit]')
@@ -75,6 +77,13 @@ await bureau.waitForTimeout(2000)
 check(
   (await bureau.textContent('body')).includes('Заведено: 0'),
   'повторный импорт того же файла не создаёт дублей',
+)
+
+await bureau.click('form:has(button:has-text("Разослать приглашения")) button[type=submit]')
+await bureau.waitForTimeout(3000)
+check(
+  (await bureau.textContent('body')).includes('Отправлено:'),
+  'рассылка отдельной кнопкой отчитывается о числе писем',
 )
 
 await bureau.goto(`${BASE}/ops/applications`)

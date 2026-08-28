@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { isOperator } from '@/lib/session'
-import { previewIntake, runIntake } from '../actions'
+import { MAX_IMPORT_ROWS } from '@/lib/services/intake'
+import { previewIntake, runIntake, sendInvites } from '../actions'
 import { OpsAction } from '../OpsForms'
 
 export const metadata = { title: 'Импорт базы — панель бюро' }
@@ -11,8 +12,9 @@ export const metadata = { title: 'Импорт базы — панель бюр�
 export default async function ImportPage() {
   if (!(await isOperator())) redirect('/ops')
 
-  const [invited, silent] = await Promise.all([
+  const [invited, waiting, silent] = await Promise.all([
     prisma.specialist.count({ where: { status: 'invited' } }),
+    prisma.specialist.count({ where: { status: 'invited', invitedAt: null } }),
     prisma.specialist.count({
       where: {
         status: 'invited',
@@ -46,11 +48,12 @@ export default async function ImportPage() {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
               <div>
                 <div className="num" style={{ fontSize: '2rem' }}>{invited}</div>
-                <div className="label">приглашены, профиль не заполнен</div>
+                <div className="label">заведены, профиль не заполнен</div>
               </div>
-              {silent > 0 && (
-                <span className="tag tag-wait">молчат больше недели · {silent}</span>
-              )}
+              <div className="row" style={{ gap: 8 }}>
+                {waiting > 0 && <span className="tag tag-accent">не позваны · {waiting}</span>}
+                {silent > 0 && <span className="tag tag-wait">молчат больше недели · {silent}</span>}
+              </div>
             </div>
           </div>
         )}
@@ -121,12 +124,12 @@ export default async function ImportPage() {
 
         <div className="divider" style={{ marginTop: 40 }} />
 
-        <h2>Завести и позвать</h2>
+        <h2>Завести записи</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Вставьте ту же таблицу ещё раз — намеренно: заведение записей и рассылка писем не
-          должны случаться от повторного нажатия на форму предпросмотра. Адреса, которые уже
-          есть в базе, пропускаются: импорт не перезаписывает профиль, который человек мог
-          заполнить сам.
+          Вставьте ту же таблицу ещё раз — намеренно: заведение записей не должно случаться
+          от повторного нажатия на форму предпросмотра. Адреса, которые уже есть в базе,
+          пропускаются: импорт не перезаписывает профиль, который человек мог заполнить сам.
+          За один заход берётся до {MAX_IMPORT_ROWS} строк; остальное — следующим.
         </p>
 
         <OpsAction action={runIntake} label="Завести записи" solid>
@@ -138,15 +141,25 @@ export default async function ImportPage() {
               style={{ minHeight: 200, fontFamily: 'var(--font-space-mono), monospace', fontSize: '0.8rem' }}
             />
           </div>
-          <label className="row" style={{ gap: 10, marginBottom: 18, alignItems: 'center' }}>
-            <input type="checkbox" name="invite" defaultChecked />
-            <span>Отправить приглашения с ключом доступа</span>
-          </label>
         </OpsAction>
 
+        <div className="divider" style={{ marginTop: 40 }} />
+
+        <h2>Позвать заведённых</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+          Письмо с ключом и ссылкой на профиль уходит тем, кого завели и ещё не звали.
+          Отдельной кнопкой, а не вместе с заведением: вставка записей — один запрос, письмо —
+          сетевой вызов на человека, и связывать их значит ставить заведение базы в
+          зависимость от почтового провайдера.
+        </p>
+
+        <OpsAction action={sendInvites} label="Разослать приглашения" solid />
+
         <p className="hint" style={{ marginTop: 16 }}>
-          Если почта в режиме заглушки, письма никуда не уйдут — отчёт назовёт ключи, и вы
-          передадите их тем каналом, которым и так общаетесь с людьми.
+          Идёт порциями — если ждущих больше, нажмите ещё раз. Приглашённым отмечается только
+          тот, до кого письмо дошло: иначе человек молча выпал бы из рассылки навсегда.
+          В режиме почты-заглушки письма никуда не уйдут, и ключи видны в списке приглашённых
+          на странице заявок — передадите тем каналом, которым и так общаетесь.
         </p>
       </div>
     </section>
