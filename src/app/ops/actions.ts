@@ -14,6 +14,8 @@ import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
 import { alertsForBureau, alertsForProject } from '@/lib/services/pm'
+import { importDrafts, reinvite } from '@/lib/services/intake'
+import { readIntake } from '@/lib/intake/map'
 import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
@@ -452,4 +454,118 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
   return { message: 'Отправлено.' }
+}
+
+/**
+ * Предпросмотр базы.
+ *
+ * Ничего не создаёт. Человек должен увидеть, что система прочла в его таблице,
+ * до того как в базе появятся записи и уйдут письма: столбец, названный не так,
+ * тихо потерялся бы, и обнаружилось бы это на первом прогоне отбора.
+ */
+export async function previewIntake(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const text = String(formData.get('csv') ?? '')
+  const intake = readIntake(text)
+
+  if (intake.rows.length === 0) {
+    return { error: 'Не вижу ни одной строки. Нужен заголовок и хотя бы одна строка под ним.' }
+  }
+
+  const good = intake.rows.filter((r) => r.ok)
+  const bad = intake.rows.filter((r) => !r.ok)
+
+  const parts = [
+    `Прочитано строк: ${intake.rows.length}. Готовы к заведению: ${good.length}.`,
+    `Узнаны столбцы: ${intake.recognisedColumns.join(', ') || '—'}.`,
+  ]
+
+  if (intake.ignoredColumns.length > 0) {
+    parts.push(`Не узнаны и не импортируются: ${intake.ignoredColumns.join(', ')}.`)
+  }
+
+  if (bad.length > 0) {
+    parts.push(
+      `Строк с ошибкой ${bad.length}: ` +
+        bad
+          .slice(0, 5)
+          .map((r) => (r.ok ? '' : `${r.line} — ${r.problem}`))
+          .join('; ') +
+        (bad.length > 5 ? ' и другие' : '') +
+        '.',
+    )
+  }
+
+  const unrecognised = [
+    ...new Set(good.flatMap((r) => (r.ok ? r.unrecognised : []))),
+  ].slice(0, 12)
+
+  if (unrecognised.length > 0) {
+    parts.push(`Значения, которых нет в таксономии: ${unrecognised.join(', ')}.`)
+  }
+
+  return { message: parts.join(' ') }
+}
+
+/**
+ * Заведение базы и рассылка приглашений.
+ *
+ * Строки с ошибкой пропускаются, а не роняют импорт: в базе на двести человек
+ * всегда найдётся тот, у кого вместо адреса телеграм, и останавливать из-за
+ * него остальных незачем. Отчёт называет, сколько пропущено.
+ */
+export async function runIntake(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const text = String(formData.get('csv') ?? '')
+  const invite = String(formData.get('invite') ?? '') === 'on'
+
+  const intake = readIntake(text)
+  const drafts = intake.rows.flatMap((r) => (r.ok ? [r.draft] : []))
+
+  if (drafts.length === 0) {
+    return { error: 'Заводить нечего: ни одна строка не прошла разбор. Нажмите «Разобрать».' }
+  }
+
+  try {
+    const outcome = await importDrafts(drafts, { invite })
+
+    revalidatePath('/ops/applications')
+    revalidatePath('/ops/pool')
+    revalidatePath('/ops')
+
+    const parts = [
+      `Заведено: ${outcome.created}.`,
+      outcome.existing > 0 ? `Уже были в базе и не тронуты: ${outcome.existing}.` : '',
+      invite ? 'Приглашения отправлены.' : 'Приглашения не отправлялись — ключи выданы молча.',
+    ]
+
+    if (outcome.unsent.length > 0) {
+      parts.push(
+        `Не ушло писем: ${outcome.unsent.length}. Ключи — ` +
+          outcome.unsent.map((u) => `${u.email}: ${u.accessKey}`).join('; ') +
+          ' — передайте вручную.',
+      )
+    }
+
+    return { message: parts.filter(Boolean).join(' ') }
+  } catch (error) {
+    console.error('Импорт не выполнен:', error)
+    return { error: error instanceof Error ? error.message : 'Импорт не выполнен.' }
+  }
+}
+
+/** Повторный зов тому, кто не откликнулся на приглашение. */
+export async function reinviteSpecialist(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const id = String(formData.get('specialistId') ?? '')
+  const { sent, key } = await reinvite(id)
+
+  revalidatePath('/ops/applications')
+
+  return sent
+    ? { message: 'Приглашение отправлено повторно.' }
+    : { message: `Письмо не ушло. Ключ: ${key} — передайте вручную.` }
 }

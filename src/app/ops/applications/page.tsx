@@ -11,7 +11,7 @@ import { prisma } from '@/lib/db'
 import { DISCIPLINE_LABELS, PORTFOLIO_KIND_LABELS, SPECIALIZATION_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
-import { proposeRating, reviewApplication } from '../actions'
+import { proposeRating, reinviteSpecialist, reviewApplication } from '../actions'
 import { OpsAction } from '../OpsForms'
 
 export const metadata = { title: 'Заявки — панель бюро' }
@@ -19,11 +19,18 @@ export const metadata = { title: 'Заявки — панель бюро' }
 export default async function ApplicationsPage() {
   if (!(await isOperator())) redirect('/ops')
 
-  const rows = await prisma.specialist.findMany({
-    where: { status: 'pending' },
-    orderBy: { createdAt: 'asc' },
-    include: { portfolio: { orderBy: { createdAt: 'asc' } } },
-  })
+  const [rows, invited] = await Promise.all([
+    prisma.specialist.findMany({
+      where: { status: 'pending' },
+      orderBy: { createdAt: 'asc' },
+      include: { portfolio: { orderBy: { createdAt: 'asc' } } },
+    }),
+    prisma.specialist.findMany({
+      where: { status: 'invited' },
+      orderBy: { invitedAt: 'asc' },
+      select: { id: true, displayName: true, email: true, invitedAt: true, accessKey: true },
+    }),
+  ])
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -36,6 +43,64 @@ export default async function ApplicationsPage() {
           Единственное решение здесь — рейтинг портфолио. Пускать или нет, следует из порога
           {' '}{PORTFOLIO_THRESHOLD}/10 автоматически: это правило продукта, а не усмотрение.
         </p>
+
+        {invited.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 40 }} />
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <h2>Приглашены, профиль не заполнен</h2>
+              <span className="tag tag-wait">{invited.length}</span>
+            </div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '58ch' }}>
+              Эти заведены импортом базы. Мяч у них, не у нас: пока профиль не заполнен, отбор
+              их не видит — не по решению бюро, а потому что нечем считать.
+            </p>
+
+            <div className="table-scroll panel" style={{ padding: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Кто</th>
+                    <th>Почта</th>
+                    <th>Ключ</th>
+                    <th>Молчит</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {invited.map((row) => {
+                    const days = row.invitedAt
+                      ? Math.floor((Date.now() - row.invitedAt.getTime()) / 86_400_000)
+                      : null
+
+                    return (
+                      <tr key={row.id}>
+                        <td>{row.displayName}</td>
+                        <td className="dim">{row.email}</td>
+                        {/* Ключ виден здесь, потому что при почте-заглушке
+                            письмо не уходит, а передать доступ всё равно надо.
+                            Панель закрыта паролем — это не публичное место. */}
+                        <td className="num dim" style={{ fontSize: '0.78rem' }}>{row.accessKey}</td>
+                        <td className="num dim">
+                          {days === null ? 'не звали' : `${days} дн.`}
+                        </td>
+                        <td>
+                          <OpsAction
+                            action={reinviteSpecialist}
+                            hidden={{ specialistId: row.id }}
+                            label="Позвать ещё раз"
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="divider" style={{ marginTop: 40 }} />
+          </>
+        )}
 
         {rows.length === 0 ? (
           <p className="dim" style={{ marginTop: 40 }}>

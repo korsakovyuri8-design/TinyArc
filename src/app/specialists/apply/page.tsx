@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { ApplicationForm } from './ApplicationForm'
+import { SpecialistForm } from '@/components/SpecialistForm'
+import { submitApplication } from './actions'
 
 export const metadata: Metadata = { title: 'Заявка специалиста — TinyArc Cloud Bureau' }
 
@@ -16,7 +17,7 @@ export default function ApplyPage() {
         </p>
 
         <div style={{ marginTop: 44 }}>
-          <ApplicationForm />
+          <SpecialistForm action={submitApplication} />
         </div>
       </div>
     </section>

@@ -35,6 +35,14 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
 
   const specialist = await specialistByKey(key)
   if (specialist) {
+    // Приглашённый входит по ключу до всякого разбора: его позвало бюро, и
+    // войти ему нужно ровно затем, чтобы заполнить профиль. Дальше кабинета
+    // дозаполнения он не пройдёт — статус проверяется и там.
+    if (specialist.status === 'invited') {
+      await signInSpecialist(specialist.id)
+      redirect('/work/profile/complete')
+    }
+
     if (specialist.status !== 'active') {
       return {
         error:

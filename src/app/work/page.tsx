@@ -13,6 +13,10 @@ export default async function WorkPage() {
   const specialist = await currentSpecialist()
   if (!specialist) redirect('/enter')
 
+  // Приглашённому здесь нечего делать: ни задач, ни метрик у него ещё нет, а
+  // нужен от него профиль. Ведём туда, а не показываем пустой экран.
+  if (specialist.status === 'invited') redirect('/work/profile/complete')
+
   const tickets = await ticketsOf(specialist.id)
 
   // Канбан: ждёт гейта → открыт → в работе → сдано.

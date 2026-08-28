@@ -33,30 +33,68 @@ import {
   WORK_MODE_LABELS,
 } from '@/lib/labels'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
-import { submitApplication, type ApplicationState } from './actions'
+import type { ApplicationState } from '@/app/specialists/apply/actions'
 
-export function ApplicationForm() {
-  const [state, action, pending] = useActionState<ApplicationState, FormData>(
-    submitApplication,
-    {},
-  )
+export type SpecialistFormAction = (
+  prev: ApplicationState,
+  formData: FormData,
+) => Promise<ApplicationState>
+
+/**
+ * Двенадцать измерений таксономии — одной формой на два входа.
+ *
+ * Вход первый: человек пришёл сам и подаёт заявку. Вход второй: бюро завело его
+ * импортом базы, и он дозаполняет профиль по приглашению. Спрашивается одно и
+ * то же, потому что движку нужно одно и то же — держать две формы значило бы
+ * рано или поздно спрашивать в них разное.
+ *
+ * Заполненные импортом поля приходят в defaults и стоят отмеченными: человек
+ * подтверждает или правит то, что бюро уже знало, а не набирает заново.
+ */
+export function SpecialistForm({
+  action: submit,
+  defaults = {},
+  submitLabel = 'Подать заявку',
+  done,
+}: {
+  action: SpecialistFormAction
+  defaults?: Record<string, string | string[]>
+  submitLabel?: string
+  /** Что показать после успешной отправки. */
+  done?: React.ReactNode
+}) {
+  const [state, action, pending] = useActionState<ApplicationState, FormData>(submit, {})
 
   if (state.submitted) {
     return (
-      <div className="panel panel-accent">
-        <div className="label label-accent">Заявка принята</div>
-        <h3 style={{ marginTop: 12 }}>Дальше — разбор портфолио</h3>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-          Портфолио смотрит бюро и ставит рейтинг. Порог — {PORTFOLIO_THRESHOLD}/10; ниже него
-          заявка не проходит, и это не обсуждается отдельно с каждым. Если проходите — ключ
-          доступа придёт на указанный адрес.
-        </p>
-      </div>
+      done ?? (
+        <div className="panel panel-accent">
+          <div className="label label-accent">Заявка принята</div>
+          <h3 style={{ marginTop: 12 }}>Дальше — разбор портфолио</h3>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+            Портфолио смотрит бюро и ставит рейтинг. Порог — {PORTFOLIO_THRESHOLD}/10; ниже него
+            заявка не проходит, и это не обсуждается отдельно с каждым. Если проходите — ключ
+            доступа придёт на указанный адрес.
+          </p>
+        </div>
+      )
     )
   }
 
   const errors = state.errors ?? {}
-  const values = (state.values ?? {}) as Record<string, string>
+  // Значения после неудачной отправки важнее исходных: человек только что их
+  // правил, и вернуть ему довведённое было бы потерей работы.
+  const submitted = (state.values ?? {}) as Record<string, string>
+  const values: Record<string, string> = { ...asText(defaults), ...submitted }
+
+  /** Отмеченные значения множественного поля. */
+  const list = (name: string): string[] => {
+    const fromState = state.values?.[name]
+    if (Array.isArray(fromState)) return fromState as string[]
+
+    const fallback = defaults[name]
+    return Array.isArray(fallback) ? fallback : []
+  }
 
   return (
     <form action={action}>
@@ -93,7 +131,7 @@ export function ApplicationForm() {
         <legend>Что вы ведёте · измерения 1–4</legend>
 
         <Field label="Дисциплины" error={errors.disciplines}>
-          <Choices name="disciplines" options={DISCIPLINES} labels={DISCIPLINE_LABELS} />
+          <Choices defaultValue={list('disciplines') as never[]} name="disciplines" options={DISCIPLINES} labels={DISCIPLINE_LABELS} />
         </Field>
 
         <Field
@@ -111,6 +149,7 @@ export function ApplicationForm() {
                   name="specializations"
                   options={DISCIPLINE_SPECIALIZATIONS[d]}
                   labels={SPECIALIZATION_LABELS}
+                  defaultValue={list('specializations') as never[]}
                 />
               </div>
             ))}
@@ -118,11 +157,11 @@ export function ApplicationForm() {
         </Field>
 
         <Field label="Типологии" error={errors.typologies}>
-          <Choices name="typologies" options={TYPOLOGIES} labels={TYPOLOGY_LABELS} />
+          <Choices defaultValue={list('typologies') as never[]} name="typologies" options={TYPOLOGIES} labels={TYPOLOGY_LABELS} />
         </Field>
 
         <Field label="Масштаб" error={errors.scaleBands}>
-          <Choices name="scaleBands" options={SCALE_BANDS} labels={SCALE_BAND_LABELS} />
+          <Choices defaultValue={list('scaleBands') as never[]} name="scaleBands" options={SCALE_BANDS} labels={SCALE_BAND_LABELS} />
         </Field>
 
         <Field
@@ -146,11 +185,11 @@ export function ApplicationForm() {
         <legend>Где и в чём · измерения 5–8</legend>
 
         <Field label="Материальные системы" error={errors.materialSystems}>
-          <Choices name="materialSystems" options={MATERIAL_SYSTEMS} labels={MATERIAL_LABELS} />
+          <Choices defaultValue={list('materialSystems') as never[]} name="materialSystems" options={MATERIAL_SYSTEMS} labels={MATERIAL_LABELS} />
         </Field>
 
         <Field label="Климатические зоны" error={errors.climateZones}>
-          <Choices name="climateZones" options={CLIMATE_ZONES} labels={CLIMATE_LABELS} />
+          <Choices defaultValue={list('climateZones') as never[]} name="climateZones" options={CLIMATE_ZONES} labels={CLIMATE_LABELS} />
         </Field>
 
         <Field
@@ -158,7 +197,7 @@ export function ApplicationForm() {
           error={errors.jurisdictions}
           hint="Где вы реально проходили согласования"
         >
-          <Choices name="jurisdictions" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
+          <Choices defaultValue={list('jurisdictions') as never[]} name="jurisdictions" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
         </Field>
 
         <Field
@@ -166,11 +205,11 @@ export function ApplicationForm() {
           error={errors.signsIn}
           hint="Только страны из списка выше. Без подписи в стране проект не берётся вовсе"
         >
-          <Choices name="signsIn" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
+          <Choices defaultValue={list('signsIn') as never[]} name="signsIn" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
         </Field>
 
         <Field label="Софт" error={errors.software}>
-          <Choices name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
+          <Choices defaultValue={list('software') as never[]} name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
         </Field>
 
         <Field
@@ -179,7 +218,12 @@ export function ApplicationForm() {
           error={errors.ifcLevel}
           hint="Общий формат заменяет общий пакет: с координацией по IFC вы совместимы с любой командой"
         >
-          <Select name="ifcLevel" options={IFC_LEVELS} labels={IFC_LABELS} defaultValue="exchange" />
+          <Select
+            name="ifcLevel"
+            options={IFC_LEVELS}
+            labels={IFC_LABELS}
+            defaultValue={(values.ifcLevel ?? 'exchange') as never}
+          />
         </Field>
       </fieldset>
 
@@ -187,7 +231,7 @@ export function ApplicationForm() {
         <legend>Как вы работаете · измерения 9–12</legend>
 
         <Field label="Стадии документации" error={errors.docStages}>
-          <Choices name="docStages" options={DOC_STAGES} labels={DOC_STAGE_LABELS} />
+          <Choices defaultValue={list('docStages') as never[]} name="docStages" options={DOC_STAGES} labels={DOC_STAGE_LABELS} />
         </Field>
 
         <Field label="Регуляторный трек" error={errors.regulatoryTracks}>
@@ -195,7 +239,9 @@ export function ApplicationForm() {
             name="regulatoryTracks"
             options={REGULATORY_TRACKS}
             labels={REGULATORY_LABELS}
-            defaultValue={['light']}
+            defaultValue={
+              (list('regulatoryTracks').length > 0 ? list('regulatoryTracks') : ['light']) as never[]
+            }
           />
         </Field>
 
@@ -204,7 +250,7 @@ export function ApplicationForm() {
           error={errors.languages}
           hint="Для согласований язык органов — жёсткое требование"
         >
-          <Choices name="languages" options={LANGUAGES} labels={LANGUAGE_NAMES} />
+          <Choices defaultValue={list('languages') as never[]} name="languages" options={LANGUAGES} labels={LANGUAGE_NAMES} />
         </Field>
 
         <div className="grid grid-2">
@@ -213,7 +259,7 @@ export function ApplicationForm() {
               name="workMode"
               options={WORK_MODES}
               labels={WORK_MODE_LABELS}
-              defaultValue="remote"
+              defaultValue={(values.workMode ?? 'remote') as never}
             />
           </Field>
 
@@ -272,7 +318,14 @@ export function ApplicationForm() {
         </div>
       )}
 
-      <Submit pending={pending}>Подать заявку</Submit>
+      <Submit pending={pending}>{submitLabel}</Submit>
     </form>
   )
+}
+
+/** Одиночные значения defaults: множественные разбирает list(). */
+function asText(defaults: Record<string, string | string[]>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(defaults).filter(([, v]) => typeof v === 'string'),
+  ) as Record<string, string>
 }

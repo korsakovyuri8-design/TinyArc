@@ -169,6 +169,7 @@ export const PROJECT_STATUS_LABELS: Record<string, string> = {
 }
 
 export const SPECIALIST_STATUS_LABELS: Record<string, string> = {
+  invited: 'Приглашён, профиль не заполнен',
   pending: 'Заявка на разборе',
   active: 'В пуле',
   paused: 'Снят по своей просьбе',

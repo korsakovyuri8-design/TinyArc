@@ -144,6 +144,7 @@ export default async function OpsPage() {
 
         <div className="stack" style={{ gap: 10 }}>
           <Link href="/ops/applications">Заявки специалистов →</Link>
+          <Link href="/ops/import">Импорт базы специалистов →</Link>
           <Link href="/ops/pool">Пул и метрики →</Link>
           <Link href="/ops/projects">Проекты и прогоны →</Link>
         </div>

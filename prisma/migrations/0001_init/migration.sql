@@ -8,6 +8,8 @@ CREATE TABLE "Specialist" (
     "accessKey" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
+    "source" TEXT NOT NULL DEFAULT 'apply',
+    "invitedAt" TIMESTAMP(3),
     "disciplinesJson" TEXT NOT NULL DEFAULT '[]',
     "specializationsJson" TEXT NOT NULL DEFAULT '[]',
     "typologiesJson" TEXT NOT NULL DEFAULT '[]',
