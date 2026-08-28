@@ -1,0 +1,110 @@
+# Проверки на каждый пуш.
+#
+# Render развёртывает ветку автоматически, и без этой стены сломанное уезжает
+# на живой домен прежде, чем кто-то заметит. Здесь оно останавливается.
+#
+# Две работы вместо одной намеренно. Первая — быстрая: тесты, типы, сборка;
+# она отвечает за минуту-две и ловит почти всё. Вторая поднимает сервер и
+# гоняет браузер: она медленнее и падать может по своим причинам, и смешивать
+# их значит не понимать по красному значку, что именно сломалось.
+
+name: Проверки
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  checks:
+    name: Тесты, типы, сборка
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: postgresql://ci@ci/ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Провайдер во всей работе один и тот же — боевой. Клиент Prisma
+      # генерируется под него, типы проверяются против него, сборка идёт с ним.
+      # Проверять типы под SQLite, а собирать под Postgres значит проверять не
+      # то, что поедет. Подключения при генерации не происходит: значение имеет
+      # только буква провайдера, поэтому адрес заведомо нерабочий.
+      - name: Клиент Prisma
+        run: npx prisma generate
+
+      - name: Модульные тесты
+        run: npm test
+
+      - name: Типы
+        run: npm run typecheck
+
+      # Схема под Postgres генерируется из основной. Отставшая проходит все
+      # тесты и ломается на выкладке — там, где чинить дороже всего.
+      - name: Схема под Postgres не отстала
+        run: npm run db:schema:check
+
+      - name: Сборка
+        run: npm run build
+
+  e2e:
+    name: Сквозные пути
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Браузер
+        run: npx playwright install --with-deps chromium
+
+      # База, схема и синтетический пул: сквозные пути ходят по живым данным,
+      # и ключи вроде seed-key-01 должны существовать.
+      - name: База и пул
+        run: npm run setup
+        env:
+          DATABASE_URL: file:./ci.db
+
+      - name: Сборка
+        run: npm run build
+        env:
+          DATABASE_URL: file:./ci.db
+
+      - name: Сервер и проверки
+        run: |
+          npx next start -p 3100 &
+          # Ждём готовности сами, без лишней зависимости: сервер отвечает на
+          # /api/health, когда база на месте и приложение поднялось.
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:3100/api/health > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:3100/api/health > /dev/null || {
+            echo 'Сервер не поднялся за минуту.'
+            exit 1
+          }
+          npm run e2e
+        env:
+          DATABASE_URL: file:./ci.db
+          # Панель бюро закрыта паролем, и сквозной тест приёма базы в неё
+          # заходит. Пароль здесь одноразовый и живёт только внутри работы.
+          BUREAU_OPS_PASSWORD: ci-only-not-a-secret
+          BUREAU_SESSION_SECRET: ci-only-not-a-secret-either
+          # Браузер ставится обычной установкой, а не лежит по фиксированному
+          # пути, как в песочнице разработки: пустое значение уводит запуск на
+          # тот, который нашёл сам Playwright.
+          E2E_CHROMIUM: ''
