@@ -80,8 +80,22 @@ await bureau.fill('#answer', ANSWER)
 await bureau.click('button:has-text("Answer the client")')
 await bureau.waitForTimeout(2200)
 check(
-  (await bureau.locator('.hint', { hasText: 'The answer is sent' }).count()) > 0,
+  (await bureau.locator('.hint', { hasText: 'The answer is in the project cabinet' }).count()) > 0,
   'бюро ответило',
+)
+
+/*
+ * Панель не обещает письма, которого не было. На стенде почта выключена, и
+ * ответ «мы написали заказчику» здесь был бы ложью: оператор закроет карточку,
+ * считая дело сделанным, а человек ничего не получит.
+ */
+check(
+  (await bureau.locator('.hint', { hasText: 'Email delivery is off' }).count()) > 0,
+  'при выключенной почте панель отправляет звать руками, а не обещает письмо',
+)
+check(
+  (await bureau.locator('.hint', { hasText: 'has been told by email' }).count()) === 0,
+  'обещания «письмо ушло» на выключенной почте нет',
 )
 
 await bureau.goto(`${BASE}/ops`)

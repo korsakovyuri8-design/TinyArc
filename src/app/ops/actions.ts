@@ -33,6 +33,7 @@ import {
   applicationDeclined,
   clientAnswered,
   conflictResolved,
+  deliveryNote,
   ticketCommented,
   ticketReturned,
 } from '@/lib/services/notify'
@@ -95,13 +96,13 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
     // Отказ доходит до человека. Он подал заявку и ждёт ответа; молчание —
     // это ожидание без конца, и оно хуже отказа. Письмо разговора не
     // открывает: порог не обсуждается по случаям (п.9).
-    await applicationDeclined(specialist.id)
+    const told = await applicationDeclined(specialist.id).catch((error) => {
+      console.error('Письмо об отказе не ушло:', error)
+      return 'failed' as const
+    })
 
     return {
-      message:
-        mailer().mode === 'stub'
-          ? `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass. Email delivery is off: tell them yourself.`
-          : `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass. They have been told by email.`,
+      message: `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass. ${deliveryNote(told, 'The applicant')}`,
     }
   }
 
@@ -495,13 +496,16 @@ export async function resolveTicketConflict(_prev: OpsState, formData: FormData)
 
   // Работа стояла, пока шёл спор, и теперь пошла: срок идёт снова, значит
   // человека надо позвать — как и на открытии задачи.
-  await conflictResolved(ticketId, rulingId).catch((error) =>
-    console.error('Письмо о решении не ушло:', error),
-  )
+  const told = await conflictResolved(ticketId, rulingId).catch((error) => {
+    console.error('Письмо о решении не ушло:', error)
+    return 'failed' as const
+  })
 
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'The ruling is written into the ticket and the conflict is cleared. The specialist has been told by email.' }
+  return {
+    message: `The ruling is written into the ticket and the conflict is cleared. ${deliveryNote(told, 'The specialist')}`,
+  }
 }
 
 export async function bureauComment(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -517,13 +521,14 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
   // Реплика бюро — это то, после чего от человека чего-то ждут: вопрос про
   // срок, уточнение постановки, напоминание. Без письма он прочтёт её в тот
   // день, когда сам зайдёт на доску, — то есть после срока.
-  await ticketCommented(commentId).catch((error) =>
-    console.error('Письмо о реплике не ушло:', error),
-  )
+  const told = await ticketCommented(commentId).catch((error) => {
+    console.error('Письмо о реплике не ушло:', error)
+    return 'failed' as const
+  })
 
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'Sent. The specialist has been told by email.' }
+  return { message: `Written into the ticket. ${deliveryNote(told, 'The specialist')}` }
 }
 
 /**
@@ -691,14 +696,17 @@ export async function answerClient(_prev: OpsState, formData: FormData): Promise
   try {
     const answerId = await answer(projectId, String(formData.get('body') ?? ''))
 
-    await clientAnswered(answerId).catch((error) =>
-      console.error('Письмо об ответе не ушло:', error),
-    )
+    const told = await clientAnswered(answerId).catch((error) => {
+      console.error('Письмо об ответе не ушло:', error)
+      return 'failed' as const
+    })
 
     revalidatePath('/ops')
     revalidatePath(`/ops/projects/${projectId}`)
 
-    return { message: 'The answer is sent: the client has been told by email and sees it in the project cabinet.' }
+    return {
+      message: `The answer is in the project cabinet. ${deliveryNote(told, 'The client')}`,
+    }
   } catch (error) {
     if (error instanceof MessageRefused) return { error: error.message }
 

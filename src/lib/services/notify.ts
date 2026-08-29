@@ -45,6 +45,26 @@ type Kind =
   | 'application_declined'
 
 /**
+ * Что случилось с письмом.
+ *
+ * Различаются четыре исхода, а не два, потому что тот, кто нажал кнопку,
+ * должен узнать правду. «Ушло» и «не ушло» здесь мало: при выключенной почте
+ * письмо не уходит и не может уйти, и человека придётся позвать руками — это
+ * не сбой и не повод, это режим. А молча выданное «отправлено» на выключенной
+ * почте — та самая ложь, из-за которой оператор закрывает карточку, считая
+ * дело сделанным.
+ */
+export type Delivery =
+  /** Письмо ушло. */
+  | 'sent'
+  /** Почта выключена: письмо составлено и никуда не пошло. Звать руками. */
+  | 'stub'
+  /** Повода нет: адресата нет, или об этом уже писали. */
+  | 'skipped'
+  /** Пробовали и не смогли. Звать руками. */
+  | 'failed'
+
+/**
  * Отправить письмо не более одного раза на повод.
  *
  * Порядок намеренный: сначала запись, потом отправка. Уникальный ключ решает
@@ -59,8 +79,8 @@ async function once(
   targetId: string,
   email: string,
   send: () => Promise<void>,
-): Promise<boolean> {
-  if (!email) return false
+): Promise<Delivery> {
+  if (!email) return 'skipped'
 
   let claimed: string
 
@@ -69,16 +89,38 @@ async function once(
     claimed = row.id
   } catch {
     // Уже отправляли. Это не ошибка: сюда заходят по нескольку раз на событие.
-    return false
+    return 'skipped'
   }
 
   try {
     await send()
-    return true
+    // Запись остаётся и при заглушке: повод отработан, и повторять его не
+    // надо. Иначе включённая назавтра почта разослала бы письма о том, что
+    // случилось неделю назад.
+    return mailer().mode === 'stub' ? 'stub' : 'sent'
   } catch (error) {
     await prisma.notification.delete({ where: { id: claimed } }).catch(() => {})
     console.error(`Письмо ${kind}/${targetId} не ушло:`, error)
-    return false
+    return 'failed'
+  }
+}
+
+/**
+ * Что сказать тому, кто нажал кнопку.
+ *
+ * Одно место на все действия панели: обещание «мы написали» произносится
+ * ровно там, где письмо действительно ушло, и нигде больше.
+ */
+export function deliveryNote(delivery: Delivery, whom: string): string {
+  switch (delivery) {
+    case 'sent':
+      return `${whom} has been told by email.`
+    case 'stub':
+      return `Email delivery is off — tell ${whom.toLowerCase()} yourself.`
+    case 'failed':
+      return `The email did not go out — tell ${whom.toLowerCase()} yourself.`
+    case 'skipped':
+      return `No email was needed: ${whom.toLowerCase()} already knows.`
   }
 }
 
@@ -276,7 +318,7 @@ export async function ticketReturned(ticketId: string): Promise<void> {
  * Своя же реплика письма не порождает — специалист пишет в тикет сам, и
  * сообщать ему об этом незачем.
  */
-export async function ticketCommented(commentId: string): Promise<void> {
+export async function ticketCommented(commentId: string): Promise<Delivery> {
   const comment = await prisma.ticketComment.findUnique({
     where: { id: commentId },
     include: {
@@ -286,10 +328,10 @@ export async function ticketCommented(commentId: string): Promise<void> {
     },
   })
 
-  if (!comment || comment.authorRole !== 'bureau') return
-  if (!comment.ticket.specialist) return
+  if (!comment || comment.authorRole !== 'bureau') return 'skipped'
+  if (!comment.ticket.specialist) return 'skipped'
 
-  await once('ticket_comment', comment.id, comment.ticket.specialist.email, async () => {
+  return once('ticket_comment', comment.id, comment.ticket.specialist.email, async () => {
     await mailer().send({
       to: comment.ticket.specialist!.email,
       subject: fill('The bureau has written on: {title}', { title: comment.ticket.title }),
@@ -325,15 +367,15 @@ export async function ticketCommented(commentId: string): Promise<void> {
  * Повод — сам человек, а не разбор: пересмотр той же заявки решает то же
  * самое, и второе письмо об одном отказе — это письмо ни о чём.
  */
-export async function applicationDeclined(specialistId: string): Promise<void> {
+export async function applicationDeclined(specialistId: string): Promise<Delivery> {
   const specialist = await prisma.specialist.findUnique({
     where: { id: specialistId },
     select: { email: true, displayName: true, status: true },
   })
 
-  if (!specialist || specialist.status !== 'rejected') return
+  if (!specialist || specialist.status !== 'rejected') return 'skipped'
 
-  await once('application_declined', specialistId, specialist.email, async () => {
+  return once('application_declined', specialistId, specialist.email, async () => {
     await mailer().send({
       to: specialist.email,
       subject: 'Your application to the Bureau pool',
@@ -364,15 +406,15 @@ export async function applicationDeclined(specialistId: string): Promise<void> {
  * приложен проект целиком; письмо говорит, что ответ есть, — на письмо
  * ответить всё равно нельзя.
  */
-export async function clientAnswered(messageId: string): Promise<void> {
+export async function clientAnswered(messageId: string): Promise<Delivery> {
   const message = await prisma.clientMessage.findUnique({
     where: { id: messageId },
     include: { project: { select: { title: true, clientEmail: true, clientName: true } } },
   })
 
-  if (!message || message.authorRole !== 'bureau') return
+  if (!message || message.authorRole !== 'bureau') return 'skipped'
 
-  await once('client_answer', message.id, message.project.clientEmail, async () => {
+  return once('client_answer', message.id, message.project.clientEmail, async () => {
     await mailer().send({
       to: message.project.clientEmail,
       subject: fill('The bureau has answered — {project}', { project: message.project.title }),
@@ -401,15 +443,15 @@ export async function clientAnswered(messageId: string): Promise<void> {
  * Ключ отправки — комментарий с решением: он создаётся один раз на решение,
  * и второе решение по тому же тикету письмо не погасит.
  */
-export async function conflictResolved(ticketId: string, rulingId: string): Promise<void> {
+export async function conflictResolved(ticketId: string, rulingId: string): Promise<Delivery> {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
     include: { specialist: { select: { email: true, displayName: true } } },
   })
 
-  if (!ticket?.specialist) return
+  if (!ticket?.specialist) return 'skipped'
 
-  await once('conflict_resolved', rulingId, ticket.specialist.email, async () => {
+  return once('conflict_resolved', rulingId, ticket.specialist.email, async () => {
     await mailer().send({
       to: ticket.specialist!.email,
       subject: fill('The dispute is settled: {title}', { title: ticket.title }),
