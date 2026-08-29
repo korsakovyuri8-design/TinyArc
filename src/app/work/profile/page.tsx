@@ -13,9 +13,11 @@ import {
   DISCIPLINE_LABELS,
   SPECIALIST_STATUS_LABELS,
   SPECIALIZATION_LABELS,
+  SUBSCRIPTION_LABELS,
 } from '@/lib/labels'
 import { AvailabilityForm } from './AvailabilityForm'
 import { toProfile } from '@/lib/rows'
+import { company } from '@/lib/legal'
 import { currentSpecialist } from '@/lib/session'
 
 export const metadata = { title: 'Профиль и метрики — TinyArc Cloud Bureau' }
@@ -32,6 +34,10 @@ export default async function ProfilePage() {
   const metrics = deliveryMetrics(profile.delivery)
   const delivery = deliveryScore(metrics)
   const weight = historyWeight(profile.delivery)
+
+  // Адрес бюро из настроек. Пока его нет — отвечать на письмо с ключом:
+  // «напишите бюро» без адреса не действие, а отписка.
+  const bureauEmail = company().email || 'адрес бюро — ответом на письмо с ключом доступа'
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -68,6 +74,40 @@ export default async function ProfilePage() {
                 : `${AVAILABILITY_LABELS[row.availabilityStatus] ?? row.availabilityStatus}, выход за ${profile.leadTimeDays} дн.`
             }
           />
+        </div>
+
+        {/*
+          Доступ показывается всегда, а не только когда он закрыт. Гейт,
+          который виден лишь в момент отказа, человек обнаруживает по
+          отсутствию задач — то есть позже всего и хуже всего.
+        */}
+        <div
+          className="panel"
+          style={{
+            marginTop: 36,
+            borderColor: profile.subscription === 'none' ? 'var(--fail)' : undefined,
+          }}
+        >
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <div className="label">Доступ к проектам</div>
+            <span className={profile.subscription === 'none' ? 'tag tag-fail' : 'tag'}>
+              {SUBSCRIPTION_LABELS[profile.subscription]}
+            </span>
+          </div>
+
+          {profile.subscription === 'none' ? (
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              Пока доступ закрыт, движок вас не рассматривает — независимо от портфолио и
+              метрик. Это про оплату доступа, а не про качество вашей работы: отказ по деньгам
+              и отказ по квалификации — разные вещи, и мы их не смешиваем. Чтобы открыть,
+              напишите на {bureauEmail}.
+            </p>
+          ) : (
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              Доступ открыт: вы участвуете в отборе на общих основаниях. Платит сторона
+              предложения за доступ к спросу — с вашего гонорара бюро комиссию не берёт.
+            </p>
+          )}
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
