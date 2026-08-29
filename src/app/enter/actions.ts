@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { allow } from '@/lib/guard'
+import { allow, forgive } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import {
   projectByKey,
@@ -27,8 +27,18 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
   const key = String(formData.get('key') ?? '').trim()
   if (!key) return { error: 'Введите ключ доступа.' }
 
+  /*
+   * Успешный вход обнуляет счётчик.
+   *
+   * Ограничитель здесь про подбор ключа, а подбор — это неудачные попытки.
+   * Человек, вошедший с телефона, ноутбука и чужого компьютера, атакой не
+   * является, а до правки третий вход закрывал ему кабинет на четверть часа.
+   * Защиту это не ослабляет: обнулить счётчик может только тот, кто ключ уже
+   * знает.
+   */
   const project = await projectByKey(key)
   if (project) {
+    await forgive('enter')
     await signInClient(project.id)
     redirect('/project')
   }
@@ -39,6 +49,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
     // войти ему нужно ровно затем, чтобы заполнить профиль. Дальше кабинета
     // дозаполнения он не пройдёт — статус проверяется и там.
     if (specialist.status === 'invited') {
+      await forgive('enter')
       await signInSpecialist(specialist.id)
       redirect('/work/profile/complete')
     }
@@ -52,6 +63,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
       }
     }
 
+    await forgive('enter')
     await signInSpecialist(specialist.id)
     redirect('/work')
   }

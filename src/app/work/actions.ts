@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect, unstable_rethrow } from 'next/navigation'
 import type { Discipline } from '@/engine/taxonomy'
+import { MAX_FILE_BYTES } from '@/lib/storage'
 import {
   attachArtifact,
   claim,
@@ -11,6 +12,7 @@ import {
   raiseConflict,
   requestFrom,
   submit,
+  uploadArtifact,
 } from '@/lib/services/relay'
 import { HandoverRefused, stepOut } from '@/lib/services/handover'
 import { currentSpecialistId } from '@/lib/session'
@@ -124,17 +126,51 @@ export async function makeRender(_prev: WorkState, formData: FormData): Promise<
   )
 }
 
+/**
+ * Приложить работу к задаче: файлом или ссылкой.
+ *
+ * Файл предпочтительнее, и это не вкус. Материалы проекта принадлежат
+ * заказчику и передаются ему по завершении в полном объёме (п.13) — а ссылка
+ * на чужой диск живёт ровно до того дня, когда её владелец наведёт порядок.
+ * Ссылка остаётся для того, что снаружи по своей природе: облачная модель,
+ * общий диск заказчика.
+ */
 export async function addArtifact(_prev: WorkState, formData: FormData): Promise<WorkState> {
   const name = String(formData.get('name') ?? '').trim()
   const url = String(formData.get('url') ?? '').trim()
   const kind = String(formData.get('kind') ?? 'sheet')
+  const upload = formData.get('file')
+  const file = upload instanceof File && upload.size > 0 ? upload : null
 
-  if (!name || !url) return { error: 'Нужны название и ссылка на файл.' }
+  if (!name) return { error: 'Назовите файл: смежник увидит это имя, а не ваше.' }
+  if (!file && !url) return { error: 'Приложите файл или дайте ссылку.' }
+
+  if (file) {
+    if (file.size > MAX_FILE_BYTES) {
+      return {
+        error: `Файл больше ${Math.round(MAX_FILE_BYTES / 1024 / 1024)} МБ. Это уже архив, а не чертёж: положите его отдельно и дайте ссылку.`,
+      }
+    }
+
+    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    return act(
+      formData,
+      (ticketId, specialistId) =>
+        uploadArtifact(ticketId, specialistId, {
+          name,
+          kind,
+          bytes,
+          contentType: file.type || 'application/octet-stream',
+        }).then(() => undefined),
+      'Файл загружен. Смежники получат его, когда тикет примут.',
+    )
+  }
 
   return act(
     formData,
     (ticketId, specialistId) => attachArtifact(ticketId, specialistId, { name, url, kind }),
-    'Файл приложен. Смежники получат его, когда тикет примут.',
+    'Ссылка приложена. Смежники получат её, когда тикет примут.',
   )
 }
 

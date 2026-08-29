@@ -16,8 +16,10 @@ import { DOC_STAGE_ORDER, type Discipline, type DocStage } from '@/engine/taxono
 import { prisma } from '../db'
 
 export type PackageFile = {
+  id: string
   name: string
   url: string
+  storageKey: string | null
   kind: string
   discipline: Discipline
   createdAt: Date
@@ -49,7 +51,14 @@ export async function packageOf(projectId: string): Promise<PackageStage[]> {
         // него — почту и ключ доступа. Клиенту это не показывается (п.13).
         artifacts: {
           where: { source: 'human' },
-          select: { name: true, url: true, kind: true, createdAt: true },
+          select: {
+            id: true,
+            name: true,
+            url: true,
+            storageKey: true,
+            kind: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: 'asc' },
         },
       },

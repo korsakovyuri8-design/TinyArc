@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { teammateRoles } from '@/engine/relay'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
+import { artifactHref, isOurs } from '@/lib/artifacts'
 import { prisma } from '@/lib/db'
 import {
   ARTIFACT_KIND_LABELS,
@@ -148,7 +149,10 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 <ul className="clean" style={{ marginTop: 12 }}>
                   {inbound.map((file) => (
                     <li key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                      <a href={file.url} target="_blank" rel="noreferrer noopener">
+                      <a
+                        href={artifactHref(file)}
+                        {...(isOurs(file) ? {} : { target: '_blank', rel: 'noreferrer noopener' })}
+                      >
                         {file.name}
                       </a>
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
@@ -184,7 +188,10 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 <ul className="clean" style={{ marginTop: 12 }}>
                   {ticket.artifacts.map((file) => (
                     <li key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                      <a href={file.url} target="_blank" rel="noreferrer noopener">
+                      <a
+                        href={artifactHref(file)}
+                        {...(isOurs(file) ? {} : { target: '_blank', rel: 'noreferrer noopener' })}
+                      >
                         {file.name}
                       </a>
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>

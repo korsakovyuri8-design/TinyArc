@@ -4,9 +4,10 @@ import { preflight, secret } from './env'
 /**
  * Настроенный бой: секреты, база и реквизиты юридического лица.
  *
- * Реквизиты входят сюда наравне с секретами не для полноты. Продукт берёт
- * деньги и собирает персональные данные, а оферта без наименования — не
- * договор: такой бой настроенным не считается.
+ * Реквизиты и хранилище входят сюда наравне с секретами не для полноты.
+ * Продукт берёт деньги и собирает персональные данные, а оферта без
+ * наименования — не договор; файлы на диске контейнера исчезают с выкладкой.
+ * Такой бой настроенным не считается.
  */
 const CONFIGURED = {
   NODE_ENV: 'production',
@@ -17,6 +18,12 @@ const CONFIGURED = {
   BUREAU_LEGAL_REGISTRATION: '50-0000000-000',
   BUREAU_LEGAL_ADDRESS: 'Tivat, Montenegro',
   BUREAU_LEGAL_EMAIL: 'legal@example.com',
+  // Диск контейнера в бою не хранилище: он живёт до выкладки.
+  BUREAU_STORAGE: 's3',
+  BUREAU_S3_ENDPOINT: 'https://account.r2.cloudflarestorage.com',
+  BUREAU_S3_BUCKET: 'bureau',
+  BUREAU_S3_ACCESS_KEY_ID: 'id',
+  BUREAU_S3_SECRET_ACCESS_KEY: 'secret',
 }
 
 describe('секреты окружения', () => {
@@ -82,5 +89,36 @@ describe('адрес продукта в окружении', () => {
 
   it('на localhost http допустим', () => {
     expect(preflight({ NODE_ENV: 'test', BUREAU_PUBLIC_URL: 'http://localhost:3000' })).toEqual([])
+  })
+})
+
+describe('хранилище файлов', () => {
+  it('в бою не разрешает диск контейнера', () => {
+    // Файлы, сложенные на диск контейнера, исчезнут с ближайшей выкладкой — а
+    // отдавать комплект заказчику придётся сильно позже неё.
+    const problems = preflight({ ...CONFIGURED, BUREAU_STORAGE: 'local' })
+
+    expect(problems.some((p) => p.includes('BUREAU_STORAGE'))).toBe(true)
+  })
+
+  it('в разработке диск — нормальный режим', () => {
+    expect(preflight({ NODE_ENV: 'development', BUREAU_STORAGE: 'local' })).toEqual([])
+  })
+
+  it('требует настройку, если хранилище настоящее', () => {
+    const problems = preflight({
+      ...CONFIGURED,
+      BUREAU_S3_BUCKET: '',
+      BUREAU_S3_ACCESS_KEY_ID: '',
+    })
+
+    expect(problems.some((p) => p.includes('BUREAU_S3_BUCKET'))).toBe(true)
+    expect(problems.some((p) => p.includes('BUREAU_S3_ACCESS_KEY_ID'))).toBe(true)
+  })
+
+  it('не пропускает неизвестный режим', () => {
+    const problems = preflight({ ...CONFIGURED, BUREAU_STORAGE: 'dropbox' })
+
+    expect(problems.some((p) => p.includes('такого режима нет'))).toBe(true)
   })
 })

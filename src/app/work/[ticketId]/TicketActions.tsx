@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { Discipline } from '@/engine/taxonomy'
 import { ARTIFACT_KIND_LABELS, DISCIPLINE_LABELS } from '@/lib/labels'
+import { MAX_FILE_BYTES } from '@/lib/storage/limits'
 import {
   addArtifact,
   askDiscipline,
@@ -192,10 +193,20 @@ export function ArtifactForm({ ticketId }: { ticketId: string }) {
         </div>
       </div>
       <div className="field">
-        <label htmlFor="url">Ссылка</label>
+        <label htmlFor="file">Файл</label>
+        <input id="file" name="file" type="file" />
+        <div className="hint">
+          До {Math.round(MAX_FILE_BYTES / 1024 / 1024)} МБ. Файл ложится к нам: материалы
+          проекта принадлежат заказчику и передаются ему целиком (п.13), а ссылка на чужой
+          диск живёт до того дня, когда там наведут порядок.
+        </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor="url">…или ссылка</label>
         <input id="url" name="url" type="url" placeholder="https://" />
         <div className="hint">
-          Сами файлы бюро у себя не держит — хранится ссылка (п.13).
+          Для того, что снаружи по своей природе: облачная модель, общий диск заказчика.
         </div>
       </div>
     </Form>

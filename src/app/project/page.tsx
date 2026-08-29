@@ -30,6 +30,7 @@ import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
 import { threadOf } from '@/lib/services/dialogue'
 import { approvedStages, stagesAwaitingClient } from '@/lib/services/approval'
+import { artifactHref, isOurs } from '@/lib/artifacts'
 import { invoicesOf } from '@/lib/services/billing'
 import { company } from '@/lib/legal'
 import { fileCount, packageOf } from '@/lib/services/package'
@@ -351,14 +352,19 @@ export default async function ProjectPage({
                   </div>
 
                   <div className="stack" style={{ gap: 8, marginTop: 14 }}>
-                    {group.files.map((file, i) => (
+                    {group.files.map((file) => (
                       <div
-                        key={`${file.name}-${i}`}
+                        key={file.id}
                         className="row"
                         style={{ gap: 12, alignItems: 'baseline' }}
                       >
-                        {file.url ? (
-                          <a href={file.url} target="_blank" rel="noreferrer noopener">
+                        {artifactHref(file) ? (
+                          <a
+                            href={artifactHref(file)}
+                            {...(isOurs(file)
+                              ? {}
+                              : { target: '_blank', rel: 'noreferrer noopener' })}
+                          >
                             {file.name}
                           </a>
                         ) : (

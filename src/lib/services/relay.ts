@@ -15,6 +15,7 @@ import {
 } from '@/engine/relay'
 import type { Discipline } from '@/engine/taxonomy'
 import { images } from '../images'
+import { MAX_FILE_BYTES, artifactKey, storage } from '../storage'
 import { prisma } from '../db'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
 import { approvedStages, stagesAwaitingClient } from './approval'
@@ -32,6 +33,15 @@ export class NoSuchRole extends Error {
   constructor(discipline: string) {
     super(`В команде проекта нет дисциплины «${discipline}» — просить некого.`)
     this.name = 'NoSuchRole'
+  }
+}
+
+export class TooLarge extends Error {
+  constructor(bytes: number) {
+    super(
+      `Файл ${Math.round(bytes / 1024 / 1024)} МБ — больше потолка в ${Math.round(MAX_FILE_BYTES / 1024 / 1024)} МБ. Это уже не чертёж, а архив: положите его отдельно и приложите ссылкой.`,
+    )
+    this.name = 'TooLarge'
   }
 }
 
@@ -418,6 +428,57 @@ export async function attachArtifact(
 }
 
 /**
+ * Загрузить файл к задаче.
+ *
+ * Файл ложится в хранилище, а в базу — ключ, имя и размер. Ключ собирается из
+ * идентификаторов, а не из имени файла: имя приходит от человека, и в пути оно
+ * означает и пробелы, и кириллицу, и «../» в одном месте.
+ *
+ * Запись создаётся первой и только потом заполняется ключом. Обратный порядок
+ * оставлял бы в хранилище файлы, на которые никто не ссылается, — и заметить
+ * их можно было бы только по счёту за хранение.
+ */
+export async function uploadArtifact(
+  ticketId: string,
+  specialistId: string,
+  file: { name: string; kind: string; bytes: Uint8Array; contentType: string },
+): Promise<string> {
+  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+
+  if (ticket.specialistId !== specialistId) throw new NotYours()
+  if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
+
+  if (file.bytes.byteLength > MAX_FILE_BYTES) {
+    throw new TooLarge(file.bytes.byteLength)
+  }
+
+  const artifact = await prisma.artifact.create({
+    data: {
+      ticketId,
+      name: file.name,
+      kind: file.kind,
+      sizeBytes: file.bytes.byteLength,
+      contentType: file.contentType,
+    },
+  })
+
+  const key = artifactKey(ticket.projectId, artifact.id)
+
+  try {
+    await storage().put(key, file.bytes, file.contentType)
+  } catch (error) {
+    // Запись без файла хуже, чем отсутствие записи: человек видит его в списке
+    // и не может скачать.
+    await prisma.artifact.delete({ where: { id: artifact.id } }).catch(() => {})
+    throw error
+  }
+
+  await prisma.artifact.update({ where: { id: artifact.id }, data: { storageKey: key } })
+
+  return artifact.id
+}
+
+/**
  * Изображение к тикету.
  *
  * Кладётся тем же путём, что и любой другой файл, но с пометкой происхождения:
@@ -498,6 +559,7 @@ export async function inboundArtifacts(ticketId: string) {
         id: a.id,
         name: a.name,
         url: a.url,
+        storageKey: a.storageKey,
         kind: a.kind,
         fromDiscipline: d.prerequisite.discipline,
       })),

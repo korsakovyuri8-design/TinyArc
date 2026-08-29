@@ -116,6 +116,36 @@ export function preflight(env: Record<string, string | undefined> = process.env)
     }
   }
 
+  const store = env.BUREAU_STORAGE ?? 'local'
+  if (store !== 'local' && store !== 's3') {
+    problems.push(`BUREAU_STORAGE="${store}": такого режима нет. Доступны "local" и "s3".`)
+  }
+
+  /*
+   * Диск контейнера в бою — не хранилище.
+   *
+   * На Render и любом контейнерном хостинге он живёт до следующей выкладки.
+   * Файлы, сложенные туда, исчезнут вместе с ним — а обещание «материалы
+   * передаются заказчику в полном объёме» (п.13) придётся исполнять именно
+   * после того, как выкладок было много.
+   */
+  if (store === 'local' && isProduction(env)) {
+    problems.push(
+      'BUREAU_STORAGE="local" в бою: диск контейнера живёт до выкладки, и материалы проекта исчезнут вместе с ним. Нужен "s3".',
+    )
+  }
+
+  if (store === 's3') {
+    for (const name of [
+      'BUREAU_S3_ENDPOINT',
+      'BUREAU_S3_BUCKET',
+      'BUREAU_S3_ACCESS_KEY_ID',
+      'BUREAU_S3_SECRET_ACCESS_KEY',
+    ]) {
+      if (!env[name]?.trim()) problems.push(`BUREAU_STORAGE="s3": не задан ${name}.`)
+    }
+  }
+
   const assist = env.BUREAU_ASSIST ?? 'stub'
   if (assist !== 'stub' && assist !== 'anthropic') {
     problems.push(`BUREAU_ASSIST="${assist}": такого режима нет. Доступны "stub" и "anthropic".`)
