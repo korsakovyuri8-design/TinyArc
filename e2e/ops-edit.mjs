@@ -63,6 +63,51 @@ await page.goto(`${BASE}/ops/pool`)
 const href = await page.getAttribute('tbody a[href^="/ops/pool/"]', 'href')
 check(Boolean(href), 'из пула открывается профиль')
 
+/*
+ * Поиск и сужение списка. Пул — это вся база бюро одной таблицей, и без
+ * условий оператор ищет человека глазами по сотне строк. Проверяется, что
+ * условие действительно сужает, что имя находится с ошибкой в регистре и что
+ * пустая выборка сказана словами, а не показана пустой таблицей.
+ */
+{
+  const count = async () => page.locator('tbody tr:has(a[href^="/ops/pool/"])').count()
+
+  const all = await count()
+  check(all > 0, `в пуле есть кого искать: строк ${all}`)
+
+  const name = await page.locator('tbody a[href^="/ops/pool/"]').first().innerText()
+  await page.goto(`${BASE}/ops/pool?q=${encodeURIComponent(name.toUpperCase())}`)
+  const found = await count()
+  check(found > 0 && found < all, `имя находится не глядя на регистр: строк ${found}`)
+
+  await page.goto(`${BASE}/ops/pool?discipline=survey`)
+  const surveying = await count()
+  check(surveying > 0 && surveying < all, `дисциплина сужает список: строк ${surveying}`)
+
+  await page.goto(`${BASE}/ops/pool?q=${encodeURIComponent('нет такого человека')}`)
+  check((await count()) === 0, 'под несуществующее имя не подставляется никто')
+  check(
+    (await page.locator('text=Nobody matches').count()) > 0,
+    'пустая выборка сказана словами, а не пустой таблицей',
+  )
+
+  await page.goto(`${BASE}/ops/pool?discipline=astrology&country=XX`)
+  check((await count()) === all, 'мусор в адресе не фильтрует и не роняет страницу')
+
+  // Покрытие и дыры считаются по всему пулу: сузить их вместе с таблицей
+  // значило бы показать дыру там, где её закрывает отфильтрованный человек.
+  const coverage = async () =>
+    page.locator('.panel:has-text("Coverage by discipline") .tag').allInnerTexts()
+
+  await page.goto(`${BASE}/ops/pool`)
+  const whole = (await coverage()).join('|')
+  await page.goto(`${BASE}/ops/pool?q=${encodeURIComponent(name)}`)
+  check(
+    (await coverage()).join('|') === whole && whole.length > 0,
+    'покрытие считается по всему пулу, а не по выборке',
+  )
+}
+
 await page.goto(`${BASE}${href}`)
 check(
   (await page.locator('input[name=weeklyCapacityHours]:not([type=hidden])').count()) === 0,

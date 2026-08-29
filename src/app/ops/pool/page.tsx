@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics } from '@/engine/metrics'
 import {
+  DISCIPLINES,
   JURISDICTIONS,
   JURISDICTION_NAMES,
   PORTFOLIO_THRESHOLD,
@@ -12,16 +13,52 @@ import { SPECIALIZATION_LABELS } from '@/lib/labels'
 import { prisma } from '@/lib/db'
 import { DISCIPLINE_LABELS, SPECIALIST_STATUS_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
+import { fill } from '@/lib/fill'
+import { isNarrowed, matches, readCriteria } from '@/lib/pool-filter'
 import { isOperator } from '@/lib/session'
 
 export const metadata = { title: 'Pool — bureau panel' }
 
-export default async function PoolPage() {
+/**
+ * Статусы, которые видно в пуле. Заявка на разборе и приглашение, ещё не
+ * принятое, живут в очереди заявок: там у них своё действие, а здесь они
+ * были бы строками, с которыми нечего делать.
+ */
+const LISTED_STATUSES = ['active', 'paused', 'rejected'] as const
+
+export default async function PoolPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   if (!(await isOperator())) redirect('/ops')
 
   const rows = await prisma.specialist.findMany({
-    where: { status: { in: ['active', 'paused', 'rejected'] } },
+    where: { status: { in: [...LISTED_STATUSES] } },
     orderBy: [{ status: 'asc' }, { portfolioRating: 'desc' }],
+  })
+
+  // Условия — только к списку по именам. Покрытие и дыры считаются по всему
+  // пулу: сужать их вместе с таблицей значило бы показывать дыру там, где её
+  // закрывает человек, отфильтрованный из виду.
+  const criteria = readCriteria(await searchParams, {
+    disciplines: DISCIPLINES,
+    jurisdictions: JURISDICTIONS,
+    statuses: LISTED_STATUSES,
+  })
+
+  const listed = rows.filter((row) => {
+    const profile = toProfile(row)
+    return matches(
+      {
+        displayName: profile.displayName,
+        email: row.email,
+        status: row.status,
+        disciplines: profile.disciplines,
+        jurisdictions: profile.jurisdictions,
+      },
+      criteria,
+    )
   })
 
   const active = rows.filter((r) => r.status === 'active')
@@ -194,6 +231,79 @@ export default async function PoolPage() {
 
         <h2>The pool by name</h2>
 
+        {/*
+          Обычный GET-запрос: условия видно в адресе, страницу можно послать
+          ссылкой, и работает она без единой строки на клиенте.
+        */}
+        <form method="get" className="panel" style={{ marginTop: 24 }}>
+          <div className="grid grid-2" style={{ gap: 16 }}>
+            <div className="field">
+              <label htmlFor="q">Name or address</label>
+              <input id="q" name="q" defaultValue={criteria.query} placeholder="Popović" />
+            </div>
+
+            <div className="field">
+              <label htmlFor="discipline">Discipline</label>
+              <select id="discipline" name="discipline" defaultValue={criteria.discipline}>
+                <option value="">Any</option>
+                {DISCIPLINES.map((d) => (
+                  <option key={d} value={d}>
+                    {DISCIPLINE_LABELS[d]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label htmlFor="country">Country</label>
+              <select id="country" name="country" defaultValue={criteria.jurisdiction}>
+                <option value="">Any</option>
+                {JURISDICTIONS.map((j) => (
+                  <option key={j} value={j}>
+                    {JURISDICTION_NAMES[j]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label htmlFor="status">Status</label>
+              <select id="status" name="status" defaultValue={criteria.status}>
+                <option value="">Any</option>
+                {LISTED_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {SPECIALIST_STATUS_LABELS[s] ?? s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="row" style={{ gap: 12, marginTop: 16 }}>
+            <button type="submit" className="btn btn-solid">
+              Find
+            </button>
+            {isNarrowed(criteria) && (
+              <Link href="/ops/pool" className="btn btn-quiet">
+                Clear
+              </Link>
+            )}
+          </div>
+
+          <p className="hint" style={{ marginTop: 14, marginBottom: 0 }}>
+            {listed.length === rows.length
+              ? fill('{total} in the pool.', { total: rows.length })
+              : fill('{shown} of {total} match.', { shown: listed.length, total: rows.length })}{' '}
+            Country here means where a person works, not where they can sign — signing rights are on
+            the profile.
+          </p>
+        </form>
+
+        {listed.length === 0 ? (
+          <p className="dim" style={{ marginTop: 32 }}>
+            Nobody matches. The pool is not empty — these conditions are.
+          </p>
+        ) : (
         <div className="table-scroll panel" style={{ marginTop: 24, padding: 0 }}>
           <table>
             <thead>
@@ -209,7 +319,7 @@ export default async function PoolPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {listed.map((row) => {
                 const profile = toProfile(row)
                 const metrics = deliveryMetrics(profile.delivery)
 
@@ -251,6 +361,7 @@ export default async function PoolPage() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </section>
   )
