@@ -60,16 +60,18 @@ await bureau.waitForSelector('a[href="/ops/import"]')
 
 // Строка берётся из очереди счетов, а не из первой таблицы на странице:
 // таблиц на панели несколько, и «первая строка» указывает не сюда.
-const queue = bureau.locator('#invoices .panel')
-const hasUnpaid = (await queue.count()) > 0
+// Именно неоплаченные: в очереди висят и оплаченные — по ним видно, что
+// действие прошло, когда строка не исчезает, а меняет статус.
+const queue = bureau.locator('#invoices .panel:has(button:has-text("Отметить оплаченным"))')
+const waiting = await queue.count()
 
-if (!hasUnpaid) {
+if (waiting === 0) {
   check(false, 'на стенде нет неоплаченного счёта: проверять оплату не на чем')
   await browser.close()
   process.exit(1)
 }
 
-check(true, `счетов ждёт оплаты: ${await queue.count()}`)
+check(true, `счетов ждёт оплаты: ${waiting}`)
 
 const first = queue.first()
 const projectHref = await first.locator('a[href^="/ops/projects/"]').getAttribute('href')
@@ -113,6 +115,37 @@ const explained =
 check(explained, 'под суммой видно, из чего она сложилась')
 
 /*
+ * Отзыв счёта, и он идёт до оплаты: оплаченный счёт не отзывается — деньги
+ * пришли, и след платежа должен остаться.
+ *
+ * Проверяется то, ради чего отзыв делался. Уникальность стоит на паре «проект
+ * + живая стадия»; если бы отозванный счёт продолжал её занимать, новый за ту
+ * же стадию выставить было бы нельзя, то есть ошибку в сумме чинили бы правкой
+ * базы. И новый счёт обязан появиться сразу: бюро, отозвавшее счёт и
+ * оставшееся ни с чем, будет смотреть на стадию, стоящую без объяснимой
+ * причины.
+ */
+await bureau.goto(`${BASE}/ops`)
+const voidForm = bureau.locator('#invoices form:has(button:has-text("Отозвать"))').first()
+await voidForm.locator('input[name=note]').fill('Проверка e2e: площадь заведена неверно.')
+await voidForm.locator('button:has-text("Отозвать")').click()
+await bureau.waitForTimeout(2500)
+
+await bureau.reload()
+await bureau.waitForTimeout(1500)
+
+check(
+  (await bureau.locator('#invoices .panel:has(button:has-text("Отметить оплаченным"))').count()) ===
+    waiting,
+  'после отзыва счёт за ту же стадию выставлен заново, а не потерян',
+)
+check(
+  has(await bureau.innerText('#invoices'), 'Отозван') ||
+    (await bureau.locator('#invoices .panel').count()) > waiting,
+  'отозванный счёт остался в записях: заказчик его уже видел',
+)
+
+/*
  * Бюро отмечает оплату.
  *
  * Проверяется состояние, а не всплывшая надпись. Серверное действие
@@ -121,7 +154,11 @@ check(explained, 'под суммой видно, из чего она слож�
  * остаётся и меняет статус: вот это и есть подтверждение.
  */
 await bureau.goto(`${BASE}/ops`)
-const form = bureau.locator('#invoices .panel').first()
+// Целимся в форму, а не в панель: в панели их две — оплата и отзыв, — и у
+// обеих поле называется note.
+const form = bureau
+  .locator('#invoices form:has(button:has-text("Отметить оплаченным"))')
+  .first()
 await form.locator('input[name=note]').fill('Проверка e2e: перевод получен.')
 await form.locator('button[type=submit]').click()
 await bureau.waitForTimeout(2500)

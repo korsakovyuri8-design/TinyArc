@@ -31,6 +31,7 @@ import { latestRun } from '@/lib/services/matching'
 import { threadOf } from '@/lib/services/dialogue'
 import { approvedStages, stagesAwaitingClient } from '@/lib/services/approval'
 import { invoicesOf } from '@/lib/services/billing'
+import { company } from '@/lib/legal'
 import { fileCount, packageOf } from '@/lib/services/package'
 import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
@@ -69,6 +70,10 @@ export default async function ProjectPage({
   ])
 
   const unpaid = new Set(invoices.filter((i) => i.status === 'issued').map((i) => i.stage))
+
+  // Реквизиты и наименование берутся из настроек: см. src/lib/legal.ts.
+  const details = company()
+  const payTo = [details.name, details.bank].filter(Boolean).join('\n')
 
   const documents = await packageOf(project.id)
 
@@ -428,11 +433,37 @@ export default async function ProjectPage({
                   )}
 
                   {invoice.status === 'issued' && (
-                    <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
-                      Реквизиты пришлёт бюро. Отметку об оплате ставит оно же, увидев
-                      поступление: приёма платежей на сайте нет, и делать вид, что есть, значило
-                      бы обещать сверку, которой не существует.
-                    </p>
+                    <>
+                      {payTo ? (
+                        <div style={{ marginTop: 16 }}>
+                          <div className="label">Куда платить</div>
+                          <p
+                            className="dim"
+                            style={{
+                              marginTop: 8,
+                              marginBottom: 0,
+                              fontSize: '0.85rem',
+                              whiteSpace: 'pre-line',
+                            }}
+                          >
+                            {payTo}
+                          </p>
+                        </div>
+                      ) : (
+                        // Реквизитов нет — так и сказано. «Мы свяжемся» на счёте
+                        // означает, что заплатить сейчас нельзя, и написать это
+                        // прямо честнее, чем оставить человека гадать.
+                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
+                          Реквизиты для оплаты ещё не опубликованы — бюро пришлёт их письмом.
+                        </p>
+                      )}
+
+                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
+                        Отметку об оплате ставит бюро, увидев поступление: приёма платежей на
+                        сайте нет, и делать вид, что есть, значило бы обещать сверку, которой
+                        не существует.
+                      </p>
+                    </>
                   )}
                 </div>
               ))}

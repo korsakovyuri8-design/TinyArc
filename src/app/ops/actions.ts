@@ -22,7 +22,7 @@ import {
 } from '@/lib/services/relay'
 import { alertsForBureau, alertsForProject } from '@/lib/services/pm'
 import { MessageRefused, answer } from '@/lib/services/dialogue'
-import { BillingRefused, markPaid } from '@/lib/services/billing'
+import { BillingRefused, issueDueInvoices, markPaid, voidInvoice } from '@/lib/services/billing'
 import { MAX_IMPORT_ROWS, importDrafts, inviteWaiting, reinvite } from '@/lib/services/intake'
 import { readIntake } from '@/lib/intake/map'
 import { isNudgeKind } from '@/engine/pm'
@@ -689,5 +689,48 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
 
     console.error('Оплата не отмечена:', error)
     return { error: 'Не получилось отметить оплату.' }
+  }
+}
+
+/**
+ * Бюро отзывает счёт.
+ *
+ * Счёт выставляет гейт, а ошибается человек: неверно заведённая площадь или
+ * страна дают неверную сумму. Без отзыва единственным способом это исправить
+ * была бы правка базы руками.
+ *
+ * Причина обязательна: заказчик этот счёт уже видел, и «он исчез» — не ответ.
+ */
+export async function voidProjectInvoice(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const invoiceId = String(formData.get('invoiceId') ?? '')
+  const projectId = String(formData.get('projectId') ?? '')
+
+  try {
+    await voidInvoice(invoiceId, String(formData.get('note') ?? ''))
+
+    /*
+     * Новый счёт выставляется тут же, а не «когда-нибудь при следующей проверке
+     * гейта». Отзыв делается ради исправления ошибки в сумме; если после него
+     * счёта нет вовсе, бюро отозвало счёт и осталось ни с чем, а стадия стоит
+     * без объяснимой причины.
+     */
+    const issued = await issueDueInvoices(projectId)
+
+    revalidatePath(`/ops/projects/${projectId}`)
+    revalidatePath('/project')
+
+    return {
+      message:
+        issued.length > 0
+          ? 'Счёт отозван, новый выставлен по текущим данным проекта.'
+          : 'Счёт отозван. Новый не выставлен: стадию сейчас держит не оплата.',
+    }
+  } catch (error) {
+    if (error instanceof BillingRefused) return { error: error.message }
+
+    console.error('Счёт не отозван:', error)
+    return { error: 'Не получилось отозвать счёт.' }
   }
 }

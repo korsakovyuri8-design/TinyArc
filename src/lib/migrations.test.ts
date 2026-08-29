@@ -36,6 +36,7 @@ const APPLIED: Record<string, string> = {
   '0003_stage_approval': '44312f1e3ca7d22b518f2af5c027f3cb',
   '0004_billing': 'ccc0df1d1c68d45129bee652c48f4375',
   '0005_consent': 'c3021fc54148980374597dc1ee249eec',
+  '0006_invoice_void': '4c41cd2d2b9c2af3ffe3ab1fa7c33d2f',
 }
 
 function checksum(name: string): string {

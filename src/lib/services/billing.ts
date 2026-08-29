@@ -126,7 +126,12 @@ export async function issueDueInvoices(projectId: string): Promise<DocStage[]> {
   const [tickets, approved, existing] = await Promise.all([
     relayTickets(projectId),
     approvedStages(projectId),
-    prisma.invoice.findMany({ where: { projectId }, select: { stage: true } }),
+    // Только живые: отозванный счёт иначе навсегда закрыл бы стадию от
+    // повторного выставления, ради чего отзыв и делался.
+    prisma.invoice.findMany({
+      where: { projectId, status: { not: 'void' } },
+      select: { stage: true },
+    }),
   ])
 
   const alreadyBilled = existing.map((r) => r.stage as DocStage)
@@ -154,6 +159,7 @@ export async function issueDueInvoices(projectId: string): Promise<DocStage[]> {
           projectId,
           stage,
           amount: basis.amount,
+          liveStage: stage,
           currency: basis.currency,
           basisJson: JSON.stringify(basis),
         },
@@ -166,6 +172,54 @@ export async function issueDueInvoices(projectId: string): Promise<DocStage[]> {
   }
 
   return issued
+}
+
+/**
+ * Бюро отзывает счёт.
+ *
+ * Отзыв нужен потому, что счёт выставляет гейт, а ошибается человек: неверно
+ * заведённая площадь или страна дают неверную сумму, и единственным способом
+ * это исправить было бы редактирование базы руками.
+ *
+ * Оплаченный счёт не отзывается. Возврат денег — не отмена документа, а
+ * отдельное событие, и делать вид, что счёта не было, значит терять след
+ * платежа, который на самом деле прошёл.
+ *
+ * Отозванный счёт не мешает выставить новый за ту же стадию: уникальный ключ
+ * стоит на liveStage, а он у отозванного пуст. Проще было бы удалить строку,
+ * но тогда исчезает и то, что счёт вообще выставлялся, — а заказчик его уже
+ * видел.
+ */
+export async function voidInvoice(invoiceId: string, reason: string): Promise<DocStage> {
+  const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } })
+  if (!invoice) throw new BillingRefused('Счёта нет.')
+
+  if (invoice.status === 'paid') {
+    throw new BillingRefused(
+      'Счёт оплачен. Отзывать его нельзя: деньги пришли, и след платежа должен остаться. Возврат оформляется отдельно.',
+    )
+  }
+
+  if (invoice.status === 'void') return invoice.stage as DocStage
+
+  const note = reason.trim()
+  if (!note) {
+    throw new BillingRefused('Скажите, почему отзываете: заказчик этот счёт уже видел.')
+  }
+
+  await prisma.invoice.update({
+    where: { id: invoiceId },
+    data: {
+      status: 'void',
+      // Гасится liveStage, а не stage: стадия в документе остаётся правдой, а
+      // уникальный ключ освобождается под новый счёт. NULL в уникальном
+      // индексе ни с чем не конфликтует.
+      liveStage: null,
+      paidNote: note.slice(0, 400),
+    },
+  })
+
+  return invoice.stage as DocStage
 }
 
 /**

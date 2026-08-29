@@ -13,7 +13,7 @@ import type { DocStage } from '@/engine/taxonomy'
 import { roleName } from '@/lib/gap'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import { isOperator } from '@/lib/session'
-import { markInvoicePaid, planBureauQueue } from './actions'
+import { markInvoicePaid, planBureauQueue, voidProjectInvoice } from './actions'
 import { OpsAction, OpsSignIn } from './OpsForms'
 
 export const metadata = { title: 'Панель бюро — TinyArc Cloud Bureau' }
@@ -202,7 +202,7 @@ export default async function OpsPage() {
                   </div>
 
                   {invoice.status === 'issued' && (
-                    <div style={{ marginTop: 14 }}>
+                    <div className="row" style={{ marginTop: 14, gap: 20, alignItems: 'flex-end' }}>
                       <OpsAction
                         action={markInvoicePaid}
                         hidden={{ invoiceId: invoice.invoiceId, projectId: invoice.projectId }}
@@ -213,6 +213,24 @@ export default async function OpsPage() {
                           type="text"
                           name="note"
                           placeholder="Чем подтверждена оплата"
+                          style={{ marginBottom: 10 }}
+                        />
+                      </OpsAction>
+
+                      {/*
+                        Отзыв рядом, но без выделения: счёт выставляет гейт, а
+                        ошибается человек — неверная площадь даёт неверную
+                        сумму. Причина обязательна: заказчик счёт уже видел.
+                      */}
+                      <OpsAction
+                        action={voidProjectInvoice}
+                        hidden={{ invoiceId: invoice.invoiceId, projectId: invoice.projectId }}
+                        label="Отозвать"
+                      >
+                        <input
+                          type="text"
+                          name="note"
+                          placeholder="Почему отзываете"
                           style={{ marginBottom: 10 }}
                         />
                       </OpsAction>

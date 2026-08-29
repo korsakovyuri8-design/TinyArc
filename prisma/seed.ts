@@ -287,7 +287,7 @@ async function payStage(projectId: string, stage: DocStage): Promise<boolean> {
   await issueDueInvoices(projectId)
 
   const invoice = await prisma.invoice.findUnique({
-    where: { projectId_stage: { projectId, stage } },
+    where: { projectId_liveStage: { projectId, liveStage: stage } },
   })
 
   if (!invoice || invoice.status === 'paid') return false
