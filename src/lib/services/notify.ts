@@ -44,6 +44,7 @@ type Kind =
   | 'ticket_comment'
   | 'application_declined'
   | 'invoice_paid'
+  | 'ticket_accepted'
 
 /**
  * Что случилось с письмом.
@@ -221,6 +222,55 @@ export async function invoicePaid(invoiceId: string): Promise<Delivery> {
         'Payment is one of the three conditions for a stage to open; the other two are the previous stage being accepted and confirmed by you. Where this stage stands right now is on the project workspace — it says which of the three is still outstanding, if any.',
         '',
         `Project workspace: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
+}
+
+/**
+ * Работа принята.
+ *
+ * Про возврат на круг человеку писали, про приёмку — нет, и получалась
+ * асимметрия, которая читается неправильно. Сдав работу, человек ждёт
+ * вердикта; молчание в этом месте означает не «принято», а «ещё не смотрели»,
+ * и отличить одно от другого он не может. Между тем приёмка — самое важное
+ * для него событие: от неё считаются и срок, и первая сдача без правок, то
+ * есть ровно то, что решает его доступ к следующим проектам.
+ *
+ * Оценки в письме нет и быть не может: поля для оценки специалиста в системе
+ * нет ни у кого (п.12). Сказан факт — работа принята и засчитана.
+ *
+ * Повод — задача. Приёмка у задачи одна: вернувшаяся на круг и принятая со
+ * второго раза — это та же задача и то же письмо, а круги считаются отдельно
+ * и о них пишут отдельно.
+ */
+export async function ticketAccepted(ticketId: string): Promise<Delivery> {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: { specialist: { select: { email: true, displayName: true } } },
+  })
+
+  if (!ticket || ticket.status !== 'accepted') return 'skipped'
+  if (!ticket.specialist) return 'skipped'
+
+  const person = ticket.specialist
+
+  return once('ticket_accepted', ticket.id, person.email, async () => {
+    await mailer().send({
+      to: person.email,
+      subject: fill('Accepted: {title}', { title: ticket.title }),
+      body: [
+        fill('Dear {name},', { name: person.displayName }),
+        '',
+        fill(
+          'The bureau has accepted “{title}”. The task is closed and counted towards your delivery record; nothing further is needed from you on it.',
+          { title: ticket.title },
+        ),
+        '',
+        'Tasks that were waiting on this one open as soon as the rest of their conditions are met. If one of them is yours, it will arrive as a separate notice.',
+        '',
+        `Work board: ${absolute('/enter')}`,
         ...SIGNATURE,
       ].join('\n'),
     })

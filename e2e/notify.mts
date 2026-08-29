@@ -43,6 +43,7 @@ for (const kind of [
   'ticket_comment',
   'application_declined',
   'invoice_paid',
+  'ticket_accepted',
 ]) {
   check(byKind(kind).length > 0, `повод «${kind}» дошёл до письма: ${byKind(kind).length}`)
 }

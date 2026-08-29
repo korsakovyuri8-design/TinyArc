@@ -296,9 +296,10 @@ model Invoice {
 model Notification {
   id String @id @default(cuid())
 
-  /// Повод. Их девять: invoice_issued — выставлен счёт; invoice_paid —
+  /// Повод. Их десять: invoice_issued — выставлен счёт; invoice_paid —
   /// платёж отмечен и деньги засчитаны; stage_awaiting —
   /// стадия ждёт заказчика; ticket_open — задача открыта и срок пошёл;
+  /// ticket_accepted — работа принята и засчитана;
   /// ticket_revision — работа вернулась на круг; ticket_comment — бюро
   /// написало в тикет; client_answer — бюро ответило заказчику;
   /// conflict_resolved — арбитр вынес решение; application_declined —

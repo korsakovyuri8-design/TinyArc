@@ -36,6 +36,7 @@ import {
   conflictResolved,
   deliveryNote,
   invoicePaid,
+  ticketAccepted,
   ticketCommented,
   ticketReturned,
 } from '@/lib/services/notify'
@@ -446,8 +447,19 @@ export async function acceptTicket(_prev: OpsState, formData: FormData): Promise
   try {
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     await accept(ticketId)
+
+    // Про возврат на круг человеку писали, про приёмку — нет. Сдав работу, он
+    // ждёт вердикта, и молчание означает для него «ещё не смотрели».
+    const told = await ticketAccepted(ticketId).catch((error) => {
+      console.error('Письмо о приёмке не ушло:', error)
+      return 'failed' as const
+    })
+
     revalidatePath(`/ops/projects/${ticket.projectId}`)
-    return { message: 'Accepted. The gate opened the tickets that depend on it.' }
+
+    return {
+      message: `Accepted. The gate opened the tickets that depend on it. ${deliveryNote(told, 'The specialist')}`,
+    }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'That did not work.' }
   }

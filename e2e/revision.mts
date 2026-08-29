@@ -160,6 +160,40 @@ check(
 }
 
 /*
+ * Приёмка. За возврат на круг человеку писали, за приёмку — нет, и молчание в
+ * этом месте читается не как «принято», а как «ещё не смотрели». Между тем
+ * именно приёмка двигает его метрики: срок и первая сдача без правок.
+ */
+{
+  await submit()
+
+  await bureau.goto(`${BASE}/ops/projects/${ticket.projectId}`)
+  await bureau.waitForTimeout(800)
+
+  const accept = bureau
+    .locator(`form:has(input[value="${ticket.id}"]):has(button:has-text("Accept"))`)
+    .first()
+  await accept.locator('button[type=submit]').click()
+  await bureau.waitForTimeout(2500)
+
+  const closed = await prisma.ticket.findUnique({
+    where: { id: ticket.id },
+    select: { status: true },
+  })
+  check(closed?.status === 'accepted', 'работа принята')
+
+  const told = await prisma.notification.findMany({
+    where: { kind: 'ticket_accepted', targetId: ticket.id },
+    select: { email: true },
+  })
+  check(told.length === 1, `о приёмке написали: писем ${told.length}`)
+  check(
+    told.every((n) => n.email === ticket.specialist?.email),
+    'письмо о приёмке ушло тому, кто работу сдавал',
+  )
+}
+
+/*
  * Решение арбитра. Конфликт на стенде поднят сидом: спор — редкое состояние,
  * и сценарий, который сначала его создаёт, проверял бы заодно и это.
  */
