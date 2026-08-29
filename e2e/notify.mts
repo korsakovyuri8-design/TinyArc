@@ -40,6 +40,7 @@ for (const kind of [
   'ticket_revision',
   'client_answer',
   'conflict_resolved',
+  'ticket_comment',
 ]) {
   check(byKind(kind).length > 0, `повод «${kind}» дошёл до письма: ${byKind(kind).length}`)
 }

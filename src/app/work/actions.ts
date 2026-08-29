@@ -55,9 +55,12 @@ export async function postComment(_prev: WorkState, formData: FormData): Promise
   const body = String(formData.get('body') ?? '').trim()
   if (!body) return { error: 'The comment is empty.' }
 
-  return act(formData, (ticketId, specialistId) =>
-    comment(ticketId, { role: 'specialist', specialistId }, body),
-  )
+  return act(formData, async (ticketId, specialistId) => {
+    // comment() отдаёт id созданной записи — он нужен уведомлению о
+    // комментарии бюро, а не этому вызову: письмо исполнителю о его
+    // собственном комментарии было бы эхом.
+    await comment(ticketId, { role: 'specialist', specialistId }, body)
+  })
 }
 
 export async function submitTicket(_prev: WorkState, formData: FormData): Promise<WorkState> {

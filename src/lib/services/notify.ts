@@ -41,6 +41,7 @@ type Kind =
   | 'ticket_revision'
   | 'client_answer'
   | 'conflict_resolved'
+  | 'ticket_comment'
 
 /**
  * Отправить письмо не более одного раза на повод.
@@ -258,6 +259,52 @@ export async function ticketReturned(ticketId: string): Promise<void> {
       })
     },
   )
+}
+
+/**
+ * Бюро написало в тикет.
+ *
+ * Цифровой менеджер существует затем, чтобы сдвигать вставшую работу, и его
+ * единственный инструмент — комментарий в тикете. Пока о комментарии никто не
+ * писал, инструмент молчал: человек читал вопрос про срок в тот день, когда
+ * сам заходил на доску, то есть после срока.
+ *
+ * Текста реплики в письме нет: разговор идёт в тикете, где рядом лежит работа
+ * и входные файлы, а ответить на письмо всё равно нельзя.
+ *
+ * Своя же реплика письма не порождает — специалист пишет в тикет сам, и
+ * сообщать ему об этом незачем.
+ */
+export async function ticketCommented(commentId: string): Promise<void> {
+  const comment = await prisma.ticketComment.findUnique({
+    where: { id: commentId },
+    include: {
+      ticket: {
+        include: { specialist: { select: { email: true, displayName: true } } },
+      },
+    },
+  })
+
+  if (!comment || comment.authorRole !== 'bureau') return
+  if (!comment.ticket.specialist) return
+
+  await once('ticket_comment', comment.id, comment.ticket.specialist.email, async () => {
+    await mailer().send({
+      to: comment.ticket.specialist!.email,
+      subject: fill('The bureau has written on: {title}', { title: comment.ticket.title }),
+      body: [
+        fill('Dear {name},', { name: comment.ticket.specialist!.displayName }),
+        '',
+        fill(
+          'There is a comment from the bureau on “{title}”. It is in the ticket, next to the work and the input files — that is where the conversation lives.',
+          { title: comment.ticket.title },
+        ),
+        '',
+        `Work board: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
 }
 
 /**

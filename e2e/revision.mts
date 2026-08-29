@@ -132,6 +132,34 @@ check(
 )
 
 /*
+ * Реплика бюро в тикете. Инструмент цифрового менеджера: им сдвигают вставшую
+ * работу, и молчащий инструмент бесполезен ровно в тот момент, ради которого
+ * он существует.
+ */
+{
+  await bureau.goto(`${BASE}/ops/projects/${ticket.projectId}`)
+  await bureau.waitForTimeout(800)
+
+  // Именно форма этого тикета: первая textarea[name="body"] на странице —
+  // ответ заказчику, и попасть в неё значило бы проверить чужое письмо.
+  const form = bureau.locator(`form:has(textarea#body-${ticket.id})`).first()
+  await form.locator(`textarea#body-${ticket.id}`).fill('e2e check: will you make the deadline?')
+  await form.locator('button[type=submit]').click()
+  await bureau.waitForTimeout(2000)
+
+  const told = await prisma.notification.findMany({
+    where: { kind: 'ticket_comment' },
+    select: { email: true },
+  })
+
+  check(told.length > 0, `о реплике бюро написали: писем ${told.length}`)
+  check(
+    told.some((n) => n.email === ticket.specialist?.email),
+    'письмо ушло исполнителю этой задачи',
+  )
+}
+
+/*
  * Решение арбитра. Конфликт на стенде поднят сидом: спор — редкое состояние,
  * и сценарий, который сначала его создаёт, проверял бы заодно и это.
  */

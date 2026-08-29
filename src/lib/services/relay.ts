@@ -154,7 +154,7 @@ export async function comment(
   author: { role: 'bureau' | 'specialist'; specialistId?: string },
   body: string,
   options: { isConflict?: boolean } = {},
-): Promise<void> {
+): Promise<string> {
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (author.role === 'specialist') {
@@ -162,7 +162,7 @@ export async function comment(
     if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
   }
 
-  await prisma.ticketComment.create({
+  const created = await prisma.ticketComment.create({
     data: {
       ticketId,
       authorRole: author.role,
@@ -171,6 +171,10 @@ export async function comment(
       isConflict: options.isConflict ?? false,
     },
   })
+
+  // Идентификатор комментария нужен письму: оно уходит один раз на реплику,
+  // а не один раз на тикет — бюро пишет в него не однажды.
+  return created.id
 }
 
 /**

@@ -29,7 +29,12 @@ import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
-import { clientAnswered, conflictResolved, ticketReturned } from '@/lib/services/notify'
+import {
+  clientAnswered,
+  conflictResolved,
+  ticketCommented,
+  ticketReturned,
+} from '@/lib/services/notify'
 
 export type OpsState = { error?: string; message?: string }
 
@@ -494,10 +499,18 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
   if (!body) return { error: 'The comment is empty.' }
 
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
-  await comment(ticketId, { role: 'bureau' }, body)
+  const commentId = await comment(ticketId, { role: 'bureau' }, body)
+
+  // Реплика бюро — это то, после чего от человека чего-то ждут: вопрос про
+  // срок, уточнение постановки, напоминание. Без письма он прочтёт её в тот
+  // день, когда сам зайдёт на доску, — то есть после срока.
+  await ticketCommented(commentId).catch((error) =>
+    console.error('Письмо о реплике не ушло:', error),
+  )
+
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'Sent.' }
+  return { message: 'Sent. The specialist has been told by email.' }
 }
 
 /**
