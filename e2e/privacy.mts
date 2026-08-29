@@ -47,13 +47,27 @@ const browser = await chromium.launch(
 console.log('Права из политики')
 
 /*
- * Берётся тот, у кого есть история поставки: обезличивание обязано её
- * сохранить, и на человеке без единого сданного тикета этого не видно.
+ * Берётся тот, у кого есть и история поставки, и живая роль. История нужна,
+ * потому что обезличивание обязано её сохранить, — на человеке без единого
+ * сданного тикета этого не видно. Живая роль нужна, потому что там был тупик:
+ * задачи оставались за человеком, войти он уже не мог, и проект стоял молча.
  */
-const specialist = await prisma.specialist.findFirst({
-  where: { status: 'active', deliveredTickets: { gt: 0 } },
-  select: { id: true, accessKey: true, email: true, displayName: true, deliveredTickets: true },
-})
+const RUNNING = ['draft', 'assembled', 'delivering']
+
+const specialist =
+  (await prisma.specialist.findFirst({
+    where: {
+      status: 'active',
+      deliveredTickets: { gt: 0 },
+      slots: { some: { project: { status: { in: RUNNING } } } },
+      tickets: { some: { status: { in: ['blocked', 'open', 'in_progress', 'revision'] } } },
+    },
+    select: { id: true, accessKey: true, email: true, displayName: true, deliveredTickets: true },
+  })) ??
+  (await prisma.specialist.findFirst({
+    where: { status: 'active', deliveredTickets: { gt: 0 } },
+    select: { id: true, accessKey: true, email: true, displayName: true, deliveredTickets: true },
+  }))
 
 if (!specialist) {
   check(false, 'на стенде нет специалиста со сданными тикетами')
@@ -73,6 +87,18 @@ await before.waitForTimeout(1500)
 check(before.url().includes('/work'), 'до обезличивания ключ открывает доску')
 
 const wroteToPerson = await prisma.notification.count({ where: { email: specialist.email } })
+
+const heldBefore = await prisma.ticket.findMany({
+  where: {
+    specialistId: specialist.id,
+    status: { in: ['blocked', 'open', 'in_progress', 'revision'] },
+    project: { status: { in: RUNNING } },
+  },
+  select: { id: true },
+})
+const rolesBefore = await prisma.teamSlot.count({
+  where: { specialistId: specialist.id, project: { status: { in: RUNNING } } },
+})
 
 const bureau = await (await browser.newContext()).newPage()
 await bureau.goto(`${BASE}/ops`)
@@ -139,6 +165,45 @@ check(
     moved === wroteToPerson,
     `строки журнала остались на месте, без адреса: ${moved} из ${wroteToPerson}`,
   )
+}
+
+/*
+ * Живая работа не остаётся за тем, кого больше нет. Раньше задачи так и
+ * висели на обезличенном профиле: войти он не может, сдать не может, замену
+ * никто не ищет — проект стоит до просрочки, и увидеть это неоткуда.
+ */
+{
+  check(rolesBefore > 0, `у подопытного была живая роль: ${rolesBefore}`)
+  check(heldBefore.length > 0, `и незакрытые задачи: ${heldBefore.length}`)
+
+  const stillHis = await prisma.ticket.count({
+    where: {
+      specialistId: specialist.id,
+      status: { in: ['blocked', 'open', 'in_progress', 'revision'] },
+      project: { status: { in: RUNNING } },
+    },
+  })
+  check(stillHis === 0, `незакрытых задач за ним не осталось: ${stillHis}`)
+
+  const rolesAfter = await prisma.teamSlot.count({
+    where: { specialistId: specialist.id, project: { status: { in: RUNNING } } },
+  })
+  check(rolesAfter === 0, `ролей на живых проектах за ним не осталось: ${rolesAfter}`)
+
+  // Задачи не потеряны: у каждой либо новый исполнитель, либо она вернулась
+  // бюро и заблокирована — второе видно в панели, а не молчит.
+  const landed = await prisma.ticket.findMany({
+    where: { id: { in: heldBefore.map((t) => t.id) } },
+    select: { specialistId: true, status: true },
+  })
+  check(
+    landed.every((t) => t.specialistId !== null || t.status === 'blocked'),
+    'каждая задача либо у заменяющего, либо вернулась бюро — ни одна не потерялась',
+  )
+
+  // Выход записан: п.10а не даёт предлагать ту же роль тому, кто с неё ушёл.
+  const withdrawals = await prisma.withdrawal.count({ where: { specialistId: specialist.id } })
+  check(withdrawals >= rolesBefore, `выход записан: ${withdrawals} из ${rolesBefore}`)
 }
 
 // Старый ключ не должен пускать: иначе профиль обезличен только на экране.

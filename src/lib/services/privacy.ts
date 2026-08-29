@@ -30,6 +30,7 @@
 import { randomBytes } from 'node:crypto'
 import { prisma } from '../db'
 import { artifactKey, storage } from '../storage'
+import { stepOut } from './handover'
 
 /** Ключ, который заведомо никому не подойдёт. */
 function deadKey(prefix: string): string {
@@ -37,6 +38,19 @@ function deadKey(prefix: string): string {
 }
 
 export class NotErasable extends Error {}
+
+/** Проекты, которые ещё идут: на закрытых выходить не из чего. */
+const RUNNING = ['draft', 'assembled', 'delivering'] as const
+
+/**
+ * Причина выхода, которая уезжает в тикет к заменяющему.
+ *
+ * Она не называет обращения. Тот, кто придёт на замену, увидит её вместе с
+ * задачей, и «человек попросил себя стереть» рассказало бы команде ровно то,
+ * что человек просил не рассказывать. Сказано то, что заменяющему нужно
+ * знать: прежнего исполнителя в пуле больше нет.
+ */
+const LEFT_THE_POOL = 'The previous contributor is no longer in the pool.'
 
 /**
  * Обезличить профиль специалиста.
@@ -49,11 +63,44 @@ export class NotErasable extends Error {}
  * Статус `removed` выводит человека из отбора, потому что в выборку попадает
  * только `active`. Отдельной проверки для этого не нужно, и её отсутствие —
  * не упущение: гейт по статусу уже стоит первым.
+ *
+ * Сначала — выход из живых проектов, и только потом обезличивание. Иначе
+ * получался тупик, которого никто не видит: задачи остаются за человеком,
+ * войти он уже не может, сдать работу не может, замену никто не ищет — проект
+ * стоит молча до просрочки. Роли передаёт тот же механизм, что и при обычном
+ * выходе (п.10а): замену выбирает алгоритм, бюро не назначает.
+ *
+ * Обращение при этом не откладывается до удобного бюро момента. Право не
+ * зависит от того, сколько у нас незакрытых задач, и отказ «сначала сдайте
+ * работу» был бы отказом по существу. Если замены в прогоне нет, механизм
+ * сам вернёт задачу бюро и скажет об этом в тикете — это честное состояние,
+ * а не повод не исполнять просьбу.
  */
-export async function anonymiseSpecialist(id: string): Promise<void> {
+export type Anonymised = {
+  /** Ролей передано алгоритму. */
+  handed: number
+  /** Ролей, которым замены в прогоне не нашлось: задача вернулась бюро. */
+  stranded: number
+}
+
+export async function anonymiseSpecialist(id: string): Promise<Anonymised> {
   const row = await prisma.specialist.findUnique({ where: { id }, select: { removedAt: true } })
   if (!row) throw new NotErasable('Specialist not found.')
   if (row.removedAt) throw new NotErasable('This profile is already anonymised.')
+
+  const live = await prisma.teamSlot.findMany({
+    where: { specialistId: id, project: { status: { in: [...RUNNING] } } },
+    select: { projectId: true },
+  })
+
+  let handed = 0
+  let stranded = 0
+
+  for (const slot of live) {
+    const result = await stepOut(id, slot.projectId, LEFT_THE_POOL)
+    if (result.replaced) handed += 1
+    else stranded += 1
+  }
 
   const person = await prisma.specialist.findUniqueOrThrow({
     where: { id },
@@ -84,6 +131,8 @@ export async function anonymiseSpecialist(id: string): Promise<void> {
       },
     }),
   ])
+
+  return { handed, stranded }
 }
 
 /**

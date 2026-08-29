@@ -29,6 +29,7 @@ import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
+import { fill } from '@/lib/fill'
 import {
   applicationDeclined,
   clientAnswered,
@@ -825,8 +826,10 @@ export async function anonymiseProfile(_prev: OpsState, formData: FormData): Pro
     return { error: 'Write where the request came from: this cannot be undone.' }
   }
 
+  let moved: Awaited<ReturnType<typeof anonymiseSpecialist>>
+
   try {
-    await anonymiseSpecialist(specialistId)
+    moved = await anonymiseSpecialist(specialistId)
   } catch (error) {
     if (error instanceof NotErasable) return { error: error.message }
 
@@ -837,8 +840,23 @@ export async function anonymiseProfile(_prev: OpsState, formData: FormData): Pro
   revalidatePath('/ops/pool')
   revalidatePath(`/ops/pool/${specialistId}`)
 
+  // Что стало с ролями, оператор узнаёт здесь, а не из просроченного проекта.
+  // Роль без замены — не сбой обезличивания, а состояние, за которым надо
+  // следить: задача вернулась бюро и ждёт постановки заново.
+  const roles =
+    moved.handed + moved.stranded === 0
+      ? 'They held no roles on running projects.'
+      : moved.stranded === 0
+        ? fill('{handed} role(s) on running projects went to the next candidate in the run.', {
+            handed: moved.handed,
+          })
+        : fill(
+            '{handed} role(s) went to the next candidate in the run; {stranded} found no replacement and are back with the bureau — those tasks need a fresh assembly.',
+            { handed: moved.handed, stranded: moved.stranded },
+          )
+
   return {
-    message: 'The profile is anonymised: the key no longer works, the delivery metrics remain.',
+    message: `The profile is anonymised: the key no longer works, the delivery metrics remain. ${roles}`,
   }
 }
 
