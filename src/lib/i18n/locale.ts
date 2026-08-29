@@ -43,6 +43,17 @@ export function isLocale(value: string | undefined | null): value is Locale {
 }
 
 /**
+ * Язык из записи в базе.
+ *
+ * Поле хранит строку, и однажды в нём окажется язык, которого у нас уже нет.
+ * Русский в этом случае правильнее ошибки: письмо на исходном языке человек
+ * прочтёт, а не отправленное — нет.
+ */
+export function toLocale(value: string | undefined | null): Locale {
+  return isLocale(value) ? value : DEFAULT_LOCALE
+}
+
+/**
  * Разбор пути: язык и путь без приставки.
  *
  * `/en/brief` → en и `/brief`. `/brief` → ru и `/brief`. Отдельно `/en` без

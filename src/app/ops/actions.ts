@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
+import { toLocale } from '@/lib/i18n/locale'
 import { allow, forgive } from '@/lib/guard'
 import { assistant } from '@/lib/assist'
 import { sendAccessKey } from '@/lib/mail'
@@ -88,7 +89,12 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   // Ключ выдаётся тем же каналом, которым с человеком разговаривали, и только
   // после подтверждения: до него ключ существует, но не работает.
   try {
-    await sendAccessKey(specialist.email, 'specialist', specialist.accessKey)
+    await sendAccessKey(
+      specialist.email,
+      'specialist',
+      specialist.accessKey,
+      toLocale(specialist.consentLocale),
+    )
     return { message: 'Специалист в пуле, ключ доступа отправлен на его адрес.' }
   } catch (error) {
     console.error('Письмо с ключом не ушло:', error)

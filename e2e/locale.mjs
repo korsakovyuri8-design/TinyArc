@@ -71,6 +71,30 @@ for (const path of TRANSLATED) {
   )
 }
 
+/*
+ * Несуществующий адрес. Своя страница здесь появилась не ради вида: по
+ * устаревшей ссылке из письма человек попадал на служебную страницу Next —
+ * по-английски, без выхода куда бы то ни было и без объяснения, почему чужой
+ * тикет отвечает так же, как несуществующий.
+ */
+for (const [path, language] of [
+  ['/no-such-page-at-all', 'ru'],
+  ['/en/no-such-page-at-all', 'en'],
+]) {
+  const response = await page.goto(`${BASE}${path}`)
+  await page.waitForTimeout(300)
+
+  const text = await page.evaluate(() => document.body.innerText)
+  const cyrillic = /[А-Яа-яЁё]/.test(text)
+
+  check(response.status() === 404, `${path} — отвечает 404, а не 200`)
+  check(
+    language === 'ru' ? cyrillic : !cyrillic,
+    `${path} — страница на своём языке`,
+  )
+  check(text.includes('404'), `${path} — это наша страница, а не служебная`)
+}
+
 // Русская версия жива по прежним адресам: приставки `/ru` не существует.
 await page.goto(`${BASE}/`)
 await page.waitForTimeout(300)

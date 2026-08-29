@@ -8,6 +8,9 @@
  */
 
 import { absolute, siteUrl } from '../site'
+import { translate } from '../i18n/dict'
+import { fill } from '../i18n/fill'
+import { localePath, type Locale } from '../i18n/locale'
 import { ResendMailer, configFromEnv } from './resend'
 import { StubMailer } from './stub'
 import type { Mailer } from './types'
@@ -44,17 +47,63 @@ export async function sendAccessKey(
   to: string,
   who: 'client' | 'specialist',
   key: string,
+  locale: Locale,
 ): Promise<void> {
-  const where = who === 'client' ? 'кабинет проекта' : 'доску работ'
+  const t = (text: string) => translate(text, locale)
+  const where = who === 'client' ? t('кабинет проекта') : t('доску работ')
 
   await mailer().send({
     to,
-    subject: 'TinyArc Cloud Bureau — ключ доступа',
+    subject: `TinyArc Cloud Bureau — ${t('ключ доступа')}`,
     body: [
-      `Ключ доступа: ${key}`,
+      `${t('Ключ доступа:')} ${key}`,
       '',
-      `Введите его на ${absolute('/enter')}, чтобы открыть ${where}.`,
-      'Ключ заменяет пароль — не пересылайте его.',
+      fill(t('Введите его на {url}, чтобы открыть {where}.'), {
+        url: absolute(localePath('/enter', locale)),
+        where,
+      }),
+      t('Ключ заменяет пароль — не пересылайте его.'),
+      '',
+      'TinyArc Cloud Bureau',
+      siteUrl(),
+    ].join('\n'),
+  })
+}
+
+/**
+ * Напоминание ключа: письмо тому, кто его потерял.
+ *
+ * Ключ заменяет пароль, а пароль здесь не восстанавливают, потому что его нет.
+ * Значит, потерянное письмо — это потерянный кабинет навсегда, если не сказать
+ * человеку тот же ключ ещё раз тем же каналом.
+ *
+ * Новый ключ не выдаётся намеренно. Смена ключа при каждой забывчивости
+ * означала бы, что старое письмо перестаёт работать, — а оно у человека,
+ * возможно, есть, просто не нашлось за минуту.
+ *
+ * Строки письма приходят готовыми: что именно числится за адресом, решает
+ * `remindKeys`, и решает это по правилу «ключ, который не работает, называть
+ * незачем».
+ */
+export async function sendKeyReminder(
+  to: string,
+  lines: string[],
+  locale: Locale,
+): Promise<void> {
+  const t = (text: string) => translate(text, locale)
+
+  await mailer().send({
+    to,
+    subject: `TinyArc Cloud Bureau — ${t('ключ доступа')}`,
+    body: [
+      t('Вы попросили напомнить ключ. За этим адресом числится:'),
+      '',
+      ...lines,
+      '',
+      fill(t('Вход: {url}'), { url: absolute(localePath('/enter', locale)) }),
+      t('Ключ заменяет пароль — не пересылайте его.'),
+      '',
+      t('Если ключ не просили вы — письмо можно не читать: по нему ничего не произошло.'),
       '',
       'TinyArc Cloud Bureau',
       siteUrl(),

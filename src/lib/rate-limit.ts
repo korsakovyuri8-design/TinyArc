@@ -11,6 +11,8 @@
  * базе или Redis; интерфейс модуля от этого не меняется.
  */
 
+import { fill } from './i18n/fill'
+
 export type Bucket = { count: number; resetAt: number }
 
 export type Verdict = { allowed: boolean; retryAfterSeconds: number }
@@ -48,6 +50,12 @@ export const LIMITS = {
   // случайного двойного нажатия и от заваливания панели, а не от чужака.
   clientMessage: { limit: 10, windowMs: HOUR },
   opsLogin: { limit: 5, windowMs: 15 * MINUTE },
+  /*
+   * Напоминание ключа. Дёшево для нас и заметно для человека, которому оно
+   * приходит: форма отправляет письмо на чужой адрес по одному нажатию.
+   * Поэтому дорогой счётчик считает именно ушедшие письма, а не попытки.
+   */
+  recover: { limit: 10, windowMs: HOUR, completed: 3 },
 } as const satisfies Record<string, Limit>
 
 export type LimitName = keyof typeof LIMITS
@@ -95,10 +103,20 @@ export function sweep(store: Map<string, Bucket>, now: number): void {
   }
 }
 
-export function retryMessage(retryAfterSeconds: number): string {
+/**
+ * «Слишком часто» на языке того, кто это читает.
+ *
+ * Переводчик приходит аргументом, а не берётся здесь: модуль чистый и о
+ * запросе ничего не знает. По умолчанию — тождество, то есть исходный русский:
+ * вызывающий, которому язык не важен, ничего не передаёт и получает прежнее.
+ */
+export function retryMessage(
+  retryAfterSeconds: number,
+  t: (text: string) => string = (text) => text,
+): string {
   const minutes = Math.ceil(retryAfterSeconds / 60)
 
   return minutes <= 1
-    ? 'Слишком часто. Попробуйте через минуту.'
-    : `Слишком часто. Попробуйте через ${minutes} мин.`
+    ? t('Слишком часто. Попробуйте через минуту.')
+    : fill(t('Слишком часто. Попробуйте через {minutes} мин.'), { minutes })
 }

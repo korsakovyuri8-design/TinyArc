@@ -1189,4 +1189,53 @@ export const en: Record<string, string> = {
   'Без причины выход не оформляется: её увидит тот, кто придёт.':
     'Leaving is not recorded without a reason: whoever replaces you will read it.',
   'Вы не ведёте роль на этом проекте.': 'You do not hold a role on this project.',
+
+  // --- Ключ доступа: выдача и напоминание ---
+  'ключ доступа': 'access key',
+  'Ключ доступа:': 'Access key:',
+  'кабинет проекта': 'the project cabinet',
+  'доску работ': 'the work board',
+  'Введите его на {url}, чтобы открыть {where}.': 'Enter it at {url} to open {where}.',
+  'Ключ заменяет пароль — не пересылайте его.':
+    'The key stands in for a password — do not forward it.',
+  'Вы попросили напомнить ключ. За этим адресом числится:':
+    'You asked us to remind you of your key. This address holds:',
+  'Проект «{title}» — ключ {key}': 'Project “{title}” — key {key}',
+  'Доска работ — ключ {key}': 'Work board — key {key}',
+  'Вход: {url}': 'Sign in: {url}',
+  'Если ключ не просили вы — письмо можно не читать: по нему ничего не произошло.':
+    'If you did not ask for this, there is nothing to do: nothing happened on your account.',
+  'Ключ не сохранился': 'Lost your key',
+  'Ключ пришлём на тот адрес, на который выдавали. Нового ключа не будет: старое письмо, если оно найдётся, продолжит работать.':
+    'We send the key to the address it was issued to. There will be no new key: the old email, if it turns up, keeps working.',
+  'Адрес почты': 'Email address',
+  'Тот, на который выдавали ключ': 'The one the key was issued to',
+  'Напомнить ключ': 'Remind me',
+  'Введите адрес почты.': 'Enter an email address.',
+  'Если этот адрес у нас есть, письмо с ключом уже ушло. Проверьте почту.':
+    'If we have this address, the email with the key has already gone out. Check your inbox.',
+
+  // --- Вход ---
+  'Введите ключ доступа.': 'Enter your access key.',
+  'Такого ключа нет.': 'No such key.',
+  'Этот ключ больше не активен.': 'This key is no longer active.',
+  'Заявка ещё на разборе. Ключ заработает, когда портфолио пройдёт порог.':
+    'The application is still under review. The key starts working once the portfolio passes the threshold.',
+  'Слишком часто. Попробуйте через минуту.': 'Too often. Try again in a minute.',
+  'Слишком часто. Попробуйте через {minutes} мин.': 'Too often. Try again in {minutes} min.',
+
+  // --- Адрес не открылся и сбой ---
+  'Адрес не открылся': 'Page not found',
+  'Такого адреса нет': 'There is no such address',
+  'Ссылка могла устареть — например, пришла из старого письма. Так же отвечает адрес, который существует, но не ваш: чужой проект и чужой тикет неотличимы от несуществующих намеренно, иначе по ответу можно было бы проверять, что у нас есть.':
+    'The link may be out of date — from an old email, say. An address that exists but is not yours answers the same way: someone else’s project and someone else’s ticket are indistinguishable from ones that do not exist, deliberately — otherwise the answer itself could be used to check what we hold.',
+  'На главную': 'To the home page',
+  'Войти по ключу — кабинет проекта или доска работ':
+    'Sign in with a key — project cabinet or work board',
+  Сбой: 'Failure',
+  'Страница не собралась': 'The page did not come together',
+  'Это наша сторона, а не ваша. Отправленное раньше — бриф, комментарий, загруженный файл — на месте: сбой произошёл при показе страницы, а не при записи.':
+    'This is our side, not yours. What you sent earlier — a brief, a comment, an uploaded file — is where you left it: the failure happened while showing the page, not while writing.',
+  'Попробовать снова': 'Try again',
+  'Если повторится, назовите бюро эту метку:': 'If it happens again, give the bureau this mark:',
 }

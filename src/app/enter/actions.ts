@@ -2,7 +2,9 @@
 
 import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
-import { allow, forgive } from '@/lib/guard'
+import { allow, forgive, spend } from '@/lib/guard'
+import { translator } from '@/lib/i18n'
+import { remindKeys } from '@/lib/services/access'
 import { retryMessage } from '@/lib/rate-limit'
 import {
   projectByKey,
@@ -12,6 +14,7 @@ import {
 } from '@/lib/session'
 
 export type EnterState = { error?: string }
+export type RecoverState = { error?: string; message?: string }
 
 /**
  * Вход по ключу. Ключ выдаётся тем каналом, которым с человеком разговаривали:
@@ -21,12 +24,14 @@ export type EnterState = { error?: string }
  * числится, — ключ сам знает, чей он.
  */
 export async function enterWithKey(_prev: EnterState, formData: FormData): Promise<EnterState> {
+  const { t } = await translator()
+
   // Вход по ключу дёшев, но это перебор ключа: ограничиваем именно поэтому.
   const verdict = await allow('enter')
-  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds, t) }
 
   const key = String(formData.get('key') ?? '').trim()
-  if (!key) return { error: 'Введите ключ доступа.' }
+  if (!key) return { error: t('Введите ключ доступа.') }
 
   /*
    * Успешный вход обнуляет счётчик.
@@ -59,8 +64,8 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
       return {
         error:
           specialist.status === 'pending'
-            ? 'Заявка ещё на разборе. Ключ заработает, когда портфолио пройдёт порог.'
-            : 'Этот ключ больше не активен.',
+            ? t('Заявка ещё на разборе. Ключ заработает, когда портфолио пройдёт порог.')
+            : t('Этот ключ больше не активен.'),
       }
     }
 
@@ -69,5 +74,41 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
     redirect(await localeHref('/work'))
   }
 
-  return { error: 'Такого ключа нет.' }
+  return { error: t('Такого ключа нет.') }
+}
+
+/**
+ * Напомнить ключ на почту.
+ *
+ * Ответ один и тот же, нашёлся адрес или нет. Форма, которая отвечает
+ * «такого адреса у нас нет», отвечает не тому, кто забыл ключ, а тому, кто
+ * проверяет по списку, кто у нас заказчик.
+ *
+ * Дорогой счётчик списывается до отправки, а не после: письмо уходит чужому
+ * человеку, и платить за него должна попытка, а не удача.
+ */
+export async function remindKey(
+  _prev: RecoverState,
+  formData: FormData,
+): Promise<RecoverState> {
+  const { locale, t } = await translator()
+
+  const verdict = await allow('recover')
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds, t) }
+
+  const email = String(formData.get('email') ?? '').trim()
+  if (!email.includes('@')) return { error: t('Введите адрес почты.') }
+
+  await spend('recover')
+
+  try {
+    await remindKeys(email, locale)
+  } catch (error) {
+    // Молча: сказать «письмо не ушло» — значит сказать, что адрес нашёлся.
+    console.error('Напоминание ключа не ушло:', error)
+  }
+
+  return {
+    message: t('Если этот адрес у нас есть, письмо с ключом уже ушло. Проверьте почту.'),
+  }
 }

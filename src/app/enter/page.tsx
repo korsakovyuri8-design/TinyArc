@@ -1,7 +1,7 @@
 import { Link } from '@/components/Link'
 import { translator } from '@/lib/i18n'
 import { pageMetadata } from '@/lib/i18n/metadata'
-import { EnterForm } from './EnterForm'
+import { EnterForm, RecoverForm } from './EnterForm'
 
 export const generateMetadata = () => pageMetadata('Вход')
 
@@ -24,6 +24,16 @@ export default async function EnterPage() {
         </div>
 
         <div className="divider" />
+
+        <details style={{ marginBottom: 28 }}>
+          <summary className="label" style={{ cursor: 'pointer' }}>
+            {t('Ключ не сохранился')}
+          </summary>
+          <p className="muted" style={{ marginTop: 14, fontSize: '0.92rem' }}>{t('Ключ пришлём на тот адрес, на который выдавали. Нового ключа не будет: старое письмо, если оно найдётся, продолжит работать.')}</p>
+          <div style={{ marginTop: 16 }}>
+            <RecoverForm locale={locale} />
+          </div>
+        </details>
 
         <div className="stack" style={{ gap: 10 }}>
           <Link locale={locale} href="/brief">

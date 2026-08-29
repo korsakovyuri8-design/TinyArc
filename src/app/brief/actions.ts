@@ -9,6 +9,7 @@ import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { LEGAL_VERSION } from '@/lib/legal'
 import { currentLocale } from '@/lib/i18n'
+import { toLocale } from '@/lib/i18n/locale'
 import { toList } from '@/lib/rows'
 import { sendAccessKey } from '@/lib/mail'
 import { prepareDirections } from '@/lib/services/direction'
@@ -87,7 +88,12 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   // экране следующим шагом. Поэтому упавшая почта не должна ронять бриф,
   // над которым человек только что сидел двадцать минут.
   try {
-    await sendAccessKey(project.clientEmail, 'client', project.clientKey)
+    await sendAccessKey(
+      project.clientEmail,
+      'client',
+      project.clientKey,
+      toLocale(project.consentLocale),
+    )
   } catch (error) {
     console.error('Письмо с ключом не ушло:', error)
   }

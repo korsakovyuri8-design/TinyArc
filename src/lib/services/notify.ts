@@ -26,7 +26,7 @@ import { DOC_STAGE_LABELS } from '../labels'
 import { translate } from '../i18n/dict'
 import { fill } from '../i18n/fill'
 import { dateTime } from '../i18n/format'
-import { DEFAULT_LOCALE, isLocale, localePath, type Locale } from '../i18n/locale'
+import { localePath, toLocale, type Locale } from '../i18n/locale'
 import { absolute, siteUrl } from '../site'
 import { mailer } from '../mail'
 import { prisma } from '../db'
@@ -37,11 +37,6 @@ import type { DocStage } from '@/engine/taxonomy'
 const MAIL_CONCURRENCY = 5
 
 type Kind = 'invoice_issued' | 'stage_awaiting' | 'ticket_open'
-
-/** Язык, на котором человек согласился с документами. По умолчанию русский. */
-function localeOf(consentLocale: string): Locale {
-  return isLocale(consentLocale) ? consentLocale : DEFAULT_LOCALE
-}
 
 /**
  * Отправить письмо не более одного раза на повод.
@@ -97,7 +92,7 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
   if (!invoice || invoice.status !== 'issued') return
 
   const details = company()
-  const locale = localeOf(invoice.project.consentLocale)
+  const locale = toLocale(invoice.project.consentLocale)
   const t = (text: string) => translate(text, locale)
   const stage = t(DOC_STAGE_LABELS[invoice.stage as DocStage] ?? invoice.stage)
 
@@ -142,7 +137,7 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
 
   if (!project) return
 
-  const locale = localeOf(project.consentLocale)
+  const locale = toLocale(project.consentLocale)
   const t = (text: string) => translate(text, locale)
   const label = t(DOC_STAGE_LABELS[stage] ?? stage)
 
@@ -192,7 +187,7 @@ async function ticketOpen(ticketId: string): Promise<void> {
 
   if (!ticket?.specialist || ticket.status !== 'open') return
 
-  const locale = localeOf(ticket.specialist.consentLocale)
+  const locale = toLocale(ticket.specialist.consentLocale)
   const t = (text: string) => translate(text, locale)
 
   const due = ticket.dueAt
