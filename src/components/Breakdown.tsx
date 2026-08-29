@@ -1,4 +1,5 @@
 import { asHundred } from '@/engine/score'
+import { fill } from '@/lib/i18n/fill'
 import type { ScoreBreakdown } from '@/engine/types'
 
 /**
@@ -30,7 +31,7 @@ export function BreakdownRow({
       />
       {breakdown.historyWeight > 0 ? (
         <Line
-          label={t('Поставка · вес N%').replace('N', String(historyPercent))}
+          label={fill(t('Поставка · вес {percent}%'), { percent: historyPercent })}
           value={breakdown.deliveryScore.toFixed(1)}
           fill={breakdown.deliveryScore / 10}
         />

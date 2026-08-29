@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { fill } from '@/lib/i18n/fill'
 import { LocaleProvider, useT } from '@/lib/i18n/context'
 import type { Locale } from '@/lib/i18n/locale'
 import { approveProjectStage, sendToBureau, type ProjectState } from './actions'
@@ -99,7 +100,7 @@ function ApprovalForm({ stage, title }: { stage: string; title: string }) {
       </div>
 
       <button type="submit" className="btn btn-solid" disabled={pending}>
-        {pending ? '…' : t('Подтвердить стадию «N»').replace('N', t(title))}
+        {pending ? '…' : fill(t('Подтвердить стадию «{stage}»'), { stage: t(title) })}
       </button>
 
       {state.error && (

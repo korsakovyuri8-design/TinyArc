@@ -163,7 +163,7 @@ export const en: Record<string, string> = {
   'Вилла в Тивате': 'Villa in Tivat',
   Типология: 'Typology',
   Этажей: 'Storeys',
-  'Bureau ведёт здания до N этажей': 'Bureau takes buildings up to N storeys',
+  'Bureau ведёт здания до {n} этажей': 'Bureau takes buildings up to {n} storeys',
   'Площадь, м²': 'Floor area, m²',
   Страна: 'Country',
   'Климатическая зона': 'Climate zone',
@@ -276,8 +276,8 @@ export const en: Record<string, string> = {
   Специалист: 'Specialist',
   'Я веду разделы': 'I deliver design sections',
   'Подать заявку': 'Apply',
-  'Заявка с двенадцатью измерениями. Порог по портфолио — N/10.':
-    'An application across twelve dimensions. Portfolio threshold: N/10.',
+  'Заявка с двенадцатью измерениями. Порог по портфолио — {threshold}/10.':
+    'An application across twelve dimensions. Portfolio threshold: {threshold}/10.',
 
   Дисциплина: 'Discipline',
   Масштаб: 'Scale',
@@ -296,8 +296,8 @@ export const en: Record<string, string> = {
   // --- Кабинет заказчика ---
   'Кабинет проекта': 'Project workspace',
   'Сохраните ключ доступа': 'Save your access key',
-  'Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на N — но если письмо не дойдёт, останется только этот экран.':
-    'The key replaces a password: it gets you back into this workspace from any device. A copy went to N — but if that email never arrives, this screen is all there is.',
+  'Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на {email} — но если письмо не дойдёт, останется только этот экран.':
+    'The key replaces a password: it gets you back into this workspace from any device. A copy went to {email} — but if that email never arrives, this screen is all there is.',
   'Проект не берётся': 'We are not taking this project',
   'Проект закрыт': 'Project closed',
   'Комплект у вас': 'The set is yours',
@@ -345,8 +345,8 @@ export const en: Record<string, string> = {
     'Payment details have not been published yet — the bureau will send them by email.',
   'Отметку об оплате ставит бюро, увидев поступление: приёма платежей на сайте нет, и делать вид, что есть, значило бы обещать сверку, которой не существует.':
     'The bureau marks an invoice paid once it sees the money arrive: there is no payment processing on this site, and pretending otherwise would promise a reconciliation that does not exist.',
-  'Нижняя граница чека за эту стадию — F C. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.':
-    'The floor price for this stage is F C. By area it would come out lower, but siting, approvals and team coordination on a small building cost almost as much as on a large one.',
+  'Нижняя граница чека за эту стадию — {floor} {currency}. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.':
+    'The floor price for this stage is {floor} {currency}. By area it would come out lower, but siting, approvals and team coordination on a small building cost almost as much as on a large one.',
   'за общие системы дома': 'for shared building systems',
   'по уровню цен страны': 'for the country’s price level',
 
@@ -364,8 +364,8 @@ export const en: Record<string, string> = {
   'Команда пока не собрана': 'The team is not assembled yet',
   'Состав под ваш проект не сошёлся. Бюро разбирается; ключ доступа у вас, по нему вы вернётесь в проект.':
     'A team for your project did not come together. The bureau is looking into it; you have your key and can come back to the project with it.',
-  'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «N». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.':
-    'There are specialists for your project, but none of them holds signing rights in N. A documentation set without a local signature has no force — the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
+  'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «{country}». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.':
+    'There are specialists for your project, but none of them holds signing rights in {country}. A documentation set without a local signature has no force — the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
 
   'Этажей / площадь': 'Storeys / area',
 
@@ -379,7 +379,7 @@ export const en: Record<string, string> = {
 
   // --- Разбор балла ---
   Портфолио: 'Portfolio',
-  'Поставка · вес N%': 'Delivery · weight N%',
+  'Поставка · вес {percent}%': 'Delivery · weight {percent}%',
   'Истории поставок нет — Quality это портфолио':
     'No delivery history yet — Quality is the portfolio',
   'Соответствие проекту': 'Fit to the project',
@@ -491,7 +491,7 @@ export const en: Record<string, string> = {
   'Сказанное идёт бюро, а не команде. Так и задумано: бюро отвечает перед вами за проект целиком и переводит вашу просьбу в постановку задач. Просьба, отданная исполнителю напрямую, ломает ровно то, за что вы платите — ответственность за результат.':
     'What you write goes to the bureau, not to the team. That is deliberate: the bureau answers to you for the project as a whole and turns your request into task specifications. A request handed straight to a contributor breaks precisely what you are paying for — accountability for the result.',
   'Что сказать, подтверждая (необязательно)': 'Anything to say as you confirm (optional)',
-  'Подтвердить стадию «N»': 'Confirm the “N” stage',
+  'Подтвердить стадию «{stage}»': 'Confirm the “{stage}” stage',
   'Подтверждение откроет команде следующую стадию. Пока его нет, работа по ней не начинается — это не задержка, а защита: документация по неподтверждённой концепции переделывается целиком. Если есть замечания, не подтверждайте, а напишите бюро ниже: оно превратит их в круг правок.':
     'Confirming opens the next stage for the team. Until you do, no work on it begins — that is not a delay but a safeguard: documentation built on an unconfirmed concept gets redone in full. If you have comments, do not confirm — write to the bureau below and it will turn them into a round of revisions.',
   'м²': 'm²',
@@ -540,14 +540,14 @@ export const en: Record<string, string> = {
     'construction work, supply of materials or site supervision;',
   'получение разрешения как гарантированный результат: Бюро готовит и подаёт комплект, решение принимает орган;':
     'a permit as a guaranteed outcome: the Bureau prepares and submits the set, the authority makes the decision;',
-  'работу за пределами продуктовой границы — здания выше N этажей и зоны стандартного (тяжёлого) регулирования Бюро не берёт;':
-    'work outside the product boundary — the Bureau does not take buildings above N storeys or sites in standard (heavy) regulation zones;',
-  'выпуск разрешительной документации вне стран, где у команды есть право подписи. Сейчас это N. Проект вне этого перечня Бюро принять не может — не по договорённости, а потому что подписать комплект будет некому.':
-    'issuing permit documentation outside the countries where the team holds signing rights. Currently those are N. A project outside that list is one the Bureau cannot take — not as a matter of policy, but because there would be no one to sign the set.',
+  'работу за пределами продуктовой границы — здания выше {n} этажей и зоны стандартного (тяжёлого) регулирования Бюро не берёт;':
+    'work outside the product boundary — the Bureau does not take buildings above {n} storeys or sites in standard (heavy) regulation zones;',
+  'выпуск разрешительной документации вне стран, где у команды есть право подписи. Сейчас это {countries}. Проект вне этого перечня Бюро принять не может — не по договорённости, а потому что подписать комплект будет некому.':
+    'issuing permit documentation outside the countries where the team holds signing rights. Currently those are {countries}. A project outside that list is one the Bureau cannot take — not as a matter of policy, but because there would be no one to sign the set.',
 
   '3. Состав комплекта по стадиям': '3. What the set contains, by stage',
-  'Работа идёт стадиями: N. Заказчик выбирает целевую стадию в брифе; стадии за ней не заказываются и не оплачиваются.':
-    'Work proceeds in stages: N. The Client selects the target stage in the brief; stages beyond it are neither ordered nor paid for.',
+  'Работа идёт стадиями: {stages}. Заказчик выбирает целевую стадию в брифе; стадии за ней не заказываются и не оплачиваются.':
+    'Work proceeds in stages: {stages}. The Client selects the target stage in the brief; stages beyond it are neither ordered nor paid for.',
   'Состав задач каждой стадии определяется формой проекта — типологией, материальной системой, рельефом, подключением к сетям — и виден Заказчику в кабинете проекта до начала работ.':
     'The tasks in each stage follow from the shape of the project — typology, structural system, terrain, utility connection — and are visible to the Client in the project workspace before work begins.',
 
@@ -724,4 +724,35 @@ export const en: Record<string, string> = {
   '11. Язык документа': '11. Language of this document',
   'Документ существует на русском и английском языках, и обе редакции равнозначны. При расхождении преимущество имеет та, на языке которой документ был показан вам в момент согласия; язык согласия фиксируется вместе с ним.':
     'This document exists in Russian and in English, and both revisions are equally authentic. Where they differ, the one in the language in which it was shown to you at the moment of consent prevails; the language of consent is recorded alongside it.',
+
+  // --- Письма ---
+  //
+  // Язык письма берётся из согласия, а не из заголовка браузера: у фонового
+  // задания браузера нет вовсе.
+  '{name}, здравствуйте.': 'Dear {name},',
+  'Счёт за стадию «{stage}» — {project}': 'Invoice for the “{stage}” stage — {project}',
+  'По проекту «{project}» выставлен счёт за стадию «{stage}»: {amount} {currency}.':
+    'An invoice has been issued for the “{stage}” stage of the {project} project: {amount} {currency}.',
+  'Стадия оплачивается до начала работы по ней: команда — живые люди, и их время начинается в тот момент, когда открывается задача. Разбор суммы — из чего она сложилась — виден в кабинете проекта.':
+    'A stage is paid for before work on it begins: the team are real people, and their time starts the moment a task opens. The breakdown of the amount — what it is made of — is visible in the project workspace.',
+  'Реквизиты:': 'Payment details:',
+  'Реквизиты пришлём ответом на это письмо.':
+    'We will send payment details in reply to this email.',
+  'Кабинет проекта:': 'Project workspace:',
+
+  'Стадия «{stage}» ждёт вашего подтверждения — {project}': 'The “{stage}” stage awaits your confirmation — {project}',
+  'По проекту «{project}» закончена стадия «{stage}»: бюро приняло все её задачи. Это означает «сделано так, как поставлено».':
+    'The “{stage}” stage of the {project} project is complete: the bureau has accepted every task in it. That means “done as specified”.',
+  'Осталось ваше слово — «заказано было именно это». Пока его нет, следующая стадия не начинается: разрабатывать документацию по неподтверждённой концепции значит готовить переделку.':
+    'What remains is your word — “this is what was ordered”. Until it arrives the next stage does not begin: developing documentation on an unconfirmed concept is preparing rework.',
+  'Если есть замечания — не подтверждайте, а напишите нам из кабинета: мы переведём их в круг правок.':
+    'If you have comments, do not confirm — write to us from the workspace and we will turn them into a round of revisions.',
+
+  'Новая задача: {title}': 'New task: {title}',
+  'Вам открыта задача: {title}.': 'A task has been opened for you: {title}.',
+  'Срок: до {due}.': 'Due: {due}.',
+  'Срок: {hours} ч с этого момента.': 'Due: {hours} h from now.',
+  'Постановка и входные данные — на доске работ. Взять в работу нужно там же: срок считается от открытия задачи, а не от того, когда вы её увидели.':
+    'The specification and the input files are on your work board. Claim it there as well: the clock runs from when the task opened, not from when you saw it.',
+  'Доска работ:': 'Work board:',
 }

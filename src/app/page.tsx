@@ -1,4 +1,5 @@
 import { Link } from '@/components/Link'
+import { fill } from '@/lib/i18n/fill'
 import { translator } from '@/lib/i18n'
 import { STAGES } from '@/lib/labels'
 import { MAX_STOREYS, PORTFOLIO_THRESHOLD, JURISDICTIONS, JURISDICTION_NAMES } from '@/engine/taxonomy'
@@ -162,10 +163,9 @@ export default async function Home() {
                 <div className="label">{t('Специалист')}</div>
                 <h3 style={{ marginTop: 12 }}>{t('Я веду разделы')}</h3>
                 <p className="muted" style={{ marginTop: 10 }}>
-                  {t('Заявка с двенадцатью измерениями. Порог по портфолио — N/10.').replace(
-                    'N',
-                    String(PORTFOLIO_THRESHOLD),
-                  )}
+                  {fill(t('Заявка с двенадцатью измерениями. Порог по портфолио — {threshold}/10.'), {
+                    threshold: PORTFOLIO_THRESHOLD,
+                  })}
                 </p>
                 <Link locale={locale} href="/specialists" className="btn">{t('Подать заявку')}</Link>
               </div>

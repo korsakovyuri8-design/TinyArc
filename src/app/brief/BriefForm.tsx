@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { fill } from '@/lib/i18n/fill'
 import {
   CLIMATE_ZONES,
   DOC_STAGES,
@@ -79,7 +80,7 @@ function BriefFields({
             label="Этажей"
             name="storeys"
             error={errors.storeys}
-            hint={t('Bureau ведёт здания до N этажей').replace('N', String(MAX_STOREYS))}
+            hint={fill(t('Bureau ведёт здания до {n} этажей'), { n: MAX_STOREYS })}
           >
             <input id="storeys" name="storeys" type="number" min={1} max={60} defaultValue={values.storeys ?? 2} />
           </Field>

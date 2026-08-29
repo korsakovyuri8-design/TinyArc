@@ -1,4 +1,5 @@
 import { Link } from '@/components/Link'
+import { fill } from '@/lib/i18n/fill'
 import { translator } from '@/lib/i18n'
 import { pageMetadata } from '@/lib/i18n/metadata'
 import { localeHref } from '@/lib/i18n/redirect'
@@ -109,9 +110,9 @@ export default async function ProjectPage({
               {project.clientKey}
             </p>
             <p className="muted" style={{ marginBottom: 0 }}>
-              {t('Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на N — но если письмо не дойдёт, останется только этот экран.').replace(
-                'N',
-                project.clientEmail,
+              {fill(
+                t('Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на {email} — но если письмо не дойдёт, останется только этот экран.'),
+                { email: project.clientEmail },
               )}
             </p>
           </div>
@@ -403,9 +404,10 @@ export default async function ProjectPage({
                     <p className="dim" style={{ marginTop: 10, fontSize: '0.85rem' }}>
                       {invoice.basis.atFloor ? (
                         <>
-                          {t('Нижняя граница чека за эту стадию — F C. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.')
-                            .replace('F', String(invoice.basis.floor))
-                            .replace('C', invoice.currency)}
+                          {fill(
+                            t('Нижняя граница чека за эту стадию — {floor} {currency}. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.'),
+                            { floor: invoice.basis.floor, currency: invoice.currency },
+                          )}
                         </>
                       ) : (
                         <>
@@ -583,9 +585,12 @@ function IncompleteRun({
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
         <div className="label" style={{ color: 'var(--fail)' }}>{t('Команда пока не собрана')}</div>
         <p style={{ marginTop: 12, marginBottom: 0 }}>
-          {t(
-            'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «N». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.',
-          ).replace('N', t(JURISDICTION_NAMES[jurisdiction] ?? jurisdiction))}
+          {fill(
+            t(
+              'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «{country}». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.',
+            ),
+            { country: t(JURISDICTION_NAMES[jurisdiction] ?? jurisdiction) },
+          )}
         </p>
       </div>
     )

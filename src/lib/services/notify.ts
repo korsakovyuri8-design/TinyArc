@@ -15,9 +15,17 @@
  *
  * Границу между сторонами письма не пересекают (п.13): заказчику не уходит
  * ничего о конкретных исполнителях, специалисту — ничего о заказчике.
+ *
+ * Язык письма — тот, на котором человек читал документы, когда соглашался. Это
+ * не угадывание по заголовку браузера, которого у фонового задания нет вовсе:
+ * язык записан вместе с согласием (п.13а). Заказчик, оформивший бриф
+ * по-английски, получает по-английски и счёт.
  */
 
 import { DOC_STAGE_LABELS } from '../labels'
+import { translate } from '../i18n/dict'
+import { fill } from '../i18n/fill'
+import { DEFAULT_LOCALE, isLocale, localePath, type Locale } from '../i18n/locale'
 import { absolute, siteUrl } from '../site'
 import { mailer } from '../mail'
 import { prisma } from '../db'
@@ -28,6 +36,11 @@ import type { DocStage } from '@/engine/taxonomy'
 const MAIL_CONCURRENCY = 5
 
 type Kind = 'invoice_issued' | 'stage_awaiting' | 'ticket_open'
+
+/** Язык, на котором человек согласился с документами. По умолчанию русский. */
+function localeOf(consentLocale: string): Locale {
+  return isLocale(consentLocale) ? consentLocale : DEFAULT_LOCALE
+}
 
 /**
  * Отправить письмо не более одного раза на повод.
@@ -73,31 +86,46 @@ const SIGNATURE = ['', 'TinyArc Cloud Bureau', siteUrl()]
 async function invoiceIssued(invoiceId: string): Promise<void> {
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
-    include: { project: { select: { title: true, clientEmail: true, clientName: true } } },
+    include: {
+      project: {
+        select: { title: true, clientEmail: true, clientName: true, consentLocale: true },
+      },
+    },
   })
 
   if (!invoice || invoice.status !== 'issued') return
 
   const details = company()
-  const stage = DOC_STAGE_LABELS[invoice.stage as DocStage] ?? invoice.stage
+  const locale = localeOf(invoice.project.consentLocale)
+  const t = (text: string) => translate(text, locale)
+  const stage = t(DOC_STAGE_LABELS[invoice.stage as DocStage] ?? invoice.stage)
 
   await once('invoice_issued', invoice.id, invoice.project.clientEmail, async () => {
     await mailer().send({
       to: invoice.project.clientEmail,
-      subject: `Счёт за стадию «${stage}» — ${invoice.project.title}`,
+      subject: fill(t('Счёт за стадию «{stage}» — {project}'), {
+        stage,
+        project: invoice.project.title,
+      }),
       body: [
-        `${invoice.project.clientName}, здравствуйте.`,
+        fill(t('{name}, здравствуйте.'), { name: invoice.project.clientName }),
         '',
-        `По проекту «${invoice.project.title}» выставлен счёт за стадию «${stage}»:`,
-        `${invoice.amount} ${invoice.currency}.`,
+        fill(t('По проекту «{project}» выставлен счёт за стадию «{stage}»: {amount} {currency}.'), {
+          project: invoice.project.title,
+          stage,
+          amount: invoice.amount,
+          currency: invoice.currency,
+        }),
         '',
-        'Стадия оплачивается до начала работы по ней: команда — живые люди, и их',
-        'время начинается в тот момент, когда открывается задача. Разбор суммы —',
-        'из чего она сложилась — виден в кабинете проекта.',
+        t(
+          'Стадия оплачивается до начала работы по ней: команда — живые люди, и их время начинается в тот момент, когда открывается задача. Разбор суммы — из чего она сложилась — виден в кабинете проекта.',
+        ),
         '',
-        details.bank ? `Реквизиты:\n${details.bank}` : 'Реквизиты пришлём ответом на это письмо.',
+        details.bank
+          ? `${t('Реквизиты:')}\n${details.bank}`
+          : t('Реквизиты пришлём ответом на это письмо.'),
         '',
-        `Кабинет проекта: ${absolute('/enter')}`,
+        `${t('Кабинет проекта:')} ${absolute(localePath('/enter', locale))}`,
         ...SIGNATURE,
       ].join('\n'),
     })
@@ -108,12 +136,14 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
 async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { title: true, clientEmail: true, clientName: true },
+    select: { title: true, clientEmail: true, clientName: true, consentLocale: true },
   })
 
   if (!project) return
 
-  const label = DOC_STAGE_LABELS[stage] ?? stage
+  const locale = localeOf(project.consentLocale)
+  const t = (text: string) => translate(text, locale)
+  const label = t(DOC_STAGE_LABELS[stage] ?? stage)
 
   await once('stage_awaiting', `${projectId}:${stage}`, project.clientEmail, async () => {
     await mailer().send({
@@ -148,14 +178,24 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
 async function ticketOpen(ticketId: string): Promise<void> {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
-    include: { specialist: { select: { email: true, displayName: true } } },
+    include: {
+      specialist: { select: { email: true, displayName: true, consentLocale: true } },
+    },
   })
 
   if (!ticket?.specialist || ticket.status !== 'open') return
 
+  const locale = localeOf(ticket.specialist.consentLocale)
+  const t = (text: string) => translate(text, locale)
+
   const due = ticket.dueAt
-    ? `Срок: до ${ticket.dueAt.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}.`
-    : `Срок: ${ticket.slaHours} ч с этого момента.`
+    ? fill(t('Срок: до {due}.'), {
+        due: ticket.dueAt.toLocaleString(locale === 'ru' ? 'ru-RU' : 'en-GB', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+        }),
+      })
+    : fill(t('Срок: {hours} ч с этого момента.'), { hours: ticket.slaHours })
 
   await once('ticket_open', ticket.id, ticket.specialist.email, async () => {
     await mailer().send({
