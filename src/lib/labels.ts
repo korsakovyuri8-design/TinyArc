@@ -179,6 +179,7 @@ export const SPECIALIST_STATUS_LABELS: Record<string, string> = {
   active: 'In the pool',
   paused: 'Paused at their request',
   rejected: 'Below the portfolio threshold',
+  removed: 'Anonymised at their request',
 }
 
 export const OUTCOME_LABELS: Record<string, string> = {

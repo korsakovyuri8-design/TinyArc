@@ -10,6 +10,7 @@ import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
 import { OpsAction } from '@/app/ops/OpsForms'
 import { editSpecialist, setSubscription } from './actions'
+import { anonymiseProfile } from '@/app/ops/actions'
 
 export const metadata = { title: 'Specialist profile — bureau panel' }
 
@@ -110,6 +111,45 @@ export default async function SpecialistPage({
             ))}
           </div>
         </div>
+
+        <div className="divider" style={{ marginTop: 44 }} />
+
+        {/*
+          Право из политики, а не удобство панели. Обещание обезличить профиль
+          дано документом; кнопка — то, чем оно исполняется. Стоит выше правки
+          профиля, потому что после обезличивания править нечего.
+        */}
+        <h2>At the person’s request</h2>
+
+        <p className="muted" style={{ marginTop: 14, maxWidth: '62ch' }}>
+          Anonymising removes the name, the address, the portfolio link and the works, and
+          retires the access key. Delivery metrics stay: they are already anonymous and they
+          hold the history of projects other people worked on. This cannot be undone.
+        </p>
+
+        {row.removedAt ? (
+          <div className="panel" style={{ marginTop: 20 }}>
+            <div className="label">Anonymised</div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              {date(row.removedAt)} — the profile holds no personal data any more.
+            </p>
+          </div>
+        ) : (
+          <div className="panel" style={{ marginTop: 20, borderColor: 'var(--fail)' }}>
+            <OpsAction
+              action={anonymiseProfile}
+              hidden={{ specialistId: row.id }}
+              label="Anonymise the profile"
+            >
+              <input
+                type="text"
+                name="reason"
+                placeholder="Where the request came from"
+                style={{ marginBottom: 10 }}
+              />
+            </OpsAction>
+          </div>
+        )}
 
         <div className="divider" style={{ marginTop: 44 }} />
 

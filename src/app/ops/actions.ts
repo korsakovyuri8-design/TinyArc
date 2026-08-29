@@ -28,6 +28,7 @@ import { readIntake } from '@/lib/intake/map'
 import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
+import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
 
 export type OpsState = { error?: string; message?: string }
 
@@ -751,5 +752,74 @@ export async function voidProjectInvoice(_prev: OpsState, formData: FormData): P
 
     console.error('The invoice was not voided:', error)
     return { error: 'Voiding the invoice failed.' }
+  }
+}
+
+/**
+ * Обезличить профиль специалиста по его обращению (п.13).
+ *
+ * Действие необратимо, поэтому оператор пишет, откуда взялось требование:
+ * через полгода «почему у нас тут Former specialist» — вопрос, на который
+ * должен быть ответ. Причина остаётся в записях, как и у выхода из проекта.
+ */
+export async function anonymiseProfile(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const specialistId = String(formData.get('specialistId') ?? '')
+  const reason = String(formData.get('reason') ?? '').trim()
+
+  if (reason.length < 3) {
+    return { error: 'Write where the request came from: this cannot be undone.' }
+  }
+
+  try {
+    await anonymiseSpecialist(specialistId)
+  } catch (error) {
+    if (error instanceof NotErasable) return { error: error.message }
+
+    console.error('Профиль не обезличен:', error)
+    return { error: 'Anonymising the profile failed.' }
+  }
+
+  revalidatePath('/ops/pool')
+  revalidatePath(`/ops/pool/${specialistId}`)
+
+  return {
+    message: 'The profile is anonymised: the key no longer works, the delivery metrics remain.',
+  }
+}
+
+/**
+ * Удалить данные закрытого проекта по обращению заказчика (п.13).
+ *
+ * Счета остаются: их хранение — обязанность перед страной регистрации, и
+ * обращение человека её не снимает. Об этом сказано в самом сообщении, иначе
+ * оператор узнает об этом от заказчика, а не от нас.
+ */
+export async function eraseProjectData(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const reason = String(formData.get('reason') ?? '').trim()
+
+  if (reason.length < 3) {
+    return { error: 'Write where the request came from: this cannot be undone.' }
+  }
+
+  try {
+    await eraseProject(projectId)
+  } catch (error) {
+    if (error instanceof NotErasable) return { error: error.message }
+
+    console.error('Данные проекта не удалены:', error)
+    return { error: 'Erasing the project data failed.' }
+  }
+
+  revalidatePath('/ops/projects')
+  revalidatePath(`/ops/projects/${projectId}`)
+
+  return {
+    message:
+      'The data is erased: contacts, brief, correspondence and files are gone. Invoices remain — keeping them is an obligation of the country of registration.',
   }
 }

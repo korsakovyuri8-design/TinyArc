@@ -38,6 +38,7 @@ import {
   checkTicketCompleteness,
   draftTicketNudge,
   draftTicketSpec,
+  eraseProjectData,
   rerunAssembly,
   resolveTicketConflict,
   returnTicket,
@@ -223,6 +224,50 @@ export default async function OpsProjectPage({
             </table>
           </div>
         )}
+
+          {/*
+            Право заказчика на удаление данных (п.13). Стоит только на
+            закрытом проекте: пока проект идёт, стереть его материалы значит
+            остановить работу людей, которые по ним чертят прямо сейчас.
+          */}
+          {(project.status === 'delivered' || project.status === 'rejected') && (
+            <>
+              <h2>At the client’s request</h2>
+              <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
+                Erasing removes the contacts, the brief, the correspondence, the task briefs
+                and the files — from the storage too, not only from the database. Invoices
+                remain: keeping them is an obligation of the country of registration, and a
+                request does not lift it. This cannot be undone.
+              </p>
+
+              {project.dataErasedAt ? (
+                <div className="panel" style={{ marginBottom: 36 }}>
+                  <div className="label">Erased</div>
+                  <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+                    {date(project.dataErasedAt)} — nothing personal is left on this project.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  className="panel"
+                  style={{ marginBottom: 36, borderColor: 'var(--fail)' }}
+                >
+                  <OpsAction
+                    action={eraseProjectData}
+                    hidden={{ projectId: project.id }}
+                    label="Erase the project data"
+                  >
+                    <input
+                      type="text"
+                      name="reason"
+                      placeholder="Where the request came from"
+                      style={{ marginBottom: 10 }}
+                    />
+                  </OpsAction>
+                </div>
+              )}
+            </>
+          )}
 
         {/* --- Тикеты -------------------------------------------------------- */}
         {project.tickets.length > 0 && (

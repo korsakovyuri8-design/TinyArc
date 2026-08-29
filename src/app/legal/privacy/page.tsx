@@ -117,7 +117,7 @@ export default async function PrivacyPage() {
         <Article title="7. How long we keep data">
           <ul>
             <li>project data and correspondence with the bureau — for the life of the project and three years after it closes: that is how long claims about issued documentation live;</li>
-            <li>a specialist’s profile — while they are in the pool; on leaving, the profile is anonymised and delivery metrics remain in anonymised form;</li>
+            <li>a specialist’s profile — while they are in the pool; on request the profile is anonymised: the name, the address, the portfolio link and the works go, the access key is retired, and the delivery metrics remain in the anonymised form they already had;</li>
             <li>records of invoices and confirmations — for the period required of accounting records in the country of registration.</li>
           </ul>
         </Article>
@@ -132,6 +132,8 @@ export default async function PrivacyPage() {
             <li>object to processing based on legitimate interest;</li>
             <li>lodge a complaint with a data protection supervisory authority — in Montenegro that is the Agency for Personal Data Protection, or the corresponding authority where you are located.</li>
           </ul>
+          <p>These are not statements of intent. Anonymising a profile and erasing the data of a closed project are single actions in the bureau panel, and each records the date on which it was carried out. What stays after erasure is named in advance: invoices, because keeping them is an obligation of the country of registration, and task events, because the delivery metrics of other people are computed from them.</p>
+
           <p>A note for specialists: there is no field anywhere, the Bureau included, for rating a person. No opinions about you are stored in the system — only task events and what you declared yourself.</p>
         </Article>
 
