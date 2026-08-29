@@ -6,6 +6,9 @@ import { DISCIPLINE_LABELS } from '@/lib/labels'
 import { alertsForBureau } from '@/lib/services/pm'
 import { lostProjects } from '@/lib/services/demand'
 import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
+import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
+import { DOC_STAGE_LABELS } from '@/lib/labels'
+import type { DocStage } from '@/engine/taxonomy'
 import { roleName } from '@/lib/gap'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import { isOperator } from '@/lib/session'
@@ -42,7 +45,11 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions] = await Promise.all([lostProjects(), waitingQuestions()])
+  const [lost, questions, approvals] = await Promise.all([
+    lostProjects(),
+    waitingQuestions(),
+    awaitingApproval(),
+  ])
 
   const conflicts = alerts.filter((a) => a.kind === 'conflict')
   const heat = projectHeat(alerts)
@@ -139,6 +146,51 @@ export default async function OpsPage() {
                       {alertAudience(alert.kind) === 'bureau' ? 'бюро' : 'специалисту'}
                     </td>
                     <td className="dim">{ALERT_ACTIONS[alert.kind]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="divider" style={{ marginTop: 48 }} />
+
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h2>Стадии ждут заказчика</h2>
+          {approvals.length > 0 && <span className="tag tag-wait">{approvals.length}</span>}
+        </div>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+          Работа принята, следующая стадия не открывается: ждём слова заказчика. Его молчание
+          останавливает выпуск не хуже просрочки исполнителя, и висеть оно должно здесь, а не
+          у него в кабинете.
+        </p>
+
+        {approvals.length === 0 ? (
+          <p className="dim">Никто не ждёт: все законченные стадии подтверждены.</p>
+        ) : (
+          <div className="table-scroll panel" style={{ padding: 0 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Проект</th>
+                  <th>Стадия</th>
+                  <th>Ждём</th>
+                </tr>
+              </thead>
+              <tbody>
+                {approvals.map((a) => (
+                  <tr key={`${a.projectId}-${a.stage}`}>
+                    <td>
+                      <Link href={`/ops/projects/${a.projectId}`}>{a.projectTitle}</Link>
+                    </td>
+                    <td className="dim">{DOC_STAGE_LABELS[a.stage as DocStage] ?? a.stage}</td>
+                    <td className="num">
+                      <span
+                        className={a.hours > APPROVAL_NUDGE_HOURS ? 'tag tag-fail' : 'tag tag-wait'}
+                      >
+                        {Math.round(a.hours)} ч
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

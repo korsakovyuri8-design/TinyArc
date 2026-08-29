@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  awaitingClient,
   canOpen,
   deliveryDeltaFor,
   dueDate,
   openable,
   planTickets,
+  stageComplete,
   stagesOf,
   teammateRoles,
   topologicalOrder,
@@ -92,6 +94,7 @@ describe('план графа тикетов', () => {
     const tickets: RelayTicket[] = plan.map((t) => ({
       id: t.key,
       status: 'blocked',
+      stage: t.stage,
       dependsOn: t.dependsOn,
     }))
 
@@ -101,8 +104,8 @@ describe('план графа тикетов', () => {
   it('замечает цикл, а не зацикливается', () => {
     expect(
       topologicalOrder([
-        { id: 'a', status: 'blocked', dependsOn: ['b'] },
-        { id: 'b', status: 'blocked', dependsOn: ['a'] },
+        { id: 'a', status: 'blocked', stage: 'permit', dependsOn: ['b'] },
+        { id: 'b', status: 'blocked', stage: 'permit', dependsOn: ['a'] },
       ]),
     ).toEqual([])
   })
@@ -127,8 +130,8 @@ describe('стадийные гейты', () => {
 
   it('открывает следующий тикет ровно тогда, когда предыдущий принят', () => {
     const tickets: RelayTicket[] = [
-      { id: 'survey', status: 'submitted', dependsOn: [] },
-      { id: 'arch', status: 'blocked', dependsOn: ['survey'] },
+      { id: 'survey', status: 'submitted', stage: 'permit', dependsOn: [] },
+      { id: 'arch', status: 'blocked', stage: 'permit', dependsOn: ['survey'] },
     ]
 
     expect(openable(tickets)).toEqual([])
@@ -140,9 +143,9 @@ describe('стадийные гейты', () => {
   it('не открывает тикет, у которого принята только часть зависимостей', () => {
     expect(
       openable([
-        { id: 'arch', status: 'accepted', dependsOn: [] },
-        { id: 'struct', status: 'in_progress', dependsOn: ['arch'] },
-        { id: 'permitting', status: 'blocked', dependsOn: ['arch', 'struct'] },
+        { id: 'arch', status: 'accepted', stage: 'permit', dependsOn: [] },
+        { id: 'struct', status: 'in_progress', stage: 'permit', dependsOn: ['arch'] },
+        { id: 'permitting', status: 'blocked', stage: 'permit', dependsOn: ['arch', 'struct'] },
       ]),
     ).toEqual([])
   })
@@ -215,5 +218,60 @@ describe('обезличивание', () => {
 
     expect(roles).toEqual(['structural', 'mep'])
     expect(JSON.stringify(roles)).not.toContain('other')
+  })
+})
+
+describe('подтверждение стадии заказчиком', () => {
+  const project = (): RelayTicket[] => [
+    { id: 'c1', status: 'accepted', stage: 'concept', dependsOn: [] },
+    { id: 'c2', status: 'accepted', stage: 'concept', dependsOn: ['c1'] },
+    { id: 'p1', status: 'blocked', stage: 'permit', dependsOn: ['c2'] },
+  ]
+
+  it('видит стадию, законченную бюро', () => {
+    expect(stageComplete(project(), 'concept')).toBe(true)
+    expect(stageComplete(project(), 'permit')).toBe(false)
+  })
+
+  it('стадия без задач законченной не считается', () => {
+    expect(stageComplete(project(), 'tender')).toBe(false)
+  })
+
+  /**
+   * Главное здесь. Зависимости приняты, но заказчик молчит — и следующая
+   * стадия не открывается. Разрабатывать документацию по неподтверждённой
+   * концепции значит готовить переделку.
+   */
+  it('не открывает следующую стадию, пока заказчик не подтвердил предыдущую', () => {
+    expect(openable(project(), [])).toEqual([])
+    expect(openable(project(), ['concept'])).toEqual(['p1'])
+  })
+
+  it('называет стадии, ждущие слова заказчика', () => {
+    expect(awaitingClient(project(), [])).toEqual(['concept'])
+    expect(awaitingClient(project(), ['concept'])).toEqual([])
+  })
+
+  it('внутри стадии подтверждение ничего не меняет', () => {
+    // Первая стадия не ждёт ничьего подтверждения: до неё стадий нет.
+    const fresh: RelayTicket[] = [
+      { id: 'c1', status: 'accepted', stage: 'concept', dependsOn: [] },
+      { id: 'c2', status: 'blocked', stage: 'concept', dependsOn: ['c1'] },
+    ]
+
+    expect(openable(fresh, [])).toEqual(['c2'])
+  })
+
+  it('порядок стадий соблюдается: подтверждение поздней не открывает раннюю', () => {
+    const three: RelayTicket[] = [
+      { id: 'c1', status: 'accepted', stage: 'concept', dependsOn: [] },
+      { id: 'p1', status: 'blocked', stage: 'permit', dependsOn: ['c1'] },
+      { id: 't1', status: 'blocked', stage: 'tender', dependsOn: ['p1'] },
+    ]
+
+    // Подтверждение стадии разрешений при неподтверждённой концепции ничего не
+    // открывает: пропускать стадию нельзя ни с какой стороны.
+    expect(openable(three, ['permit'])).toEqual([])
+    expect(openable(three, ['concept'])).toEqual(['p1'])
   })
 })

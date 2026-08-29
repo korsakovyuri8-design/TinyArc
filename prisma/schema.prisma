@@ -168,8 +168,32 @@ model Project {
   directions  DesignDirection[]
   withdrawals Withdrawal[]
   messages    ClientMessage[]
+  approvals   StageApproval[]
 
   @@index([status])
+}
+
+/// Подтверждение стадии заказчиком.
+///
+/// Приёмка бюро означает «сделано как заказано». Подтверждение заказчика —
+/// «заказано было именно это». Второго не существовало: проект шёл от
+/// концепции к документации, ни разу не спросив человека, который платит, и на
+/// пилоте это всплыло бы одной фразой — «я этого не согласовывал».
+///
+/// Стадия закрывается двумя условиями сразу, и следующая до этого не
+/// открывается: разрабатывать документацию по неподтверждённой концепции — это
+/// и есть та переделка, ради устранения которой продукт существует.
+model StageApproval {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  stage      String
+  /// Что сказал заказчик, подтверждая. Может быть пустым.
+  note       String   @default("")
+  approvedAt DateTime @default(now())
+
+  @@unique([projectId, stage])
 }
 
 /// Переписка заказчика с бюро.

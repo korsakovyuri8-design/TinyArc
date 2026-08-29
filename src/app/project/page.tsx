@@ -26,7 +26,8 @@ import { chosenDirection } from '@/lib/services/direction'
 import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
 import { threadOf } from '@/lib/services/dialogue'
-import { ClientDialogue } from './ClientDialogue'
+import { approvedStages, stagesAwaitingClient } from '@/lib/services/approval'
+import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
 
@@ -53,10 +54,12 @@ export default async function ProjectPage({
 
   if (!project) redirect('/enter')
 
-  const [run, direction, thread] = await Promise.all([
+  const [run, direction, thread, pendingStages, approved] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     threadOf(project.id),
+    stagesAwaitingClient(project.id),
+    approvedStages(project.id),
   ])
   const team = run?.slots ?? []
 
@@ -274,6 +277,61 @@ export default async function ProjectPage({
             Как считался отбор
           </Link>
         </div>
+
+        {pendingStages.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            <h2>Ждёт вашего подтверждения</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>
+              Бюро приняло все задачи этой стадии — это значит «сделано как заказано».
+              Подтверждение с вашей стороны значит другое: «заказано было именно это».
+              Пока его нет, следующая стадия не начинается.
+            </p>
+
+            <div className="stack" style={{ gap: 24 }}>
+              {pendingStages.map((stage) => (
+                <div key={stage} className="panel panel-accent">
+                  <div className="label label-accent">
+                    {DOC_STAGE_LABELS[stage as DocStage] ?? stage}
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <StageApproval
+                      stage={stage}
+                      title={DOC_STAGE_LABELS[stage as DocStage] ?? stage}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {approved.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            {/*
+              Заметный блок, а не подпись мелким.
+              После подтверждения форма исчезает вместе со своим сообщением —
+              человек нажал и остался без ответа. Подтверждённое и есть ответ,
+              и увидеть его он должен сразу, а не искать глазами.
+            */}
+            <h2>Вы подтвердили</h2>
+            <div className="row" style={{ gap: 10, marginTop: 16 }}>
+              {approved.map((s) => (
+                <span key={s} className="tag tag-pass">
+                  {DOC_STAGE_LABELS[s as DocStage] ?? s}
+                </span>
+              ))}
+            </div>
+            <p className="hint" style={{ marginTop: 14, maxWidth: '60ch' }}>
+              Команда работает по подтверждённому. Если что-то нужно изменить задним числом —
+              напишите бюро: переделка на поздней стадии стоит дороже, и решать, как её
+              провести, будем вместе.
+            </p>
+          </>
+        )}
 
         <div className="divider" style={{ marginTop: 48 }} />
 

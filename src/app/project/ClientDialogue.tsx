@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { sendToBureau, type ProjectState } from './actions'
+import { approveProjectStage, sendToBureau, type ProjectState } from './actions'
 
 /**
  * Форма разговора с бюро.
@@ -44,6 +44,54 @@ export function ClientDialogue() {
         Сказанное идёт бюро, а не команде. Так и задумано: бюро отвечает перед вами за проект
         целиком и переводит вашу просьбу в постановку задач. Просьба, отданная исполнителю
         напрямую, ломает ровно то, за что вы платите — ответственность за результат.
+      </p>
+    </form>
+  )
+}
+
+/**
+ * Подтверждение стадии.
+ *
+ * Кнопка стоит рядом с тем, что подтверждается, и говорит о последствии до
+ * нажатия, а не после: следующая стадия откроется, и вернуть её обратно
+ * бесплатно уже нельзя. Замечания уводятся в разговор с бюро — там они
+ * становятся кругом правок, а не молчаливым отказом подтвердить.
+ */
+export function StageApproval({ stage, title }: { stage: string; title: string }) {
+  const [state, action, pending] = useActionState<ProjectState, FormData>(
+    approveProjectStage,
+    {},
+  )
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="stage" value={stage} />
+
+      <div className="field">
+        <label htmlFor={`note-${stage}`}>Что сказать, подтверждая (необязательно)</label>
+        <textarea id={`note-${stage}`} name="note" style={{ minHeight: 60 }} />
+      </div>
+
+      <button type="submit" className="btn btn-solid" disabled={pending}>
+        {pending ? '…' : `Подтвердить стадию «${title}»`}
+      </button>
+
+      {state.error && (
+        <div className="hint" style={{ color: 'var(--fail)', marginTop: 10 }}>
+          {state.error}
+        </div>
+      )}
+      {state.message && (
+        <div className="hint" style={{ color: 'var(--accent)', marginTop: 10 }}>
+          {state.message}
+        </div>
+      )}
+
+      <p className="hint" style={{ marginTop: 12 }}>
+        Подтверждение откроет команде следующую стадию. Пока его нет, работа по ней не
+        начинается — это не задержка, а защита: документация по неподтверждённой концепции
+        переделывается целиком. Если есть замечания, не подтверждайте, а напишите бюро ниже:
+        оно превратит их в круг правок.
       </p>
     </form>
   )

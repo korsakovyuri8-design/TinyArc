@@ -17,6 +17,7 @@ import type { Discipline } from '@/engine/taxonomy'
 import { images } from '../images'
 import { prisma } from '../db'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
+import { approvedStages } from './approval'
 
 export class NotYours extends Error {
   constructor() {
@@ -48,6 +49,7 @@ async function relayTickets(projectId: string): Promise<RelayTicket[]> {
   return tickets.map((t) => ({
     id: t.id,
     status: t.status as RelayTicket['status'],
+    stage: t.stage as RelayTicket['stage'],
     dependsOn: t.dependsOn.map((d) => d.prerequisiteId),
   }))
 }
@@ -59,7 +61,15 @@ async function relayTickets(projectId: string): Promise<RelayTicket[]> {
  * перевести тикет в работу нет — руками статус не ставится.
  */
 export async function applyGates(projectId: string): Promise<string[]> {
-  const ready = openable(await relayTickets(projectId))
+  // Подтверждённые заказчиком стадии — второе условие гейта наравне с графом:
+  // разрабатывать документацию по неподтверждённой концепции значит готовить
+  // переделку (п.12б).
+  const [tickets, approved] = await Promise.all([
+    relayTickets(projectId),
+    approvedStages(projectId),
+  ])
+
+  const ready = openable(tickets, approved)
   if (ready.length === 0) return []
 
   const now = new Date()

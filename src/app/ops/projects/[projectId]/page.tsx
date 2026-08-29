@@ -121,6 +121,16 @@ export default async function OpsProjectPage({
           {DOC_STAGE_LABELS[project.targetStage as DocStage]}»
         </p>
 
+        {/*
+          Заказчик и его ключ. Ключ виден здесь по той же причине, по которой
+          виден ключ приглашённого специалиста: при почте-заглушке письмо не
+          уходит, а передать доступ всё равно надо. Панель закрыта паролем.
+        */}
+        <p className="dim" style={{ marginTop: 8, fontSize: '0.85rem' }}>
+          {project.clientName} · {project.clientEmail} · ключ{' '}
+          <span className="num">{project.clientKey}</span>
+        </p>
+
         {project.briefNotes && (
           <div className="panel" style={{ marginTop: 24 }}>
             <div className="label">Бриф клиента</div>

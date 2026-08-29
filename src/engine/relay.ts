@@ -241,16 +241,54 @@ export function canOpen(prerequisiteStatuses: TicketStatus[]): boolean {
 export type RelayTicket = {
   id: string
   status: TicketStatus
+  stage: DocStage
   dependsOn: string[]
 }
 
-/** Тикеты, которые гейт должен открыть прямо сейчас. */
-export function openable(tickets: RelayTicket[]): string[] {
+/**
+ * Стадия, у которой все задачи приняты бюро.
+ *
+ * Это ещё не закрытая стадия — только готовая к подтверждению заказчиком
+ * (п.12б). Разница принципиальная: принятая бюро работа означает «сделано как
+ * заказано», подтверждение заказчика — «заказано было это».
+ */
+export function stageComplete(tickets: RelayTicket[], stage: DocStage): boolean {
+  const inStage = tickets.filter((t) => t.stage === stage)
+
+  return inStage.length > 0 && inStage.every((t) => t.status === 'accepted')
+}
+
+/** Стадии, законченные бюро и ждущие слова заказчика. */
+export function awaitingClient(tickets: RelayTicket[], approved: DocStage[]): DocStage[] {
+  return unique(tickets.map((t) => t.stage))
+    .filter((stage) => !approved.includes(stage))
+    .filter((stage) => stageComplete(tickets, stage))
+    .sort((a, b) => DOC_STAGE_ORDER[a] - DOC_STAGE_ORDER[b])
+}
+
+/**
+ * Тикеты, которые гейт должен открыть прямо сейчас.
+ *
+ * Два условия, а не одно. Первое прежнее: приняты все зависимости по графу.
+ * Второе — заказчик подтвердил каждую предыдущую стадию.
+ *
+ * Второе добавлено не ради формальности. Разрабатывать документацию по
+ * концепции, которую заказчик не подтверждал, — это и есть та переделка, ради
+ * устранения которой продукт существует. Молчание заказчика при этом не
+ * теряется: незакрытая стадия видна бюро отдельной очередью, и оно спрашивает.
+ */
+export function openable(tickets: RelayTicket[], approved: DocStage[] = []): string[] {
   const status = new Map(tickets.map((t) => [t.id, t.status]))
+
+  const earlierStagesApproved = (stage: DocStage): boolean =>
+    unique(tickets.map((t) => t.stage))
+      .filter((s) => DOC_STAGE_ORDER[s] < DOC_STAGE_ORDER[stage])
+      .every((s) => approved.includes(s))
 
   return tickets
     .filter((t) => t.status === 'blocked')
     .filter((t) => canOpen(t.dependsOn.map((id) => status.get(id) ?? 'blocked')))
+    .filter((t) => earlierStagesApproved(t.stage))
     .map((t) => t.id)
 }
 
