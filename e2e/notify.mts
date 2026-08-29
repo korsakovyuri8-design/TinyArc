@@ -42,6 +42,7 @@ for (const kind of [
   'conflict_resolved',
   'ticket_comment',
   'application_declined',
+  'invoice_paid',
 ]) {
   check(byKind(kind).length > 0, `повод «${kind}» дошёл до письма: ${byKind(kind).length}`)
 }
@@ -66,7 +67,7 @@ const specialistEmails = new Set(
   (await prisma.specialist.findMany({ select: { email: true } })).map((s) => s.email),
 )
 
-const clientKinds = ['invoice_issued', 'stage_awaiting', 'client_answer']
+const clientKinds = ['invoice_issued', 'stage_awaiting', 'client_answer', 'invoice_paid']
 const misdirected = sent.filter((n) =>
   clientKinds.includes(n.kind) ? !clientEmails.has(n.email) : !specialistEmails.has(n.email),
 )

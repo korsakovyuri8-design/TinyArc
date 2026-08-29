@@ -35,6 +35,7 @@ import {
   clientAnswered,
   conflictResolved,
   deliveryNote,
+  invoicePaid,
   ticketCommented,
   ticketReturned,
 } from '@/lib/services/notify'
@@ -735,6 +736,14 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
 
   try {
     const stage = await markPaid(invoiceId, String(formData.get('note') ?? ''))
+
+    // Заказчик перевёл деньги и до сих пор не знал, дошли ли: приёма платежей
+    // нет, отметку ставим мы. Молчание он читает как «деньги пропали».
+    const told = await invoicePaid(invoiceId).catch((error) => {
+      console.error('Письмо об оплате не ушло:', error)
+      return 'failed' as const
+    })
+
     const opened = await applyGates(projectId)
     await refreshProjectStatus(projectId)
 
@@ -752,12 +761,12 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
     revalidatePath(`/ops/projects/${projectId}`)
     revalidatePath('/project')
 
-    return {
-      message:
-        opened.length > 0
-          ? `Payment marked. Tasks opened: ${opened.length}.`
-          : 'The payment is marked. Tasks open once the rest of the gate’s conditions are met.',
-    }
+    const marked =
+      opened.length > 0
+        ? `Payment marked. Tasks opened: ${opened.length}.`
+        : 'The payment is marked. Tasks open once the rest of the gate’s conditions are met.'
+
+    return { message: `${marked} ${deliveryNote(told, 'The client')}` }
   } catch (error) {
     if (error instanceof BillingRefused) return { error: error.message }
 

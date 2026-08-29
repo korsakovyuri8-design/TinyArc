@@ -43,6 +43,7 @@ type Kind =
   | 'conflict_resolved'
   | 'ticket_comment'
   | 'application_declined'
+  | 'invoice_paid'
 
 /**
  * Что случилось с письмом.
@@ -164,6 +165,60 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
         details.bank
           ? `Payment details:\n${details.bank}`
           : 'We will send payment details in reply to this email.',
+        '',
+        `Project workspace: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
+}
+
+/**
+ * Платёж отмечен: деньги дошли.
+ *
+ * Приёма платежей в продукте нет — отметку ставит человек в бюро, увидев
+ * поступление (п.14а). Значит, для заказчика перевод уходит в тишину: банк
+ * сказал «отправлено», а дошло ли и засчитано ли, знает только бюро. Молчание
+ * тут читается однозначно — деньги пропали, — и следующим действием человек
+ * пишет нам спрашивать. Письма о счёте это не закрывает: оно было про то, что
+ * платить, а не про то, что заплачено.
+ *
+ * Про открытие стадии письмо не обещает ничего. Оплата — третий гейт наравне с
+ * графом и подтверждением (п.14а), и «стадия открыта» было бы неправдой ровно
+ * там, где не закрыт один из двух других. Сказано то, что верно всегда: деньги
+ * засчитаны, от заказчика больше ничего не нужно, остальное видно в кабинете.
+ */
+export async function invoicePaid(invoiceId: string): Promise<Delivery> {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+    include: { project: { select: { title: true, clientEmail: true, clientName: true } } },
+  })
+
+  if (!invoice || invoice.status !== 'paid') return 'skipped'
+
+  const stage = DOC_STAGE_LABELS[invoice.stage as DocStage] ?? invoice.stage
+
+  return once('invoice_paid', invoice.id, invoice.project.clientEmail, async () => {
+    await mailer().send({
+      to: invoice.project.clientEmail,
+      subject: fill('Payment received — “{stage}”, {project}', {
+        stage,
+        project: invoice.project.title,
+      }),
+      body: [
+        fill('Dear {name},', { name: invoice.project.clientName }),
+        '',
+        fill(
+          'We have received your payment for the “{stage}” stage of {project}: {amount} {currency}. The invoice is settled and nothing further is needed from you.',
+          {
+            project: invoice.project.title,
+            stage,
+            amount: invoice.amount,
+            currency: invoice.currency,
+          },
+        ),
+        '',
+        'Payment is one of the three conditions for a stage to open; the other two are the previous stage being accepted and confirmed by you. Where this stage stands right now is on the project workspace — it says which of the three is still outstanding, if any.',
         '',
         `Project workspace: ${absolute('/enter')}`,
         ...SIGNATURE,
