@@ -65,6 +65,16 @@ export const metadata: Metadata = {
     title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
     description: DESCRIPTION,
   },
+  /*
+   * Карточку собирает opengraph-image.tsx; здесь сказано только, какого она
+   * размера в X. Без этой строки ссылка приходит туда узкой строкой с
+   * миниатюрой — то есть картинка есть, а видно её не будет.
+   */
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
+    description: DESCRIPTION,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
