@@ -161,7 +161,7 @@ function Card({
 
   return (
     <Link
-     
+
       href={`/work/${ticket.id}`}
       className="panel"
       style={{

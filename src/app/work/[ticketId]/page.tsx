@@ -225,7 +225,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>Draft material to work from. The records mark it as generated — responsibility for what you hand in stays yours.</p>
                 <RenderForm
                   ticketId={ticket.id}
-                 
+
                   hint={[
                     ticket.project.title,
                     direction

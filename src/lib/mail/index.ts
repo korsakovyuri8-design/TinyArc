@@ -52,7 +52,7 @@ export async function sendAccessKey(
     to,
     subject: 'TinyArc Cloud Bureau — access key',
     body: [
-      `$Access key: ${key}`,
+      `Access key: ${key}`,
       '',
       fill('Enter it at {url} to open {where}.', {
         url: absolute('/enter'),

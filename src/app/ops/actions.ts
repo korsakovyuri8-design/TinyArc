@@ -29,6 +29,7 @@ import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
+import { ticketReturned } from '@/lib/services/notify'
 
 export type OpsState = { error?: string; message?: string }
 
@@ -442,8 +443,15 @@ export async function returnTicket(_prev: OpsState, formData: FormData): Promise
   try {
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     await requestRevision(ticketId, note)
+
+    // Письмо здесь, а не в гейте: гейт зовут после приёмки, а возврат — это
+    // как раз то, что до приёмки не дошло.
+    await ticketReturned(ticketId).catch((error) =>
+      console.error('Письмо о возврате не ушло:', error),
+    )
+
     revalidatePath(`/ops/projects/${ticket.projectId}`)
-    return { message: 'Sent back for revision.' }
+    return { message: 'Sent back for revision. The specialist has been told by email.' }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'That did not work.' }
   }

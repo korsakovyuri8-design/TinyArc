@@ -125,7 +125,7 @@ export default async function ProfilePage() {
           <AvailabilityForm
             status={row.availabilityStatus}
             hours={profile.weeklyCapacityHours}
-           
+
           />
         </div>
 

@@ -27,7 +27,7 @@ export default async function HowItWorks() {
       </section>
 
       <Stage
-       
+
         number="01"
         internal="Validate"
         publicName="Filter"
@@ -53,7 +53,7 @@ export default async function HowItWorks() {
       </Stage>
 
       <Stage
-       
+
         number="02"
         internal="Assemble"
         publicName="Score"
@@ -73,7 +73,7 @@ export default async function HowItWorks() {
       </Stage>
 
       <Stage
-       
+
         number="03"
         internal="Deliver"
         publicName="Relay"

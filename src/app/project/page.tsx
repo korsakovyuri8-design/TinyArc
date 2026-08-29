@@ -140,7 +140,7 @@ export default async function ProjectPage({
             outcome={run.outcome}
             gap={parseGap(run.gapJson)}
             jurisdiction={project.jurisdiction as Jurisdiction}
-           
+
           />
         )}
 
@@ -257,7 +257,7 @@ export default async function ProjectPage({
                     <h3 style={{ marginTop: 10, marginBottom: 16 }}>{slot.specialist.displayName}</h3>
                     {candidate && (
                       <BreakdownRow
-                       
+
                         breakdown={{
                           portfolioRating: candidate.portfolioRating,
                           deliveryScore: candidate.deliveryScore,
@@ -467,7 +467,7 @@ export default async function ProjectPage({
                   </div>
                   <div style={{ marginTop: 16 }}>
                     <StageApproval
-                     
+
                       stage={stage}
                       title={DOC_STAGE_LABELS[stage as DocStage] ?? stage}
                     />
@@ -581,7 +581,6 @@ function IncompleteRun({
         <div className="label" style={{ color: 'var(--fail)' }}>The team is not assembled yet</div>
         <p style={{ marginTop: 12, marginBottom: 0 }}>
           {fill(
-            
               'There are specialists for your project, but none of them holds signing rights in {country}. A documentation set without a local signature has no force — the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
             { country: JURISDICTION_NAMES[jurisdiction] ?? jurisdiction },
           )}

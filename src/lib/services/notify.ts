@@ -34,7 +34,7 @@ import type { DocStage } from '@/engine/taxonomy'
 /** Одновременных отправок. Столько же, сколько на рассылке приглашений. */
 const MAIL_CONCURRENCY = 5
 
-type Kind = 'invoice_issued' | 'stage_awaiting' | 'ticket_open'
+type Kind = 'invoice_issued' | 'stage_awaiting' | 'ticket_open' | 'ticket_revision'
 
 /**
  * Отправить письмо не более одного раза на повод.
@@ -109,14 +109,13 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
           currency: invoice.currency,
         }),
         '',
-        
           'A stage is paid for before work on it begins: the team are real people, and their time starts the moment a task opens. The breakdown of the amount — what it is made of — is visible in the project workspace.',
         '',
         details.bank
-          ? `$Payment details:\n${details.bank}`
+          ? `Payment details:\n${details.bank}`
           : 'We will send payment details in reply to this email.',
         '',
-        `$Project workspace: ${absolute('/enter')}`,
+        `Project workspace: ${absolute('/enter')}`,
         ...SIGNATURE,
       ].join('\n'),
     })
@@ -149,13 +148,11 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
           { project: project.title, stage: label },
         ),
         '',
-        
           'What remains is your word — “this is what was ordered”. Until it arrives the next stage does not begin: developing documentation on an unconfirmed concept is preparing rework.',
         '',
-        
           'If you have comments, do not confirm — write to us from the workspace and we will turn them into a round of revisions.',
         '',
-        `$Project workspace: ${absolute('/enter')}`,
+        `Project workspace: ${absolute('/enter')}`,
         ...SIGNATURE,
       ].join('\n'),
     })
@@ -195,14 +192,66 @@ async function ticketOpen(ticketId: string): Promise<void> {
         fill('A task has been opened for you: {title}.', { title: ticket.title }),
         due,
         '',
-        
           'The specification and the input files are on your work board. Claim it there as well: the clock runs from when the task opened, not from when you saw it.',
         '',
-        `$Work board: ${absolute('/enter')}`,
+        `Work board: ${absolute('/enter')}`,
         ...SIGNATURE,
       ].join('\n'),
     })
   })
+}
+
+/**
+ * Работа вернулась на круг, и срок пошёл заново.
+ *
+ * Тот же случай, что и открытие задачи, только хуже: человек считает, что
+ * работу сдал, и в доску не заходит. До письма мы считали ему круг правок и
+ * время, о которых он не знал.
+ *
+ * Ключ отправки — тикет вместе с номером круга: повод возникает на каждом
+ * возврате, и запись про первый не должна гасить письмо про второй.
+ *
+ * Причину бюро пишет комментарием в тикете, и в письме её нет намеренно:
+ * замечания читаются рядом с работой, а не в почте, где на них нельзя
+ * ответить. Письмо говорит только, что от человека снова чего-то ждут.
+ */
+export async function ticketReturned(ticketId: string): Promise<void> {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: { specialist: { select: { email: true, displayName: true } } },
+  })
+
+  if (!ticket?.specialist || ticket.status !== 'revision') return
+
+  const due = ticket.dueAt
+    ? fill('Due: {due}.', { due: dateTime(ticket.dueAt) })
+    : fill('Due: {hours} h from now.', { hours: ticket.slaHours })
+
+  await once(
+    'ticket_revision',
+    `${ticket.id}:${ticket.revisionRounds}`,
+    ticket.specialist.email,
+    async () => {
+      await mailer().send({
+        to: ticket.specialist!.email,
+        subject: fill('Back for revision: {title}', { title: ticket.title }),
+        body: [
+          fill('Dear {name},', { name: ticket.specialist!.displayName }),
+          '',
+          fill(
+            'The bureau has sent the work on “{title}” back for another round. What exactly is wrong is written in the ticket, next to the work.',
+            { title: ticket.title },
+          ),
+          due,
+          '',
+          'A round of revisions is not a verdict on you: it is counted in the delivery metrics and nowhere else.',
+          '',
+          `Work board: ${absolute('/enter')}`,
+          ...SIGNATURE,
+        ].join('\n'),
+      })
+    },
+  )
 }
 
 /**
