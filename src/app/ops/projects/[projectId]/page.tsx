@@ -142,7 +142,7 @@ export default async function OpsProjectPage({
 
         {direction && (
           <div style={{ marginTop: 32 }}>
-            <ChosenDirection direction={direction} audience="team" />
+            <ChosenDirection direction={direction} audience="team" t={(x) => x} />
           </div>
         )}
 

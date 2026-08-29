@@ -292,4 +292,217 @@ export const en: Record<string, string> = {
     'TinyArc Cloud Bureau — an AI-native architectural practice',
   'Бюро, которое заканчивает бюро. Алгоритм отбирает специалистов по фактам, собирает команду под проект и ведёт её до пакета документации. Здания до пяти этажей в Черногории, Сербии и Греции.':
     'The bureau that ends the bureau. An algorithm selects specialists on facts, assembles a team for the project and runs it through to the documentation set. Buildings up to five storeys in Montenegro, Serbia and Greece.',
+
+  // --- Кабинет заказчика ---
+  'Кабинет проекта': 'Project workspace',
+  'Сохраните ключ доступа': 'Save your access key',
+  'Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на N — но если письмо не дойдёт, останется только этот экран.':
+    'The key replaces a password: it gets you back into this workspace from any device. A copy went to N — but if that email never arrives, this screen is all there is.',
+  'Проект не берётся': 'We are not taking this project',
+  'Проект закрыт': 'Project closed',
+  'Комплект у вас': 'The set is yours',
+  'Все стадии выпущены и подтверждены вами. Файлы ниже — то, за чем вы приходили. Доступ по ключу остаётся: кабинет не закрывается вместе с проектом, и вернуться к документации можно когда угодно.':
+    'Every stage has been issued and confirmed by you. The files below are what you came for. Your key keeps working: the workspace does not close with the project, and you can come back to the documentation whenever you need it.',
+  'Направление проекта ещё не выбрано.': 'No design direction has been chosen yet.',
+  'Выбрать →': 'Choose →',
+
+  'Где сейчас проект': 'Where the project stands',
+  'Стадия закрывается, когда приняты все её задачи. Пропустить стадию нельзя: гейт просто не откроет следующую.':
+    'A stage closes once every task in it is accepted. Stages cannot be skipped: the gate simply will not open the next one.',
+  'Стадия закрыта': 'Stage closed',
+  'Идёт работа': 'In progress',
+  'Ждёт оплаты': 'Awaiting payment',
+  'Ждёт предыдущей стадии': 'Waiting on the previous stage',
+
+  'Ваша Tiny Team': 'Your Tiny Team',
+  'Состав собран движком. Ниже — разбор балла по каждому: рейтинг портфолио, вклад метрик поставки, соответствие проекту, фактор доступности.':
+    'The engine assembled this team. Below is the full score breakdown for each member: portfolio rating, the weight of delivery metrics, fit to the project, availability factor.',
+  подпись: 'signatory',
+  'Как считался отбор': 'How the selection was computed',
+  'Пул → прошли гейты': 'Pool → passed the gates',
+
+  Выпуск: 'Production',
+  'Тикет открывается, только когда приняты те, от которых он зависит. Специалисты между собой не переписываются — вся работа идёт через бюро.':
+    'A ticket opens only once the tickets it depends on are accepted. Specialists do not correspond with each other — all work goes through the bureau.',
+  Стадия: 'Stage',
+  Задача: 'Task',
+  Исполнитель: 'Assignee',
+  Состояние: 'State',
+
+  'Комплект документации': 'Documentation set',
+  'Собирается по мере закрытия стадий, а не выдаётся разом в конце: вы заплатили за стадию — вы получаете её файлы, когда она закрыта. Сгенерированные изображения сюда не входят ни на одной стадии, это материал работы, а не документация.':
+    'It builds up as stages close rather than arriving all at once at the end: you paid for a stage, you get its files when that stage closes. Generated images never form part of it at any stage — they are working material, not documentation.',
+  'подтверждена вами': 'confirmed by you',
+  'ждёт вашего подтверждения': 'awaiting your confirmation',
+
+  Счета: 'Invoices',
+  'Стадия оплачивается до начала работы по ней. Команда — живые люди, и их время начинается в тот момент, когда открывается задача; начинать стадию в долг бюро не вправе. Цена названа целиком заранее и не пересчитывается по ходу: под каждым счётом видно, из чего он сложился.':
+    'A stage is paid for before work on it begins. The team are real people, and their time starts the moment a task opens; the bureau is not entitled to begin a stage on credit. The price is stated in full up front and is not recalculated along the way: under every invoice you can see what it is made of.',
+  Оплачен: 'Paid',
+  Отозван: 'Voided',
+  'Куда платить': 'Where to pay',
+  'Реквизиты для оплаты ещё не опубликованы — бюро пришлёт их письмом.':
+    'Payment details have not been published yet — the bureau will send them by email.',
+  'Отметку об оплате ставит бюро, увидев поступление: приёма платежей на сайте нет, и делать вид, что есть, значило бы обещать сверку, которой не существует.':
+    'The bureau marks an invoice paid once it sees the money arrive: there is no payment processing on this site, and pretending otherwise would promise a reconciliation that does not exist.',
+  'Нижняя граница чека за эту стадию — F C. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.':
+    'The floor price for this stage is F C. By area it would come out lower, but siting, approvals and team coordination on a small building cost almost as much as on a large one.',
+  'за общие системы дома': 'for shared building systems',
+  'по уровню цен страны': 'for the country’s price level',
+
+  'Ждёт вашего подтверждения': 'Awaiting your confirmation',
+  'Бюро приняло все задачи этой стадии — это значит «сделано как заказано». Подтверждение с вашей стороны значит другое: «заказано было именно это». Пока его нет, следующая стадия не начинается.':
+    'The bureau has accepted every task in this stage — that means “done as specified”. Your confirmation means something else: “this is what was specified”. Until it arrives, the next stage does not start.',
+  'Вы подтвердили': 'You have confirmed',
+  'Команда работает по подтверждённому. Если что-то нужно изменить задним числом — напишите бюро: переделка на поздней стадии стоит дороже, и решать, как её провести, будем вместе.':
+    'The team is working to what you confirmed. If something has to change after the fact, write to the bureau: rework at a later stage costs more, and how to handle it is a decision we make together.',
+
+  'Разговор с бюро': 'Talking to the bureau',
+  'Сроки, участок, изменившиеся обстоятельства — всё это сюда. Бюро отвечает перед вами за проект целиком, и вопрос по проекту — это вопрос к нему.':
+    'Deadlines, the site, changed circumstances — all of it goes here. The bureau answers to you for the project as a whole, and a question about the project is a question for the bureau.',
+
+  'Команда пока не собрана': 'The team is not assembled yet',
+  'Состав под ваш проект не сошёлся. Бюро разбирается; ключ доступа у вас, по нему вы вернётесь в проект.':
+    'A team for your project did not come together. The bureau is looking into it; you have your key and can come back to the project with it.',
+  'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «N». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.':
+    'There are specialists for your project, but none of them holds signing rights in N. A documentation set without a local signature has no force — the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
+
+  'Этажей / площадь': 'Storeys / area',
+
+  // --- Направление проекта ---
+  'Направление проекта': 'Design direction',
+  схема: 'diagram',
+  'Ваш выбор. Ориентир для команды — не проектное решение и не часть комплекта документации.':
+    'Your choice. A reference point for the team — not a design decision and not part of the documentation set.',
+  'Выбрано клиентом до начала работ. Это ориентир, а не требование: если направление на этом участке нереализуемо, скажите об этом в тикете.':
+    'Chosen by the client before work began. A reference point, not a requirement: if the direction cannot be built on this site, say so in the ticket.',
+
+  // --- Разбор балла ---
+  Портфолио: 'Portfolio',
+  'Поставка · вес N%': 'Delivery · weight N%',
+  'Истории поставок нет — Quality это портфолио':
+    'No delivery history yet — Quality is the portfolio',
+  'Соответствие проекту': 'Fit to the project',
+  Доступность: 'Availability',
+  'Совпадение с проектом': 'Match with the project',
+
+  // --- Названия задач ---
+  //
+  // Приходят из матрицы задач в движке и лежат в базе строкой. Переводятся тем
+  // же словарём: набор фиксирован кодом, а не введён человеком.
+  'Посадка на участок и пятно застройки': 'Siting and building footprint',
+  'Объёмно-планировочное решение': 'Massing and spatial layout',
+  'Черновые планировки этажей': 'Draft floor plans',
+  'Проверка конструктивной осуществимости объёма': 'Structural feasibility check of the massing',
+  'Место под оборудование, шахты и вводы': 'Space for plant, risers and service entries',
+  'Схема организации участка': 'Site organisation plan',
+  'Функциональная схема общественной части': 'Functional plan of the public areas',
+  'Визуализация экстерьера': 'Exterior visualisation',
+  'Ключевой кадр интерьера': 'Key interior view',
+  'Топографическая съёмка участка': 'Topographic survey',
+  'Отчёт по грунтам': 'Geotechnical report',
+  'Планы этажей': 'Floor plans',
+  Фасады: 'Elevations',
+  Разрезы: 'Sections',
+  'Пояснительная записка': 'Design and access statement',
+  'Конструктивная схема': 'Structural scheme',
+  'Расчёт нагрузок': 'Load calculations',
+  Фундамент: 'Foundations',
+  'Отопление и вентиляция': 'Heating and ventilation',
+  'Схема благоустройства': 'Landscape layout',
+  'Планировочное решение интерьеров': 'Interior layout',
+  'Проверка зонирования участка': 'Site zoning review',
+  'Комплектование пакета': 'Assembling the submission set',
+  'Подача и сопровождение': 'Submission and follow-through',
+  'Теплотехнический расчёт ограждающих конструкций': 'Thermal calculation of the building envelope',
+  'Элаборат энергоэффективности': 'Energy performance report',
+  'Спецификация отделки': 'Finishes schedule',
+  'Ведомость проёмов': 'Door and window schedule',
+  'Ведомость материалов и объёмов': 'Materials and quantities schedule',
+  'Спецификация оборудования': 'Equipment schedule',
+  'Сводная ведомость объёмов работ': 'Consolidated bill of quantities',
+  'Сметный расчёт по разделам': 'Cost estimate by section',
+  'Рабочие планы': 'Working plans',
+  'Узлы и детали': 'Junctions and details',
+  'Рабочие чертежи конструкций': 'Structural working drawings',
+  Армирование: 'Reinforcement',
+  'Рабочие схемы сетей': 'Services working drawings',
+  'Чертежи изготовления элементов': 'Fabrication drawings',
+  'Схема монтажа и узлы стыковки': 'Erection sequence and connection details',
+  'Рабочая документация интерьеров': 'Interior working drawings',
+
+  // --- Направления проекта ---
+  Террасирование: 'Terracing',
+  'Врезка в склон': 'Cut into the slope',
+  'Поднятый уровень': 'Raised level',
+  'Внутренний двор': 'Courtyard',
+  Павильоны: 'Pavilions',
+  'Компактный объём': 'Compact volume',
+  'Линейный объём': 'Linear volume',
+  'Ступенчатая этажность': 'Stepped storeys',
+
+  // --- Описания направлений ---
+  //
+  // Тоже константы движка: их девять, набор фиксирован, и клиенту они
+  // показываются на самом видном месте кабинета.
+  'Объём разбит на уровни, каждый следует линии склона. Здание читается как продолжение рельефа, а не как поставленный на него предмет.':
+    'The volume is broken into levels, each following the line of the slope. The building reads as a continuation of the terrain rather than an object set down on it.',
+  'Больше подпорных конструкций и сложнее гидроизоляция. Каждый уровень требует своей отметки и своего входа.':
+    'More retaining structures and harder waterproofing. Every level needs its own datum and its own entrance.',
+  'Часть объёма уходит в землю, кровля становится эксплуатируемой площадкой. Со стороны подъезда здание почти не читается.':
+    'Part of the volume goes into the ground and the roof becomes usable terrace. From the approach the building is barely legible.',
+  'Дорогая гидроизоляция и вентиляция заглублённой части. Инсоляция помещений в грунте требует отдельного решения.':
+    'Expensive waterproofing and ventilation for the buried part. Daylight to the below-grade rooms needs a solution of its own.',
+  'Основной объём поднят над землёй на опорах, нижний уровень остаётся открытым или техническим.':
+    'The main volume is lifted on supports; the lower level stays open or serves as plant space.',
+  'Сложнее теплотехника перекрытия над улицей, дороже вертикальные связи. Зато участок под зданием остаётся проницаемым.':
+    'Harder thermal performance for the slab over open air and costlier vertical circulation. In exchange, the ground under the building stays permeable.',
+  'Объём обёрнут вокруг закрытого двора. Приватность обеспечивается планировкой, а не забором и не расстоянием до соседа.':
+    'The volume wraps a closed courtyard. Privacy comes from the plan, not from a fence or from distance to the neighbour.',
+  'Больше наружных стен на ту же площадь и, соответственно, теплопотерь. Требует участка, где двор помещается.':
+    'More external wall for the same floor area, and heat loss to match. It needs a site the courtyard actually fits on.',
+  'Объём разобран на несколько связанных частей вместо одного тела. Функции разведены, между ними — открытые переходы.':
+    'The volume is broken into several connected parts instead of one body. Functions are separated, with open links between them.',
+  'Периметр и стоимость наружных ограждений растут заметно. Инженерные сети приходится вести между корпусами.':
+    'Perimeter and envelope cost rise noticeably. Services have to be run between the blocks.',
+  'Одно плотное тело с минимальным периметром. Самая экономная геометрия по стоимости оболочки и по теплу.':
+    'A single dense body with minimal perimeter. The most economical geometry for envelope cost and for heat.',
+  'Меньше фасадного фронта и видовых точек. Планировка жёстче: перемещать стены почти негде.':
+    'Less façade frontage and fewer viewpoints. The plan is more rigid: there is barely anywhere to move a wall.',
+  'Здание вытянуто вдоль участка одной полосой. Все основные помещения получают одну ориентацию и один вид.':
+    'The building runs along the site as a single band. Every principal room gets the same orientation and the same view.',
+  'Длинные коммуникации и коридоры. Требует участка с выраженной длинной стороной.':
+    'Long service runs and long corridors. It needs a site with a pronounced long side.',
+  'Верхние этажи отступают внутрь, освобождая террасы. Объём теряет массивность к верху.':
+    'The upper floors step back, freeing up terraces. The volume sheds mass towards the top.',
+  'Каждый отступ — это переход конструктивной схемы и узел, который надо решать отдельно.':
+    'Every setback is a change in the structural scheme and a junction that has to be solved on its own.',
+  'Здание стоит на выраженном цоколе, который выравнивает участок и отделяет жилые уровни от земли.':
+    'The building sits on a pronounced plinth that levels the site and lifts the living floors off the ground.',
+  'Подиум — это объём, который надо построить и в котором надо что-то разместить, иначе он становится дорогой пустотой.':
+    'A podium is a volume you have to build and then fill with something, or it becomes expensive emptiness.',
+  Подиум: 'Podium',
+
+  // --- Формы кабинета ---
+  'Что сказать бюро': 'What to tell the bureau',
+  'Нужно сдвинуть срок на месяц — уезжаю. Или: передумал по направлению, хочу вернуться к первому варианту.':
+    'I need to push the deadline by a month — I’m travelling. Or: I’ve changed my mind on the direction and want to go back to the first option.',
+  'Отправить бюро': 'Send to the bureau',
+  'Сказанное идёт бюро, а не команде. Так и задумано: бюро отвечает перед вами за проект целиком и переводит вашу просьбу в постановку задач. Просьба, отданная исполнителю напрямую, ломает ровно то, за что вы платите — ответственность за результат.':
+    'What you write goes to the bureau, not to the team. That is deliberate: the bureau answers to you for the project as a whole and turns your request into task specifications. A request handed straight to a contributor breaks precisely what you are paying for — accountability for the result.',
+  'Что сказать, подтверждая (необязательно)': 'Anything to say as you confirm (optional)',
+  'Подтвердить стадию «N»': 'Confirm the “N” stage',
+  'Подтверждение откроет команде следующую стадию. Пока его нет, работа по ней не начинается — это не задержка, а защита: документация по неподтверждённой концепции переделывается целиком. Если есть замечания, не подтверждайте, а напишите бюро ниже: оно превратит их в круг правок.':
+    'Confirming opens the next stage for the team. Until you do, no work on it begins — that is not a delay but a safeguard: documentation built on an unconfirmed concept gets redone in full. If you have comments, do not confirm — write to the bureau below and it will turn them into a round of revisions.',
+  'м²': 'm²',
+
+  // --- Ответы действий ---
+  'Отправлено бюро. Ответ появится здесь же.':
+    'Sent to the bureau. The reply will appear right here.',
+  'Стадия подтверждена.': 'Stage confirmed.',
+  'Не отправилось. Попробуйте ещё раз.': 'It did not send. Please try again.',
+  'Не получилось. Напишите бюро — разберём.':
+    'That did not work. Write to the bureau and we will sort it out.',
+  'Неизвестная стадия.': 'Unknown stage.',
+  'Сначала войдите по ключу.': 'Sign in with your key first.',
 }

@@ -1,5 +1,6 @@
 'use server'
 
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { allow, forgive } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
@@ -40,7 +41,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
   if (project) {
     await forgive('enter')
     await signInClient(project.id)
-    redirect('/project')
+    redirect(await localeHref('/project'))
   }
 
   const specialist = await specialistByKey(key)
@@ -51,7 +52,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
     if (specialist.status === 'invited') {
       await forgive('enter')
       await signInSpecialist(specialist.id)
-      redirect('/work/profile/complete')
+      redirect(await localeHref('/work/profile/complete'))
     }
 
     if (specialist.status !== 'active') {
@@ -65,7 +66,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
 
     await forgive('enter')
     await signInSpecialist(specialist.id)
-    redirect('/work')
+    redirect(await localeHref('/work'))
   }
 
   return { error: 'Такого ключа нет.' }

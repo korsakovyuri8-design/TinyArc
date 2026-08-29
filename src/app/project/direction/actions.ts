@@ -1,5 +1,6 @@
 'use server'
 
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { chooseDirection } from '@/lib/services/direction'
 import { currentProjectId } from '@/lib/session'
@@ -21,5 +22,5 @@ export async function pickDirection(
     return { error: error instanceof Error ? error.message : 'Не получилось.' }
   }
 
-  redirect('/project?issued=1')
+  redirect(await localeHref('/project?issued=1'))
 }

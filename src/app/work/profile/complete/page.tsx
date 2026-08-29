@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { SpecialistForm } from '@/components/SpecialistForm'
@@ -10,11 +11,11 @@ export const metadata = { title: 'Заполнить профиль — TinyArc 
 
 export default async function CompleteProfilePage() {
   const row = await currentSpecialist()
-  if (!row) redirect('/enter')
+  if (!row) redirect(await localeHref('/enter'))
 
   // Профиль, уже ушедший на разбор, здесь не правится: поля отбора меняются
   // через бюро, иначе человек правит собственный балл.
-  if (row.status !== 'invited') redirect('/work/profile')
+  if (row.status !== 'invited') redirect(await localeHref('/work/profile'))
 
   const profile = toProfile(row)
 

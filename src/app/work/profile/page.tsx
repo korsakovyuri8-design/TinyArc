@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics, deliveryScore, historyWeight } from '@/engine/metrics'
 import {
@@ -24,11 +25,11 @@ export const metadata = { title: 'Профиль и метрики — TinyArc C
 
 export default async function ProfilePage() {
   const row = await currentSpecialist()
-  if (!row) redirect('/enter')
+  if (!row) redirect(await localeHref('/enter'))
 
   // Приглашённому здесь нечего делать: ни задач, ни метрик у него ещё нет, а
   // нужен от него профиль. Ведём туда, а не показываем пустой экран.
-  if (row.status === 'invited') redirect('/work/profile/complete')
+  if (row.status === 'invited') redirect(await localeHref('/work/profile/complete'))
 
   const profile = toProfile(row)
   const metrics = deliveryMetrics(profile.delivery)

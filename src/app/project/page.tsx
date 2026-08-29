@@ -1,4 +1,7 @@
-import Link from 'next/link'
+import { Link } from '@/components/Link'
+import { translator } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/i18n/metadata'
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import {
   ARTIFACT_KIND_LABELS,
@@ -38,16 +41,17 @@ import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
 
-export const metadata = { title: 'Кабинет проекта — TinyArc Cloud Bureau' }
+export const generateMetadata = () => pageMetadata('Кабинет проекта')
 
 export default async function ProjectPage({
   searchParams,
 }: {
   searchParams: Promise<{ issued?: string }>
 }) {
+  const { locale, t } = await translator()
   const { issued } = await searchParams
   const projectId = await currentProjectId()
-  if (!projectId) redirect('/enter')
+  if (!projectId) redirect(await localeHref('/enter'))
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -59,7 +63,7 @@ export default async function ProjectPage({
     },
   })
 
-  if (!project) redirect('/enter')
+  if (!project) redirect(await localeHref('/enter'))
 
   const [run, direction, thread, pendingStages, approved, invoices] = await Promise.all([
     latestRun(project.id),
@@ -89,15 +93,15 @@ export default async function ProjectPage({
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
-        <span className="eyebrow">Кабинет проекта</span>
+        <span className="eyebrow">{t('Кабинет проекта')}</span>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h1 style={{ maxWidth: '18ch' }}>{project.title}</h1>
-          <span className="tag tag-accent">{PROJECT_STATUS_LABELS[project.status] ?? project.status}</span>
+          <span className="tag tag-accent">{t(PROJECT_STATUS_LABELS[project.status] ?? project.status)}</span>
         </div>
 
         {issued === '1' && (
           <div className="panel panel-accent" style={{ marginTop: 32 }}>
-            <div className="label label-accent">Сохраните ключ доступа</div>
+            <div className="label label-accent">{t('Сохраните ключ доступа')}</div>
             <p
               className="num"
               style={{ fontSize: '1.4rem', color: 'var(--accent)', margin: '14px 0' }}
@@ -105,21 +109,22 @@ export default async function ProjectPage({
               {project.clientKey}
             </p>
             <p className="muted" style={{ marginBottom: 0 }}>
-              Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия
-              ушла на {project.clientEmail} — но если письмо не дойдёт, останется только этот
-              экран.
+              {t('Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на N — но если письмо не дойдёт, останется только этот экран.').replace(
+                'N',
+                project.clientEmail,
+              )}
             </p>
           </div>
         )}
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
-          <Fact label="Типология" value={TYPOLOGY_LABELS[project.typology as Typology]} />
-          <Fact label="Этажей / площадь" value={`${project.storeys} · ${project.areaSqm} м²`} />
-          <Fact label="Страна" value={JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} />
-          <Fact label="Стадия документации" value={DOC_STAGE_LABELS[project.targetStage as DocStage]} />
-          <Fact label="Ключ доступа" value={project.clientKey} mono />
+          <Fact label={t('Типология')} value={t(TYPOLOGY_LABELS[project.typology as Typology])} />
+          <Fact label={t('Этажей / площадь')} value={`${project.storeys} · ${project.areaSqm} ${t('м²')}`} />
+          <Fact label={t('Страна')} value={t(JURISDICTION_NAMES[project.jurisdiction as Jurisdiction])} />
+          <Fact label={t('Стадия документации')} value={t(DOC_STAGE_LABELS[project.targetStage as DocStage])} />
+          <Fact label={t('Ключ доступа')} value={project.clientKey} mono />
           <Fact
-            label="Пул → прошли гейты"
+            label={t('Пул → прошли гейты')}
             value={run ? `${run.pooledCount} → ${run.survivedCount}` : '—'}
             mono
           />
@@ -127,9 +132,7 @@ export default async function ProjectPage({
 
         {project.status === 'rejected' && (
           <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-            <div className="label" style={{ color: 'var(--fail)' }}>
-              Проект не берётся
-            </div>
+            <div className="label" style={{ color: 'var(--fail)' }}>{t('Проект не берётся')}</div>
             <p style={{ marginTop: 12, marginBottom: 0 }}>{project.rejectionReason}</p>
           </div>
         )}
@@ -139,22 +142,21 @@ export default async function ProjectPage({
             outcome={run.outcome}
             gap={parseGap(run.gapJson)}
             jurisdiction={project.jurisdiction as Jurisdiction}
+            t={t}
           />
         )}
 
         {project.status === 'delivered' && (
           <div className="panel panel-accent" style={{ marginTop: 40 }}>
-            <div className="label label-accent">Проект закрыт</div>
-            <h3 style={{ marginTop: 12 }}>Комплект у вас</h3>
+            <div className="label label-accent">{t('Проект закрыт')}</div>
+            <h3 style={{ marginTop: 12 }}>{t('Комплект у вас')}</h3>
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              Все стадии выпущены и подтверждены вами. Файлы ниже — то, за чем вы приходили.
-              Доступ по ключу остаётся: кабинет не закрывается вместе с проектом, и вернуться
-              к документации можно когда угодно.
+              {t('Все стадии выпущены и подтверждены вами. Файлы ниже — то, за чем вы приходили. Доступ по ключу остаётся: кабинет не закрывается вместе с проектом, и вернуться к документации можно когда угодно.')}
               {nextStage && (
                 <>
                   {' '}
                   Следующий шаг за этой границей —{' '}
-                  <strong>{DOC_STAGE_LABELS[nextStage]}</strong>. Если он нужен, напишите
+                  <strong>{t(DOC_STAGE_LABELS[nextStage])}</strong>. Если он нужен, напишите
                   бюро: это отдельная работа и отдельный состав.
                 </>
               )}
@@ -164,13 +166,13 @@ export default async function ProjectPage({
 
         {direction ? (
           <div style={{ marginTop: 40 }}>
-            <ChosenDirection direction={direction} audience="client" />
+            <ChosenDirection direction={direction} audience="client" t={t} />
           </div>
         ) : (
           project.status !== 'rejected' && (
             <div className="note" style={{ marginTop: 40 }}>
-              Направление проекта ещё не выбрано.{' '}
-              <Link href="/project/direction">Выбрать →</Link>
+              {t('Направление проекта ещё не выбрано.')}{' '}
+              <Link locale={locale} href="/project/direction">{t('Выбрать →')}</Link>
             </div>
           )
         )}
@@ -178,11 +180,8 @@ export default async function ProjectPage({
         {project.tickets.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
-            <h2>Где сейчас проект</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>
-              Стадия закрывается, когда приняты все её задачи. Пропустить стадию нельзя: гейт
-              просто не откроет следующую.
-            </p>
+            <h2>{t('Где сейчас проект')}</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>{t('Стадия закрывается, когда приняты все её задачи. Пропустить стадию нельзя: гейт просто не откроет следующую.')}</p>
 
             <div className="grid grid-2">
               {stagesUpTo(project.targetStage as DocStage).map((stage) => {
@@ -193,7 +192,7 @@ export default async function ProjectPage({
                 return (
                   <div key={stage} className="panel">
                     <div className="row" style={{ justifyContent: 'space-between' }}>
-                      <span className="label label-accent">{DOC_STAGE_LABELS[stage]}</span>
+                      <span className="label label-accent">{t(DOC_STAGE_LABELS[stage])}</span>
                       <span className="num dim">
                         {done} / {inStage.length}
                       </span>
@@ -208,12 +207,12 @@ export default async function ProjectPage({
                         которой человек ждёт нас, пока мы ждём его.
                       */}
                       {share === 1
-                        ? 'Стадия закрыта'
+                        ? t('Стадия закрыта')
                         : inStage.some((t) => t.status !== 'blocked')
-                          ? 'Идёт работа'
+                          ? t('Идёт работа')
                           : unpaid.has(stage)
-                            ? 'Ждёт оплаты'
-                            : 'Ждёт предыдущей стадии'}
+                            ? t('Ждёт оплаты')
+                            : t('Ждёт предыдущей стадии')}
                     </div>
                   </div>
                 )
@@ -225,11 +224,8 @@ export default async function ProjectPage({
         {run && team.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
-            <h2>Ваша Tiny Team</h2>
-            <p className="muted" style={{ marginTop: 12 }}>
-              Состав собран движком. Ниже — разбор балла по каждому: рейтинг портфолио, вклад
-              метрик поставки, соответствие проекту, фактор доступности.
-            </p>
+            <h2>{t('Ваша Tiny Team')}</h2>
+            <p className="muted" style={{ marginTop: 12 }}>{t('Состав собран движком. Ниже — разбор балла по каждому: рейтинг портфолио, вклад метрик поставки, соответствие проекту, фактор доступности.')}</p>
 
             <div className="grid grid-2" style={{ marginTop: 28 }}>
               {team.map((slot) => {
@@ -241,9 +237,9 @@ export default async function ProjectPage({
                   <div key={slot.id} className="panel">
                     <div className="row" style={{ justifyContent: 'space-between' }}>
                       <span className="label label-accent">
-                        {DISCIPLINE_LABELS[slot.discipline as Discipline]}
+                        {t(DISCIPLINE_LABELS[slot.discipline as Discipline])}
                       </span>
-                      {slot.isSignatory && <span className="tag tag-accent">подпись</span>}
+                      {slot.isSignatory && <span className="tag tag-accent">{t('подпись')}</span>}
                     </div>
                     {(() => {
                       const need = parseList<Specialization>(
@@ -255,7 +251,7 @@ export default async function ProjectPage({
                       return (
                         <div className="dim" style={{ fontSize: '0.8rem', marginTop: 6 }}>
                           {need
-                            .map((x) => SPECIALIZATION_LABELS[x])
+                            .map((x) => t(SPECIALIZATION_LABELS[x]))
                             .join(slot.roleMode === 'all' ? ' + ' : ' / ')}
                         </div>
                       )
@@ -263,6 +259,7 @@ export default async function ProjectPage({
                     <h3 style={{ marginTop: 10, marginBottom: 16 }}>{slot.specialist.displayName}</h3>
                     {candidate && (
                       <BreakdownRow
+                        t={t}
                         breakdown={{
                           portfolioRating: candidate.portfolioRating,
                           deliveryScore: candidate.deliveryScore,
@@ -284,33 +281,30 @@ export default async function ProjectPage({
         {project.tickets.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
-            <h2>Выпуск</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>
-              Тикет открывается, только когда приняты те, от которых он зависит. Специалисты
-              между собой не переписываются — вся работа идёт через бюро.
-            </p>
+            <h2>{t('Выпуск')}</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>{t('Тикет открывается, только когда приняты те, от которых он зависит. Специалисты между собой не переписываются — вся работа идёт через бюро.')}</p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
               <table>
                 <thead>
                   <tr>
-                    <th>Стадия</th>
-                    <th>Задача</th>
-                    <th>Дисциплина</th>
-                    <th>Исполнитель</th>
-                    <th>Состояние</th>
+                    <th>{t('Стадия')}</th>
+                    <th>{t('Задача')}</th>
+                    <th>{t('Дисциплина')}</th>
+                    <th>{t('Исполнитель')}</th>
+                    <th>{t('Состояние')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {project.tickets.map((ticket) => (
                     <tr key={ticket.id}>
-                      <td className="dim">{DOC_STAGE_LABELS[ticket.stage as DocStage]}</td>
-                      <td>{ticket.title}</td>
-                      <td className="dim">{DISCIPLINE_LABELS[ticket.discipline as Discipline]}</td>
+                      <td className="dim">{t(DOC_STAGE_LABELS[ticket.stage as DocStage])}</td>
+                      <td>{t(ticket.title)}</td>
+                      <td className="dim">{t(DISCIPLINE_LABELS[ticket.discipline as Discipline])}</td>
                       <td className="dim">{ticket.specialist?.displayName ?? '—'}</td>
                       <td>
                         <span className={`tag ${statusTone(ticket.status)}`}>
-                          {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
+                          {t(TICKET_STATUS_LABELS[ticket.status] ?? ticket.status)}
                         </span>
                       </td>
                     </tr>
@@ -323,31 +317,25 @@ export default async function ProjectPage({
 
         <div className="divider" style={{ marginTop: 48 }} />
         <div className="row" style={{ gap: 16 }}>
-          <Link href="/algorithm" className="btn btn-quiet">
-            Как считался отбор
-          </Link>
+          <Link locale={locale} href="/algorithm" className="btn btn-quiet">{t('Как считался отбор')}</Link>
         </div>
 
         {fileCount(documents) > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
 
-            <h2>Комплект документации</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>
-              Собирается по мере закрытия стадий, а не выдаётся разом в конце: вы заплатили за
-              стадию — вы получаете её файлы, когда она закрыта. Сгенерированные изображения
-              сюда не входят ни на одной стадии, это материал работы, а не документация.
-            </p>
+            <h2>{t('Комплект документации')}</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>{t('Собирается по мере закрытия стадий, а не выдаётся разом в конце: вы заплатили за стадию — вы получаете её файлы, когда она закрыта. Сгенерированные изображения сюда не входят ни на одной стадии, это материал работы, а не документация.')}</p>
 
             <div className="stack" style={{ gap: 28 }}>
               {documents.map((group) => (
                 <div key={group.stage}>
                   <div className="row" style={{ gap: 10, alignItems: 'baseline' }}>
                     <h3 style={{ margin: 0 }}>
-                      {DOC_STAGE_LABELS[group.stage as DocStage] ?? group.stage}
+                      {t(DOC_STAGE_LABELS[group.stage as DocStage] ?? group.stage)}
                     </h3>
                     <span className={group.approved ? 'tag tag-pass' : 'tag tag-wait'}>
-                      {group.approved ? 'подтверждена вами' : 'ждёт вашего подтверждения'}
+                      {group.approved ? t('подтверждена вами') : t('ждёт вашего подтверждения')}
                     </span>
                   </div>
 
@@ -371,8 +359,8 @@ export default async function ProjectPage({
                           <span>{file.name}</span>
                         )}
                         <span className="dim" style={{ fontSize: '0.82rem' }}>
-                          {DISCIPLINE_LABELS[file.discipline] ?? file.discipline} ·{' '}
-                          {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
+                          {t(DISCIPLINE_LABELS[file.discipline] ?? file.discipline)} ·{' '}
+                          {t(ARTIFACT_KIND_LABELS[file.kind] ?? file.kind)}
                         </span>
                       </div>
                     ))}
@@ -387,13 +375,8 @@ export default async function ProjectPage({
           <>
             <div className="divider" style={{ marginTop: 48 }} />
 
-            <h2>Счета</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-              Стадия оплачивается до начала работы по ней. Команда — живые люди, и их время
-              начинается в тот момент, когда открывается задача; начинать стадию в долг бюро не
-              вправе. Цена названа целиком заранее и не пересчитывается по ходу: под каждым
-              счётом видно, из чего он сложился.
-            </p>
+            <h2>{t('Счета')}</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>{t('Стадия оплачивается до начала работы по ней. Команда — живые люди, и их время начинается в тот момент, когда открывается задача; начинать стадию в долг бюро не вправе. Цена названа целиком заранее и не пересчитывается по ходу: под каждым счётом видно, из чего он сложился.')}</p>
 
             <div className="stack" style={{ gap: 16 }}>
               {invoices.map((invoice) => (
@@ -402,13 +385,13 @@ export default async function ProjectPage({
                   className={invoice.status === 'issued' ? 'panel panel-accent' : 'panel'}
                 >
                   <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <span className="label label-accent">{DOC_STAGE_LABELS[invoice.stage]}</span>
+                    <span className="label label-accent">{t(DOC_STAGE_LABELS[invoice.stage])}</span>
                     <span className="tag">
                       {invoice.status === 'paid'
-                        ? 'Оплачен'
+                        ? t('Оплачен')
                         : invoice.status === 'void'
-                          ? 'Отозван'
-                          : 'Ждёт оплаты'}
+                          ? t('Отозван')
+                          : t('Ждёт оплаты')}
                     </span>
                   </div>
 
@@ -420,19 +403,18 @@ export default async function ProjectPage({
                     <p className="dim" style={{ marginTop: 10, fontSize: '0.85rem' }}>
                       {invoice.basis.atFloor ? (
                         <>
-                          Нижняя граница чека за эту стадию — {invoice.basis.floor}{' '}
-                          {invoice.currency}. По площади вышло бы меньше, но посадка на участок,
-                          согласования и координация команды на маленьком объекте стоят почти
-                          столько же, сколько на большом.
+                          {t('Нижняя граница чека за эту стадию — F C. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.')
+                            .replace('F', String(invoice.basis.floor))
+                            .replace('C', invoice.currency)}
                         </>
                       ) : (
                         <>
-                          {invoice.basis.areaSqm} м² × {invoice.basis.ratePerSqm} {invoice.currency}
-                          /м²
+                          {invoice.basis.areaSqm} {t('м²')} × {invoice.basis.ratePerSqm}{' '}
+                          {invoice.currency}/{t('м²')}
                           {invoice.basis.typologyFactor !== 1 &&
-                            ` × ${invoice.basis.typologyFactor} за общие системы дома`}
+                            ` × ${invoice.basis.typologyFactor} ${t('за общие системы дома')}`}
                           {invoice.basis.jurisdictionFactor !== 1 &&
-                            ` × ${invoice.basis.jurisdictionFactor} по уровню цен страны`}
+                            ` × ${invoice.basis.jurisdictionFactor} ${t('по уровню цен страны')}`}
                         </>
                       )}
                     </p>
@@ -442,7 +424,7 @@ export default async function ProjectPage({
                     <>
                       {payTo ? (
                         <div style={{ marginTop: 16 }}>
-                          <div className="label">Куда платить</div>
+                          <div className="label">{t('Куда платить')}</div>
                           <p
                             className="dim"
                             style={{
@@ -459,16 +441,10 @@ export default async function ProjectPage({
                         // Реквизитов нет — так и сказано. «Мы свяжемся» на счёте
                         // означает, что заплатить сейчас нельзя, и написать это
                         // прямо честнее, чем оставить человека гадать.
-                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
-                          Реквизиты для оплаты ещё не опубликованы — бюро пришлёт их письмом.
-                        </p>
+                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>{t('Реквизиты для оплаты ещё не опубликованы — бюро пришлёт их письмом.')}</p>
                       )}
 
-                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
-                        Отметку об оплате ставит бюро, увидев поступление: приёма платежей на
-                        сайте нет, и делать вид, что есть, значило бы обещать сверку, которой
-                        не существует.
-                      </p>
+                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>{t('Отметку об оплате ставит бюро, увидев поступление: приёма платежей на сайте нет, и делать вид, что есть, значило бы обещать сверку, которой не существует.')}</p>
                     </>
                   )}
                 </div>
@@ -481,23 +457,20 @@ export default async function ProjectPage({
           <>
             <div className="divider" style={{ marginTop: 48 }} />
 
-            <h2>Ждёт вашего подтверждения</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>
-              Бюро приняло все задачи этой стадии — это значит «сделано как заказано».
-              Подтверждение с вашей стороны значит другое: «заказано было именно это».
-              Пока его нет, следующая стадия не начинается.
-            </p>
+            <h2>{t('Ждёт вашего подтверждения')}</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>{t('Бюро приняло все задачи этой стадии — это значит «сделано как заказано». Подтверждение с вашей стороны значит другое: «заказано было именно это». Пока его нет, следующая стадия не начинается.')}</p>
 
             <div className="stack" style={{ gap: 24 }}>
               {pendingStages.map((stage) => (
                 <div key={stage} className="panel panel-accent">
                   <div className="label label-accent">
-                    {DOC_STAGE_LABELS[stage as DocStage] ?? stage}
+                    {t(DOC_STAGE_LABELS[stage as DocStage] ?? stage)}
                   </div>
                   <div style={{ marginTop: 16 }}>
                     <StageApproval
+                      locale={locale}
                       stage={stage}
-                      title={DOC_STAGE_LABELS[stage as DocStage] ?? stage}
+                      title={t(DOC_STAGE_LABELS[stage as DocStage] ?? stage)}
                     />
                   </div>
                 </div>
@@ -516,29 +489,22 @@ export default async function ProjectPage({
               человек нажал и остался без ответа. Подтверждённое и есть ответ,
               и увидеть его он должен сразу, а не искать глазами.
             */}
-            <h2>Вы подтвердили</h2>
+            <h2>{t('Вы подтвердили')}</h2>
             <div className="row" style={{ gap: 10, marginTop: 16 }}>
               {approved.map((s) => (
                 <span key={s} className="tag tag-pass">
-                  {DOC_STAGE_LABELS[s as DocStage] ?? s}
+                  {t(DOC_STAGE_LABELS[s as DocStage] ?? s)}
                 </span>
               ))}
             </div>
-            <p className="hint" style={{ marginTop: 14, maxWidth: '60ch' }}>
-              Команда работает по подтверждённому. Если что-то нужно изменить задним числом —
-              напишите бюро: переделка на поздней стадии стоит дороже, и решать, как её
-              провести, будем вместе.
-            </p>
+            <p className="hint" style={{ marginTop: 14, maxWidth: '60ch' }}>{t('Команда работает по подтверждённому. Если что-то нужно изменить задним числом — напишите бюро: переделка на поздней стадии стоит дороже, и решать, как её провести, будем вместе.')}</p>
           </>
         )}
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <h2>Разговор с бюро</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>
-          Сроки, участок, изменившиеся обстоятельства — всё это сюда. Бюро отвечает перед вами
-          за проект целиком, и вопрос по проекту — это вопрос к нему.
-        </p>
+        <h2>{t('Разговор с бюро')}</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>{t('Сроки, участок, изменившиеся обстоятельства — всё это сюда. Бюро отвечает перед вами за проект целиком, и вопрос по проекту — это вопрос к нему.')}</p>
 
         {thread.length > 0 && (
           <div className="stack" style={{ gap: 14, marginBottom: 32 }}>
@@ -564,7 +530,7 @@ export default async function ProjectPage({
         )}
 
         <div className="panel">
-          <ClientDialogue />
+          <ClientDialogue locale={locale} />
         </div>
       </div>
     </section>
@@ -604,23 +570,22 @@ function IncompleteRun({
   outcome,
   gap,
   jurisdiction,
+  t,
 }: {
   outcome: string
   gap: AssemblyGap | null
   jurisdiction: Jurisdiction
+  /** Переводчик приходит сверху: это не страница, а её часть. */
+  t: (text: string) => string
 }) {
   if (outcome === 'no_signatory') {
     return (
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-        <div className="label" style={{ color: 'var(--fail)' }}>
-          Команда пока не собрана
-        </div>
+        <div className="label" style={{ color: 'var(--fail)' }}>{t('Команда пока не собрана')}</div>
         <p style={{ marginTop: 12, marginBottom: 0 }}>
-          Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране
-          «{JURISDICTION_NAMES[jurisdiction] ?? jurisdiction}». Пакет документации без местной
-          подписи не имеет силы — его не примут в органах, и браться за проект без неё значит
-          продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь
-          в проект.
+          {t(
+            'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «N». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.',
+          ).replace('N', t(JURISDICTION_NAMES[jurisdiction] ?? jurisdiction))}
         </p>
       </div>
     )
@@ -629,13 +594,8 @@ function IncompleteRun({
   if (!gap) {
     return (
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-        <div className="label" style={{ color: 'var(--fail)' }}>
-          Команда пока не собрана
-        </div>
-        <p style={{ marginTop: 12, marginBottom: 0 }}>
-          Состав под ваш проект не сошёлся. Бюро разбирается; ключ доступа у вас, по нему вы
-          вернётесь в проект.
-        </p>
+        <div className="label" style={{ color: 'var(--fail)' }}>{t('Команда пока не собрана')}</div>
+        <p style={{ marginTop: 12, marginBottom: 0 }}>{t('Состав под ваш проект не сошёлся. Бюро разбирается; ключ доступа у вас, по нему вы вернётесь в проект.')}</p>
       </div>
     )
   }

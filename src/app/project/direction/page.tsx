@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { directionsOf } from '@/lib/services/direction'
@@ -14,10 +15,10 @@ export default async function DirectionPage({
 }) {
   const { issued } = await searchParams
   const projectId = await currentProjectId()
-  if (!projectId) redirect('/enter')
+  if (!projectId) redirect(await localeHref('/enter'))
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
-  if (!project) redirect('/enter')
+  if (!project) redirect(await localeHref('/enter'))
 
   const directions = await directionsOf(projectId)
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib/labels'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
@@ -17,11 +18,11 @@ export default async function WorkPage({
   const { left } = await searchParams
 
   const specialist = await currentSpecialist()
-  if (!specialist) redirect('/enter')
+  if (!specialist) redirect(await localeHref('/enter'))
 
   // Приглашённому здесь нечего делать: ни задач, ни метрик у него ещё нет, а
   // нужен от него профиль. Ведём туда, а не показываем пустой экран.
-  if (specialist.status === 'invited') redirect('/work/profile/complete')
+  if (specialist.status === 'invited') redirect(await localeHref('/work/profile/complete'))
 
   const tickets = await ticketsOf(specialist.id)
 

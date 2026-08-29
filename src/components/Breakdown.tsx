@@ -7,35 +7,45 @@ import type { ScoreBreakdown } from '@/engine/types'
  * Показывается целиком и всегда: прозрачность здесь — не любезность, а способ
  * не отдавать клиенту право выбирать специалиста самому.
  */
-export function BreakdownRow({ breakdown }: { breakdown: ScoreBreakdown }) {
+export function BreakdownRow({
+  breakdown,
+  t = (text) => text,
+}: {
+  breakdown: ScoreBreakdown
+  /**
+   * Переводчик. По умолчанию тождественный: разбор показывают три стороны, и
+   * панель бюро остаётся русской.
+   */
+  t?: (text: string) => string
+}) {
   const historyPercent = Math.round(breakdown.historyWeight * 100)
   const hundred = asHundred(breakdown)
 
   return (
     <div className="stack" style={{ gap: 8 }}>
       <Line
-        label="Портфолио"
+        label={t('Портфолио')}
         value={breakdown.portfolioRating.toFixed(1)}
         fill={breakdown.portfolioRating / 10}
       />
       {breakdown.historyWeight > 0 ? (
         <Line
-          label={`Поставка · вес ${historyPercent}%`}
+          label={t('Поставка · вес N%').replace('N', String(historyPercent))}
           value={breakdown.deliveryScore.toFixed(1)}
           fill={breakdown.deliveryScore / 10}
         />
       ) : (
         <div className="dim" style={{ fontSize: '0.78rem' }}>
-          Истории поставок нет — Quality это портфолио
+          {t('Истории поставок нет — Quality это портфолио')}
         </div>
       )}
       <Line
-        label="Соответствие проекту"
+        label={t('Соответствие проекту')}
         value={breakdown.relevance.toFixed(2)}
         fill={breakdown.relevance}
       />
       <Line
-        label="Доступность"
+        label={t('Доступность')}
         value={breakdown.availability.toFixed(2)}
         fill={breakdown.availability}
       />
@@ -56,7 +66,7 @@ export function BreakdownRow({ breakdown }: { breakdown: ScoreBreakdown }) {
         </div>
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 4 }}>
           <span className="dim" style={{ fontSize: '0.78rem' }}>
-            Совпадение с проектом
+            {t('Совпадение с проектом')}
           </span>
           <span className="num dim" style={{ fontSize: '0.78rem' }}>
             {hundred.matchPercent}%

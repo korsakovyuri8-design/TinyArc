@@ -1,3 +1,4 @@
+import { localeHref } from '@/lib/i18n/redirect'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { teammateRoles } from '@/engine/relay'
@@ -30,7 +31,7 @@ export const metadata = { title: 'Тикет — TinyArc Cloud Bureau' }
 export default async function TicketPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = await params
   const specialist = await currentSpecialist()
-  if (!specialist) redirect('/enter')
+  if (!specialist) redirect(await localeHref('/enter'))
 
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
@@ -129,7 +130,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           <>
             {direction && (
               <div style={{ marginTop: 32 }}>
-                <ChosenDirection direction={direction} audience="team" />
+                <ChosenDirection direction={direction} audience="team" t={(x) => x} />
               </div>
             )}
 

@@ -1,5 +1,6 @@
 'use server'
 
+import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
@@ -91,5 +92,5 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
 
   // Сначала направление, потом кабинет: выбор нужен команде до того, как
   // откроется первый тикет, а не когда по нему уже что-то нарисовали.
-  redirect('/project/direction?issued=1')
+  redirect(await localeHref('/project/direction?issued=1'))
 }
