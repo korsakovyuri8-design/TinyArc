@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { deliveryMetrics } from '@/engine/metrics'
-import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
+import { PORTFOLIO_THRESHOLD, SUBSCRIPTIONS } from '@/engine/taxonomy'
 import { SpecialistForm } from '@/components/SpecialistForm'
 import { prisma } from '@/lib/db'
-import { AVAILABILITY_LABELS, SPECIALIST_STATUS_LABELS } from '@/lib/labels'
+import { AVAILABILITY_LABELS, SPECIALIST_STATUS_LABELS, SUBSCRIPTION_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
-import { editSpecialist } from './actions'
+import { OpsAction } from '@/app/ops/OpsForms'
+import { editSpecialist, setSubscription } from './actions'
 
 export const metadata = { title: 'Профиль специалиста — панель бюро' }
 
@@ -88,6 +89,30 @@ export default async function SpecialistPage({
             </div>
           </div>
         )}
+
+        <div className="panel" style={{ marginTop: 32 }}>
+          <div className="label label-accent">Доступ к проектам</div>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 16 }}>
+            Подписка — гейт, а не балл: без неё человека нет в выборке вовсе, и проверяется
+            она раньше портфолио. Отказ по деньгам не должен выглядеть отказом по
+            квалификации (п.14а). Сейчас:{' '}
+            <strong style={{ color: 'var(--text)' }}>
+              {SUBSCRIPTION_LABELS[profile.subscription]}
+            </strong>
+            .
+          </p>
+
+          <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
+            {SUBSCRIPTIONS.filter((value) => value !== profile.subscription).map((value) => (
+              <OpsAction
+                key={value}
+                action={setSubscription}
+                hidden={{ specialistId: row.id, subscription: value }}
+                label={`Перевести в «${SUBSCRIPTION_LABELS[value]}»`}
+              />
+            ))}
+          </div>
+        </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
 

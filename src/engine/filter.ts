@@ -31,6 +31,7 @@ export const GATE_LABELS: Record<GateName, string> = {
   language: 'Нет общего языка с клиентом или с органами',
   timezone_overlap: 'Пересечение по времени меньше рабочего минимума',
   availability: 'Нет свободной ёмкости или не успевает выйти к сроку',
+  subscription: 'Нет действующей подписки на доступ к проектам',
 }
 
 /**
@@ -74,6 +75,16 @@ export function failedGate(
   requirements: ProjectRequirements,
   role: RequiredRole,
 ): GateName | null {
+  /*
+   * Подписка проверяется первой, раньше портфолио, и не из-за важности.
+   * Остальные гейты говорят о профессии — «портфолио ниже порога», «не та
+   * специализация»; их бюро показывает человеку, и они помогают. Подписка не
+   * про профессию вовсе, и мешать её с ними в одном списке причин значит
+   * однажды сказать сильному специалисту, что он не прошёл отбор, когда он
+   * просто не заплатил.
+   */
+  if (specialist.subscription === 'none') return 'subscription'
+
   if (specialist.portfolioRating < PORTFOLIO_THRESHOLD) return 'portfolio_threshold'
 
   if (!specialist.disciplines.includes(role.discipline)) return 'discipline'

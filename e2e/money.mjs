@@ -1,0 +1,157 @@
+/**
+ * Деньги: счёт за стадию, оплата, открытие работы (концепт, п.14а).
+ *
+ * Проверяется не арифметика — её держит `pricing.test.ts` — а то, чего не
+ * видно модульному тесту: что неоплаченная стадия действительно стоит, что
+ * заказчик видит причину простоя своими словами, и что отметка бюро об оплате
+ * тут же открывает команде работу.
+ *
+ * Самое дорогое здесь — третья проверка. Гейт, который закрывается, но не
+ * открывается, выглядит как работающий ровно до первого живого заказчика.
+ *
+ * Нужен запущенный сервер и BUREAU_OPS_PASSWORD.
+ */
+
+import { existsSync } from 'node:fs'
+import { chromium } from 'playwright'
+
+const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
+const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
+const PASSWORD = process.env.BUREAU_OPS_PASSWORD
+
+if (!PASSWORD) {
+  console.error('Нужен BUREAU_OPS_PASSWORD.')
+  process.exit(1)
+}
+
+/*
+ * Поиск без учёта регистра.
+ *
+ * `.tag` и `.label` подняты в верхний регистр средствами CSS, а `innerText`
+ * возвращает то, что видно на экране, а не то, что написано в разметке. Поиск
+ * «Оплачен» по такому тексту не находит «ОПЛАЧЕН» и объявляет сломанным
+ * исправный экран.
+ */
+function has(haystack, needle) {
+  return haystack.toLowerCase().includes(needle.toLowerCase())
+}
+
+function check(condition, message) {
+  if (!condition) {
+    console.error(`  ✗ ${message}`)
+    process.exitCode = 1
+    return false
+  }
+  console.log(`  ✓ ${message}`)
+  return true
+}
+
+const browser = await chromium.launch(
+  existsSync(EXECUTABLE) ? { executablePath: EXECUTABLE } : {},
+)
+
+console.log('Счёт за стадию и оплата')
+
+const bureau = await (await browser.newContext()).newPage()
+await bureau.goto(`${BASE}/ops`)
+await bureau.fill('input[type=password]', PASSWORD)
+await bureau.click('button[type=submit]')
+await bureau.waitForSelector('a[href="/ops/import"]')
+
+// Строка берётся из очереди счетов, а не из первой таблицы на странице:
+// таблиц на панели несколько, и «первая строка» указывает не сюда.
+const queue = bureau.locator('#invoices .panel')
+const hasUnpaid = (await queue.count()) > 0
+
+if (!hasUnpaid) {
+  check(false, 'на стенде нет неоплаченного счёта: проверять оплату не на чем')
+  await browser.close()
+  process.exit(1)
+}
+
+check(true, `счетов ждёт оплаты: ${await queue.count()}`)
+
+const first = queue.first()
+const projectHref = await first.locator('a[href^="/ops/projects/"]').getAttribute('href')
+check(Boolean(projectHref), 'из очереди счетов открывается проект')
+
+// Ключ заказчика бюро видит на карточке проекта — им и войдём его глазами.
+await bureau.goto(`${BASE}${projectHref}`)
+const key = (await bureau.locator('p:has-text("ключ") .num').first().textContent()).trim()
+
+if (!check(Boolean(key), `ключ заказчика виден бюро: ${key ?? 'не найден'}`)) {
+  await browser.close()
+  process.exit(1)
+}
+
+const client = await (await browser.newContext()).newPage()
+await client.goto(`${BASE}/enter`)
+await client.fill('input[name=key]', key)
+await client.click('button[type=submit]')
+await client.waitForTimeout(1800)
+
+const before = await client.innerText('main')
+
+check(has(before, 'Счета'), 'заказчик видит счёт, а не молчание')
+check(has(before, 'Ждёт оплаты'), 'сказано, что счёт не оплачен')
+check(
+  has(before, 'до начала работы по ней'),
+  'сказано, почему платят вперёд, а не после',
+)
+
+/*
+ * Причина простоя названа деньгами, а не очередью стадий. Раньше карточка
+ * стадии в любом непонятном случае писала «Ждёт предыдущей стадии»; на
+ * неоплаченной стадии это неправда, из-за которой заказчик ждёт нас, пока мы
+ * ждём его.
+ */
+check(has(before, 'Ждёт оплаты'), 'простой объяснён деньгами, а не очередью стадий')
+
+// Разбор цены: сумма без него — это счёт, который можно только принять на веру.
+const explained =
+  /м² × \d+ EUR\/м²/i.test(before) || has(before, 'Нижняя граница чека')
+check(explained, 'под суммой видно, из чего она сложилась')
+
+/*
+ * Бюро отмечает оплату.
+ *
+ * Проверяется состояние, а не всплывшая надпись. Серверное действие
+ * перерисовывает страницу, и строка ответа внутри формы живёт ровно до этого
+ * момента — на неё нельзя опираться ни тесту, ни оператору. Строка счёта
+ * остаётся и меняет статус: вот это и есть подтверждение.
+ */
+await bureau.goto(`${BASE}/ops`)
+const form = bureau.locator('#invoices .panel').first()
+await form.locator('input[name=note]').fill('Проверка e2e: перевод получен.')
+await form.locator('button[type=submit]').click()
+await bureau.waitForTimeout(2500)
+
+await bureau.reload()
+await bureau.waitForTimeout(1200)
+const opsAfter = await bureau.innerText('#invoices')
+
+check(has(opsAfter, 'Оплачен'), 'счёт в очереди бюро помечен оплаченным')
+check(
+  !has(opsAfter, 'Отметить оплаченным'),
+  'оплаченный счёт больше не предлагают оплатить',
+)
+
+await client.reload()
+await client.waitForTimeout(1200)
+const after = await client.innerText('main')
+
+check(has(after, 'Оплачен'), 'заказчик видит счёт оплаченным')
+check(!has(after, 'Ждёт оплаты'), 'простоя по оплате больше нет')
+
+/*
+ * Главная проверка всего файла. Гейт, который закрывается, но не открывается,
+ * выглядит работающим ровно до первого живого заказчика: деньги взяли, а
+ * работа не пошла.
+ */
+check(
+  has(after, 'Идёт работа'),
+  'оплата открыла команде работу, а не просто сменила статус счёта',
+)
+
+await browser.close()
+console.log(process.exitCode ? '\nЕсть расхождения.' : '\nВсё сошлось.')

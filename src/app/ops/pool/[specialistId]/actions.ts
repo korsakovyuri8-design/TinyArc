@@ -13,6 +13,7 @@ import type { ApplicationState } from '@/app/specialists/apply/actions'
 import { prisma } from '@/lib/db'
 import { toList } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
+import { SUBSCRIPTIONS, type Subscription } from '@/engine/taxonomy'
 
 const MULTI = [
   'disciplines',
@@ -118,4 +119,41 @@ export async function editSpecialist(
   revalidatePath(`/ops/pool/${id}`)
 
   return { submitted: true }
+}
+
+/**
+ * Смена подписки на доступ к проектам.
+ *
+ * Отдельным действием, а не полем в форме профиля, по той же причине, по
+ * которой отдельно стоит рейтинг: правка фактов о человеке не должна
+ * незаметно превращаться в правку его доступа. Это два разных решения, и
+ * принимаются они в разные моменты.
+ */
+export async function setSubscription(
+  _prev: { error?: string; message?: string },
+  formData: FormData,
+): Promise<{ error?: string; message?: string }> {
+  if (!(await isOperator())) return { error: 'Панель бюро закрыта.' }
+
+  const specialistId = String(formData.get('specialistId') ?? '')
+  const value = String(formData.get('subscription') ?? '')
+
+  if (!SUBSCRIPTIONS.includes(value as Subscription)) {
+    return { error: 'Неизвестное состояние подписки.' }
+  }
+
+  await prisma.specialist.update({
+    where: { id: specialistId },
+    data: { subscription: value },
+  })
+
+  revalidatePath(`/ops/pool/${specialistId}`)
+  revalidatePath('/ops/pool')
+
+  return {
+    message:
+      value === 'none'
+        ? 'Доступ закрыт: в следующих прогонах отбора этого человека не будет.'
+        : 'Доступ открыт. Уже собранные команды это не пересобирает.',
+  }
 }

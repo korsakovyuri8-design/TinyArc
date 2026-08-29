@@ -24,6 +24,7 @@ import type {
   RegulatoryTrack,
   ScaleBand,
   Software,
+  Subscription,
   Specialization,
   Typology,
   WorkMode,
@@ -102,6 +103,9 @@ const ALL_TYPOLOGIES: Typology[] = ['villa', 'townhouse', 'multi_family', 'mixed
 const ALL_SCALES: ScaleBand[] = ['upto_250', '250_1000', '1000_3000', '3000_plus']
 const ALL_MATERIALS: MaterialSystem[] = ['concrete', 'masonry', 'timber', 'steel', 'hybrid']
 const IFC_MIX: IfcLevel[] = ['none', 'import', 'exchange', 'coordination', 'coordination']
+// Большинство подписано: подписка — не редкость, а условие входа. Без неё
+// остаются единицы, и по ним видно, как выглядит этот отказ.
+const SUBSCRIPTION_MIX: Subscription[] = ['founding', 'founding', 'founding', 'active', 'none']
 const STAGE_MIX: DocStage[][] = [
   ['concept'],
   ['concept', 'permit'],
@@ -235,6 +239,13 @@ export function demoPool(seed = 20260824): DemoSpecialist[] {
             responseMinutesTotal: delivered * Math.floor(30 + random() * 900),
             revisionRoundsTotal: Math.max(0, delivered - firstTimeRight) + Math.floor(random() * 3),
           },
+          /*
+           * Держащий покрытие подписан, среди зашумлённых встречаются без
+           * подписки. Иначе гейт доступа не показан на стенде вовсе, а
+           * посмотреть на него надо: это единственный гейт, который снимается
+           * не работой над профилем, а оплатой.
+           */
+          subscription: reliable ? 'founding' : pick(random, SUBSCRIPTION_MIX),
         })
       }
     }

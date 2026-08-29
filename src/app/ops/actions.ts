@@ -12,9 +12,17 @@ import { inboundArtifacts } from '@/lib/services/relay'
 import { parseList, toProfile } from '@/lib/rows'
 import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
-import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
+import {
+  accept,
+  applyGates,
+  comment,
+  refreshProjectStatus,
+  requestRevision,
+  resolveConflict,
+} from '@/lib/services/relay'
 import { alertsForBureau, alertsForProject } from '@/lib/services/pm'
 import { MessageRefused, answer } from '@/lib/services/dialogue'
+import { BillingRefused, markPaid } from '@/lib/services/billing'
 import { MAX_IMPORT_ROWS, importDrafts, inviteWaiting, reinvite } from '@/lib/services/intake'
 import { readIntake } from '@/lib/intake/map'
 import { isNudgeKind } from '@/engine/pm'
@@ -631,5 +639,55 @@ export async function answerClient(_prev: OpsState, formData: FormData): Promise
 
     console.error('Ответ заказчику не отправлен:', error)
     return { error: 'Не отправилось.' }
+  }
+}
+
+/**
+ * Бюро отмечает счёт оплаченным.
+ *
+ * Платёжного провайдера нет, и это осознанно: отметку ставит человек, увидев
+ * поступление. Автоматический «приём платежа» без сверки с банком означал бы,
+ * что непроведённый платёж открывает стадию, — а открытая стадия это уже
+ * начатая работа живых людей.
+ *
+ * После отметки сразу же вызывается гейт: оплата и есть то, чего стадия ждала,
+ * и заставлять её ждать ещё и следующей приёмки незачем.
+ */
+export async function markInvoicePaid(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const invoiceId = String(formData.get('invoiceId') ?? '')
+  const projectId = String(formData.get('projectId') ?? '')
+
+  try {
+    const stage = await markPaid(invoiceId, String(formData.get('note') ?? ''))
+    const opened = await applyGates(projectId)
+    await refreshProjectStatus(projectId)
+
+    /*
+     * Панель намеренно не перерисовывается здесь.
+     *
+     * Оплаченный счёт уходит из очереди, а вместе со строкой очереди
+     * исчезает и форма, которая показывает ответ. Оператор жмёт «отметить
+     * оплаченным», строка пропадает — и он не знает, прошло ли и открылось ли
+     * что-нибудь. Отличить успех от ошибки в этот момент невозможно.
+     *
+     * Устаревшая на один переход очередь безопасна: повторная отметка того же
+     * счёта молча проходит. Пропавшее подтверждение — нет.
+     */
+    revalidatePath(`/ops/projects/${projectId}`)
+    revalidatePath('/project')
+
+    return {
+      message:
+        opened.length > 0
+          ? `Оплата отмечена. Открыто задач: ${opened.length}.`
+          : 'Оплата отмечена. Задачи откроются, когда сойдутся остальные условия гейта.',
+    }
+  } catch (error) {
+    if (error instanceof BillingRefused) return { error: error.message }
+
+    console.error('Оплата не отмечена:', error)
+    return { error: 'Не получилось отметить оплату.' }
   }
 }

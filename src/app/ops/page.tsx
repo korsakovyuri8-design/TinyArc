@@ -7,12 +7,13 @@ import { alertsForBureau } from '@/lib/services/pm'
 import { lostProjects } from '@/lib/services/demand'
 import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
+import { INVOICE_NUDGE_HOURS, invoiceQueue } from '@/lib/services/billing'
 import { DOC_STAGE_LABELS } from '@/lib/labels'
 import type { DocStage } from '@/engine/taxonomy'
 import { roleName } from '@/lib/gap'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import { isOperator } from '@/lib/session'
-import { planBureauQueue } from './actions'
+import { markInvoicePaid, planBureauQueue } from './actions'
 import { OpsAction, OpsSignIn } from './OpsForms'
 
 export const metadata = { title: 'Панель бюро — TinyArc Cloud Bureau' }
@@ -45,12 +46,14 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions, approvals] = await Promise.all([
+  const [lost, questions, approvals, invoices] = await Promise.all([
     lostProjects(),
     waitingQuestions(),
     awaitingApproval(),
+    invoiceQueue(),
   ])
 
+  const waitingInvoices = invoices.filter((i) => i.status === 'issued').length
   const conflicts = alerts.filter((a) => a.kind === 'conflict')
   const heat = projectHeat(alerts)
   const titles = new Map(alerts.map((a) => [a.projectId, a.projectTitle]))
@@ -152,6 +155,74 @@ export default async function OpsPage() {
             </table>
           </div>
         )}
+
+        <div className="divider" style={{ marginTop: 48 }} />
+
+        <div id="invoices">
+          <div
+            className="row"
+            style={{ justifyContent: 'space-between', alignItems: 'baseline' }}
+          >
+            <h2>Счета</h2>
+            {waitingInvoices > 0 && <span className="tag tag-wait">{waitingInvoices}</span>}
+          </div>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+            Стадия не открывается, пока счёт не оплачен (п.14а). Приёма платежей на сайте нет:
+            отметку ставит человек, увидев поступление. Автоматический «приём» без сверки с
+            банком означал бы, что непроведённый платёж открывает работу живым людям.
+          </p>
+
+          {invoices.length === 0 ? (
+            <p className="dim">Счетов пока нет: их выставляет гейт, когда стадия готова.</p>
+          ) : (
+            <div className="stack" style={{ gap: 16 }}>
+              {invoices.map((invoice) => (
+                <div key={invoice.invoiceId} className="panel">
+                  <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <Link href={`/ops/projects/${invoice.projectId}`}>{invoice.projectTitle}</Link>
+                    {invoice.status === 'paid' ? (
+                      <span className="tag">Оплачен</span>
+                    ) : (
+                      <span
+                        className={
+                          invoice.hours > INVOICE_NUDGE_HOURS ? 'tag tag-fail' : 'tag tag-wait'
+                        }
+                      >
+                        {Math.round(invoice.hours)} ч
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="dim" style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                    {DOC_STAGE_LABELS[invoice.stage]} ·{' '}
+                    <strong style={{ color: 'var(--text)' }}>
+                      {invoice.amount.toLocaleString('ru-RU')} {invoice.currency}
+                    </strong>
+                    {invoice.paidAt && ` · ${invoice.paidAt.toLocaleDateString('ru-RU')}`}
+                  </div>
+
+                  {invoice.status === 'issued' && (
+                    <div style={{ marginTop: 14 }}>
+                      <OpsAction
+                        action={markInvoicePaid}
+                        hidden={{ invoiceId: invoice.invoiceId, projectId: invoice.projectId }}
+                        label="Отметить оплаченным"
+                        solid
+                      >
+                        <input
+                          type="text"
+                          name="note"
+                          placeholder="Чем подтверждена оплата"
+                          style={{ marginBottom: 10 }}
+                        />
+                      </OpsAction>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="divider" style={{ marginTop: 48 }} />
 

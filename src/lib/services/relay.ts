@@ -18,6 +18,7 @@ import { images } from '../images'
 import { prisma } from '../db'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
 import { approvedStages, stagesAwaitingClient } from './approval'
+import { issueDueInvoices, paidStages } from './billing'
 
 export class NotYours extends Error {
   constructor() {
@@ -61,15 +62,27 @@ async function relayTickets(projectId: string): Promise<RelayTicket[]> {
  * перевести тикет в работу нет — руками статус не ставится.
  */
 export async function applyGates(projectId: string): Promise<string[]> {
-  // Подтверждённые заказчиком стадии — второе условие гейта наравне с графом:
-  // разрабатывать документацию по неподтверждённой концепции значит готовить
-  // переделку (п.12б).
-  const [tickets, approved] = await Promise.all([
+  /*
+   * Три условия, и два из них не про граф.
+   *
+   * Подтверждённые заказчиком стадии — разрабатывать документацию по
+   * неподтверждённой концепции значит готовить переделку (п.12б). Оплаченные
+   * стадии — открытый тикет это начатая работа живого человека, и начинать её
+   * в долг бюро не вправе (п.14а).
+   *
+   * Счета выставляются здесь же, до открытия: гейт и счёт смотрят на одно и то
+   * же состояние, и разносить их по разным вызовам значит однажды забыть один
+   * из них.
+   */
+  await issueDueInvoices(projectId)
+
+  const [tickets, approved, paid] = await Promise.all([
     relayTickets(projectId),
     approvedStages(projectId),
+    paidStages(projectId),
   ])
 
-  const ready = openable(tickets, approved)
+  const ready = openable(tickets, approved, paid)
   if (ready.length === 0) return []
 
   const now = new Date()

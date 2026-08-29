@@ -16,6 +16,7 @@ import type {
   ScaleBand,
   Software,
   Specialization,
+  Subscription,
   Terrain,
   Typology,
   WorkMode,
@@ -192,3 +193,15 @@ export const STAGES = [
   { internal: 'Assemble', public: 'Score', note: 'Выжившие ранжируются по Quality × Availability, собирается Tiny Team' },
   { internal: 'Deliver', public: 'Relay', note: 'Команда ведёт проект по Blind Relay Protocol до пакета документации' },
 ] as const
+
+/**
+ * Подписка на доступ к проектам.
+ *
+ * Названа состоянием доступа, а не тарифом: «нет подписки» человеку в панели
+ * читается как «нет доступа», и это ровно то, что происходит.
+ */
+export const SUBSCRIPTION_LABELS: Record<Subscription, string> = {
+  none: 'Доступа нет',
+  founding: 'Бесплатно на пилоте',
+  active: 'Платный доступ',
+}

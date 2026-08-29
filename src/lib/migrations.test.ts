@@ -34,6 +34,7 @@ const APPLIED: Record<string, string> = {
   '0001_init': '257aaadb1a1cb514b30348baf91faf85',
   '0002_intake_handover_dialogue': '414099d7a44b092a3f3c8d910499bdfa',
   '0003_stage_approval': '44312f1e3ca7d22b518f2af5c027f3cb',
+  '0004_billing': 'ccc0df1d1c68d45129bee652c48f4375',
 }
 
 function checksum(name: string): string {

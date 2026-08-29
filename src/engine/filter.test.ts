@@ -110,3 +110,35 @@ describe('жёсткие гейты', () => {
     expect(failedGate(faraway, requirements({ utcOffset: 1 }), role('architecture'))).toBe('timezone_overlap')
   })
 })
+
+/*
+ * Подписка как гейт (п.14).
+ *
+ * Проверяется отдельно от остальных, потому что она про другое. Прочие гейты
+ * говорят о профессии и о проекте; этот — только о доступе, и он обязан быть
+ * первым в объяснении, чтобы отказ по деньгам никогда не выглядел отказом по
+ * квалификации.
+ */
+describe('гейт подписки', () => {
+  const role = { discipline: 'architecture' as const, specializations: [], mode: 'any' as const }
+
+  it('без подписки в выборку не пускает даже сильнейшего', () => {
+    const strong = specialist({ portfolioRating: 10, subscription: 'none' })
+
+    expect(failedGate(strong, requirements(), role)).toBe('subscription')
+  })
+
+  it('бесплатный доступ пилота и платный работают одинаково', () => {
+    for (const subscription of ['founding', 'active'] as const) {
+      expect(failedGate(specialist({ subscription }), requirements(), role)).toBeNull()
+    }
+  })
+
+  it('называется раньше портфолио: отказ по деньгам — не отказ по качеству', () => {
+    // У человека нет ни подписки, ни портфолио. Сказать надо про подписку:
+    // «портфолио ниже порога» здесь было бы неправдой о профессии.
+    const weak = specialist({ portfolioRating: 2, subscription: 'none' })
+
+    expect(failedGate(weak, requirements(), role)).toBe('subscription')
+  })
+})

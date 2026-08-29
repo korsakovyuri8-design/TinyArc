@@ -12,6 +12,7 @@ import type {
   ScaleBand,
   Software,
   Specialization,
+  Subscription,
   Terrain,
   Typology,
   WorkMode,
@@ -53,6 +54,9 @@ export type SpecialistProfile = {
 
   portfolioRating: number
   delivery: DeliveryCounters
+
+  /** Доступ к отбору: без подписки специалиста в выборке нет (п.14). */
+  subscription: Subscription
 }
 
 /** Бриф клиента, разобранный в требования (стадия Validate). */
@@ -100,6 +104,7 @@ export type GateName =
   | 'language'
   | 'timezone_overlap'
   | 'availability'
+  | 'subscription'
 
 export type ScoredCandidate = {
   specialist: SpecialistProfile

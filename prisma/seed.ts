@@ -27,6 +27,8 @@ import {
   requestFrom,
   submit,
 } from '../src/lib/services/relay'
+import { issueDueInvoices, markPaid } from '../src/lib/services/billing'
+import type { DocStage } from '../src/engine/taxonomy'
 
 const prisma = new PrismaClient({ adapter: adapterFor(databaseUrl()) })
 
@@ -158,6 +160,7 @@ async function main() {
         utcOffset: person.utcOffset,
         weeklyCapacityHours: person.weeklyCapacityHours,
         leadTimeDays: person.leadTimeDays,
+        subscription: person.subscription,
         availabilityStatus:
           person.weeklyCapacityHours === 0
             ? 'busy'
@@ -273,11 +276,36 @@ async function main() {
  * Один тикет следующей стадии остаётся в конфликте: панель бюро должна
  * показывать не только счастливый путь.
  */
+/**
+ * Отмечает стадию оплаченной, как это сделало бы бюро, увидев поступление.
+ *
+ * Без этого стенд стоит целиком: неоплаченная стадия не открывает ни одного
+ * тикета (п.14а), и «пустая доска» выглядит как поломка сборки, а не как
+ * работающий гейт.
+ */
+async function payStage(projectId: string, stage: DocStage): Promise<boolean> {
+  await issueDueInvoices(projectId)
+
+  const invoice = await prisma.invoice.findUnique({
+    where: { projectId_stage: { projectId, stage } },
+  })
+
+  if (!invoice || invoice.status === 'paid') return false
+
+  await markPaid(invoice.id, 'Оплата по сиду: перевод от заказчика.')
+  await applyGates(projectId)
+
+  console.log(`  оплачена стадия «${stage}»: ${invoice.amount} ${invoice.currency}`)
+  return true
+}
+
 async function advanceFirstProject(projectId: string): Promise<void> {
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project || project.status === 'rejected') return
 
   console.log('Сид: прогоняем тикеты через гейты…')
+
+  await payStage(projectId, 'concept')
 
   // Потолок — страховка от бесконечного цикла, а не план: выход обычный,
   // по отсутствию открытых тикетов концепции.
@@ -355,6 +383,7 @@ async function raiseStandingConflict(projectId: string): Promise<void> {
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project || project.status === 'rejected') return
 
+  await payStage(projectId, 'concept')
   await applyGates(projectId)
 
   const next = await prisma.ticket.findFirst({

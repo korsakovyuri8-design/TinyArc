@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   awaitingClient,
+  billable,
   canOpen,
   deliveryDeltaFor,
   dueDate,
@@ -12,7 +13,15 @@ import {
   topologicalOrder,
   type RelayTicket,
 } from './relay'
+
+/*
+ * Стенд, на котором деньги не участвуют: все стадии оплачены. Тесты ниже про
+ * граф зависимостей и подтверждение заказчика, и подмешивать в них третий гейт
+ * значит проверять три вещи одним ожиданием.
+ */
+const PAID: DocStage[] = ['concept', 'permit', 'tender', 'construction']
 import { allShapes } from './readiness'
+import type { DocStage } from './taxonomy'
 import { requiredRoles } from './taxonomy'
 
 const TEAM = ['architecture', 'structural', 'mep', 'survey', 'permitting', 'visualization'] as const
@@ -136,10 +145,10 @@ describe('стадийные гейты', () => {
       { id: 'arch', status: 'blocked', stage: 'permit', dependsOn: ['survey'] },
     ]
 
-    expect(openable(tickets)).toEqual([])
+    expect(openable(tickets, [], PAID)).toEqual([])
 
     tickets[0].status = 'accepted'
-    expect(openable(tickets)).toEqual(['arch'])
+    expect(openable(tickets, [], PAID)).toEqual(['arch'])
   })
 
   it('не открывает тикет, у которого принята только часть зависимостей', () => {
@@ -148,7 +157,7 @@ describe('стадийные гейты', () => {
         { id: 'arch', status: 'accepted', stage: 'permit', dependsOn: [] },
         { id: 'struct', status: 'in_progress', stage: 'permit', dependsOn: ['arch'] },
         { id: 'permitting', status: 'blocked', stage: 'permit', dependsOn: ['arch', 'struct'] },
-      ]),
+      ], [], PAID),
     ).toEqual([])
   })
 })
@@ -245,8 +254,8 @@ describe('подтверждение стадии заказчиком', () => {
    * концепции значит готовить переделку.
    */
   it('не открывает следующую стадию, пока заказчик не подтвердил предыдущую', () => {
-    expect(openable(project(), [])).toEqual([])
-    expect(openable(project(), ['concept'])).toEqual(['p1'])
+    expect(openable(project(), [], PAID)).toEqual([])
+    expect(openable(project(), ['concept'], PAID)).toEqual(['p1'])
   })
 
   it('называет стадии, ждущие слова заказчика', () => {
@@ -261,7 +270,7 @@ describe('подтверждение стадии заказчиком', () => {
       { id: 'c2', status: 'blocked', stage: 'concept', dependsOn: ['c1'] },
     ]
 
-    expect(openable(fresh, [])).toEqual(['c2'])
+    expect(openable(fresh, [], PAID)).toEqual(['c2'])
   })
 
   it('порядок стадий соблюдается: подтверждение поздней не открывает раннюю', () => {
@@ -273,8 +282,8 @@ describe('подтверждение стадии заказчиком', () => {
 
     // Подтверждение стадии разрешений при неподтверждённой концепции ничего не
     // открывает: пропускать стадию нельзя ни с какой стороны.
-    expect(openable(three, ['permit'])).toEqual([])
-    expect(openable(three, ['concept'])).toEqual(['p1'])
+    expect(openable(three, ['permit'], PAID)).toEqual([])
+    expect(openable(three, ['concept'], PAID)).toEqual(['p1'])
   })
 })
 
@@ -298,5 +307,47 @@ describe('у каждой требуемой роли есть работа', ()
         ).toBe(true)
       }
     }
+  })
+})
+
+/*
+ * Оплата как гейт (п.14а). Проверяется не «счёт выставлен», а то, что до
+ * оплаты никто из команды не начинает работу: тикет, открытый в долг, — это
+ * обязательство бюро перед специалистом, за которое ему никто не заплатил.
+ */
+describe('оплата открывает стадию', () => {
+  const tickets: RelayTicket[] = [
+    { id: 'c1', status: 'blocked', stage: 'concept', dependsOn: [] },
+    { id: 'p1', status: 'blocked', stage: 'permit', dependsOn: ['c1'] },
+  ]
+
+  it('без оплаты не открывает даже то, у чего нет зависимостей', () => {
+    expect(openable(tickets, [], [])).toEqual([])
+  })
+
+  it('открывает оплаченную стадию', () => {
+    expect(openable(tickets, [], ['concept'])).toEqual(['c1'])
+  })
+
+  it('оплата следующей стадии не отменяет подтверждения предыдущей', () => {
+    const done: RelayTicket[] = [
+      { id: 'c1', status: 'accepted', stage: 'concept', dependsOn: [] },
+      { id: 'p1', status: 'blocked', stage: 'permit', dependsOn: ['c1'] },
+    ]
+
+    // Заплачено, но концепция не подтверждена: гейт держит.
+    expect(openable(done, [], ['concept', 'permit'])).toEqual([])
+    expect(openable(done, ['concept'], ['concept', 'permit'])).toEqual(['p1'])
+  })
+
+  it('к оплате зовёт только то, чему мешает счёт', () => {
+    // Ничего не подтверждено: платить можно за концепцию, но не за разрешение.
+    expect(billable(tickets, [], [])).toEqual(['concept'])
+
+    // Концепция подтверждена и оплачена — очередь дошла до разрешения.
+    expect(billable(tickets, ['concept'], ['concept'])).toEqual(['permit'])
+
+    // Всё оплачено — выставлять нечего.
+    expect(billable(tickets, ['concept'], ['concept', 'permit'])).toEqual([])
   })
 })

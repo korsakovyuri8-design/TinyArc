@@ -30,6 +30,7 @@ import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
 import { threadOf } from '@/lib/services/dialogue'
 import { approvedStages, stagesAwaitingClient } from '@/lib/services/approval'
+import { invoicesOf } from '@/lib/services/billing'
 import { fileCount, packageOf } from '@/lib/services/package'
 import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
@@ -58,13 +59,16 @@ export default async function ProjectPage({
 
   if (!project) redirect('/enter')
 
-  const [run, direction, thread, pendingStages, approved] = await Promise.all([
+  const [run, direction, thread, pendingStages, approved, invoices] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     threadOf(project.id),
     stagesAwaitingClient(project.id),
     approvedStages(project.id),
+    invoicesOf(project.id),
   ])
+
+  const unpaid = new Set(invoices.filter((i) => i.status === 'issued').map((i) => i.stage))
 
   const documents = await packageOf(project.id)
 
@@ -192,11 +196,18 @@ export default async function ProjectPage({
                       <span style={{ width: `${share * 100}%` }} />
                     </div>
                     <div className="dim" style={{ marginTop: 10, fontSize: '0.82rem' }}>
+                      {/*
+                        Причина простоя названа своим именем. «Ждёт предыдущей
+                        стадии» на неоплаченной стадии — это неправда, из-за
+                        которой человек ждёт нас, пока мы ждём его.
+                      */}
                       {share === 1
                         ? 'Стадия закрыта'
                         : inStage.some((t) => t.status !== 'blocked')
                           ? 'Идёт работа'
-                          : 'Ждёт предыдущей стадии'}
+                          : unpaid.has(stage)
+                            ? 'Ждёт оплаты'
+                            : 'Ждёт предыдущей стадии'}
                     </div>
                   </div>
                 )
@@ -355,6 +366,74 @@ export default async function ProjectPage({
                       </div>
                     ))}
                   </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {invoices.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            <h2>Счета</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+              Стадия оплачивается до начала работы по ней. Команда — живые люди, и их время
+              начинается в тот момент, когда открывается задача; начинать стадию в долг бюро не
+              вправе. Цена названа целиком заранее и не пересчитывается по ходу: под каждым
+              счётом видно, из чего он сложился.
+            </p>
+
+            <div className="stack" style={{ gap: 16 }}>
+              {invoices.map((invoice) => (
+                <div
+                  key={invoice.id}
+                  className={invoice.status === 'issued' ? 'panel panel-accent' : 'panel'}
+                >
+                  <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <span className="label label-accent">{DOC_STAGE_LABELS[invoice.stage]}</span>
+                    <span className="tag">
+                      {invoice.status === 'paid'
+                        ? 'Оплачен'
+                        : invoice.status === 'void'
+                          ? 'Отозван'
+                          : 'Ждёт оплаты'}
+                    </span>
+                  </div>
+
+                  <div className="num" style={{ fontSize: '2rem', marginTop: 12 }}>
+                    {invoice.amount.toLocaleString('ru-RU')} {invoice.currency}
+                  </div>
+
+                  {invoice.basis && (
+                    <p className="dim" style={{ marginTop: 10, fontSize: '0.85rem' }}>
+                      {invoice.basis.atFloor ? (
+                        <>
+                          Нижняя граница чека за эту стадию — {invoice.basis.floor}{' '}
+                          {invoice.currency}. По площади вышло бы меньше, но посадка на участок,
+                          согласования и координация команды на маленьком объекте стоят почти
+                          столько же, сколько на большом.
+                        </>
+                      ) : (
+                        <>
+                          {invoice.basis.areaSqm} м² × {invoice.basis.ratePerSqm} {invoice.currency}
+                          /м²
+                          {invoice.basis.typologyFactor !== 1 &&
+                            ` × ${invoice.basis.typologyFactor} за общие системы дома`}
+                          {invoice.basis.jurisdictionFactor !== 1 &&
+                            ` × ${invoice.basis.jurisdictionFactor} по уровню цен страны`}
+                        </>
+                      )}
+                    </p>
+                  )}
+
+                  {invoice.status === 'issued' && (
+                    <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
+                      Реквизиты пришлёт бюро. Отметку об оплате ставит оно же, увидев
+                      поступление: приёма платежей на сайте нет, и делать вид, что есть, значило
+                      бы обещать сверку, которой не существует.
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

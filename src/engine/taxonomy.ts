@@ -207,6 +207,17 @@ export function stagesUpTo(target: DocStage): DocStage[] {
  * Специалист со «стандартным» треком не отсеивается, но и не заменяет опыт в
  * лёгком: это мягкий сигнал.
  */
+/**
+ * Подписка специалиста на доступ к проектам (п.14).
+ *
+ * none — доступа к отбору нет; founding — бесплатно на пилоте; active —
+ * платит. Плату вносит сторона предложения за доступ к спросу, а с гонорара
+ * специалиста комиссия не берётся: иначе мы зарабатывали бы тем больше, чем
+ * дороже обходится проект заказчику.
+ */
+export const SUBSCRIPTIONS = ['none', 'founding', 'active'] as const
+export type Subscription = (typeof SUBSCRIPTIONS)[number]
+
 export const REGULATORY_TRACKS = ['light', 'standard'] as const
 export type RegulatoryTrack = (typeof REGULATORY_TRACKS)[number]
 

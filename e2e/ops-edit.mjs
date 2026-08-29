@@ -90,7 +90,9 @@ const before = Number(await timezoneField.inputValue())
 const next = before === 3 ? 2 : 3
 
 await timezoneField.fill(String(next))
-await page.click('button[type=submit]')
+// Кнопку называем по подписи: на странице профиля есть и другие формы —
+// смена подписки стоит выше, и «первая кнопка отправки» указывает на неё.
+await page.click('button:has-text("Сохранить профиль")')
 await page.waitForTimeout(2200)
 
 if (check(await saved(page), 'правка сохранена')) {
@@ -123,7 +125,7 @@ if ((await surveyors.count()) > 0) {
     'у геодезиста специализаций не отмечено — их у дисциплины и нет',
   )
 
-  await page.click('button[type=submit]')
+  await page.click('button:has-text("Сохранить профиль")')
   await page.waitForTimeout(2200)
   check(await saved(page), 'профиль геодезиста сохраняется без специализации')
 } else {
@@ -158,7 +160,7 @@ for (const candidate of links) {
 
 if (free) {
   await page.check(`input[name=signsIn][value=${free}]`)
-  await page.click('button[type=submit]')
+  await page.click('button:has-text("Сохранить профиль")')
   await page.waitForTimeout(2000)
   check(!(await saved(page)), 'подпись там, где человек не работал, не проходит и у бюро')
 } else {

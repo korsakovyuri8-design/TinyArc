@@ -65,6 +65,9 @@ export function specialist(patch: Partial<SpecialistProfile> = {}): SpecialistPr
       responseMinutesTotal: 0,
       revisionRoundsTotal: 0,
     },
+    // Подписка по умолчанию есть: тесты ниже про профессию, а не про деньги.
+    // Гейт подписки проверяется отдельно и явно, в filter.test.ts.
+    subscription: 'founding',
     ...patch,
   }
 }
