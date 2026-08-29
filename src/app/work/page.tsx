@@ -1,12 +1,16 @@
-import Link from 'next/link'
+import { Link } from '@/components/Link'
 import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib/labels'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
 import { ticketsOf } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
+import { translator } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/i18n/metadata'
+import { dateTime } from '@/lib/i18n/format'
+import type { Locale } from '@/lib/i18n/locale'
 
-export const metadata = { title: 'Мои задачи — TinyArc Cloud Bureau' }
+export const generateMetadata = () => pageMetadata('Мои задачи')
 
 type Ticket = Awaited<ReturnType<typeof ticketsOf>>[number]
 
@@ -16,6 +20,7 @@ export default async function WorkPage({
   searchParams: Promise<{ left?: string }>
 }) {
   const { left } = await searchParams
+  const { locale, t } = await translator()
 
   const specialist = await currentSpecialist()
   if (!specialist) redirect(await localeHref('/enter'))
@@ -30,32 +35,36 @@ export default async function WorkPage({
   // тикет уже не его, и страница ушла бы из-под ног ошибкой доступа.
   const leftNotice =
     left === 'passed'
-      ? 'Вы вышли из проекта. Роль передана следующему по рангу из того же прогона, ваши незакрытые задачи по нему перешли к нему же.'
+      ? t('Вы вышли из проекта. Роль передана следующему по рангу из того же прогона, ваши незакрытые задачи по нему перешли к нему же.')
       : left === 'orphaned'
-        ? 'Вы вышли из проекта. Замены в прогоне не нашлось — роль вернулась бюро, и оно ищет исполнителя.'
+        ? t('Вы вышли из проекта. Замены в прогоне не нашлось — роль вернулась бюро, и оно ищет исполнителя.')
         : null
 
   // Канбан: ждёт гейта → открыт → в работе → сдано.
   const columns: { title: string; note: string; tickets: Ticket[] }[] = [
     {
-      title: 'Ждёт гейта',
-      note: 'Зависимости ещё не приняты',
-      tickets: tickets.filter((t) => t.status === 'blocked'),
+      title: t('Ждёт гейта'),
+      note: t('Зависимости ещё не приняты'),
+      tickets: tickets.filter((ticket) => ticket.status === 'blocked'),
     },
     {
-      title: 'К взятию',
-      note: 'Открыт, но не взят в работу',
-      tickets: tickets.filter((t) => t.status === 'open'),
+      title: t('К взятию'),
+      note: t('Открыт, но не взят в работу'),
+      tickets: tickets.filter((ticket) => ticket.status === 'open'),
     },
     {
-      title: 'В работе',
-      note: 'Взят или вернулся на круг',
-      tickets: tickets.filter((t) => t.status === 'in_progress' || t.status === 'revision'),
+      title: t('В работе'),
+      note: t('Взят или вернулся на круг'),
+      tickets: tickets.filter(
+        (ticket) => ticket.status === 'in_progress' || ticket.status === 'revision',
+      ),
     },
     {
-      title: 'Сдано',
-      note: 'Предъявлено или принято',
-      tickets: tickets.filter((t) => t.status === 'submitted' || t.status === 'accepted'),
+      title: t('Сдано'),
+      note: t('Предъявлено или принято'),
+      tickets: tickets.filter(
+        (ticket) => ticket.status === 'submitted' || ticket.status === 'accepted',
+      ),
     },
   ]
 
@@ -64,32 +73,31 @@ export default async function WorkPage({
       <div className="shell">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <div>
-            <span className="eyebrow">Доска работ</span>
+            <span className="eyebrow">{t('Доска работ')}</span>
             <h1>{specialist.displayName}</h1>
           </div>
-          <Link href="/work/profile" className="btn btn-quiet">
-            Профиль и метрики
+          <Link locale={locale} href="/work/profile" className="btn btn-quiet">
+            {t('Профиль и метрики')}
           </Link>
         </div>
 
         {leftNotice && (
           <div className="panel panel-accent" style={{ marginTop: 28 }}>
-            <div className="label label-accent">Выход оформлен</div>
+            <div className="label label-accent">{t('Выход оформлен')}</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 12 }}>
               {leftNotice}
             </p>
             <p className="hint" style={{ margin: 0 }}>
-              На балл это не влияет: выход не считается ошибкой и в отбор не входит. Но если
-              вы вышли из-за загрузки, поправьте свободную ёмкость —{' '}
-              <Link href="/work/profile">в профиле</Link>. Отбор считает по ней, и заявленные
-              часы, которых нет, приведут к тому же ещё раз.
+              {t('На балл это не влияет: выход не считается ошибкой и в отбор не входит. Но если вы вышли из-за загрузки, поправьте свободную ёмкость —')}{' '}
+              <Link locale={locale} href="/work/profile">{t('в профиле')}</Link>.{' '}
+              {t('Отбор считает по ней, и заявленные часы, которых нет, приведут к тому же ещё раз.')}
             </p>
           </div>
         )}
 
         {tickets.length === 0 ? (
           <div className="panel" style={{ marginTop: 40 }}>
-            <div className="label">Задач пока нет</div>
+            <div className="label">{t('Задач пока нет')}</div>
             {/*
               Причина названа там, где человек её ищет. Пустая доска без
               объяснения читается как «меня не выбирают», то есть как приговор
@@ -97,16 +105,9 @@ export default async function WorkPage({
               человек будет переделывать портфолио, а мешает не оно.
             */}
             {specialist.subscription === 'none' ? (
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-                Задач не будет, пока закрыт доступ к проектам: без него движок вас не
-                рассматривает. Это про доступ, а не про качество вашей работы — ни портфолио, ни
-                метрики здесь ни при чём. Что делать — написано в профиле.
-              </p>
+              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Задач не будет, пока закрыт доступ к проектам: без него движок вас не рассматривает. Это про доступ, а не про качество вашей работы — ни портфолио, ни метрики здесь ни при чём. Что делать — написано в профиле.')}</p>
             ) : (
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-                Тикеты появляются, когда движок ставит вас в команду проекта. Откликаться никуда
-                не нужно — отбор идёт без вашего участия.
-              </p>
+              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Тикеты появляются, когда движок ставит вас в команду проекта. Откликаться никуда не нужно — отбор идёт без вашего участия.')}</p>
             )}
           </div>
         ) : (
@@ -139,11 +140,11 @@ export default async function WorkPage({
                 <div className="stack" style={{ marginTop: 16, gap: 12 }}>
                   {column.tickets.length === 0 && (
                     <p className="dim" style={{ fontSize: '0.85rem' }}>
-                      Пусто.
+                      {t('Пусто.')}
                     </p>
                   )}
                   {column.tickets.map((ticket) => (
-                    <Card key={ticket.id} ticket={ticket} />
+                    <Card key={ticket.id} ticket={ticket} locale={locale} t={t} />
                   ))}
                 </div>
               </div>
@@ -155,11 +156,21 @@ export default async function WorkPage({
   )
 }
 
-function Card({ ticket }: { ticket: Ticket }) {
+function Card({
+  ticket,
+  locale,
+  t,
+}: {
+  ticket: Ticket
+  locale: Locale
+  /** Переводчик страницы: карточка вложена в неё и своего контекста не имеет. */
+  t: (text: string) => string
+}) {
   const overdue = ticket.dueAt && ticket.status !== 'accepted' && ticket.dueAt < new Date()
 
   return (
     <Link
+      locale={locale}
       href={`/work/${ticket.id}`}
       className="panel"
       style={{
@@ -174,34 +185,37 @@ function Card({ ticket }: { ticket: Ticket }) {
       }}
     >
       <div className="label">
-        {DOC_STAGE_LABELS[ticket.stage as DocStage]} ·{' '}
-        {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
+        {t(DOC_STAGE_LABELS[ticket.stage as DocStage])} ·{' '}
+        {t(DISCIPLINE_LABELS[ticket.discipline as Discipline])}
       </div>
 
-      <div style={{ marginTop: 10, fontSize: '0.95rem' }}>{ticket.title}</div>
+      <div style={{ marginTop: 10, fontSize: '0.95rem' }}>{t(ticket.title)}</div>
 
       <div className="dim" style={{ marginTop: 8, fontSize: '0.8rem' }}>
         {ticket.project.title}
         {ticket.waitingOn.length > 0 && (
           <>
             <br />
-            Ждёт: {ticket.waitingOn.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')}
+            {t('Ждёт:')}{' '}
+            {ticket.waitingOn.map((d) => t(DISCIPLINE_LABELS[d as Discipline])).join(', ')}
           </>
         )}
         {ticket.dueAt && ticket.status !== 'accepted' && (
           <>
             <br />
-            Срок: {ticket.dueAt.toLocaleString('ru-RU')}
+            {t('Срок:')} {dateTime(ticket.dueAt, locale)}
           </>
         )}
       </div>
 
       <div className="row" style={{ marginTop: 12, gap: 8 }}>
         <span className={`tag ${ticket.status === 'accepted' ? 'tag-pass' : ''}`}>
-          {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
+          {t(TICKET_STATUS_LABELS[ticket.status] ?? ticket.status)}
         </span>
-        {ticket.conflictRaisedAt && <span className="tag tag-fail">конфликт</span>}
-        {overdue && !ticket.conflictRaisedAt && <span className="tag tag-wait">просрочен</span>}
+        {ticket.conflictRaisedAt && <span className="tag tag-fail">{t('конфликт')}</span>}
+        {overdue && !ticket.conflictRaisedAt && (
+          <span className="tag tag-wait">{t('просрочен')}</span>
+        )}
       </div>
     </Link>
   )

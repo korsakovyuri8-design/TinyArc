@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/components/Link'
 import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics, deliveryScore, historyWeight } from '@/engine/metrics'
@@ -20,10 +20,14 @@ import { AvailabilityForm } from './AvailabilityForm'
 import { toProfile } from '@/lib/rows'
 import { company } from '@/lib/legal'
 import { currentSpecialist } from '@/lib/session'
+import { translator } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/i18n/metadata'
+import { fill } from '@/lib/i18n/fill'
 
-export const metadata = { title: 'Профиль и метрики — TinyArc Cloud Bureau' }
+export const generateMetadata = () => pageMetadata('Профиль и метрики')
 
 export default async function ProfilePage() {
+  const { locale, t } = await translator()
   const row = await currentSpecialist()
   if (!row) redirect(await localeHref('/enter'))
 
@@ -38,41 +42,49 @@ export default async function ProfilePage() {
 
   // Адрес бюро из настроек. Пока его нет — отвечать на письмо с ключом:
   // «напишите бюро» без адреса не действие, а отписка.
-  const bureauEmail = company().email || 'адрес бюро — ответом на письмо с ключом доступа'
+  const bureauEmail =
+    company().email || t('адрес бюро — ответом на письмо с ключом доступа')
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell" style={{ maxWidth: 900 }}>
-        <Link href="/work" className="label">
-          ← к доске работ
+        <Link locale={locale} href="/work" className="label">
+          {t('← к доске работ')}
         </Link>
 
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 20 }}>
           <h1>{profile.displayName}</h1>
           <span className="tag tag-accent">
-            {SPECIALIST_STATUS_LABELS[row.status] ?? row.status}
+            {t(SPECIALIST_STATUS_LABELS[row.status] ?? row.status)}
           </span>
         </div>
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
           <Stat
             value={profile.portfolioRating.toFixed(1)}
-            label="портфолио"
-            note={`порог ${PORTFOLIO_THRESHOLD}/10`}
+            label={t('портфолио')}
+            note={fill(t('порог {threshold}/10'), { threshold: PORTFOLIO_THRESHOLD })}
             accent={profile.portfolioRating >= PORTFOLIO_THRESHOLD}
           />
           <Stat
             value={metrics ? delivery.toFixed(1) : '—'}
-            label="балл поставки"
-            note={metrics ? `вес в Quality — ${Math.round(weight * 100)}%` : 'истории пока нет'}
+            label={t('балл поставки')}
+            note={
+              metrics
+                ? fill(t('вес в Quality — {percent}%'), { percent: Math.round(weight * 100) })
+                : t('истории пока нет')
+            }
           />
           <Stat
             value={String(profile.weeklyCapacityHours)}
-            label="ч/нед свободно"
+            label={t('ч/нед свободно')}
             note={
               profile.weeklyCapacityHours === 0
-                ? 'при нуле вас нет в выборке'
-                : `${AVAILABILITY_LABELS[row.availabilityStatus] ?? row.availabilityStatus}, выход за ${profile.leadTimeDays} дн.`
+                ? t('при нуле вас нет в выборке')
+                : fill(t('{status}, выход за {days} дн.'), {
+                    status: t(AVAILABILITY_LABELS[row.availabilityStatus] ?? row.availabilityStatus),
+                    days: profile.leadTimeDays,
+                  })
             }
           />
         </div>
@@ -90,47 +102,40 @@ export default async function ProfilePage() {
           }}
         >
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <div className="label">Доступ к проектам</div>
+            <div className="label">{t('Доступ к проектам')}</div>
             <span className={profile.subscription === 'none' ? 'tag tag-fail' : 'tag'}>
-              {SUBSCRIPTION_LABELS[profile.subscription]}
+              {t(SUBSCRIPTION_LABELS[profile.subscription])}
             </span>
           </div>
 
           {profile.subscription === 'none' ? (
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              Пока доступ закрыт, движок вас не рассматривает — независимо от портфолио и
-              метрик. Это про оплату доступа, а не про качество вашей работы: отказ по деньгам
-              и отказ по квалификации — разные вещи, и мы их не смешиваем. Чтобы открыть,
-              напишите на {bureauEmail}.
+              {fill(
+                t('Пока доступ закрыт, движок вас не рассматривает — независимо от портфолио и метрик. Это про оплату доступа, а не про качество вашей работы: отказ по деньгам и отказ по квалификации — разные вещи, и мы их не смешиваем. Чтобы открыть, напишите на {email}.'),
+                { email: bureauEmail },
+              )}
             </p>
           ) : (
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              Доступ открыт: вы участвуете в отборе на общих основаниях. Платит сторона
-              предложения за доступ к спросу — с вашего гонорара бюро комиссию не берёт.
-            </p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Доступ открыт: вы участвуете в отборе на общих основаниях. Платит сторона предложения за доступ к спросу — с вашего гонорара бюро комиссию не берёт.')}</p>
           )}
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
 
-        <h2>Доступность</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>
-          Единственное, чем вы управляете напрямую. Балл считает движок, время считаете вы.
-        </p>
+        <h2>{t('Доступность')}</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>{t('Единственное, чем вы управляете напрямую. Балл считает движок, время считаете вы.')}</p>
         <div className="panel" style={{ maxWidth: 460 }}>
           <AvailabilityForm
             status={row.availabilityStatus}
             hours={profile.weeklyCapacityHours}
+            locale={locale}
           />
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
 
-        <h2>Метрики качества</h2>
-        <p className="muted" style={{ marginTop: 12 }}>
-          Считаются из событий ваших тикетов. Ни бюро, ни клиент не могут их поправить: поля для
-          оценки в системе нет.
-        </p>
+        <h2>{t('Метрики качества')}</h2>
+        <p className="muted" style={{ marginTop: 12 }}>{t('Считаются из событий ваших тикетов. Ни бюро, ни клиент не могут их поправить: поля для оценки в системе нет.')}</p>
 
         {metrics ? (
           <div className="grid grid-2" style={{ marginTop: 28 }}>
@@ -138,67 +143,76 @@ export default async function ProfilePage() {
               name="SLA compliance"
               value={`${Math.round(metrics.slaCompliance * 100)}%`}
               fill={metrics.slaCompliance}
-              note={`${profile.delivery.onTimeTickets} из ${metrics.delivered} в срок`}
+              note={fill(t('{onTime} из {delivered} в срок'), {
+                onTime: profile.delivery.onTimeTickets,
+                delivered: metrics.delivered,
+              })}
             />
             <Metric
               name="First Time Right"
               value={`${Math.round(metrics.firstTimeRight * 100)}%`}
               fill={metrics.firstTimeRight}
-              note={`${profile.delivery.firstTimeRightTickets} принято с первого раза`}
+              note={fill(t('{count} принято с первого раза'), {
+                count: profile.delivery.firstTimeRightTickets,
+              })}
             />
             <Metric
               name="Response Time"
-              value={`${metrics.responseHours.toFixed(1)} ч`}
+              value={fill(t('{hours} ч'), { hours: metrics.responseHours.toFixed(1) })}
               fill={Math.max(0, 1 - metrics.responseHours / 48)}
-              note="до первого содержательного ответа"
+              note={t('до первого содержательного ответа')}
             />
             <Metric
               name="Revision Rate"
               value={metrics.revisionRate.toFixed(2)}
               fill={Math.max(0, 1 - metrics.revisionRate / 3)}
-              note="кругов правок на тикет"
+              note={t('кругов правок на тикет')}
             />
           </div>
         ) : (
           <div className="panel" style={{ marginTop: 24 }}>
-            <p className="muted" style={{ margin: 0 }}>
-              Закрытых тикетов пока нет, поэтому Quality у вас — это рейтинг портфолио. Как
-              только появится история, она начнёт вытеснять портфолио: до 60% веса.
-            </p>
+            <p className="muted" style={{ margin: 0 }}>{t('Закрытых тикетов пока нет, поэтому Quality у вас — это рейтинг портфолио. Как только появится история, она начнёт вытеснять портфолио: до 60% веса.')}</p>
           </div>
         )}
 
         <div className="divider" style={{ marginTop: 44 }} />
 
-        <h2>Что о вас знает движок</h2>
+        <h2>{t('Что о вас знает движок')}</h2>
         <div className="grid grid-2" style={{ marginTop: 24 }}>
-          <Row label="Дисциплины" value={profile.disciplines.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')} />
           <Row
-            label="Специализация"
-            value={profile.specializations
-              .map((x) => SPECIALIZATION_LABELS[x as Specialization])
+            label={t('Дисциплины')}
+            value={profile.disciplines
+              .map((d) => t(DISCIPLINE_LABELS[d as Discipline]))
               .join(', ')}
           />
-          <Row label="Юрисдикции" value={profile.jurisdictions.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')} />
           <Row
-            label="Право подписи"
+            label={t('Специализация')}
+            value={profile.specializations
+              .map((x) => t(SPECIALIZATION_LABELS[x as Specialization]))
+              .join(', ')}
+          />
+          <Row
+            label={t('Юрисдикции')}
+            value={profile.jurisdictions
+              .map((j) => t(JURISDICTION_NAMES[j as Jurisdiction]))
+              .join(', ')}
+          />
+          <Row
+            label={t('Право подписи')}
             value={
               profile.signsIn.length > 0
-                ? profile.signsIn.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')
-                : 'нет'
+                ? profile.signsIn.map((j) => t(JURISDICTION_NAMES[j as Jurisdiction])).join(', ')
+                : t('нет')
             }
           />
-          <Row label="Максимальная этажность" value={String(profile.maxStoreys)} />
-          <Row label="Софт" value={profile.software.join(', ')} />
-          <Row label="Обмен по IFC" value={profile.ifcLevel} />
-          <Row label="Ключ доступа" value={row.accessKey} mono />
-          <Row label="Смещение от UTC" value={String(profile.utcOffset)} mono />
+          <Row label={t('Максимальная этажность')} value={String(profile.maxStoreys)} />
+          <Row label={t('Софт')} value={profile.software.join(', ')} />
+          <Row label={t('Обмен по IFC')} value={profile.ifcLevel} />
+          <Row label={t('Ключ доступа')} value={row.accessKey} mono />
+          <Row label={t('Смещение от UTC')} value={String(profile.utcOffset)} mono />
         </div>
 
-        <p className="hint" style={{ marginTop: 28 }}>
-          Изменить эти поля можно через бюро: они входят в отбор, и править их самому в обход
-          разбора — значит править собственный балл.
-        </p>
+        <p className="hint" style={{ marginTop: 28 }}>{t('Изменить эти поля можно через бюро: они входят в отбор, и править их самому в обход разбора — значит править собственный балл.')}</p>
       </div>
     </section>
   )

@@ -966,4 +966,227 @@ export const en: Record<string, string> = {
   'Нет свободной ёмкости или не успевает выйти к сроку':
     'No free capacity, or cannot start in time',
   'Нет действующей подписки на доступ к проектам': 'No active subscription for access to projects',
+
+  // --- Доска работ специалиста ---
+  'Мои задачи': 'My tasks',
+  'Доска работ': 'Work board',
+  'Профиль и метрики': 'Profile and metrics',
+  'Вы вышли из проекта. Роль передана следующему по рангу из того же прогона, ваши незакрытые задачи по нему перешли к нему же.':
+    'You have left the project. The role went to the next by rank from the same run, and your open tasks on it went with the role.',
+  'Вы вышли из проекта. Замены в прогоне не нашлось — роль вернулась бюро, и оно ищет исполнителя.':
+    'You have left the project. No replacement was found in the run — the role went back to the bureau, which is looking for someone.',
+  'Ждёт гейта': 'Waiting on a gate',
+  'Зависимости ещё не приняты': 'Its dependencies are not accepted yet',
+  'К взятию': 'To pick up',
+  'Открыт, но не взят в работу': 'Open, not yet taken on',
+  'Взят или вернулся на круг': 'Taken on, or back for another round',
+  Сдано: 'Submitted',
+  'Предъявлено или принято': 'Handed in or accepted',
+  'Выход оформлен': 'Your exit is recorded',
+  'На балл это не влияет: выход не считается ошибкой и в отбор не входит. Но если вы вышли из-за загрузки, поправьте свободную ёмкость —':
+    'This does not touch your score: leaving is not counted as a failure and does not enter selection. But if you left because of workload, correct your free capacity —',
+  'в профиле': 'in your profile',
+  'Отбор считает по ней, и заявленные часы, которых нет, приведут к тому же ещё раз.':
+    'Selection counts on it, and declared hours you do not have will bring you here again.',
+  'Задач пока нет': 'No tasks yet',
+  'Задач не будет, пока закрыт доступ к проектам: без него движок вас не рассматривает. Это про доступ, а не про качество вашей работы — ни портфолио, ни метрики здесь ни при чём. Что делать — написано в профиле.':
+    'There will be no tasks while access to projects is closed: without it the engine does not consider you. This is about access, not about the quality of your work — neither portfolio nor metrics come into it. What to do is written in your profile.',
+  'Тикеты появляются, когда движок ставит вас в команду проекта. Откликаться никуда не нужно — отбор идёт без вашего участия.':
+    'Tickets appear when the engine puts you on a project team. There is nothing to apply to — selection runs without your involvement.',
+  'Пусто.': 'Empty.',
+  'Ждёт:': 'Waits for:',
+  'Срок:': 'Due:',
+  конфликт: 'conflict',
+  просрочен: 'overdue',
+
+  // --- Тикет ---
+  Тикет: 'Ticket',
+  '← к доске работ': '← back to the work board',
+  'запрос смежника': 'request from an adjacent discipline',
+  'от дисциплины «{discipline}»': 'from “{discipline}”',
+  'срок {hours} ч': '{hours} h to deliver',
+  'до {due}': 'due {due}',
+  'кругов правок: {rounds}': 'revision rounds: {rounds}',
+  'Конфликт передан арбитру': 'The conflict went to the arbiter',
+  'Работа по тикету стоит, пока бюро не вынесет решение.':
+    'Work on the ticket is on hold until the bureau rules.',
+  'Тикет ещё закрыт гейтом': 'The ticket is still closed by a gate',
+  'Ждём приёмки:': 'Waiting on acceptance of:',
+  'Постановка и входные файлы появятся здесь, когда тикет откроется.':
+    'The brief and the input files appear here when the ticket opens.',
+  Постановка: 'The brief',
+  'Бюро ещё не дописало постановку — задайте вопрос в комментарии.':
+    'The bureau has not finished the brief — ask in a comment.',
+  'Входные файлы': 'Input files',
+  'То, что сдали предшественники по графу. Автор указан дисциплиной.':
+    'What your predecessors in the graph handed in. The author is named by discipline.',
+  'Смежники на проекте: {roles}.': 'Adjacent roles on the project: {roles}.',
+  'Их контактов в системе нет — всё через бюро.':
+    'The system holds no contacts for them — everything goes through the bureau.',
+  'Время до принятия задачи — это метрика. Тикет, открытый и не взятый, видит цифровой менеджер и напоминает.':
+    'Time to pick a task up is a metric. A ticket left open and untaken is seen by the digital manager, and it will remind you.',
+  'Ваши файлы по тикету': 'Your files on this ticket',
+  сгенерировано: 'generated',
+  Изображение: 'Image',
+  'Черновой материал для работы. В записях он помечен как сгенерированный — ответственность за сданное остаётся на вас.':
+    'Draft material to work from. The records mark it as generated — responsibility for what you hand in stays yours.',
+  'Направление: {title}. {summary}': 'Direction: {title}. {summary}',
+  Комментарии: 'Comments',
+  'Пока пусто.': 'Nothing yet.',
+  Бюро: 'Bureau',
+  Вы: 'You',
+  'Приёмку делает бюро. Принято в срок и с первого раза — Quality растёт.':
+    'The bureau does the accepting. Accepted on time and first time — Quality goes up.',
+  'Работа предъявлена и ждёт приёмки бюро.':
+    'The work is handed in and waits for the bureau to accept it.',
+  'Тикет принят. Зависящие от него задачи гейт откроет сам.':
+    'The ticket is accepted. The gate opens the tasks that depend on it by itself.',
+  'Ваши запросы смежникам': 'Your requests to adjacent disciplines',
+  'Нужно что-то от смежной дисциплины': 'Need something from an adjacent discipline',
+  'Это не спор и не переписка. Запрос станет тикетом для нужной дисциплины — с исполнителем, сроком и приёмкой, как всякая другая работа.':
+    'This is neither an argument nor a conversation. The request becomes a ticket for that discipline — with someone on it, a deadline and acceptance, like any other work.',
+  'Если договориться нельзя': 'If agreement is not possible',
+  'Арбитраж останавливает работу по тикету. Для рабочего вопроса используйте запрос выше.':
+    'Arbitration stops work on the ticket. For a working question use the request above.',
+  'Если не сможете вести': 'If you cannot carry it',
+  'Болезнь, чужой срок, недооценённый объём — это бывает, и молчание здесь хуже отказа. Сказать заранее значит дать проекту найти замену, пока срок ещё не горит.':
+    'Illness, someone else’s deadline, an underestimated scope — it happens, and silence here is worse than declining. Saying it early lets the project find a replacement while the deadline is not yet burning.',
+
+  // --- Действия на тикете ---
+  'Взять в работу': 'Take it on',
+  'Предъявить работу': 'Hand in the work',
+  Отправить: 'Send',
+  'Передать арбитру': 'Refer to the arbiter',
+  'Отправить запрос': 'Send the request',
+  Сгенерировать: 'Generate',
+  Приложить: 'Attach',
+  'Комментарий в тикете': 'Comment on the ticket',
+  'Вопрос по постановке, ход работы, что передаёте дальше':
+    'A question about the brief, how the work is going, what you are handing on',
+  'Это единственный канал: личных сообщений между специалистами в системе нет.':
+    'This is the only channel: there are no private messages between specialists in the system.',
+  'Расхождение по задаче': 'The disagreement on this task',
+  'Например: вентканал по разделу инженерии проходит там, где дверь по архитектуре':
+    'For example: the duct in the MEP set runs where the architectural set has a door',
+  'Договариваться со смежником напрямую негде и не нужно. Решает бюро.':
+    'There is nowhere to settle it with the adjacent discipline directly, and no need. The bureau decides.',
+  Кому: 'To whom',
+  'Что нужно': 'What you need',
+  'Сдвинуть дверь в осях 3–4': 'Move the door on gridlines 3–4',
+  Подробно: 'In detail',
+  'Вентканал 200×400 идёт по стене в осях 3–4 и упирается в дверной проём. Нужно сдвинуть проём на 200 мм к оси 4.':
+    'A 200×400 duct runs along the wall on gridlines 3–4 and hits the door opening. The opening needs to move 200 mm towards gridline 4.',
+  'Станет тикетом для этой дисциплины со сроком в сутки. Переписки не будет: адресат должен понять запрос без вас.':
+    'It becomes a ticket for that discipline with a one-day deadline. There will be no exchange: the recipient has to understand the request without you.',
+  'Экстерьер, вечер, вид с подъезда': 'Exterior, evening, view from the approach',
+  'Что должно быть на изображении': 'What the image should show',
+  'Ляжет в тикет с пометкой, что сгенерировано. Это материал для работы: предъявляете вы то, за что готовы отвечать.':
+    'It goes onto the ticket marked as generated. It is material to work from: what you hand in is what you are prepared to answer for.',
+  'Название файла': 'File name',
+  'Планы этажей, rev.B': 'Floor plans, rev.B',
+  Тип: 'Kind',
+  Файл: 'File',
+  'До {limit} МБ. Файл ложится к нам: материалы проекта принадлежат заказчику и передаются ему целиком (п.13), а ссылка на чужой диск живёт до того дня, когда там наведут порядок.':
+    'Up to {limit} MB. The file is stored by us: project materials belong to the client and are handed over in full (§13), whereas a link to someone else’s drive lives until the day they tidy it up.',
+  '…или ссылка': '…or a link',
+  'Для того, что снаружи по своей природе: облачная модель, общий диск заказчика.':
+    'For what is external by nature: a cloud model, the client’s shared drive.',
+  'Почему выходите': 'Why you are leaving',
+  'Заболел, выхожу не раньше чем через три недели':
+    'Ill; I cannot start for another three weeks',
+  'Причину увидит бюро и тот, кто придёт на замену. Оценкой она не станет — поля оценки специалиста в системе нет.':
+    'The bureau and whoever replaces you will see the reason. It does not become a rating — there is no field for rating a specialist in the system.',
+  'Выйти из проекта': 'Leave the project',
+  'Уйдёт роль целиком: все ваши незакрытые задачи по этому проекту перейдут следующему по рангу из того же прогона. Принятая работа останется вашей — она уже в ваших метриках, и переписывать её никто не будет.':
+    'The whole role goes: every open task of yours on this project passes to the next by rank from the same run. Accepted work stays yours — it is already in your metrics, and no one will rewrite it.',
+
+  // --- Профиль специалиста ---
+  'Заполнить профиль': 'Complete your profile',
+  '← профиль': '← profile',
+  '{name}, заполните профиль': '{name}, complete your profile',
+  'адрес бюро — ответом на письмо с ключом доступа':
+    'the bureau’s address — reply to the email with your access key',
+  портфолио: 'portfolio',
+  'порог {threshold}/10': 'threshold {threshold}/10',
+  'балл поставки': 'delivery score',
+  'вес в Quality — {percent}%': 'weight in Quality — {percent}%',
+  'истории пока нет': 'no history yet',
+  'ч/нед свободно': 'h/week free',
+  'при нуле вас нет в выборке': 'at zero you are out of selection',
+  '{status}, выход за {days} дн.': '{status}, starts within {days} days',
+  'Доступ к проектам': 'Access to projects',
+  'Пока доступ закрыт, движок вас не рассматривает — независимо от портфолио и метрик. Это про оплату доступа, а не про качество вашей работы: отказ по деньгам и отказ по квалификации — разные вещи, и мы их не смешиваем. Чтобы открыть, напишите на {email}.':
+    'While access is closed the engine does not consider you — whatever your portfolio and metrics. This is about paying for access, not about the quality of your work: being turned away over money and being turned away over qualification are different things, and we do not mix them. To open it, write to {email}.',
+  'Доступ открыт: вы участвуете в отборе на общих основаниях. Платит сторона предложения за доступ к спросу — с вашего гонорара бюро комиссию не берёт.':
+    'Access is open: you take part in selection on the usual terms. The supply side pays for access to demand — the bureau takes no commission from your fee.',
+  'Единственное, чем вы управляете напрямую. Балл считает движок, время считаете вы.':
+    'The one thing you control directly. The engine counts the score, you count the time.',
+  'Метрики качества': 'Quality metrics',
+  'Считаются из событий ваших тикетов. Ни бюро, ни клиент не могут их поправить: поля для оценки в системе нет.':
+    'Calculated from the events on your tickets. Neither the bureau nor the client can adjust them: there is no field for a rating in the system.',
+  '{onTime} из {delivered} в срок': '{onTime} of {delivered} on time',
+  '{count} принято с первого раза': '{count} accepted first time',
+  'до первого содержательного ответа': 'to the first substantive reply',
+  'кругов правок на тикет': 'revision rounds per ticket',
+  'Закрытых тикетов пока нет, поэтому Quality у вас — это рейтинг портфолио. Как только появится история, она начнёт вытеснять портфолио: до 60% веса.':
+    'You have no closed tickets yet, so your Quality is your portfolio rating. Once a history appears it starts displacing the portfolio: up to 60% of the weight.',
+  'Что о вас знает движок': 'What the engine knows about you',
+  нет: 'none',
+  'Обмен по IFC': 'IFC exchange',
+  'Изменить эти поля можно через бюро: они входят в отбор, и править их самому в обход разбора — значит править собственный балл.':
+    'These fields are changed through the bureau: they enter selection, and editing them yourself, around the review, would mean editing your own score.',
+  Статус: 'Status',
+  'Статус «занят» обнуляет ёмкость: в отборе вас не будет, пока не вернёте часы.':
+    'The “busy” status zeroes your capacity: you stay out of selection until you put the hours back.',
+  'Фактор доступности — множитель, а не слагаемое. Ноль часов означает выход из выборки.':
+    'Availability is a multiplier, not a term added on. Zero hours means dropping out of selection.',
+  'Сохраняем…': 'Saving…',
+  Сохранить: 'Save',
+  'Зачем эти поля': 'What these fields are for',
+  'Вас позвало бюро — заявку вы не подавали. Из нашей базы известны имя и адрес, и, возможно, дисциплина со страной: они уже отмечены ниже. Остальное знаете только вы.':
+    'The bureau invited you — you did not apply. From our records we know your name and address, and possibly your discipline and country: those are already ticked below. The rest only you know.',
+  'Команду под проект собирает алгоритм, а не человек. Он отбирает по фактам: юрисдикция, пакет, стадия, язык, часовой пояс, свободная ёмкость. Пустое поле — это не «нейтрально», это «не проходит»: половина из них — жёсткие гейты. Пока профиль не заполнен, вас просто нет в выборке.':
+    'The team for a project is assembled by an algorithm, not a person. It selects on facts: jurisdiction, software suite, stage, language, time zone, free capacity. An empty field is not “neutral”, it is “does not pass”: half of them are hard gates. Until the profile is filled in, you are simply not in the pool.',
+  'После сохранения профиль уходит на разбор портфолио. Порог — {threshold}/10, и рейтинг ставит бюро: вы даёте данные о себе, а не оценку себе.':
+    'Once saved, the profile goes for portfolio review. The threshold is {threshold}/10, and the bureau sets the rating: you give facts about yourself, not a rating of yourself.',
+  'Профиль отправлен': 'Profile submitted',
+  'Бюро смотрит портфолио и ставит рейтинг. Порог — {threshold}/10. Ключ доступа у вас уже есть — тот же, по которому вы вошли.':
+    'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10. You already have the access key — the one you signed in with.',
+  'К профилю →': 'To the profile →',
+  'Отправить на разбор': 'Send for review',
+
+  // --- Сообщения действий специалиста ---
+  'Не получилось.': 'That did not work.',
+  'Не получилось. Напишите в тикет — бюро разберёт вручную.':
+    'That did not work. Write in the ticket — the bureau will sort it by hand.',
+  'Тикет взят в работу.': 'The ticket is now yours to work on.',
+  'Работа предъявлена, ждёт приёмки бюро.':
+    'The work is handed in and waits for the bureau to accept it.',
+  'Пустой комментарий.': 'The comment is empty.',
+  'Опишите, в чём именно расхождение.': 'Describe exactly what the disagreement is.',
+  'Выберите дисциплину.': 'Choose a discipline.',
+  'Коротко назовите, что нужно.': 'Say briefly what you need.',
+  'Опишите запрос: адресату нужно понять его без вас.':
+    'Describe the request: the recipient has to understand it without you.',
+  'Опишите, что нужно на изображении.': 'Describe what the image should show.',
+  'Назовите файл: смежник увидит это имя, а не ваше.':
+    'Name the file: the adjacent discipline sees this name, not yours.',
+  'Приложите файл или дайте ссылку.': 'Attach a file or give a link.',
+  'Файл больше потолка, указанного у поля. Это уже архив, а не чертёж: положите его отдельно и дайте ссылку.':
+    'The file is over the limit stated by the field. That is an archive, not a drawing: keep it elsewhere and give a link.',
+  'Напишите причину: её увидит и бюро, и тот, кто придёт на замену.':
+    'Write the reason: both the bureau and your replacement will see it.',
+  'Неизвестный статус.': 'Unknown status.',
+  'Ёмкость — от 0 до 60 часов в неделю.': 'Capacity runs from 0 to 60 hours a week.',
+  'Доступность обновлена.': 'Availability updated.',
+  'Тикет назначен не вам.': 'This ticket is assigned to someone else.',
+  'В команде проекта нет такой дисциплины — просить некого.':
+    'The project team has no such discipline — there is no one to ask.',
+  'Тикет сейчас в другом статусе: это действие недоступно.':
+    'The ticket is in a different state right now: this action is unavailable.',
+  'Файл больше потолка, указанного у поля. Это уже не чертёж, а архив: положите его отдельно и приложите ссылкой.':
+    'The file is over the limit stated by the field. That is an archive, not a drawing: keep it elsewhere and attach it as a link.',
+  'Без причины выход не оформляется: её увидит тот, кто придёт.':
+    'Leaving is not recorded without a reason: whoever replaces you will read it.',
+  'Вы не ведёте роль на этом проекте.': 'You do not hold a role on this project.',
 }

@@ -25,6 +25,7 @@
 import { DOC_STAGE_LABELS } from '../labels'
 import { translate } from '../i18n/dict'
 import { fill } from '../i18n/fill'
+import { dateTime } from '../i18n/format'
 import { DEFAULT_LOCALE, isLocale, localePath, type Locale } from '../i18n/locale'
 import { absolute, siteUrl } from '../site'
 import { mailer } from '../mail'
@@ -148,21 +149,27 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
   await once('stage_awaiting', `${projectId}:${stage}`, project.clientEmail, async () => {
     await mailer().send({
       to: project.clientEmail,
-      subject: `Стадия «${label}» ждёт вашего подтверждения — ${project.title}`,
+      subject: fill(t('Стадия «{stage}» ждёт вашего подтверждения — {project}'), {
+        stage: label,
+        project: project.title,
+      }),
       body: [
-        `${project.clientName}, здравствуйте.`,
+        fill(t('{name}, здравствуйте.'), { name: project.clientName }),
         '',
-        `По проекту «${project.title}» закончена стадия «${label}»: бюро приняло все`,
-        'её задачи. Это означает «сделано так, как поставлено».',
+        fill(
+          t('По проекту «{project}» закончена стадия «{stage}»: бюро приняло все её задачи. Это означает «сделано так, как поставлено».'),
+          { project: project.title, stage: label },
+        ),
         '',
-        'Осталось ваше слово — «заказано было именно это». Пока его нет, следующая',
-        'стадия не начинается: разрабатывать документацию по неподтверждённой',
-        'концепции значит готовить переделку.',
+        t(
+          'Осталось ваше слово — «заказано было именно это». Пока его нет, следующая стадия не начинается: разрабатывать документацию по неподтверждённой концепции значит готовить переделку.',
+        ),
         '',
-        'Если есть замечания — не подтверждайте, а напишите нам из кабинета: мы',
-        'переведём их в круг правок.',
+        t(
+          'Если есть замечания — не подтверждайте, а напишите нам из кабинета: мы переведём их в круг правок.',
+        ),
         '',
-        `Кабинет проекта: ${absolute('/enter')}`,
+        `${t('Кабинет проекта:')} ${absolute(localePath('/enter', locale))}`,
         ...SIGNATURE,
       ].join('\n'),
     })
@@ -190,27 +197,25 @@ async function ticketOpen(ticketId: string): Promise<void> {
 
   const due = ticket.dueAt
     ? fill(t('Срок: до {due}.'), {
-        due: ticket.dueAt.toLocaleString(locale === 'ru' ? 'ru-RU' : 'en-GB', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-        }),
+        due: dateTime(ticket.dueAt, locale),
       })
     : fill(t('Срок: {hours} ч с этого момента.'), { hours: ticket.slaHours })
 
   await once('ticket_open', ticket.id, ticket.specialist.email, async () => {
     await mailer().send({
       to: ticket.specialist!.email,
-      subject: `Новая задача: ${ticket.title}`,
+      subject: fill(t('Новая задача: {title}'), { title: t(ticket.title) }),
       body: [
-        `${ticket.specialist!.displayName}, здравствуйте.`,
+        fill(t('{name}, здравствуйте.'), { name: ticket.specialist!.displayName }),
         '',
-        `Вам открыта задача: ${ticket.title}.`,
+        fill(t('Вам открыта задача: {title}.'), { title: t(ticket.title) }),
         due,
         '',
-        'Постановка и входные данные — на доске работ. Взять в работу нужно там же:',
-        'срок считается от открытия задачи, а не от того, когда вы её увидели.',
+        t(
+          'Постановка и входные данные — на доске работ. Взять в работу нужно там же: срок считается от открытия задачи, а не от того, когда вы её увидели.',
+        ),
         '',
-        `Доска работ: ${absolute('/enter')}`,
+        `${t('Доска работ:')} ${absolute(localePath('/enter', locale))}`,
         ...SIGNATURE,
       ].join('\n'),
     })

@@ -30,24 +30,24 @@ export class NotYours extends Error {
 }
 
 export class NoSuchRole extends Error {
-  constructor(discipline: string) {
-    super(`В команде проекта нет дисциплины «${discipline}» — просить некого.`)
+  constructor(readonly discipline: string) {
+    super('В команде проекта нет такой дисциплины — просить некого.')
     this.name = 'NoSuchRole'
   }
 }
 
 export class TooLarge extends Error {
-  constructor(bytes: number) {
+  constructor(readonly bytes: number) {
     super(
-      `Файл ${Math.round(bytes / 1024 / 1024)} МБ — больше потолка в ${Math.round(MAX_FILE_BYTES / 1024 / 1024)} МБ. Это уже не чертёж, а архив: положите его отдельно и приложите ссылкой.`,
+      'Файл больше потолка, указанного у поля. Это уже не чертёж, а архив: положите его отдельно и приложите ссылкой.',
     )
     this.name = 'TooLarge'
   }
 }
 
 export class NotOpen extends Error {
-  constructor(status: string) {
-    super(`Тикет в статусе «${status}»: это действие сейчас недоступно.`)
+  constructor(readonly status: string) {
+    super('Тикет сейчас в другом статусе: это действие недоступно.')
     this.name = 'NotOpen'
   }
 }

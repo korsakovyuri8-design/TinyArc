@@ -148,7 +148,7 @@ export async function addArtifact(_prev: WorkState, formData: FormData): Promise
   if (file) {
     if (file.size > MAX_FILE_BYTES) {
       return {
-        error: `Файл больше ${Math.round(MAX_FILE_BYTES / 1024 / 1024)} МБ. Это уже архив, а не чертёж: положите его отдельно и дайте ссылку.`,
+        error: 'Файл больше потолка, указанного у поля. Это уже архив, а не чертёж: положите его отдельно и дайте ссылку.',
       }
     }
 

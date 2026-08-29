@@ -1,5 +1,5 @@
 import { localeHref } from '@/lib/i18n/redirect'
-import Link from 'next/link'
+import { Link } from '@/components/Link'
 import { notFound, redirect } from 'next/navigation'
 import { teammateRoles } from '@/engine/relay'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
@@ -15,6 +15,10 @@ import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { inboundArtifacts } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
+import { translator } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/i18n/metadata'
+import { fill } from '@/lib/i18n/fill'
+import { dateTime, date as formatDate } from '@/lib/i18n/format'
 import {
   ArtifactForm,
   ClaimWork,
@@ -26,10 +30,11 @@ import {
   SubmitWork,
 } from './TicketActions'
 
-export const metadata = { title: 'Тикет — TinyArc Cloud Bureau' }
+export const generateMetadata = () => pageMetadata('Тикет')
 
 export default async function TicketPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = await params
+  const { locale, t } = await translator()
   const specialist = await currentSpecialist()
   if (!specialist) redirect(await localeHref('/enter'))
 
@@ -72,81 +77,83 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell" style={{ maxWidth: 860 }}>
-        <Link href="/work" className="label">
-          ← к доске работ
+        <Link locale={locale} href="/work" className="label">
+          {t('← к доске работ')}
         </Link>
 
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 20 }}>
           <span className="label label-accent">
-            {DOC_STAGE_LABELS[ticket.stage as DocStage]} ·{' '}
-            {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
+            {t(DOC_STAGE_LABELS[ticket.stage as DocStage])} ·{' '}
+            {t(DISCIPLINE_LABELS[ticket.discipline as Discipline])}
           </span>
-          <span className="tag">{TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}</span>
+          <span className="tag">{t(TICKET_STATUS_LABELS[ticket.status] ?? ticket.status)}</span>
         </div>
 
         {ticket.kind === 'request' && (
           <div className="row" style={{ marginTop: 12, gap: 10 }}>
-            <span className="tag tag-accent">запрос смежника</span>
+            <span className="tag tag-accent">{t('запрос смежника')}</span>
             {ticket.requestedFrom && (
               <span className="dim" style={{ fontSize: '0.85rem' }}>
-                от дисциплины «{DISCIPLINE_LABELS[ticket.requestedFrom.discipline as Discipline]}»
+                {fill(t('от дисциплины «{discipline}»'), {
+                  discipline: t(DISCIPLINE_LABELS[ticket.requestedFrom.discipline as Discipline]),
+                })}
               </span>
             )}
           </div>
         )}
 
-        <h1 style={{ marginTop: 14, fontSize: 'clamp(1.8rem, 4vw, 2.6rem)' }}>{ticket.title}</h1>
+        <h1 style={{ marginTop: 14, fontSize: 'clamp(1.8rem, 4vw, 2.6rem)' }}>{t(ticket.title)}</h1>
         <p className="dim" style={{ marginTop: 10 }}>
-          {ticket.project.title} · срок {ticket.slaHours} ч
-          {ticket.dueAt && ` · до ${ticket.dueAt.toLocaleString('ru-RU')}`}
-          {ticket.revisionRounds > 0 && ` · кругов правок: ${ticket.revisionRounds}`}
+          {ticket.project.title} · {fill(t('срок {hours} ч'), { hours: ticket.slaHours })}
+          {ticket.dueAt && ` · ${fill(t('до {due}'), { due: dateTime(ticket.dueAt, locale) })}`}
+          {ticket.revisionRounds > 0 &&
+            ` · ${fill(t('кругов правок: {rounds}'), { rounds: ticket.revisionRounds })}`}
         </p>
 
         {ticket.conflictRaisedAt && (
           <div className="panel" style={{ marginTop: 24, borderColor: 'var(--fail)' }}>
             <div className="label" style={{ color: 'var(--fail)' }}>
-              Конфликт передан арбитру
+              {t('Конфликт передан арбитру')}
             </div>
             <p style={{ marginTop: 10, marginBottom: 0 }}>{ticket.conflictNote}</p>
             <p className="hint" style={{ marginTop: 10 }}>
-              Работа по тикету стоит, пока бюро не вынесет решение.
+              {t('Работа по тикету стоит, пока бюро не вынесет решение.')}
             </p>
           </div>
         )}
 
         {blocked ? (
           <div className="panel" style={{ marginTop: 32 }}>
-            <div className="label">Тикет ещё закрыт гейтом</div>
+            <div className="label">{t('Тикет ещё закрыт гейтом')}</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              Ждём приёмки:{' '}
+              {t('Ждём приёмки:')}{' '}
               {ticket.dependsOn
                 .filter((d) => d.prerequisite.status !== 'accepted')
-                .map((d) => DISCIPLINE_LABELS[d.prerequisite.discipline as Discipline])
+                .map((d) => t(DISCIPLINE_LABELS[d.prerequisite.discipline as Discipline]))
                 .join(', ') || '—'}
-              . Постановка и входные файлы появятся здесь, когда тикет откроется.
+              . {t('Постановка и входные файлы появятся здесь, когда тикет откроется.')}
             </p>
           </div>
         ) : (
           <>
             {direction && (
               <div style={{ marginTop: 32 }}>
-                <ChosenDirection direction={direction} audience="team" t={(x) => x} />
+                <ChosenDirection direction={direction} audience="team" t={t} />
               </div>
             )}
 
             <div className="panel" style={{ marginTop: 24 }}>
-              <div className="label">Постановка</div>
+              <div className="label">{t('Постановка')}</div>
               <p style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-                {ticket.spec || 'Бюро ещё не дописало постановку — задайте вопрос в комментарии.'}
+                {ticket.spec ||
+                  t('Бюро ещё не дописало постановку — задайте вопрос в комментарии.')}
               </p>
             </div>
 
             {inbound.length > 0 && (
               <div className="panel" style={{ marginTop: 20 }}>
-                <div className="label label-accent">Входные файлы</div>
-                <p className="hint" style={{ marginTop: 8 }}>
-                  То, что сдали предшественники по графу. Автор указан дисциплиной.
-                </p>
+                <div className="label label-accent">{t('Входные файлы')}</div>
+                <p className="hint" style={{ marginTop: 8 }}>{t('То, что сдали предшественники по графу. Автор указан дисциплиной.')}</p>
                 <ul className="clean" style={{ marginTop: 12 }}>
                   {inbound.map((file) => (
                     <li key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -157,8 +164,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                         {file.name}
                       </a>
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
-                        {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind} ·{' '}
-                        {DISCIPLINE_LABELS[file.fromDiscipline as Discipline]}
+                        {t(ARTIFACT_KIND_LABELS[file.kind] ?? file.kind)} ·{' '}
+                        {t(DISCIPLINE_LABELS[file.fromDiscipline as Discipline])}
                       </span>
                     </li>
                   ))}
@@ -168,24 +175,23 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
             {roles.length > 0 && (
               <p className="hint" style={{ marginTop: 16 }}>
-                Смежники на проекте: {roles.map((r) => DISCIPLINE_LABELS[r]).join(', ')}. Их
-                контактов в системе нет — всё через бюро.
+                {fill(t('Смежники на проекте: {roles}.'), {
+                  roles: roles.map((r) => t(DISCIPLINE_LABELS[r])).join(', '),
+                })}{' '}
+                {t('Их контактов в системе нет — всё через бюро.')}
               </p>
             )}
 
             {canClaim && (
               <div style={{ marginTop: 28 }}>
-                <ClaimWork ticketId={ticket.id} />
-                <p className="hint" style={{ marginTop: 10 }}>
-                  Время до принятия задачи — это метрика. Тикет, открытый и не взятый, видит
-                  цифровой менеджер и напоминает.
-                </p>
+                <ClaimWork ticketId={ticket.id} locale={locale} />
+                <p className="hint" style={{ marginTop: 10 }}>{t('Время до принятия задачи — это метрика. Тикет, открытый и не взятый, видит цифровой менеджер и напоминает.')}</p>
               </div>
             )}
 
             {ticket.artifacts.length > 0 && (
               <div className="panel" style={{ marginTop: 24 }}>
-                <div className="label">Ваши файлы по тикету</div>
+                <div className="label">{t('Ваши файлы по тикету')}</div>
                 <ul className="clean" style={{ marginTop: 12 }}>
                   {ticket.artifacts.map((file) => (
                     <li key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -196,11 +202,11 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                         {file.name}
                       </a>
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
-                        {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
+                        {t(ARTIFACT_KIND_LABELS[file.kind] ?? file.kind)}
                       </span>
                       {file.source.startsWith('generated') && (
                         <span className="tag" style={{ marginLeft: 10 }}>
-                          сгенерировано
+                          {t('сгенерировано')}
                         </span>
                       )}
                     </li>
@@ -211,23 +217,26 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
             {working && (
               <div style={{ marginTop: 28 }}>
-                <ArtifactForm ticketId={ticket.id} />
+                <ArtifactForm ticketId={ticket.id} locale={locale} />
               </div>
             )}
 
             {working && (
               <>
                 <div className="divider" />
-                <div className="label label-accent">Изображение</div>
-                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                  Черновой материал для работы. В записях он помечен как сгенерированный —
-                  ответственность за сданное остаётся на вас.
-                </p>
+                <div className="label label-accent">{t('Изображение')}</div>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>{t('Черновой материал для работы. В записях он помечен как сгенерированный — ответственность за сданное остаётся на вас.')}</p>
                 <RenderForm
                   ticketId={ticket.id}
+                  locale={locale}
                   hint={[
                     ticket.project.title,
-                    direction ? `Направление: ${direction.title}. ${direction.summary}` : '',
+                    direction
+                      ? fill(t('Направление: {title}. {summary}'), {
+                          title: t(direction.title),
+                          summary: t(direction.summary),
+                        })
+                      : '',
                   ]
                     .filter(Boolean)
                     .join('. ')}
@@ -237,9 +246,9 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
             <div className="divider" />
 
-            <div className="label label-accent">Комментарии</div>
+            <div className="label label-accent">{t('Комментарии')}</div>
             <div className="stack" style={{ marginTop: 16, gap: 16 }}>
-              {ticket.comments.length === 0 && <p className="dim">Пока пусто.</p>}
+              {ticket.comments.length === 0 && <p className="dim">{t('Пока пусто.')}</p>}
               {ticket.comments.map((c) => (
                 <div
                   key={c.id}
@@ -255,10 +264,10 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 >
                   <div className="row" style={{ justifyContent: 'space-between' }}>
                     <span className="label">
-                      {c.authorRole === 'bureau' ? 'Бюро' : 'Вы'}
-                      {c.isConflict && ' · конфликт'}
+                      {c.authorRole === 'bureau' ? t('Бюро') : t('Вы')}
+                      {c.isConflict && ` · ${t('конфликт')}`}
                     </span>
-                    <span className="label">{c.createdAt.toLocaleDateString('ru-RU')}</span>
+                    <span className="label">{formatDate(c.createdAt, locale)}</span>
                   </div>
                   <p style={{ marginTop: 10, marginBottom: 0, whiteSpace: 'pre-wrap' }}>{c.body}</p>
                 </div>
@@ -266,34 +275,28 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
             </div>
 
             <div style={{ marginTop: 28 }}>
-              <CommentForm ticketId={ticket.id} />
+              <CommentForm ticketId={ticket.id} locale={locale} />
             </div>
 
             {canSubmit && (
               <>
                 <div className="divider" />
-                <SubmitWork ticketId={ticket.id} />
-                <p className="hint" style={{ marginTop: 10 }}>
-                  Приёмку делает бюро. Принято в срок и с первого раза — Quality растёт.
-                </p>
+                <SubmitWork ticketId={ticket.id} locale={locale} />
+                <p className="hint" style={{ marginTop: 10 }}>{t('Приёмку делает бюро. Принято в срок и с первого раза — Quality растёт.')}</p>
               </>
             )}
 
             {ticket.status === 'submitted' && (
-              <div className="note" style={{ marginTop: 28 }}>
-                Работа предъявлена и ждёт приёмки бюро.
-              </div>
+              <div className="note" style={{ marginTop: 28 }}>{t('Работа предъявлена и ждёт приёмки бюро.')}</div>
             )}
 
             {ticket.status === 'accepted' && (
-              <div className="note" style={{ marginTop: 28 }}>
-                Тикет принят. Зависящие от него задачи гейт откроет сам.
-              </div>
+              <div className="note" style={{ marginTop: 28 }}>{t('Тикет принят. Зависящие от него задачи гейт откроет сам.')}</div>
             )}
 
             {ticket.requests.length > 0 && (
               <div className="panel" style={{ marginTop: 24 }}>
-                <div className="label">Ваши запросы смежникам</div>
+                <div className="label">{t('Ваши запросы смежникам')}</div>
                 <ul className="clean" style={{ marginTop: 12 }}>
                   {ticket.requests.map((request) => (
                     <li
@@ -302,13 +305,13 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                       style={{ justifyContent: 'space-between', padding: '8px 0', gap: 12 }}
                     >
                       <span style={{ fontSize: '0.9rem' }}>
-                        {request.title}
+                        {t(request.title)}
                         <span className="dim" style={{ marginLeft: 8, fontSize: '0.8rem' }}>
-                          {DISCIPLINE_LABELS[request.discipline as Discipline]}
+                          {t(DISCIPLINE_LABELS[request.discipline as Discipline])}
                         </span>
                       </span>
                       <span className={`tag ${request.status === 'accepted' ? 'tag-pass' : ''}`}>
-                        {TICKET_STATUS_LABELS[request.status] ?? request.status}
+                        {t(TICKET_STATUS_LABELS[request.status] ?? request.status)}
                       </span>
                     </li>
                   ))}
@@ -319,12 +322,9 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
             {ticket.status !== 'accepted' && roles.length > 0 && (
               <>
                 <div className="divider" />
-                <div className="label label-accent">Нужно что-то от смежной дисциплины</div>
-                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                  Это не спор и не переписка. Запрос станет тикетом для нужной дисциплины —
-                  с исполнителем, сроком и приёмкой, как всякая другая работа.
-                </p>
-                <RequestForm ticketId={ticket.id} disciplines={roles} />
+                <div className="label label-accent">{t('Нужно что-то от смежной дисциплины')}</div>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>{t('Это не спор и не переписка. Запрос станет тикетом для нужной дисциплины — с исполнителем, сроком и приёмкой, как всякая другая работа.')}</p>
+                <RequestForm ticketId={ticket.id} disciplines={roles} locale={locale} />
               </>
             )}
 
@@ -332,13 +332,10 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <>
                 <div className="divider" />
                 <div className="label" style={{ color: 'var(--fail)' }}>
-                  Если договориться нельзя
+                  {t('Если договориться нельзя')}
                 </div>
-                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                  Арбитраж останавливает работу по тикету. Для рабочего вопроса используйте
-                  запрос выше.
-                </p>
-                <ConflictForm ticketId={ticket.id} />
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>{t('Арбитраж останавливает работу по тикету. Для рабочего вопроса используйте запрос выше.')}</p>
+                <ConflictForm ticketId={ticket.id} locale={locale} />
               </>
             )}
 
@@ -356,14 +353,10 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           <>
             <div className="divider" style={{ marginTop: 40 }} />
             <div className="label" style={{ color: 'var(--fail)' }}>
-              Если не сможете вести
+              {t('Если не сможете вести')}
             </div>
-            <p className="hint" style={{ marginTop: 8, marginBottom: 16, maxWidth: '58ch' }}>
-              Болезнь, чужой срок, недооценённый объём — это бывает, и молчание здесь хуже
-              отказа. Сказать заранее значит дать проекту найти замену, пока срок ещё не
-              горит.
-            </p>
-            <LeaveForm projectId={ticket.projectId} />
+            <p className="hint" style={{ marginTop: 8, marginBottom: 16, maxWidth: '58ch' }}>{t('Болезнь, чужой срок, недооценённый объём — это бывает, и молчание здесь хуже отказа. Сказать заранее значит дать проекту найти замену, пока срок ещё не горит.')}</p>
+            <LeaveForm projectId={ticket.projectId} locale={locale} />
           </>
         )}
       </div>
