@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
+  ARTIFACT_KIND_LABELS,
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
   PROJECT_STATUS_LABELS,
@@ -9,6 +10,8 @@ import {
   TYPOLOGY_LABELS,
 } from '@/lib/labels'
 import {
+  DOC_STAGES,
+  DOC_STAGE_ORDER,
   JURISDICTION_NAMES,
   stagesUpTo,
   type Discipline,
@@ -27,6 +30,7 @@ import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
 import { threadOf } from '@/lib/services/dialogue'
 import { approvedStages, stagesAwaitingClient } from '@/lib/services/approval'
+import { fileCount, packageOf } from '@/lib/services/package'
 import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
@@ -61,6 +65,15 @@ export default async function ProjectPage({
     stagesAwaitingClient(project.id),
     approvedStages(project.id),
   ])
+
+  const documents = await packageOf(project.id)
+
+  // Следующая стадия за той, до которой проект вёлся. Нужна только на
+  // закрытии: предлагать её раньше — торопить человека, который ещё не увидел
+  // результат.
+  const nextStage = DOC_STAGES.find(
+    (s) => DOC_STAGE_ORDER[s] === DOC_STAGE_ORDER[project.targetStage as DocStage] + 1,
+  )
   const team = run?.slots ?? []
 
   return (
@@ -117,6 +130,26 @@ export default async function ProjectPage({
             gap={parseGap(run.gapJson)}
             jurisdiction={project.jurisdiction as Jurisdiction}
           />
+        )}
+
+        {project.status === 'delivered' && (
+          <div className="panel panel-accent" style={{ marginTop: 40 }}>
+            <div className="label label-accent">Проект закрыт</div>
+            <h3 style={{ marginTop: 12 }}>Комплект у вас</h3>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              Все стадии выпущены и подтверждены вами. Файлы ниже — то, за чем вы приходили.
+              Доступ по ключу остаётся: кабинет не закрывается вместе с проектом, и вернуться
+              к документации можно когда угодно.
+              {nextStage && (
+                <>
+                  {' '}
+                  Следующий шаг за этой границей —{' '}
+                  <strong>{DOC_STAGE_LABELS[nextStage]}</strong>. Если он нужен, напишите
+                  бюро: это отдельная работа и отдельный состав.
+                </>
+              )}
+            </p>
+          </div>
         )}
 
         {direction ? (
@@ -277,6 +310,56 @@ export default async function ProjectPage({
             Как считался отбор
           </Link>
         </div>
+
+        {fileCount(documents) > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            <h2>Комплект документации</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>
+              Собирается по мере закрытия стадий, а не выдаётся разом в конце: вы заплатили за
+              стадию — вы получаете её файлы, когда она закрыта. Сгенерированные изображения
+              сюда не входят ни на одной стадии, это материал работы, а не документация.
+            </p>
+
+            <div className="stack" style={{ gap: 28 }}>
+              {documents.map((group) => (
+                <div key={group.stage}>
+                  <div className="row" style={{ gap: 10, alignItems: 'baseline' }}>
+                    <h3 style={{ margin: 0 }}>
+                      {DOC_STAGE_LABELS[group.stage as DocStage] ?? group.stage}
+                    </h3>
+                    <span className={group.approved ? 'tag tag-pass' : 'tag tag-wait'}>
+                      {group.approved ? 'подтверждена вами' : 'ждёт вашего подтверждения'}
+                    </span>
+                  </div>
+
+                  <div className="stack" style={{ gap: 8, marginTop: 14 }}>
+                    {group.files.map((file, i) => (
+                      <div
+                        key={`${file.name}-${i}`}
+                        className="row"
+                        style={{ gap: 12, alignItems: 'baseline' }}
+                      >
+                        {file.url ? (
+                          <a href={file.url} target="_blank" rel="noreferrer noopener">
+                            {file.name}
+                          </a>
+                        ) : (
+                          <span>{file.name}</span>
+                        )}
+                        <span className="dim" style={{ fontSize: '0.82rem' }}>
+                          {DISCIPLINE_LABELS[file.discipline] ?? file.discipline} ·{' '}
+                          {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {pendingStages.length > 0 && (
           <>

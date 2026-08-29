@@ -17,7 +17,7 @@ import type { Discipline } from '@/engine/taxonomy'
 import { images } from '../images'
 import { prisma } from '../db'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
-import { approvedStages } from './approval'
+import { approvedStages, stagesAwaitingClient } from './approval'
 
 export class NotYours extends Error {
   constructor() {
@@ -350,7 +350,14 @@ export async function refreshProjectStatus(projectId: string): Promise<void> {
 
   const allAccepted = tickets.every((t) => t.status === 'accepted')
   const anyStarted = tickets.some((t) => t.status !== 'blocked')
-  const next = allAccepted ? 'delivered' : anyStarted ? 'delivering' : 'assembled'
+
+  // Закрыт — это когда сказали оба: бюро приняло всё и заказчик подтвердил
+  // каждую стадию (п.12б). Иначе проект закрывался бы, пока последняя стадия
+  // ещё ждёт его слова, — и «закрыт» означало бы только «мы закончили».
+  const pending = allAccepted ? await stagesAwaitingClient(projectId) : []
+  const closed = allAccepted && pending.length === 0
+
+  const next = closed ? 'delivered' : anyStarted ? 'delivering' : 'assembled'
 
   if (next === before.status) return
 

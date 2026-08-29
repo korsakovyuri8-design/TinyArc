@@ -6,7 +6,7 @@ import { retryMessage } from '@/lib/rate-limit'
 import { DOC_STAGES, type DocStage } from '@/engine/taxonomy'
 import { ApprovalRefused, approveStage } from '@/lib/services/approval'
 import { MessageRefused, say } from '@/lib/services/dialogue'
-import { applyGates } from '@/lib/services/relay'
+import { applyGates, refreshProjectStatus } from '@/lib/services/relay'
 import { currentProjectId } from '@/lib/session'
 
 export type ProjectState = { error?: string; message?: string }
@@ -64,7 +64,13 @@ export async function approveProjectStage(
 
   try {
     await approveStage(projectId, stage as DocStage, String(formData.get('note') ?? ''))
+
+    // Два шага, и оба обязательны. Первый открывает следующую стадию.
+    // Второй пересчитывает статус проекта: без него подтверждение последней
+    // стадии не закрывало проект вовсе — всё принято, всё подтверждено, а он
+    // навсегда «в выпуске».
     await applyGates(projectId)
+    await refreshProjectStatus(projectId)
 
     revalidatePath('/project')
 
