@@ -8,8 +8,6 @@ CREATE TABLE "Specialist" (
     "accessKey" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "source" TEXT NOT NULL DEFAULT 'apply',
-    "invitedAt" TIMESTAMP(3),
     "disciplinesJson" TEXT NOT NULL DEFAULT '[]',
     "specializationsJson" TEXT NOT NULL DEFAULT '[]',
     "typologiesJson" TEXT NOT NULL DEFAULT '[]',
@@ -72,18 +70,6 @@ CREATE TABLE "Project" (
 );
 
 -- CreateTable
-CREATE TABLE "ClientMessage" (
-    "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "authorRole" TEXT NOT NULL,
-    "body" TEXT NOT NULL,
-    "answeredAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "ClientMessage_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "DesignDirection" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
@@ -110,7 +96,6 @@ CREATE TABLE "MatchRun" (
     "survivedCount" INTEGER NOT NULL DEFAULT 0,
     "outcome" TEXT NOT NULL DEFAULT 'ok',
     "notes" TEXT NOT NULL DEFAULT '',
-    "gapJson" TEXT NOT NULL DEFAULT '',
 
     CONSTRAINT "MatchRun_pkey" PRIMARY KEY ("id")
 );
@@ -135,19 +120,6 @@ CREATE TABLE "Candidate" (
     "rank" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "Candidate_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Withdrawal" (
-    "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "specialistId" TEXT NOT NULL,
-    "discipline" TEXT NOT NULL,
-    "reason" TEXT NOT NULL DEFAULT '',
-    "replacedById" TEXT NOT NULL DEFAULT '',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Withdrawal_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -274,9 +246,6 @@ CREATE UNIQUE INDEX "Project_clientKey_key" ON "Project"("clientKey");
 CREATE INDEX "Project_status_idx" ON "Project"("status");
 
 -- CreateIndex
-CREATE INDEX "ClientMessage_projectId_idx" ON "ClientMessage"("projectId");
-
--- CreateIndex
 CREATE INDEX "DesignDirection_projectId_idx" ON "DesignDirection"("projectId");
 
 -- CreateIndex
@@ -290,12 +259,6 @@ CREATE INDEX "Candidate_runId_discipline_idx" ON "Candidate"("runId", "disciplin
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Candidate_runId_specialistId_discipline_key" ON "Candidate"("runId", "specialistId", "discipline");
-
--- CreateIndex
-CREATE INDEX "Withdrawal_projectId_idx" ON "Withdrawal"("projectId");
-
--- CreateIndex
-CREATE INDEX "Withdrawal_specialistId_idx" ON "Withdrawal"("specialistId");
 
 -- CreateIndex
 CREATE INDEX "TeamSlot_specialistId_idx" ON "TeamSlot"("specialistId");
@@ -334,9 +297,6 @@ CREATE UNIQUE INDEX "Collaboration_aId_bId_key" ON "Collaboration"("aId", "bId")
 CREATE INDEX "PortfolioItem_specialistId_idx" ON "PortfolioItem"("specialistId");
 
 -- AddForeignKey
-ALTER TABLE "ClientMessage" ADD CONSTRAINT "ClientMessage_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "DesignDirection" ADD CONSTRAINT "DesignDirection_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -347,12 +307,6 @@ ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_runId_fkey" FOREIGN KEY ("runI
 
 -- AddForeignKey
 ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_specialistId_fkey" FOREIGN KEY ("specialistId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Withdrawal" ADD CONSTRAINT "Withdrawal_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Withdrawal" ADD CONSTRAINT "Withdrawal_specialistId_fkey" FOREIGN KEY ("specialistId") REFERENCES "Specialist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TeamSlot" ADD CONSTRAINT "TeamSlot_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
