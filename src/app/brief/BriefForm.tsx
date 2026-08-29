@@ -28,20 +28,46 @@ import {
 } from '@/lib/labels'
 import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
+import { LocaleProvider, useT } from '@/lib/i18n/context'
+import type { Locale } from '@/lib/i18n/locale'
 import { submitBrief, type BriefState } from './actions'
 
-export function BriefForm() {
+export function BriefForm({ locale }: { locale: Locale }) {
   const [state, action, pending] = useActionState<BriefState, FormData>(submitBrief, {})
   const errors = state.errors ?? {}
   const values = (state.values ?? {}) as Record<string, string>
 
   return (
+    <LocaleProvider locale={locale}>
+      <BriefFields action={action} pending={pending} errors={errors} values={values} />
+    </LocaleProvider>
+  )
+}
+
+/**
+ * Поля отдельным компонентом, потому что переводчик берётся из контекста, а
+ * провайдер обязан стоять выше того, кто его читает.
+ */
+function BriefFields({
+  action,
+  pending,
+  errors,
+  values,
+}: {
+  action: (formData: FormData) => void
+  pending: boolean
+  errors: Record<string, string>
+  values: Record<string, string>
+}) {
+  const t = useT()
+
+  return (
     <form action={action}>
       <fieldset>
-        <legend>Проект</legend>
+        <legend>{t('Проект')}</legend>
 
         <Field label="Название" name="title" error={errors.title}>
-          <input id="title" name="title" defaultValue={values.title ?? ''} placeholder="Вилла в Тивате" />
+          <input id="title" name="title" defaultValue={values.title ?? ''} placeholder={t('Вилла в Тивате')} />
         </Field>
 
         <div className="grid grid-2">
@@ -53,7 +79,7 @@ export function BriefForm() {
             label="Этажей"
             name="storeys"
             error={errors.storeys}
-            hint={`Bureau ведёт здания до ${MAX_STOREYS} этажей`}
+            hint={t('Bureau ведёт здания до N этажей').replace('N', String(MAX_STOREYS))}
           >
             <input id="storeys" name="storeys" type="number" min={1} max={60} defaultValue={values.storeys ?? 2} />
           </Field>
@@ -138,7 +164,7 @@ export function BriefForm() {
       </fieldset>
 
       <fieldset>
-        <legend>Условия работы</legend>
+        <legend>{t('Условия работы')}</legend>
 
         <Field
           label="Софт"
@@ -188,7 +214,7 @@ export function BriefForm() {
       </fieldset>
 
       <fieldset>
-        <legend>Контакт</legend>
+        <legend>{t('Контакт')}</legend>
 
         <div className="grid grid-2">
           <Field label="Как к вам обращаться" name="clientName" error={errors.clientName}>
@@ -224,9 +250,9 @@ export function BriefForm() {
       <Consent error={errors.consent} />
 
       <div className="row" style={{ gap: 16 }}>
-        <Submit pending={pending}>Собрать команду</Submit>
+        <Submit pending={pending}>{t('Собрать команду')}</Submit>
         <span className="dim" style={{ fontSize: '0.85rem' }}>
-          Движок посчитает сразу — без «мы с вами свяжемся»
+          {t('Движок посчитает сразу — без «мы с вами свяжемся»')}
         </span>
       </div>
     </form>

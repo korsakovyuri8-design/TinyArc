@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { DM_Sans, Golos_Text, Playfair_Display, Space_Mono } from 'next/font/google'
 import { Link } from '@/components/Link'
 import { LocaleSwitch } from '@/components/LocaleSwitch'
-import { currentLocale, translate } from '@/lib/i18n'
+import { headers } from 'next/headers'
+import { currentLocale, translate, translator } from '@/lib/i18n'
+import { LOCALES, PATH_HEADER, localePath } from '@/lib/i18n/locale'
 import './globals.css'
 import { siteUrl } from '@/lib/site'
 
@@ -45,25 +47,43 @@ const spaceMono = Space_Mono({
 const DESCRIPTION =
   'Бюро, которое заканчивает бюро. Алгоритм отбирает специалистов по фактам, собирает команду под проект и ведёт её до пакета документации. Здания до пяти этажей в Черногории, Сербии и Греции.'
 
-/*
+/**
+ * Метаданные на языке запроса.
+ *
  * metadataBase задаёт хост, относительно которого Next разворачивает
- * относительные ссылки в разметке — канонические адреса и og:image. Без него
- * страница, открытая по любому другому адресу (превью Render, IP), уводит
- * поисковик и мессенджер на себя, а не на домен продукта.
+ * относительные ссылки — канонические адреса и og:image. Без него страница,
+ * открытая по любому другому адресу (превью Render, IP), уводит поисковик и
+ * мессенджер на себя, а не на домен продукта.
+ *
+ * Через generateMetadata, а не статическим объектом: статический считается на
+ * сборке и не знает, кто пришёл, — русский заголовок в поисковой выдаче для
+ * англоязычного запроса означает, что английской версии как будто нет.
+ *
+ * alternates.languages — то, чем поисковику объясняют, что это одна и та же
+ * страница на двух языках, а не две разные и не дубль. Без них он выбирает
+ * одну сам, и обычно не ту.
  */
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl()),
-  title: 'TinyArc Cloud Bureau — AI-native архитектурное бюро',
-  description: DESCRIPTION,
-  alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    url: '/',
-    siteName: 'TinyArc Cloud Bureau',
-    locale: 'ru_RU',
-    title: 'TinyArc Cloud Bureau — AI-native архитектурное бюро',
-    description: DESCRIPTION,
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const { locale, t } = await translator()
+  const path = (await headers()).get(PATH_HEADER) ?? '/'
+
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: t('TinyArc Cloud Bureau — AI-native архитектурное бюро'),
+    description: t(DESCRIPTION),
+    alternates: {
+      canonical: localePath(path, locale),
+      languages: Object.fromEntries(LOCALES.map((code) => [code, localePath(path, code)])),
+    },
+    openGraph: {
+      type: 'website',
+      url: localePath(path, locale),
+      siteName: 'TinyArc Cloud Bureau',
+      locale: locale === 'ru' ? 'ru_RU' : 'en_GB',
+      title: t('TinyArc Cloud Bureau — AI-native архитектурное бюро'),
+      description: t(DESCRIPTION),
+    },
+  }
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

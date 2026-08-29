@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LEGAL_VERSION } from '@/lib/legal'
+import { useT } from '@/lib/i18n/context'
 
 /**
  * Согласие с офертой и политикой обработки данных.
@@ -15,6 +16,8 @@ import { LEGAL_VERSION } from '@/lib/legal'
  * `required` снимается инструментами разработчика за секунду.
  */
 export function Consent({ error }: { error?: string }) {
+  const t = useT()
+
   return (
     <div style={{ marginBottom: 24 }}>
       <label
@@ -30,21 +33,21 @@ export function Consent({ error }: { error?: string }) {
           style={{ marginTop: 4, width: 'auto', flex: '0 0 auto' }}
         />
         <span className="muted" style={{ fontSize: '0.9rem' }}>
-          Я прочитал и принимаю{' '}
+          {t('Я прочитал и принимаю')}{' '}
           <Link href="/legal/offer" target="_blank">
-            публичную оферту
+            {t('публичную оферту')}
           </Link>{' '}
-          и{' '}
+          {t('и')}{' '}
           <Link href="/legal/privacy" target="_blank">
-            политику обработки данных
-          </Link>{' '}
-          в редакции {LEGAL_VERSION}.
+            {t('политику обработки данных')}
+          </Link>
+          {t('в редакции')} {LEGAL_VERSION}.
         </span>
       </label>
 
       {error && (
         <div className="hint" style={{ color: 'var(--fail)', marginTop: 8 }}>
-          {error}
+          {t(error)}
         </div>
       )}
     </div>
