@@ -15,7 +15,26 @@ import { LEGAL_VERSION } from '@/lib/legal'
  * `required` снимается инструментами разработчика за секунду.
 
  */
-export function Consent({ error }: { error?: string }) {
+export function Consent({
+  error,
+  side = 'client',
+}: {
+  error?: string
+  /**
+   * Кому этот документ.
+   *
+   * Заказчик соглашается с офертой — договором об услуге. Специалист до сих
+   * пор соглашался с ней же, хотя про него там нет ни строки: ни отбора
+   * алгоритмом, ни подписки, ни метрик, ни правил выхода из проекта. Галочка
+   * под чужим документом — это тот случай, когда согласие есть, а согласия
+   * нет.
+   */
+  side?: 'client' | 'specialist'
+}) {
+  const terms =
+    side === 'specialist'
+      ? { href: '/legal/specialists', title: 'terms for specialists' }
+      : { href: '/legal/offer', title: 'terms of service' }
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -33,8 +52,8 @@ export function Consent({ error }: { error?: string }) {
         />
         <span className="muted" style={{ fontSize: '0.9rem' }}>
           I have read and accept the{' '}
-          <Link href="/legal/offer" target="_blank">
-            terms of service
+          <Link href={terms.href} target="_blank">
+            {terms.title}
           </Link>{' '}
           and the{' '}
           <Link href="/legal/privacy" target="_blank">

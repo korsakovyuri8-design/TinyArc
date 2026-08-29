@@ -16,6 +16,7 @@ const PUBLIC_PAGES = [
   { path: '/specialists', priority: 0.7 },
   { path: '/specialists/apply', priority: 0.6 },
   { path: '/legal/offer', priority: 0.3 },
+  { path: '/legal/specialists', priority: 0.3 },
   { path: '/legal/privacy', priority: 0.3 },
 ]
 

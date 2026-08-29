@@ -355,7 +355,7 @@ export function SpecialistForm({
         В панели бюро форму заполняет оператор, и спрашивать согласие у него
         значило бы получать его не у того, чьи это данные.
       */}
-      {askConsent && <Consent error={errors.consent} />}
+      {askConsent && <Consent error={errors.consent} side="specialist" />}
 
       <Submit pending={pending}>{submitLabel}</Submit>
     </form>

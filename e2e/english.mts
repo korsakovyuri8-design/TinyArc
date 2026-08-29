@@ -40,6 +40,7 @@ const PUBLIC = [
   '/brief',
   '/enter',
   '/legal/offer',
+  '/legal/specialists',
   '/legal/privacy',
   '/no-such-page-at-all',
 ]

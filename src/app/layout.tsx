@@ -130,6 +130,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/legal/offer">
                   Terms of service
                 </Link>
+                <Link href="/legal/specialists">
+                  Terms for specialists
+                </Link>
                 <Link href="/legal/privacy">
                   Data processing
                 </Link>
