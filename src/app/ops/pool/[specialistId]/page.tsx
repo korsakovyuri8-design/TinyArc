@@ -22,6 +22,16 @@ export default async function SpecialistPage({
   const row = await prisma.specialist.findUnique({ where: { id: specialistId } })
   if (!row) notFound()
 
+  // Выходы из проектов показываются, но в отбор не входят. Решение сознательное:
+  // штраф за честный отказ учит молчать, а молчание вскрывается позже и дороже.
+  // Видеть их всё равно надо — по ним понятно, где заявленная ёмкость расходится
+  // с настоящей.
+  const withdrawals = await prisma.withdrawal.findMany({
+    where: { specialistId },
+    orderBy: { createdAt: 'desc' },
+    include: { project: { select: { title: true } } },
+  })
+
   const profile = toProfile(row)
   const metrics = deliveryMetrics(profile.delivery)
 
@@ -59,6 +69,25 @@ export default async function SpecialistPage({
             note={metrics ? `${Math.round(metrics.slaCompliance * 100)}% в срок` : 'истории нет'}
           />
         </div>
+
+        {withdrawals.length > 0 && (
+          <div className="panel" style={{ marginTop: 32 }}>
+            <div className="label">Выходил из проектов · {withdrawals.length}</div>
+            <p className="hint" style={{ marginTop: 8, marginBottom: 14 }}>
+              В отбор это не входит и баллом не становится: штраф за честный отказ учит
+              молчать, а молчание вскрывается позже и дороже. Смотреть сюда стоит по другой
+              причине — расхождение между заявленной ёмкостью и настоящей.
+            </p>
+            <div className="stack" style={{ gap: 10 }}>
+              {withdrawals.map((w) => (
+                <div key={w.id} className="dim" style={{ fontSize: '0.85rem' }}>
+                  <strong style={{ color: 'var(--text)' }}>{w.project.title}</strong> ·{' '}
+                  {w.createdAt.toLocaleDateString('ru-RU')} · {w.reason}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="divider" style={{ marginTop: 44 }} />
 

@@ -25,6 +25,8 @@ import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
+import { threadOf } from '@/lib/services/dialogue'
+import { ClientDialogue } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
 
@@ -51,9 +53,10 @@ export default async function ProjectPage({
 
   if (!project) redirect('/enter')
 
-  const [run, direction] = await Promise.all([
+  const [run, direction, thread] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
+    threadOf(project.id),
   ])
   const team = run?.slots ?? []
 
@@ -270,6 +273,41 @@ export default async function ProjectPage({
           <Link href="/algorithm" className="btn btn-quiet">
             Как считался отбор
           </Link>
+        </div>
+
+        <div className="divider" style={{ marginTop: 48 }} />
+
+        <h2>Разговор с бюро</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>
+          Сроки, участок, изменившиеся обстоятельства — всё это сюда. Бюро отвечает перед вами
+          за проект целиком, и вопрос по проекту — это вопрос к нему.
+        </p>
+
+        {thread.length > 0 && (
+          <div className="stack" style={{ gap: 14, marginBottom: 32 }}>
+            {thread.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  borderLeft:
+                    m.authorRole === 'bureau'
+                      ? '2px solid var(--accent)'
+                      : '2px solid var(--border-strong)',
+                  paddingLeft: 14,
+                }}
+              >
+                <span className="label">
+                  {m.authorRole === 'bureau' ? 'Бюро' : 'Вы'} ·{' '}
+                  {m.createdAt.toLocaleString('ru-RU')}
+                </span>
+                <p style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{m.body}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="panel">
+          <ClientDialogue />
         </div>
       </div>
     </section>

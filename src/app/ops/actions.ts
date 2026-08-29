@@ -14,6 +14,7 @@ import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import { retryMessage } from '@/lib/rate-limit'
 import { accept, comment, requestRevision, resolveConflict } from '@/lib/services/relay'
 import { alertsForBureau, alertsForProject } from '@/lib/services/pm'
+import { MessageRefused, answer } from '@/lib/services/dialogue'
 import { MAX_IMPORT_ROWS, importDrafts, inviteWaiting, reinvite } from '@/lib/services/intake'
 import { readIntake } from '@/lib/intake/map'
 import { isNudgeKind } from '@/engine/pm'
@@ -605,4 +606,30 @@ export async function reinviteSpecialist(_prev: OpsState, formData: FormData): P
   return sent
     ? { message: 'Приглашение отправлено повторно.' }
     : { message: `Письмо не ушло. Ключ: ${key} — передайте вручную.` }
+}
+
+/**
+ * Ответ бюро заказчику.
+ *
+ * Закрывает все висящие вопросы по проекту разом: три вопроса подряд от одного
+ * человека — это один разговор, а не три очереди.
+ */
+export async function answerClient(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const projectId = String(formData.get('projectId') ?? '')
+
+  try {
+    await answer(projectId, String(formData.get('body') ?? ''))
+
+    revalidatePath('/ops')
+    revalidatePath(`/ops/projects/${projectId}`)
+
+    return { message: 'Ответ отправлен: заказчик увидит его в кабинете проекта.' }
+  } catch (error) {
+    if (error instanceof MessageRefused) return { error: error.message }
+
+    console.error('Ответ заказчику не отправлен:', error)
+    return { error: 'Не отправилось.' }
+  }
 }

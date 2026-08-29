@@ -171,8 +171,35 @@ model Project {
   tickets     Ticket[]
   directions  DesignDirection[]
   withdrawals Withdrawal[]
+  messages    ClientMessage[]
 
   @@index([status])
+}
+
+/// Переписка заказчика с бюро.
+///
+/// Blind Relay (п.11) закрывает каналы между специалистами — у заказчика
+/// контрагент один, и это бюро (п.6). Без этой модели человек, отдавший деньги
+/// и участок, после брифа становился зрителем: сказать «сдвиньте срок» или
+/// «я передумал по направлению» ему было буквально некуда, а контактов бюро в
+/// системе нет.
+///
+/// Специалисты этой переписки не видят никогда. Заказчик разговаривает с бюро,
+/// бюро переводит сказанное в постановку — иначе клиент начинает руководить
+/// исполнителями, и вся конструкция ответственности рассыпается.
+model ClientMessage {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// client — сказал заказчик; bureau — ответило бюро.
+  authorRole String
+  body       String
+  /// Когда бюро прочло. Пусто — вопрос висит без ответа, и это видно в панели.
+  answeredAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([projectId])
 }
 
 /// Направление проекта: как здание относится к участку.

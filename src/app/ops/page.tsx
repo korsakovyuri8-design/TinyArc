@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { DISCIPLINE_LABELS } from '@/lib/labels'
 import { alertsForBureau } from '@/lib/services/pm'
 import { lostProjects } from '@/lib/services/demand'
+import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
 import { roleName } from '@/lib/gap'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import { isOperator } from '@/lib/session'
@@ -41,7 +42,7 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const lost = await lostProjects()
+  const [lost, questions] = await Promise.all([lostProjects(), waitingQuestions()])
 
   const conflicts = alerts.filter((a) => a.kind === 'conflict')
   const heat = projectHeat(alerts)
@@ -142,6 +143,42 @@ export default async function OpsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        <div className="divider" style={{ marginTop: 48 }} />
+
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h2>Заказчики ждут ответа</h2>
+          {questions.length > 0 && (
+            <span className="tag tag-fail">{questions.length}</span>
+          )}
+        </div>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+          Единственный канал, который есть у заказчика, и его контрагент — мы. Молчание здесь
+          читается не как занятость, а как то, что проектом никто не занимается.
+        </p>
+
+        {questions.length === 0 ? (
+          <p className="dim">Вопросов без ответа нет.</p>
+        ) : (
+          <div className="stack" style={{ gap: 16 }}>
+            {questions.map((q) => (
+              <div
+                key={q.projectId}
+                className="panel"
+                style={{ borderColor: q.hours > ANSWER_SLA_HOURS ? 'var(--fail)' : undefined }}
+              >
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Link href={`/ops/projects/${q.projectId}`}>{q.projectTitle}</Link>
+                  <span className={q.hours > ANSWER_SLA_HOURS ? 'tag tag-fail' : 'tag tag-wait'}>
+                    {Math.round(q.hours)} ч
+                    {q.count > 1 && ` · сообщений ${q.count}`}
+                  </span>
+                </div>
+                <p style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>{q.body}</p>
+              </div>
+            ))}
           </div>
         )}
 

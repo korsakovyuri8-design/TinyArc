@@ -74,8 +74,14 @@ export default async function WorkPage({
         {leftNotice && (
           <div className="panel panel-accent" style={{ marginTop: 28 }}>
             <div className="label label-accent">Выход оформлен</div>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 12 }}>
               {leftNotice}
+            </p>
+            <p className="hint" style={{ margin: 0 }}>
+              На балл это не влияет: выход не считается ошибкой и в отбор не входит. Но если
+              вы вышли из-за загрузки, поправьте свободную ёмкость —{' '}
+              <Link href="/work/profile">в профиле</Link>. Отбор считает по ней, и заявленные
+              часы, которых нет, приведут к тому же ещё раз.
             </p>
           </div>
         )}

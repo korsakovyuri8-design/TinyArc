@@ -72,6 +72,18 @@ CREATE TABLE "Project" (
 );
 
 -- CreateTable
+CREATE TABLE "ClientMessage" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "authorRole" TEXT NOT NULL,
+    "body" TEXT NOT NULL,
+    "answeredAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ClientMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "DesignDirection" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
@@ -262,6 +274,9 @@ CREATE UNIQUE INDEX "Project_clientKey_key" ON "Project"("clientKey");
 CREATE INDEX "Project_status_idx" ON "Project"("status");
 
 -- CreateIndex
+CREATE INDEX "ClientMessage_projectId_idx" ON "ClientMessage"("projectId");
+
+-- CreateIndex
 CREATE INDEX "DesignDirection_projectId_idx" ON "DesignDirection"("projectId");
 
 -- CreateIndex
@@ -317,6 +332,9 @@ CREATE UNIQUE INDEX "Collaboration_aId_bId_key" ON "Collaboration"("aId", "bId")
 
 -- CreateIndex
 CREATE INDEX "PortfolioItem_specialistId_idx" ON "PortfolioItem"("specialistId");
+
+-- AddForeignKey
+ALTER TABLE "ClientMessage" ADD CONSTRAINT "ClientMessage_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DesignDirection" ADD CONSTRAINT "DesignDirection_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -27,10 +27,12 @@ import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { latestRun } from '@/lib/services/matching'
 import { alertsForProject } from '@/lib/services/pm'
+import { threadOf } from '@/lib/services/dialogue'
 import { ALERT_LABELS, isNudgeKind } from '@/engine/pm'
 import { isOperator } from '@/lib/session'
 import {
   acceptTicket,
+  answerClient,
   bureauComment,
   checkTicketCompleteness,
   draftTicketNudge,
@@ -70,10 +72,11 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction, alerts, withdrawals] = await Promise.all([
+  const [run, direction, alerts, thread, withdrawals] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     alertsForProject(project.id),
+    threadOf(project.id),
     prisma.withdrawal.findMany({
       where: { projectId: project.id },
       orderBy: { createdAt: 'asc' },
@@ -216,6 +219,54 @@ export default async function OpsProjectPage({
         {project.tickets.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 44 }} />
+            <div className="panel" style={{ marginBottom: 32 }}>
+              <div className="label label-accent">Разговор с заказчиком</div>
+              <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                Команда этой переписки не видит. Просьбу заказчика в задачу переводит бюро —
+                иначе клиент начинает руководить исполнителями, и отвечать за результат
+                становится некому.
+              </p>
+
+              {thread.length === 0 ? (
+                <p className="dim" style={{ marginBottom: 16 }}>Заказчик пока молчит.</p>
+              ) : (
+                <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
+                  {thread.map((m) => (
+                    <div
+                      key={m.id}
+                      style={{
+                        borderLeft:
+                          m.authorRole === 'bureau'
+                            ? '2px solid var(--accent)'
+                            : '2px solid var(--border-strong)',
+                        paddingLeft: 12,
+                      }}
+                    >
+                      <span className="label">
+                        {m.authorRole === 'bureau' ? 'Бюро' : 'Заказчик'} ·{' '}
+                        {m.createdAt.toLocaleString('ru-RU')}
+                        {m.authorRole === 'client' && !m.answeredAt && ' · без ответа'}
+                      </span>
+                      <p style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
+                        {m.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <OpsAction
+                action={answerClient}
+                hidden={{ projectId: project.id }}
+                label="Ответить заказчику"
+              >
+                <div className="field">
+                  <label htmlFor="answer">Ответ</label>
+                  <textarea id="answer" name="body" style={{ minHeight: 70 }} />
+                </div>
+              </OpsAction>
+            </div>
+
             {withdrawals.length > 0 && (
               <div className="panel" style={{ marginBottom: 32, borderColor: 'var(--fail)' }}>
                 <div className="label" style={{ color: 'var(--fail)' }}>

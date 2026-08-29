@@ -30,6 +30,9 @@ export const LIMITS = {
   brief: { limit: 3, windowMs: HOUR },
   application: { limit: 3, windowMs: HOUR },
   enter: { limit: 10, windowMs: 15 * MINUTE },
+  // Заказчик уже вошёл по ключу, поэтому предел мягкий: он защищает от
+  // случайного двойного нажатия и от заваливания панели, а не от чужака.
+  clientMessage: { limit: 10, windowMs: HOUR },
   opsLogin: { limit: 5, windowMs: 15 * MINUTE },
 } as const satisfies Record<string, Limit>
 
