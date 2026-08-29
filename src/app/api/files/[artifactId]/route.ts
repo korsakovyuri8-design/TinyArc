@@ -44,7 +44,7 @@ export async function GET(
     },
   })
 
-  const missing = () => NextResponse.json({ error: 'Файла нет.' }, { status: 404 })
+  const missing = () => NextResponse.json({ error: 'No such file.' }, { status: 404 })
 
   if (!artifact?.storageKey) return missing()
 

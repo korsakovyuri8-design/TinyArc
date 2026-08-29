@@ -8,7 +8,7 @@ import { JURISDICTIONS, JURISDICTION_NAMES, MAX_STOREYS } from '@/engine/taxonom
 export const generateMetadata = () =>
   pageMetadata(
     'Terms of service',
-    'Условия оказания услуг: состав комплекта, цена, оплата по стадиям, ответственность.',
+    'Terms of service: what the documentation set contains, the price, payment by stage, liability.',
   )
 
 /**

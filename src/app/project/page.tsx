@@ -153,9 +153,9 @@ export default async function ProjectPage({
               {nextStage && (
                 <>
                   {' '}
-                  Следующий шаг за этой границей —{' '}
-                  <strong>{DOC_STAGE_LABELS[nextStage]}</strong>. Если он нужен, напишите
-                  бюро: это отдельная работа и отдельный состав.
+                  The next step beyond this boundary is{' '}
+                  <strong>{DOC_STAGE_LABELS[nextStage]}</strong>. If you need it, write to the
+                  bureau: that is separate work and a separate team.
                 </>
               )}
             </p>

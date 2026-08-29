@@ -75,7 +75,7 @@ export async function approveStage(
     if (already) return
 
     throw new ApprovalRefused(
-      'Эта стадия ещё не закончена бюро. Подтверждать пока нечего.',
+      'The bureau has not finished this stage yet. There is nothing to confirm.',
     )
   }
 

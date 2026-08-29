@@ -129,7 +129,7 @@ const CATALOGUE: Entry[] = [
   },
   {
     key: 'podium',
-    title: 'Объём на подиуме',
+    title: 'Volume on a podium',
     summary:
       'The building sits on a pronounced plinth that levels the site and lifts the living floors off the ground.',
     tradeoff:
@@ -180,7 +180,7 @@ const MATERIAL_EN: Record<string, string> = {
  */
 export function promptFor(shape: ProjectShape, areaSqm: number, storeys: number, climateZone: string, key: string): string {
   const entry = CATALOGUE.find((e) => e.key === key)
-  if (!entry) throw new Error(`Направления «${key}» нет в каталоге.`)
+  if (!entry) throw new Error(`There is no direction “${key}” in the catalogue.`)
 
   return [
     `Architectural massing study, ${TYPOLOGY_EN[shape.typology]}`,

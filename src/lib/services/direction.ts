@@ -110,7 +110,7 @@ export async function chosenDirection(projectId: string) {
 
 export class UnknownDirection extends Error {
   constructor() {
-    super('Такого направления у этого проекта нет.')
+    super('This project has no such direction.')
     this.name = 'UnknownDirection'
   }
 }

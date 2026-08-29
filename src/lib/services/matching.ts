@@ -24,7 +24,7 @@ export async function activePool() {
 export class AssemblyLocked extends Error {
   constructor(status: string) {
     super(
-      `Проект в статусе «${status}»: пересобрать команду нельзя. Тикеты уже в работе, а их история — это метрики специалистов.`,
+      `The project is in the “${status}” state: the team cannot be reassembled. Tickets are already in progress, and their history is other people’s delivery metrics.`,
     )
     this.name = 'AssemblyLocked'
   }

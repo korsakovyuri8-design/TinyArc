@@ -231,7 +231,7 @@ export async function requestFrom(
         ticketId: source.id,
         authorRole: 'specialist',
         specialistId: fromSpecialistId,
-        body: `Запрос дисциплине «${toDiscipline}»: ${title}`,
+        body: `Request to ${toDiscipline}: ${title}`,
       },
     })
 
@@ -294,7 +294,7 @@ export async function resolveConflict(ticketId: string, ruling: string): Promise
       data: { conflictRaisedAt: null, conflictBy: null, conflictNote: '' },
     }),
     prisma.ticketComment.create({
-      data: { ticketId, authorRole: 'bureau', body: `Решение бюро: ${ruling}` },
+      data: { ticketId, authorRole: 'bureau', body: `The bureau’s ruling: ${ruling}` },
     }),
   ])
 }

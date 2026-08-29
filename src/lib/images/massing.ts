@@ -115,7 +115,7 @@ export function massingSvg(key: string, title: string): string {
     drawing,
     `<text x="40" y="56" fill="${LINE}" font-family="monospace" font-size="15" letter-spacing="3">${escape(title.toUpperCase())}</text>`,
     // Подпись обязательна: это схема, и она не должна читаться как визуализация.
-    `<text x="40" y="360" fill="${DIM}" font-family="monospace" font-size="12" letter-spacing="2">СХЕМА ОБЪЁМА — НЕ ВИЗУАЛИЗАЦИЯ</text>`,
+    `<text x="40" y="360" fill="${DIM}" font-family="monospace" font-size="12" letter-spacing="2">MASSING DIAGRAM — NOT A VISUALISATION</text>`,
     '</svg>',
   ].join('')
 }

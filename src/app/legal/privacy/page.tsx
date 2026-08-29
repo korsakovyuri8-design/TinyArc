@@ -5,7 +5,7 @@ import { pageMetadata } from '@/lib/metadata'
 export const generateMetadata = () =>
   pageMetadata(
     'Data processing',
-    'Какие данные Бюро собирает, зачем, кому передаёт и как их удалить.',
+    'What data the Bureau collects, what for, who it goes to and how to have it erased.',
   )
 
 /**

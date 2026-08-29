@@ -15,7 +15,7 @@ describe('схема объёма', () => {
 
   it('всегда подписана как схема, а не как визуализация', () => {
     for (const key of ['terraced', 'embedded', 'stilts', 'courtyard', 'compact', 'нет-такого']) {
-      expect(massingSvg(key, 'Проверка')).toContain('НЕ ВИЗУАЛИЗАЦИЯ')
+      expect(massingSvg(key, 'Проверка')).toContain('NOT A VISUALISATION')
     }
   })
 

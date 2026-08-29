@@ -120,7 +120,7 @@ export async function stepOut(
       await comment(
         ticket.id,
         { role: 'bureau' },
-        `Исполнитель вышел из проекта: ${reason.trim()} Замены в прогоне не нашлось — задача ждёт бюро.`,
+        `The contributor has left the project: ${reason.trim()} No replacement was found in the run — the task is waiting on the bureau.`,
       )
     }
 
@@ -154,7 +154,7 @@ export async function stepOut(
     await comment(
       ticket.id,
       { role: 'bureau' },
-      `Роль передана: прежний исполнитель вышел из проекта. Причина: ${reason.trim()}`,
+      `The role has been handed over: the previous contributor left the project. Reason: ${reason.trim()}`,
     )
   }
 
