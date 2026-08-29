@@ -19,11 +19,11 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-3" style={{ marginTop: 72 }}>
-            <Figure value={`${MAX_STOREYS}`} unit={'storeys'} note={'Product boundary: light-regulation zones'} />
-            <Figure value={`${PORTFOLIO_THRESHOLD}/10`} unit={'threshold'} note={'Below the portfolio threshold a specialist does not pass'} />
+            <Figure value={`${MAX_STOREYS}`} unit="storeys" note="Product boundary: light-regulation zones" />
+            <Figure value={`${PORTFOLIO_THRESHOLD}/10`} unit="threshold" note="Below the portfolio threshold a specialist does not pass" />
             <Figure
               value={`${JURISDICTIONS.length}`}
-              unit={'countries'}
+              unit="countries"
               note={JURISDICTIONS.map((j) => JURISDICTION_NAMES[j]).join(' · ')}
             />
           </div>
@@ -127,16 +127,16 @@ export default async function Home() {
             </div>
             <div className="stack" style={{ gap: 20 }}>
               <Reason
-                title={'No route around us'}
-                body={'Direct contact between specialists is a ready-made channel for taking the project elsewhere. No channel, no leak.'}
+                title="No route around us"
+                body="Direct contact between specialists is a ready-made channel for taking the project elsewhere. No channel, no leak."
               />
               <Reason
-                title={'Clean metrics'}
-                body={'When agreements live in private chats, there is nothing to compute response time or rework share from. The ticket is the only measurable place.'}
+                title="Clean metrics"
+                body="When agreements live in private chats, there is nothing to compute response time or rework share from. The ticket is the only measurable place."
               />
               <Reason
-                title={'Dependency discipline'}
-                body={'Gates force a record of exactly what was handed on, instead of “we agreed verbally”.'}
+                title="Dependency discipline"
+                body="Gates force a record of exactly what was handed on, instead of “we agreed verbally”."
               />
             </div>
           </div>

@@ -108,6 +108,21 @@ async function clean(page, path) {
   }, written)
 
   check(left.length === 0, left.length === 0 ? `${path} — по-английски` : `${path} — осталось русское: ${left.join(' | ')}`)
+
+  /*
+   * Слипшиеся слова — след механической правки текста: «storeysBureau»
+   * появляется там, где между двумя фразами потерялся пробел. Глазами это
+   * ловится, только если специально вчитываться в каждую страницу.
+   */
+  const glued = await page.evaluate(() => {
+    const known = new Set(['TinyArc', 'ArchiCAD', 'AutoCAD'])
+    return [...document.body.innerText.matchAll(/\b[a-z]+[A-Z][a-z]+\b/g)]
+      .map((m) => m[0])
+      .filter((word) => !known.has(word))
+      .slice(0, 4)
+  })
+
+  if (glued.length > 0) check(false, `${path} — слиплись слова: ${glued.join(', ')}`)
 }
 
 const guest = await (await browser.newContext()).newPage()

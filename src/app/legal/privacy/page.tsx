@@ -46,7 +46,7 @@ export default async function PrivacyPage() {
           </div>
         )}
 
-        <Article title={'1. Who processes the data'}>
+        <Article title="1. Who processes the data">
           <p>
             The controller is {details.name || '— company name not set —'}
             {details.registration && `, $registration number ${details.registration}`}
@@ -58,7 +58,7 @@ export default async function PrivacyPage() {
           </p>
         </Article>
 
-        <Article title={'2. What we collect from the client'}>
+        <Article title="2. What we collect from the client">
           <ul>
             <li>name and email address — to issue an access key and to correspond;</li>
             <li>project data: typology, area, storeys, country, site, stage and the free text of the brief — the team composition and the price are calculated from these;</li>
@@ -68,7 +68,7 @@ export default async function PrivacyPage() {
           <p>We collect no payment data: there is no payment processing on this site, and payment goes by bank transfer outside the product.</p>
         </Article>
 
-        <Article title={'3. What we collect from the specialist'}>
+        <Article title="3. What we collect from the specialist">
           <ul>
             <li>name, email address, a link to the portfolio;</li>
             <li>professional attributes: disciplines, specialisations, typologies, materials, countries and signing rights, software, languages, stages, time zone, declared free capacity;</li>
@@ -78,7 +78,7 @@ export default async function PrivacyPage() {
           <p>A portfolio is stored as a link and as structured attributes. The Bureau does not keep an archive of other people’s files.</p>
         </Article>
 
-        <Article title={'4. Why, and on what basis'}>
+        <Article title="4. Why, and on what basis">
           <ul>
             <li>
               <strong>Performance of the contract.</strong>Project data and professional attributes are needed to assemble a team and issue documentation. Without them the service cannot be provided.</li>
@@ -89,7 +89,7 @@ export default async function PrivacyPage() {
           </ul>
         </Article>
 
-        <Article title={'5. Who the data goes to'}>
+        <Article title="5. Who the data goes to">
           <ul>
             <li>
               <strong>To the project team</strong>{' '}
@@ -109,12 +109,12 @@ export default async function PrivacyPage() {
           <p>Data is not sold, not passed to advertising networks and not used for profiling beyond computing the team composition.</p>
         </Article>
 
-        <Article title={'6. Transfers outside the country'}>
+        <Article title="6. Transfers outside the country">
           <p>The Bureau is registered in Montenegro, the client may be located in any country, and hosting and email services sit outside it. That means data crosses borders.</p>
           <p>Contractual data-protection terms apply to the providers that process the data. If you are located in the European Union, you may ask on what basis such a transfer takes place.</p>
         </Article>
 
-        <Article title={'7. How long we keep data'}>
+        <Article title="7. How long we keep data">
           <ul>
             <li>project data and correspondence with the bureau — for the life of the project and three years after it closes: that is how long claims about issued documentation live;</li>
             <li>a specialist’s profile — while they are in the pool; on leaving, the profile is anonymised and delivery metrics remain in anonymised form;</li>
@@ -122,7 +122,7 @@ export default async function PrivacyPage() {
           </ul>
         </Article>
 
-        <Article title={'8. Your rights'}>
+        <Article title="8. Your rights">
           <p>You have the right to:</p>
           <ul>
             <li>find out what data of yours we hold and obtain a copy;</li>
@@ -135,16 +135,16 @@ export default async function PrivacyPage() {
           <p>A note for specialists: there is no field anywhere, the Bureau included, for rating a person. No opinions about you are stored in the system — only task events and what you declared yourself.</p>
         </Article>
 
-        <Article title={'9. What the automated calculations do'}>
+        <Article title="9. What the automated calculations do">
           <p>Team composition is computed by an algorithm. The calculation makes no judgements about a person and uses no data beyond professional attributes and task events. A specialist is shown exactly which condition was not met; a client is shown the score breakdown for every member.</p>
           <p>AI models take part in preparing drafts and images. They take no part in computing team composition, in accepting work, or in setting the order of tasks.</p>
         </Article>
 
-        <Article title={'10. Cookies'}>
+        <Article title="10. Cookies">
           <p>One technical cookie is used — a signed session that remembers whose workspace you signed into. There are no analytics or advertising cookies.</p>
         </Article>
 
-        <Article title={'11. Language of this document'}>
+        <Article title="11. Language of this document">
           <p>
             The document exists in English, and English is the language of the service. A
             translation made for convenience does not bind either side: where a translation

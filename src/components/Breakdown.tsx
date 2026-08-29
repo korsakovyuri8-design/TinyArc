@@ -25,7 +25,7 @@ export function BreakdownRow({
   return (
     <div className="stack" style={{ gap: 8 }}>
       <Line
-        label={'Portfolio'}
+        label="Portfolio"
         value={breakdown.portfolioRating.toFixed(1)}
         fill={breakdown.portfolioRating / 10}
       />
@@ -41,12 +41,12 @@ export function BreakdownRow({
         </div>
       )}
       <Line
-        label={'Fit to the project'}
+        label="Fit to the project"
         value={breakdown.relevance.toFixed(2)}
         fill={breakdown.relevance}
       />
       <Line
-        label={'Availability'}
+        label="Availability"
         value={breakdown.availability.toFixed(2)}
         fill={breakdown.availability}
       />

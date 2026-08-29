@@ -6,7 +6,7 @@ import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { allow, forgive } from '@/lib/guard'
 import { assistant } from '@/lib/assist'
-import { sendAccessKey } from '@/lib/mail'
+import { mailer, sendAccessKey } from '@/lib/mail'
 import { chosenDirection } from '@/lib/services/direction'
 import { inboundArtifacts } from '@/lib/services/relay'
 import { parseList, toProfile } from '@/lib/rows'
@@ -87,6 +87,16 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
 
   // Ключ выдаётся тем же каналом, которым с человеком разговаривали, и только
   // после подтверждения: до него ключ существует, но не работает.
+  //
+  // При заглушке письмо никуда не уходит, и говорить «ключ отправлен» нельзя:
+  // оператор закроет карточку, а человек останется без доступа. Ключ в этом
+  // случае показывается прямо здесь — передать его есть чем.
+  if (mailer().mode === 'stub') {
+    return {
+      message: `The specialist is in the pool. Email delivery is off: the key is ${specialist.accessKey} — hand it over yourself.`,
+    }
+  }
+
   try {
     await sendAccessKey(
       specialist.email,

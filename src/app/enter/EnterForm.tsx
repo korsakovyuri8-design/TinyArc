@@ -27,7 +27,7 @@ function KeyForm() {
         error={state.error}
         hint="Sent to clients after the brief, to specialists after approval"
       >
-        <input id="key" name="key" autoComplete="off" placeholder={'brief-… or spec-…'} />
+        <input id="key" name="key" autoComplete="off" placeholder="brief-… or spec-…" />
       </Field>
 
       <Submit pending={pending}>Sign in</Submit>

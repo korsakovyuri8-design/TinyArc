@@ -65,6 +65,16 @@ const known = await ask('/enter', project.clientEmail)
 const unknown = await ask('/enter', 'nobody-here-at-all@example.org')
 
 check(known.length > 0, `на известный адрес ответ есть: «${known}»`)
+
+/*
+ * На стенде почта — заглушка, и ответ обязан это называть. «Письмо ушло» там,
+ * где письмо никуда не уходит, — это человек, который будет ждать письма и не
+ * дождётся, а потом решит, что ключ он потерял окончательно.
+ */
+check(
+  /delivery is off|already gone out/i.test(known),
+  'ответ соответствует режиму почты',
+)
 check(
   known === unknown,
   known === unknown

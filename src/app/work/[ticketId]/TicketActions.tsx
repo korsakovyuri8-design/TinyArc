@@ -88,7 +88,7 @@ export function CommentForm({ ticketId }: { ticketId: string }) {
         <textarea
           id="body"
           name="body"
-          placeholder={'A question about the brief, how the work is going, what you are handing on'}
+          placeholder="A question about the brief, how the work is going, what you are handing on"
         />
         <div className="hint">This is the only channel: there are no private messages between specialists in the system.</div>
       </div>
@@ -105,7 +105,7 @@ export function ConflictForm({ ticketId }: { ticketId: string }) {
         <textarea
           id="note"
           name="note"
-          placeholder={'For example: the duct in the MEP set runs where the architectural set has a door'}
+          placeholder="For example: the duct in the MEP set runs where the architectural set has a door"
           style={{ minHeight: 80 }}
         />
         <div className="hint">There is nowhere to settle it with the adjacent discipline directly, and no need. The bureau decides.</div>
@@ -137,7 +137,7 @@ export function RequestForm({
         </div>
         <div className="field">
           <label htmlFor="title">What you need</label>
-          <input id="title" name="title" placeholder={'Move the door on gridlines 3–4'} />
+          <input id="title" name="title" placeholder="Move the door on gridlines 3–4" />
         </div>
       </div>
       <div className="field">
@@ -145,7 +145,7 @@ export function RequestForm({
         <textarea
           id="body"
           name="body"
-          placeholder={'A 200×400 duct runs along the wall on gridlines 3–4 and hits the door opening. The opening needs to move 200 mm towards gridline 4.'}
+          placeholder="A 200×400 duct runs along the wall on gridlines 3–4 and hits the door opening. The opening needs to move 200 mm towards gridline 4."
           style={{ minHeight: 90 }}
         />
         <div className="hint">It becomes a ticket for that discipline with a one-day deadline. There will be no exchange: the recipient has to understand the request without you.</div>
@@ -160,7 +160,7 @@ export function RenderForm({ ticketId, hint }: { ticketId: string; hint: string 
     <Form action={makeRender} ticketId={ticketId} label="Generate">
       <div className="field">
         <label htmlFor="name">Name</label>
-        <input id="name" name="name" placeholder={'Exterior, evening, view from the approach'} />
+        <input id="name" name="name" placeholder="Exterior, evening, view from the approach" />
       </div>
       <div className="field">
         <label htmlFor="prompt">What the image should show</label>
@@ -178,7 +178,7 @@ export function ArtifactForm({ ticketId }: { ticketId: string }) {
       <div className="grid grid-2" style={{ gap: 12 }}>
         <div className="field">
           <label htmlFor="name">File name</label>
-          <input id="name" name="name" placeholder={'Floor plans, rev.B'} />
+          <input id="name" name="name" placeholder="Floor plans, rev.B" />
         </div>
         <div className="field">
           <label htmlFor="kind">Kind</label>
@@ -234,7 +234,7 @@ export function LeaveForm({ projectId }: { projectId: string }) {
           id="reason"
           name="reason"
           style={{ minHeight: 70 }}
-          placeholder={'Ill; I cannot start for another three weeks'}
+          placeholder="Ill; I cannot start for another three weeks"
         />
         <div className="hint">The bureau and whoever replaces you will see the reason. It does not become a rating — there is no field for rating a specialist in the system.</div>
       </div>

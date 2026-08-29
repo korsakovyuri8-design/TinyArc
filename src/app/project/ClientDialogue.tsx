@@ -28,7 +28,7 @@ function DialogueForm() {
           id="body"
           name="body"
           style={{ minHeight: 90 }}
-          placeholder={'I need to push the deadline by a month — I’m travelling. Or: I’ve changed my mind on the direction and want to go back to the first option.'}
+          placeholder="I need to push the deadline by a month — I’m travelling. Or: I’ve changed my mind on the direction and want to go back to the first option."
         />
       </div>
 

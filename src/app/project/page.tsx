@@ -116,13 +116,13 @@ export default async function ProjectPage({
         )}
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
-          <Fact label={'Typology'} value={TYPOLOGY_LABELS[project.typology as Typology]} />
-          <Fact label={'Storeys / area'} value={`${project.storeys} · ${project.areaSqm} $m²`} />
-          <Fact label={'Country'} value={JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} />
-          <Fact label={'Documentation stage'} value={DOC_STAGE_LABELS[project.targetStage as DocStage]} />
-          <Fact label={'Access key'} value={project.clientKey} mono />
+          <Fact label="Typology" value={TYPOLOGY_LABELS[project.typology as Typology]} />
+          <Fact label="Storeys / area" value={`${project.storeys} · ${project.areaSqm} m²`} />
+          <Fact label="Country" value={JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} />
+          <Fact label="Documentation stage" value={DOC_STAGE_LABELS[project.targetStage as DocStage]} />
+          <Fact label="Access key" value={project.clientKey} mono />
           <Fact
-            label={'Pool → passed the gates'}
+            label="Pool → passed the gates"
             value={run ? `${run.pooledCount} → ${run.survivedCount}` : '—'}
             mono
           />

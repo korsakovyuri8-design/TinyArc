@@ -31,7 +31,7 @@ export default async function HowItWorks() {
         number="01"
         internal="Validate"
         publicName="Filter"
-        title={'The brief becomes requirements; the pool is cut down'}
+        title="The brief becomes requirements; the pool is cut down"
       >
         <p>The brief is parsed into structured requirements: jurisdiction, typology, storeys, area, climate zone, structural system, documentation stage, timing, software.</p>
         <p>
@@ -57,9 +57,9 @@ export default async function HowItWorks() {
         number="02"
         internal="Assemble"
         publicName="Score"
-        title={'Quality × Availability and assembling the Tiny Team'}
+        title="Quality × Availability and assembling the Tiny Team"
       >
-        <p>Survivors are ranked by the formula<strong>Quality × Availability</strong>.{' '}
+        <p>Survivors are ranked by the formula <strong>Quality × Availability</strong>.{' '}
           A product, not a sum: a sum would let quality make up for unavailability, a product does not. An excellent specialist with no free capacity is of no use to a project that has a date.
         </p>
         <p>
@@ -96,10 +96,10 @@ export default async function HowItWorks() {
           <p style={{ marginTop: 20 }}>A specialist’s quality is measured mathematically and computed from ticket events. Neither the client nor an operator has any way to leave a rating — no such field exists.</p>
 
           <div className="grid grid-2" style={{ marginTop: 32 }}>
-            <Metric name="SLA compliance" body={'Share of tickets closed on time.'} />
-            <Metric name="First Time Right" body={'Share of tickets accepted first time.'} />
-            <Metric name="Response Time" body={'Time to the first substantive reply in a ticket.'} />
-            <Metric name="Revision Rate" body={'Average number of revision rounds per ticket.'} />
+            <Metric name="SLA compliance" body="Share of tickets closed on time." />
+            <Metric name="First Time Right" body="Share of tickets accepted first time." />
+            <Metric name="Response Time" body="Time to the first substantive reply in a ticket." />
+            <Metric name="Revision Rate" body="Average number of revision rounds per ticket." />
           </div>
 
           <p style={{ marginTop: 32 }}>Metrics feed into Quality and so move the odds of joining the next team directly. That is the selection mechanism: a specialist who misses deadlines loses access to projects without a single hearing.</p>

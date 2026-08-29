@@ -63,7 +63,7 @@ function BriefFields({
         <legend>Project</legend>
 
         <Field label="Name" name="title" error={errors.title}>
-          <input id="title" name="title" defaultValue={values.title ?? ''} placeholder={'Villa in Tivat'} />
+          <input id="title" name="title" defaultValue={values.title ?? ''} placeholder="Villa in Tivat" />
         </Field>
 
         <div className="grid grid-2">

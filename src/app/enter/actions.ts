@@ -3,6 +3,9 @@
 import { redirect } from 'next/navigation'
 import { allow, forgive, spend } from '@/lib/guard'
 import { remindKeys } from '@/lib/services/access'
+import { mailer } from '@/lib/mail'
+import { company } from '@/lib/legal'
+import { fill } from '@/lib/fill'
 import { retryMessage } from '@/lib/rate-limit'
 import {
   projectByKey,
@@ -96,6 +99,27 @@ export async function remindKey(
   if (!email.includes('@')) return { error: 'Enter an email address.' }
 
   await spend('recover')
+
+  /*
+   * Режим почты называется до отправки и одинаково для всех.
+   *
+   * При заглушке письмо никуда не уходит, и ответ «письмо ушло» — просто
+   * неправда: человек будет ждать его и не дождётся. Сказать про режим можно
+   * всем сразу — это свойство стенда, а не ответ на вопрос, есть ли у нас
+   * такой адрес.
+   */
+  if (mailer().mode === 'stub') {
+    const address = company().email
+
+    return {
+      message: address
+        ? fill(
+            'Email delivery is off on this stand, so nothing will arrive. Write to {email} and the bureau will hand the key over.',
+            { email: address },
+          )
+        : 'Email delivery is off on this stand, so nothing will arrive. Reply to the email that carried your key, and the bureau will hand it over.',
+    }
+  }
 
   try {
     await remindKeys(email)

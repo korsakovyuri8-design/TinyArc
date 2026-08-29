@@ -30,27 +30,27 @@ export default async function SpecialistsPage() {
               title={fill('Portfolio threshold — {threshold}/10', {
                 threshold: PORTFOLIO_THRESHOLD,
               })}
-              body={'The gate comes before the scoring. Below the threshold an application does not pass, however free your week is.'}
+              body="The gate comes before the scoring. Below the threshold an application does not pass, however free your week is."
             />
             <Term
-              title={'There are no ratings'}
-              body={'Neither the client nor the bureau can score you. Only deadlines, first-time acceptance, response time and revision rounds are counted.'}
+              title="There are no ratings"
+              body="Neither the client nor the bureau can score you. Only deadlines, first-time acceptance, response time and revision rounds are counted."
             />
             <Term
-              title={'There are no direct chats'}
-              body={'You see your ticket and the comments on it. Teammates appear as roles, not as names.'}
+              title="There are no direct chats"
+              body="You see your ticket and the comments on it. Teammates appear as roles, not as names."
             />
             <Term
-              title={'Metrics move your access'}
-              body={'Missed deadlines lower Quality and take you out of the next teams. Without a hearing and without a second chance handed out by anyone.'}
+              title="Metrics move your access"
+              body="Missed deadlines lower Quality and take you out of the next teams. Without a hearing and without a second chance handed out by anyone."
             />
             <Term
-              title={'Capacity is a multiplier'}
-              body={'The formula is Quality × Availability. Zero free capacity zeroes the score: quality does not compensate for unavailability.'}
+              title="Capacity is a multiplier"
+              body="The formula is Quality × Availability. Zero free capacity zeroes the score: quality does not compensate for unavailability."
             />
             <Term
-              title={'Paying for access'}
-              body={'The specialist subscription pays for access to projects. There is no commission on your fee.'}
+              title="Paying for access"
+              body="The specialist subscription pays for access to projects. There is no commission on your fee."
             />
           </div>
         </div>
@@ -64,9 +64,9 @@ export default async function SpecialistsPage() {
               <h2>Ticket, gate, acceptance</h2>
             </div>
             <div className="stack" style={{ gap: 22 }}>
-              <Step n="01" title={'The gate opens the ticket'}>Until the tasks yours depends on are accepted, the ticket stays closed. You see the title and the stage but not the content — the input files do not exist yet.</Step>
-              <Step n="02" title={'You work and comment in the ticket'}>Your first substantive reply starts the Response Time clock. All communication happens in the ticket, and that is the only place it can happen at all.</Step>
-              <Step n="03" title={'The bureau accepts or sends it back'}>Acceptance on time and first time raises Quality. A return adds a revision round and lowers First Time Right.</Step>
+              <Step n="01" title="The gate opens the ticket">Until the tasks yours depends on are accepted, the ticket stays closed. You see the title and the stage but not the content — the input files do not exist yet.</Step>
+              <Step n="02" title="You work and comment in the ticket">Your first substantive reply starts the Response Time clock. All communication happens in the ticket, and that is the only place it can happen at all.</Step>
+              <Step n="03" title="The bureau accepts or sends it back">Acceptance on time and first time raises Quality. A return adds a revision round and lowers First Time Right.</Step>
             </div>
           </div>
         </div>

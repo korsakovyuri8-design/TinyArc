@@ -59,13 +59,13 @@ export default async function ProfilePage() {
         <div className="grid grid-3" style={{ marginTop: 36 }}>
           <Stat
             value={profile.portfolioRating.toFixed(1)}
-            label={'portfolio'}
+            label="portfolio"
             note={fill('threshold {threshold}/10', { threshold: PORTFOLIO_THRESHOLD })}
             accent={profile.portfolioRating >= PORTFOLIO_THRESHOLD}
           />
           <Stat
             value={metrics ? delivery.toFixed(1) : '—'}
-            label={'delivery score'}
+            label="delivery score"
             note={
               metrics
                 ? fill('weight in Quality — {percent}%', { percent: Math.round(weight * 100) })
@@ -74,7 +74,7 @@ export default async function ProfilePage() {
           />
           <Stat
             value={String(profile.weeklyCapacityHours)}
-            label={'h/week free'}
+            label="h/week free"
             note={
               profile.weeklyCapacityHours === 0
                 ? 'at zero you are out of selection'
@@ -157,13 +157,13 @@ export default async function ProfilePage() {
               name="Response Time"
               value={fill('{hours} h', { hours: metrics.responseHours.toFixed(1) })}
               fill={Math.max(0, 1 - metrics.responseHours / 48)}
-              note={'to the first substantive reply'}
+              note="to the first substantive reply"
             />
             <Metric
               name="Revision Rate"
               value={metrics.revisionRate.toFixed(2)}
               fill={Math.max(0, 1 - metrics.revisionRate / 3)}
-              note={'revision rounds per ticket'}
+              note="revision rounds per ticket"
             />
           </div>
         ) : (
@@ -177,36 +177,36 @@ export default async function ProfilePage() {
         <h2>What the engine knows about you</h2>
         <div className="grid grid-2" style={{ marginTop: 24 }}>
           <Row
-            label={'Disciplines'}
+            label="Disciplines"
             value={profile.disciplines
               .map((d) => DISCIPLINE_LABELS[d as Discipline])
               .join(', ')}
           />
           <Row
-            label={'Specialisation'}
+            label="Specialisation"
             value={profile.specializations
               .map((x) => SPECIALIZATION_LABELS[x as Specialization])
               .join(', ')}
           />
           <Row
-            label={'Jurisdictions'}
+            label="Jurisdictions"
             value={profile.jurisdictions
               .map((j) => JURISDICTION_NAMES[j as Jurisdiction])
               .join(', ')}
           />
           <Row
-            label={'Signing rights'}
+            label="Signing rights"
             value={
               profile.signsIn.length > 0
                 ? profile.signsIn.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')
                 : 'none'
             }
           />
-          <Row label={'Maximum storeys'} value={String(profile.maxStoreys)} />
-          <Row label={'Software'} value={profile.software.join(', ')} />
-          <Row label={'IFC exchange'} value={profile.ifcLevel} />
-          <Row label={'Access key'} value={row.accessKey} mono />
-          <Row label={'UTC offset'} value={String(profile.utcOffset)} mono />
+          <Row label="Maximum storeys" value={String(profile.maxStoreys)} />
+          <Row label="Software" value={profile.software.join(', ')} />
+          <Row label="IFC exchange" value={profile.ifcLevel} />
+          <Row label="Access key" value={row.accessKey} mono />
+          <Row label="UTC offset" value={String(profile.utcOffset)} mono />
         </div>
 
         <p className="hint" style={{ marginTop: 28 }}>These fields are changed through the bureau: they enter selection, and editing them yourself, around the review, would mean editing your own score.</p>
