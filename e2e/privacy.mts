@@ -52,7 +52,7 @@ console.log('Права из политики')
  */
 const specialist = await prisma.specialist.findFirst({
   where: { status: 'active', deliveredTickets: { gt: 0 } },
-  select: { id: true, accessKey: true, displayName: true, deliveredTickets: true },
+  select: { id: true, accessKey: true, email: true, displayName: true, deliveredTickets: true },
 })
 
 if (!specialist) {
@@ -71,6 +71,8 @@ await before.fill('input[name=key]', specialist.accessKey)
 await before.click('button[type=submit]')
 await before.waitForTimeout(1500)
 check(before.url().includes('/work'), 'до обезличивания ключ открывает доску')
+
+const wroteToPerson = await prisma.notification.count({ where: { email: specialist.email } })
 
 const bureau = await (await browser.newContext()).newPage()
 await bureau.goto(`${BASE}/ops`)
@@ -109,6 +111,36 @@ check(
   'метрики поставки на месте: они обезличены и держат чужие проекты',
 )
 
+/*
+ * Адрес уходит и из журнала уведомлений. Журнал хранит его затем, чтобы
+ * ответить на жалобу «мне ничего не приходило», — но после обезличивания
+ * жаловаться некому, а живой адрес в нём остаётся ровно тем, что человек
+ * просил стереть. Сами строки при этом остаются: пара «повод и его цель»
+ * гасит повторные письма, и снять её значит однажды написать ещё раз.
+ */
+{
+  // Адрес обязан быть в выборке выше: `email: undefined` для prisma означает
+  // не «пустой адрес», а «без условия», и проверка молча считала бы весь
+  // журнал. Один раз она так и сделала.
+  check(Boolean(specialist.email), 'адрес подопытного известен: иначе проверка ниже ничего не значит')
+
+  const left = await prisma.notification.count({ where: { email: specialist.email } })
+  check(left === 0, `адреса нет в журнале уведомлений: строк ${left}`)
+
+  /*
+   * Строки не удалены, а обезличены. Пара «повод и его цель» гасит повторные
+   * письма, и снять её значит однажды написать человеку, которого больше нет,
+   * ещё раз. Считается по новому адресу: «ноль там и ноль тут» доказывало бы
+   * только то, что писем не было вовсе.
+   */
+  check(wroteToPerson > 0, `человеку писали, есть чему переезжать: ${wroteToPerson}`)
+  const moved = await prisma.notification.count({ where: { email: row?.email } })
+  check(
+    moved === wroteToPerson,
+    `строки журнала остались на месте, без адреса: ${moved} из ${wroteToPerson}`,
+  )
+}
+
 // Старый ключ не должен пускать: иначе профиль обезличен только на экране.
 const after = await (await browser.newContext()).newPage()
 await after.goto(`${BASE}/enter`)
@@ -127,6 +159,8 @@ const project = await prisma.project.findFirst({
 })
 
 if (project) {
+  const wroteBefore = await prisma.notification.count({ where: { email: project.clientEmail } })
+
   await bureau.goto(`${BASE}/ops/projects/${project.id}`)
   await bureau.waitForTimeout(600)
 
@@ -152,6 +186,23 @@ if (project) {
   check(erased?.clientKey !== project.clientKey, 'ключ кабинета сменился: доступа по старому нет')
   check((erased?.briefNotes ?? 'x') === '', 'свободный текст брифа удалён')
   check((erased?.messages.length ?? 1) === 0, 'переписка с бюро удалена')
+
+  const inLog = await prisma.notification.count({ where: { email: project.clientEmail } })
+  check(inLog === 0, `адреса заказчика нет в журнале: строк ${inLog}`)
+
+  /*
+   * Строки не удалены, а обезличены: пара «повод и его цель» гасит повторные
+   * письма, и снять её значит однажды написать ещё раз. Считается по новому,
+   * непригодному адресу — «ноль там и ноль тут» доказывало бы только то, что
+   * писем не было вовсе.
+   */
+  const moved = await prisma.notification.count({ where: { email: erased?.clientEmail } })
+  check(
+    wroteBefore === 0 ? true : moved === wroteBefore,
+    wroteBefore === 0
+      ? 'заказчику не писали: переносить в журнале нечего'
+      : `строки журнала остались на месте, без адреса: ${moved} из ${wroteBefore}`,
+  )
   check(
     (erased?.invoices.length ?? 0) >= 0,
     `счета остаются обязанностью перед страной регистрации: ${erased?.invoices.length}`,

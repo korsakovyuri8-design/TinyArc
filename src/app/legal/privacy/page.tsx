@@ -132,7 +132,7 @@ export default async function PrivacyPage() {
             <li>object to processing based on legitimate interest;</li>
             <li>lodge a complaint with a data protection supervisory authority — in Montenegro that is the Agency for Personal Data Protection, or the corresponding authority where you are located.</li>
           </ul>
-          <p>These are not statements of intent. Anonymising a profile and erasing the data of a closed project are single actions in the bureau panel, and each records the date on which it was carried out. What stays after erasure is named in advance: invoices, because keeping them is an obligation of the country of registration, and task events, because the delivery metrics of other people are computed from them.</p>
+          <p>These are not statements of intent. Anonymising a profile and erasing the data of a closed project are single actions in the bureau panel, and each records the date on which it was carried out. What stays after erasure is named in advance: invoices, because keeping them is an obligation of the country of registration, and task events, because the delivery metrics of other people are computed from them. A record that a given notice was sent also stays, without the address it went to: it is what stops the same notice being sent twice.</p>
 
           <p>A note for specialists: there is no field anywhere, the Bureau included, for rating a person. No opinions about you are stored in the system — only task events and what you declared yourself.</p>
         </Article>

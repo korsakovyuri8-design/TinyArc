@@ -18,6 +18,13 @@
  * — счета. Их хранение — обязанность перед страной регистрации, и человек
  *   не может её снять с нас своим обращением;
  * — тикеты и их приёмка. По ним считаются метрики других людей.
+ *
+ * Журнал уведомлений остаётся, но без адреса. Он хранит адрес затем, чтобы на
+ * жалобу «мне ничего не приходило» можно было ответить фактом, — а после
+ * обезличивания жаловаться некому, и живой адрес в нём становится ровно тем,
+ * что человек просил стереть. Строка при этом не удаляется: пара «повод и
+ * его цель» гасит повторные письма, и снять её значит однажды написать
+ * человеку, которого больше нет, ещё раз.
  */
 
 import { randomBytes } from 'node:crypto'
@@ -48,13 +55,25 @@ export async function anonymiseSpecialist(id: string): Promise<void> {
   if (!row) throw new NotErasable('Specialist not found.')
   if (row.removedAt) throw new NotErasable('This profile is already anonymised.')
 
+  const person = await prisma.specialist.findUniqueOrThrow({
+    where: { id },
+    select: { email: true },
+  })
+  const dead = `${deadKey('removed')}@removed.invalid`
+
   await prisma.$transaction([
     prisma.portfolioItem.deleteMany({ where: { specialistId: id } }),
+    // Адрес уходит и из журнала уведомлений: он там для ответа на жалобу,
+    // а жаловаться после обезличивания уже некому.
+    prisma.notification.updateMany({
+      where: { email: person.email },
+      data: { email: dead },
+    }),
     prisma.specialist.update({
       where: { id },
       data: {
         displayName: 'Former specialist',
-        email: `${deadKey('removed')}@removed.invalid`,
+        email: dead,
         accessKey: deadKey('removed'),
         portfolioUrl: '',
         status: 'removed',
@@ -103,8 +122,19 @@ export async function eraseProject(id: string): Promise<void> {
       .catch((error) => console.error('Файл не удалён из хранилища:', error))
   }
 
+  const client = await prisma.project.findUniqueOrThrow({
+    where: { id },
+    select: { clientEmail: true },
+  })
+  const dead = `${deadKey('erased')}@removed.invalid`
+
   await prisma.$transaction([
     prisma.artifact.deleteMany({ where: { ticket: { projectId: id } } }),
+    // Тот же случай, что и у специалиста: журнал остаётся, адрес — нет.
+    prisma.notification.updateMany({
+      where: { email: client.clientEmail },
+      data: { email: dead },
+    }),
     prisma.ticketComment.deleteMany({ where: { ticket: { projectId: id } } }),
     prisma.clientMessage.deleteMany({ where: { projectId: id } }),
     prisma.designDirection.deleteMany({ where: { projectId: id } }),
@@ -113,7 +143,7 @@ export async function eraseProject(id: string): Promise<void> {
       where: { id },
       data: {
         clientName: 'Erased at the client’s request',
-        clientEmail: `${deadKey('erased')}@removed.invalid`,
+        clientEmail: dead,
         clientKey: deadKey('erased'),
         briefNotes: '',
         dataErasedAt: new Date(),
