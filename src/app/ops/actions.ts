@@ -30,6 +30,7 @@ import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
 import {
+  applicationDeclined,
   clientAnswered,
   conflictResolved,
   ticketCommented,
@@ -90,7 +91,19 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   revalidatePath('/ops/applications')
   revalidatePath('/ops/pool')
 
-  if (!passed) return { message: `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass.` }
+  if (!passed) {
+    // Отказ доходит до человека. Он подал заявку и ждёт ответа; молчание —
+    // это ожидание без конца, и оно хуже отказа. Письмо разговора не
+    // открывает: порог не обсуждается по случаям (п.9).
+    await applicationDeclined(specialist.id)
+
+    return {
+      message:
+        mailer().mode === 'stub'
+          ? `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass. Email delivery is off: tell them yourself.`
+          : `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass. They have been told by email.`,
+    }
+  }
 
   // Ключ выдаётся тем же каналом, которым с человеком разговаривали, и только
   // после подтверждения: до него ключ существует, но не работает.

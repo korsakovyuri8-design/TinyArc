@@ -42,6 +42,7 @@ type Kind =
   | 'client_answer'
   | 'conflict_resolved'
   | 'ticket_comment'
+  | 'application_declined'
 
 /**
  * Отправить письмо не более одного раза на повод.
@@ -301,6 +302,51 @@ export async function ticketCommented(commentId: string): Promise<void> {
         ),
         '',
         `Work board: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
+}
+
+/**
+ * Заявка не прошла порог портфолио.
+ *
+ * Единственная петля, в которой человек ждал ответа, которого не существовало.
+ * Прошедшему уходит ключ, не прошедшему не уходило ничего: он подал заявку и
+ * остался ждать письма, которое никогда не будет написано. Молчание здесь
+ * хуже отказа — отказ можно пережить за минуту, а ждать человек будет месяцами.
+ *
+ * Письмо не открывает разговора, и это не грубость, а исполнение правила:
+ * порог — условие допуска, а не балл, и он не обсуждается по случаям (п.9).
+ * Поэтому в письме нет ни оценки, ни разбора работ, ни адреса для возражений.
+ * Названа дверь, которая осталась открытой: портфолио — главный вход, и с
+ * другим портфолио заявка подаётся заново.
+ *
+ * Повод — сам человек, а не разбор: пересмотр той же заявки решает то же
+ * самое, и второе письмо об одном отказе — это письмо ни о чём.
+ */
+export async function applicationDeclined(specialistId: string): Promise<void> {
+  const specialist = await prisma.specialist.findUnique({
+    where: { id: specialistId },
+    select: { email: true, displayName: true, status: true },
+  })
+
+  if (!specialist || specialist.status !== 'rejected') return
+
+  await once('application_declined', specialistId, specialist.email, async () => {
+    await mailer().send({
+      to: specialist.email,
+      subject: 'Your application to the Bureau pool',
+      body: [
+        fill('Dear {name},', { name: specialist.displayName }),
+        '',
+        'We have reviewed your portfolio. The application does not pass: the work is below the threshold the pool is held to.',
+        '',
+        'The threshold is a condition of entry rather than a score, and it is not decided case by case — so there is nothing here to appeal, and we are not asking you to explain anything.',
+        '',
+        'The portfolio is the main entrance, and it is the part that can change. When there is work you would rather be judged on, apply again — a new application is reviewed from scratch.',
+        '',
+        `Apply: ${absolute('/specialists/apply')}`,
         ...SIGNATURE,
       ].join('\n'),
     })
