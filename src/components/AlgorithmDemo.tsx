@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { assemble } from '@/engine/assemble'
-import { GATE_LABELS } from '@/engine/filter'
 import { planTickets } from '@/engine/relay'
 import {
   CLIMATE_ZONES,
@@ -36,6 +35,7 @@ import { demoActivePool } from '@/lib/demo-pool'
 import {
   CLIMATE_LABELS,
   DISCIPLINE_LABELS,
+  GATE_LABELS,
   DOC_STAGE_LABELS,
   GRID_LABELS,
   MATERIAL_LABELS,
@@ -45,6 +45,9 @@ import {
   TYPOLOGY_LABELS,
 } from '@/lib/labels'
 import { BreakdownRow } from './Breakdown'
+import { LocaleProvider, useT } from '@/lib/i18n/context'
+import { fill } from '@/lib/i18n/fill'
+import type { Locale } from '@/lib/i18n/locale'
 
 const DEFAULT: ProjectRequirements = {
   typology: 'villa',
@@ -64,7 +67,20 @@ const DEFAULT: ProjectRequirements = {
   utcOffset: 1,
 }
 
-export function AlgorithmDemo() {
+export function AlgorithmDemo({ locale }: { locale: Locale }) {
+  return (
+    <LocaleProvider locale={locale}>
+      <Demo />
+    </LocaleProvider>
+  )
+}
+
+/**
+ * Сам прогон. Отдельным компонентом, потому что переводчик берётся из
+ * контекста, а провайдер обязан стоять выше того, кто его читает.
+ */
+function Demo() {
+  const t = useT()
   const [requirements, setRequirements] = useState<ProjectRequirements>(DEFAULT)
   const pool = useMemo(() => demoActivePool(), [])
   const assembly = useMemo(() => assemble(pool, requirements), [pool, requirements])
@@ -110,7 +126,7 @@ export function AlgorithmDemo() {
     <div>
       {/* --- Вход ---------------------------------------------------------- */}
       <div className="panel" style={{ marginBottom: 40 }}>
-        <div className="label label-accent">Требования проекта</div>
+        <div className="label label-accent">{t('Требования проекта')}</div>
 
         <div className="grid grid-3" style={{ marginTop: 20, gap: 18 }}>
           <Field label="Типология">
@@ -118,15 +134,18 @@ export function AlgorithmDemo() {
               value={requirements.typology}
               onChange={(e) => patch({ typology: e.target.value as Typology })}
             >
-              {TYPOLOGIES.map((t) => (
-                <option key={t} value={t}>
-                  {TYPOLOGY_LABELS[t]}
+              {TYPOLOGIES.map((value) => (
+                <option key={value} value={value}>
+                  {t(TYPOLOGY_LABELS[value])}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Этажей" hint={`Продуктовая граница — ${MAX_STOREYS}`}>
+          <Field
+            label="Этажей"
+            hint={fill(t('Продуктовая граница — {n}'), { n: MAX_STOREYS })}
+          >
             <input
               type="number"
               min={1}
@@ -153,7 +172,7 @@ export function AlgorithmDemo() {
             >
               {JURISDICTIONS.map((j) => (
                 <option key={j} value={j}>
-                  {JURISDICTION_NAMES[j]}
+                  {t(JURISDICTION_NAMES[j])}
                 </option>
               ))}
             </select>
@@ -166,7 +185,7 @@ export function AlgorithmDemo() {
             >
               {CLIMATE_ZONES.map((c) => (
                 <option key={c} value={c}>
-                  {CLIMATE_LABELS[c]}
+                  {t(CLIMATE_LABELS[c])}
                 </option>
               ))}
             </select>
@@ -179,7 +198,7 @@ export function AlgorithmDemo() {
             >
               {MATERIAL_SYSTEMS.map((m) => (
                 <option key={m} value={m}>
-                  {MATERIAL_LABELS[m]}
+                  {t(MATERIAL_LABELS[m])}
                 </option>
               ))}
             </select>
@@ -192,7 +211,7 @@ export function AlgorithmDemo() {
             >
               {DOC_STAGES.map((s) => (
                 <option key={s} value={s}>
-                  {DOC_STAGE_LABELS[s]}
+                  {t(DOC_STAGE_LABELS[s])}
                 </option>
               ))}
             </select>
@@ -203,9 +222,9 @@ export function AlgorithmDemo() {
               value={requirements.terrain}
               onChange={(e) => patch({ terrain: e.target.value as Terrain })}
             >
-              {TERRAINS.map((t) => (
-                <option key={t} value={t}>
-                  {TERRAIN_LABELS[t]}
+              {TERRAINS.map((value) => (
+                <option key={value} value={value}>
+                  {t(TERRAIN_LABELS[value])}
                 </option>
               ))}
             </select>
@@ -218,7 +237,7 @@ export function AlgorithmDemo() {
             >
               {GRID_CONNECTIONS.map((g) => (
                 <option key={g} value={g}>
-                  {GRID_LABELS[g]}
+                  {t(GRID_LABELS[g])}
                 </option>
               ))}
             </select>
@@ -261,7 +280,7 @@ export function AlgorithmDemo() {
                       })
                     }
                   />
-                  {SOFTWARE_LABELS[s]}
+                  {t(SOFTWARE_LABELS[s])}
                 </label>
               ))}
             </div>
@@ -282,7 +301,7 @@ export function AlgorithmDemo() {
                       })
                     }
                   />
-                  {LANGUAGE_NAMES[l as Language]}
+                  {t(LANGUAGE_NAMES[l as Language])}
                 </label>
               ))}
             </div>
@@ -296,9 +315,9 @@ export function AlgorithmDemo() {
       {assembly.outcome === 'rejected' ? (
         <div className="panel" style={{ borderColor: 'var(--fail)' }}>
           <div className="label" style={{ color: 'var(--fail)' }}>
-            Проект не берётся
+            {t('Проект не берётся')}
           </div>
-          <p style={{ marginTop: 12, marginBottom: 0 }}>{assembly.notes}</p>
+          <p style={{ marginTop: 12, marginBottom: 0 }}>{t(assembly.notes)}</p>
         </div>
       ) : (
         <>
@@ -317,7 +336,7 @@ export function AlgorithmDemo() {
                 style={{ padding: '9px 16px' }}
                 onClick={() => setFocus(r.discipline)}
               >
-                {DISCIPLINE_LABELS[r.discipline]}
+                {t(DISCIPLINE_LABELS[r.discipline])}
               </button>
             ))}
           </div>
@@ -325,9 +344,13 @@ export function AlgorithmDemo() {
           <div className="panel" style={{ marginBottom: 40 }}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <span className="label">
-                Что отсекло дисциплину «{DISCIPLINE_LABELS[focused]}»
+                {fill(t('Что отсекло дисциплину «{discipline}»'), {
+                  discipline: t(DISCIPLINE_LABELS[focused]),
+                })}
               </span>
-              <span className="num dim">{inDiscipline.length} в дисциплине</span>
+              <span className="num dim">
+                {fill(t('{count} в дисциплине'), { count: inDiscipline.length })}
+              </span>
             </div>
             <div className="stack" style={{ marginTop: 16 }}>
               {[...funnel.entries()]
@@ -335,7 +358,7 @@ export function AlgorithmDemo() {
                 .map(([gate, count]) => (
                   <div key={gate} className="row" style={{ justifyContent: 'space-between' }}>
                     <span className="muted" style={{ fontSize: '0.88rem' }}>
-                      {GATE_LABELS[gate]}
+                      {fill(t(GATE_LABELS[gate]), { threshold: PORTFOLIO_THRESHOLD })}
                     </span>
                     <span className="num dim">−{count}</span>
                   </div>
@@ -348,15 +371,18 @@ export function AlgorithmDemo() {
                   paddingTop: 10,
                 }}
               >
-                <span className="label label-accent">Осталось</span>
+                <span className="label label-accent">{t('Осталось')}</span>
                 <span className="num" style={{ color: 'var(--accent)' }}>
                   {passed.length}
                 </span>
               </div>
             </div>
             <p className="hint" style={{ marginTop: 16 }}>
-              {describeRole(focusedRole)} Порог по портфолио — {PORTFOLIO_THRESHOLD}/10, и он
-              стоит до скоринга: это гейт, а не слагаемое.
+              {describeRole(focusedRole, t)}{' '}
+              {fill(
+                t('Порог по портфолио — {threshold}/10, и он стоит до скоринга: это гейт, а не слагаемое.'),
+                { threshold: PORTFOLIO_THRESHOLD },
+              )}
             </p>
           </div>
 
@@ -364,10 +390,7 @@ export function AlgorithmDemo() {
           <Stage index={2} name="Score" internal="Assemble" />
 
           {passed.length === 0 ? (
-            <div className="note note-fail">
-              В этой дисциплине не осталось никого. Команда не собирается — ослабьте требования
-              или расширьте пул.
-            </div>
+            <div className="note note-fail">{t('В этой дисциплине не осталось никого. Команда не собирается — ослабьте требования или расширьте пул.')}</div>
           ) : (
             <div className="grid grid-2" style={{ marginBottom: 40 }}>
               {passed.slice(0, 6).map((candidate) => (
@@ -378,13 +401,13 @@ export function AlgorithmDemo() {
                   <div className="row" style={{ justifyContent: 'space-between' }}>
                     <span className="num dim">#{candidate.rank}</span>
                     {candidate.specialist.signsIn.includes(requirements.jurisdiction) && (
-                      <span className="tag tag-accent">право подписи</span>
+                      <span className="tag tag-accent">{t('право подписи')}</span>
                     )}
                   </div>
                   <h3 style={{ marginTop: 8, marginBottom: 14 }}>
                     {candidate.specialist.displayName}
                   </h3>
-                  <BreakdownRow breakdown={candidate.breakdown} />
+                  <BreakdownRow breakdown={candidate.breakdown} t={t} />
                 </div>
               ))}
             </div>
@@ -401,23 +424,23 @@ export function AlgorithmDemo() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Роль</th>
-                        <th>Специалист</th>
-                        <th>Софт</th>
-                        <th style={{ textAlign: 'right' }}>Балл</th>
+                        <th>{t('Роль')}</th>
+                        <th>{t('Специалист')}</th>
+                        <th>{t('Софт')}</th>
+                        <th style={{ textAlign: 'right' }}>{t('Балл')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {assembly.team.map((member) => (
                         <tr key={member.discipline}>
                           <td>
-                            {DISCIPLINE_LABELS[member.discipline]}
+                            {t(DISCIPLINE_LABELS[member.discipline])}
                             {member.role.specializations.length > 0 && (
                               <>
                                 <br />
                                 <span className="dim" style={{ fontSize: '0.78rem' }}>
                                   {member.role.specializations
-                                    .map((x) => SPECIALIZATION_LABELS[x])
+                                    .map((x) => t(SPECIALIZATION_LABELS[x]))
                                     .join(member.role.mode === 'all' ? ' + ' : ' / ')}
                                 </span>
                               </>
@@ -427,12 +450,14 @@ export function AlgorithmDemo() {
                             {member.specialist.displayName}
                             {member.isSignatory && (
                               <span className="tag tag-accent" style={{ marginLeft: 10 }}>
-                                подпись
+                                {t('подпись')}
                               </span>
                             )}
                           </td>
                           <td className="dim">
-                            {member.specialist.software.map((s) => SOFTWARE_LABELS[s]).join(', ')}
+                            {member.specialist.software
+                              .map((s) => t(SOFTWARE_LABELS[s]))
+                              .join(', ')}
                           </td>
                           <td className="num" style={{ textAlign: 'right', color: 'var(--accent)' }}>
                             {(member.score * 10).toFixed(1)}
@@ -445,11 +470,10 @@ export function AlgorithmDemo() {
               </div>
 
               <div className="panel">
-                <div className="label">Граф тикетов · Blind Relay Protocol</div>
-                <p className="hint" style={{ marginTop: 10, marginBottom: 18 }}>
-                  Тикет не открывается, пока не приняты те, от которых он зависит. Прямых чатов
-                  между специалистами не существует.
-                </p>
+                <div className="label">
+                  {t('Граф тикетов')} · Blind Relay Protocol
+                </div>
+                <p className="hint" style={{ marginTop: 10, marginBottom: 18 }}>{t('Тикет не открывается, пока не приняты те, от которых он зависит. Прямых чатов между специалистами не существует.')}</p>
                 <ul className="clean">
                   {tickets.map((ticket, i) => (
                     <li
@@ -466,19 +490,22 @@ export function AlgorithmDemo() {
                     >
                       <span className="num dim">{String(i + 1).padStart(2, '0')}</span>
                       <span>
-                        {ticket.title}
+                        {t(ticket.title)}
                         <br />
                         <span className="dim" style={{ fontSize: '0.8rem' }}>
-                          {DOC_STAGE_LABELS[ticket.stage]} · {DISCIPLINE_LABELS[ticket.discipline]}
-                          {ticket.dependsOn.length > 0 && ' · ждёт: '}
+                          {t(DOC_STAGE_LABELS[ticket.stage])} ·{' '}
+                          {t(DISCIPLINE_LABELS[ticket.discipline])}
+                          {ticket.dependsOn.length > 0 && ` · ${t('ждёт:')} `}
                           {unique(
-                            ticket.dependsOn.map(
-                              (k) => DISCIPLINE_LABELS[k.split(':')[1] as Discipline],
+                            ticket.dependsOn.map((k) =>
+                              t(DISCIPLINE_LABELS[k.split(':')[1] as Discipline]),
                             ),
                           ).join(', ')}
                         </span>
                       </span>
-                      <span className="tag">{ticket.slaHours} ч</span>
+                      <span className="tag">
+                        {fill(t('{hours} ч'), { hours: ticket.slaHours })}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -487,9 +514,9 @@ export function AlgorithmDemo() {
           ) : (
             <div className="panel" style={{ borderColor: 'var(--fail)' }}>
               <div className="label" style={{ color: 'var(--fail)' }}>
-                Команда не собрана
+                {t('Команда не собрана')}
               </div>
-              <p style={{ marginTop: 12, marginBottom: 0 }}>{assembly.notes}</p>
+              <p style={{ marginTop: 12, marginBottom: 0 }}>{t(assembly.notes)}</p>
             </div>
           )}
         </>
@@ -502,16 +529,17 @@ function unique<T>(items: T[]): T[] {
   return [...new Set(items)]
 }
 
-function describeRole(role: RequiredRole): string {
-  if (role.specializations.length === 0) return 'Специализация в этой роли не требуется.'
+function describeRole(role: RequiredRole, t: (text: string) => string): string {
+  if (role.specializations.length === 0) return t('Специализация в этой роли не требуется.')
 
   const list = role.specializations
-    .map((s) => SPECIALIZATION_LABELS[s])
-    .join(role.mode === 'all' ? ' + ' : ' или ')
+    .map((s) => t(SPECIALIZATION_LABELS[s]))
+    .join(role.mode === 'all' ? ' + ' : ` ${t('или')} `)
 
-  return role.mode === 'all'
-    ? `Роль требует всё сразу: ${list}.`
-    : `Роль требует специализацию: ${list}.`
+  return fill(
+    t(role.mode === 'all' ? 'Роль требует всё сразу: {list}.' : 'Роль требует специализацию: {list}.'),
+    { list },
+  )
 }
 
 function Field({
@@ -523,16 +551,20 @@ function Field({
   hint?: string
   children: React.ReactNode
 }) {
+  const t = useT()
+
   return (
     <div className="field" style={{ marginBottom: 0 }}>
-      <label>{label}</label>
+      <label>{t(label)}</label>
       {children}
-      {hint && <div className="hint">{hint}</div>}
+      {hint && <div className="hint">{t(hint)}</div>}
     </div>
   )
 }
 
 function Counter({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
+  const t = useT()
+
   return (
     <div style={{ borderTop: '1px solid var(--border-strong)', paddingTop: 14 }}>
       <div
@@ -541,12 +573,14 @@ function Counter({ value, label, accent }: { value: number; label: string; accen
       >
         {value}
       </div>
-      <div className="label">{label}</div>
+      <div className="label">{t(label)}</div>
     </div>
   )
 }
 
 function Stage({ index, name, internal }: { index: number; name: string; internal: string }) {
+  const t = useT()
+
   return (
     <div className="row" style={{ gap: 14, alignItems: 'baseline', margin: '0 0 20px' }}>
       <span className="num" style={{ color: 'var(--accent)' }}>
@@ -556,7 +590,7 @@ function Stage({ index, name, internal }: { index: number; name: string; interna
         {name}
       </h3>
       <span className="dim" style={{ fontSize: '0.85rem' }}>
-        внутреннее имя стадии — {internal}
+        {t('внутреннее имя стадии —')} {internal}
       </span>
     </div>
   )

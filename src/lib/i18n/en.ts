@@ -755,4 +755,215 @@ export const en: Record<string, string> = {
   'Постановка и входные данные — на доске работ. Взять в работу нужно там же: срок считается от открытия задачи, а не от того, когда вы её увидели.':
     'The specification and the input files are on your work board. Claim it there as well: the clock runs from when the task opened, not from when you saw it.',
   'Доска работ:': 'Work board:',
+
+  // --- Три стадии ---
+  'Как устроены три стадии': 'How the three stages work',
+  'Три стадии: Validate, Assemble, Deliver. Продуктовая граница, отбор по двенадцати измерениям, формула Quality × Availability, Blind Relay Protocol и метрики качества.':
+    'Three stages: Validate, Assemble, Deliver. The product boundary, selection across twelve dimensions, the Quality × Availability formula, the Blind Relay Protocol and quality metrics.',
+  'Внутренние имена стадий. На сайте те же три стадии называются короче — Filter, Score, Relay. Это одно и то же, просто с разной стороны стола.':
+    'These are the internal names. On the site the same three stages go by shorter ones — Filter, Score, Relay. Same thing, seen from the other side of the table.',
+  'Бриф становится требованиями, пул отсекается': 'The brief becomes requirements; the pool is cut down',
+  'Бриф разбирается в структурированные требования: юрисдикция, типология, этажность, площадь, климатическая зона, материальная система, стадия документации, сроки, софт.':
+    'The brief is parsed into structured requirements: jurisdiction, typology, storeys, area, climate zone, structural system, documentation stage, timing, software.',
+  'Каждый жёсткий критерий сжимает пул. Поэтому жёстких — только те, без которых нельзя; остальные восемь измерений таксономии ранжируют, а не отсеивают.':
+    'Every hard criterion shrinks the pool. So only the indispensable ones are hard; the other eight dimensions of the taxonomy rank rather than exclude.',
+  'Quality × Availability и сборка Tiny Team': 'Quality × Availability and assembling the Tiny Team',
+  'Выжившие ранжируются по формуле': 'Survivors are ranked by the formula',
+  'у специалиста без истории — это рейтинг портфолио. Как только появляются закрытые тикеты, в Quality подмешиваются метрики поставки: они вытесняют портфолио до потолка в 60%. Портфолио стареет, метрики — нет.':
+    'for a specialist with no history it is the portfolio rating. As soon as closed tickets appear, delivery metrics enter Quality: they displace the portfolio up to a ceiling of 60%. Portfolios age; metrics do not.',
+  '— свободная ёмкость против требуемой, срок выхода на задачу и пересечение рабочего дня по часовым поясам.':
+    '— free capacity against what is required, time to start on a task, and the working-day overlap across time zones.',
+  'Дальше собирается Tiny Team — минимальная достаточная команда, а не полный штат бюро. Состав дисциплин определяется проектом: вилле не нужен тот же набор, что mixed-use. Проверяется совместимость по софту — кандидат, ломающий обмен моделями, уступает место следующему даже с более высоким баллом. И проверяется право подписи: без специалиста, подписывающего пакет в стране проекта, команда не собирается вовсе.':
+    'Then the Tiny Team is assembled — the minimum sufficient team, not a full practice roster. The set of disciplines follows from the project: a villa does not need what a mixed-use building needs. Software compatibility is checked — a candidate who breaks model exchange gives way to the next one even with a higher score. And signing rights are checked: without someone who can sign the set in the project’s country, no team is assembled at all.',
+  'Посмотреть, как это считается →': 'See how this is computed →',
+  'Операционный протокол выпуска. Три правила:': 'The operating protocol for production. Three rules:',
+  'Никаких прямых чатов между специалистами. Такого канала не существует.':
+    'No direct chats between specialists. No such channel exists.',
+  'Только комментарии на уровне тикета задачи.': 'Comments live on the task ticket and nowhere else.',
+  'Стадийные гейты по зависимостям: тикет не открывается, пока не приняты те, от которых он зависит.':
+    'Stage gates follow dependencies: a ticket does not open until the ones it depends on are accepted.',
+  'Специалист видит свой тикет, входные артефакты, выданные гейтом, и комментарии по этому тикету. Соседей по команде он видит как роли, а не как имена и контакты.':
+    'A specialist sees their own ticket, the input files released by the gate, and the comments on that ticket. They see teammates as roles, not as names and contact details.',
+  'Протокол добавляет трения там, где живое бюро решило бы вопрос за минуту в переговорке. Это принятая цена: без неё нет ни защиты от обхода, ни измеримых метрик, ни дисциплины зависимостей.':
+    'The protocol adds friction where a conventional practice would settle the question in a minute in a meeting room. That is a price we accept: without it there is no protection against being routed around, no measurable metrics and no dependency discipline.',
+  Качество: 'Quality',
+  'Метрики, а не отзывы': 'Metrics, not reviews',
+  'Качество специалиста измеряется математически и считается из событий тикетов. Ни у клиента, ни у оператора нет способа поставить оценку — такого поля не существует.':
+    'A specialist’s quality is measured mathematically and computed from ticket events. Neither the client nor an operator has any way to leave a rating — no such field exists.',
+  'Доля тикетов, закрытых в срок.': 'Share of tickets closed on time.',
+  'Доля тикетов, принятых с первого предъявления.': 'Share of tickets accepted first time.',
+  'Время до первого содержательного ответа в тикете.': 'Time to the first substantive reply in a ticket.',
+  'Среднее число кругов правок на тикет.': 'Average number of revision rounds per ticket.',
+  'Метрики входят в Quality и потому напрямую двигают шанс попасть в следующую команду. Это и есть механизм отбора: специалист, который срывает сроки, теряет доступ к проектам без единого разбирательства.':
+    'Metrics feed into Quality and so move the odds of joining the next team directly. That is the selection mechanism: a specialist who misses deadlines loses access to projects without a single hearing.',
+
+  // --- Демонстрация алгоритма ---
+  'Как алгоритм собирает команду': 'How the algorithm assembles a team',
+  'Как из пула специалистов собирается команда под конкретный проект: фильтр по двенадцати измерениям, ранжирование по Quality × Availability, сборка Tiny Team и граф тикетов.':
+    'How a team for a specific project is assembled out of the pool: filtering across twelve dimensions, ranking by Quality × Availability, assembling the Tiny Team, and the ticket graph.',
+  'Пул синтетический и намеренно неровный: в нём есть люди ниже порога по портфолио, без права подписи, без нужного языка и без свободной ёмкости. Демонстрация, где проходят все, ничего не демонстрирует.':
+    'The pool is synthetic and deliberately uneven: it contains people below the portfolio threshold, without signing rights, without the required language and without free capacity. A demonstration where everyone passes demonstrates nothing.',
+  'Оставить бриф на свой проект': 'Submit a brief for your own project',
+
+  // --- Специалистам ---
+  Пул: 'The pool',
+  'Проекты приходят к вам, а не вы к ним': 'Projects come to you, not the other way round',
+  'Ни тендеров, ни писем «расскажите о себе», ни торга по ставке. Движок сам решает, кто попадает в команду, — по фактам, которые вы заявили, и по тому, как вы сдавали прошлые тикеты.':
+    'No tenders, no “tell us about yourself” emails, no haggling over rates. The engine decides who joins a team — from the facts you declared and from how you delivered past tickets.',
+  'Условия честные, но не мягкие': 'The terms are fair, not soft',
+  'Гейт стоит до скоринга. Ниже порога заявка не проходит, какой бы свободной ни была ваша неделя.':
+    'The gate comes before the scoring. Below the threshold an application does not pass, however free your week is.',
+  'Оценок не существует': 'There are no ratings',
+  'Ни клиент, ни бюро не могут поставить вам балл. Считаются только сроки, приёмка с первого раза, время отклика и круги правок.':
+    'Neither the client nor the bureau can score you. Only deadlines, first-time acceptance, response time and revision rounds are counted.',
+  'Прямых чатов нет': 'There are no direct chats',
+  'Вы видите свой тикет и комментарии по нему. Соседей по команде — как роли, не как имена.':
+    'You see your ticket and the comments on it. Teammates appear as roles, not as names.',
+  'Метрики двигают доступ': 'Metrics move your access',
+  'Сорванные сроки снижают Quality и убирают вас из следующих команд. Без разбирательств и без второго шанса, выданного вручную.':
+    'Missed deadlines lower Quality and take you out of the next teams. Without a hearing and without a second chance handed out by anyone.',
+  'Ёмкость — это множитель': 'Capacity is a multiplier',
+  'Формула Quality × Availability. Нулевая свободная ёмкость обнуляет балл: качество недоступность не компенсирует.':
+    'The formula is Quality × Availability. Zero free capacity zeroes the score: quality does not compensate for unavailability.',
+  'Плата за доступ': 'Paying for access',
+  'Подписка специалиста — за доступ к проектам. Комиссии с вашей ставки нет.':
+    'The specialist subscription pays for access to projects. There is no commission on your fee.',
+  'Как идёт работа': 'How the work runs',
+  'Тикет, гейт, приёмка': 'Ticket, gate, acceptance',
+  'Тикет открывается гейтом': 'The gate opens the ticket',
+  'Пока не приняты задачи, от которых зависит ваша, тикет закрыт. Вы видите название и стадию, но не содержание — входных артефактов ещё нет.':
+    'Until the tasks yours depends on are accepted, the ticket stays closed. You see the title and the stage but not the content — the input files do not exist yet.',
+  'Вы работаете и комментируете в тикете': 'You work and comment in the ticket',
+  'Первый содержательный ответ засекает Response Time. Всё общение — в тикете, и это единственное место, где его вообще можно вести.':
+    'Your first substantive reply starts the Response Time clock. All communication happens in the ticket, and that is the only place it can happen at all.',
+  'Бюро принимает или возвращает на круг': 'The bureau accepts or sends it back',
+  'Приёмка в срок и с первого раза поднимает Quality. Возврат добавляет круг правок и снижает First Time Right.':
+    'Acceptance on time and first time raises Quality. A return adds a revision round and lowers First Time Right.',
+  'У меня уже есть ключ': 'I already have a key',
+  'Пул специалистов Bureau: отбор по двенадцати измерениям, порог по портфолио 8/10, работа по тикетам, метрики вместо отзывов.':
+    'The Bureau specialist pool: selection across twelve dimensions, a portfolio threshold of 8/10, work on tickets, metrics instead of reviews.',
+
+  // --- Заявка специалиста ---
+  'Заявка специалиста': 'Specialist application',
+  Заявка: 'Application',
+  'Двенадцать измерений': 'Twelve dimensions',
+  'Это не резюме. Каждое поле — измерение, по которому движок считает пересечение с проектом. Заявить лишнее не выгодно: несовпадение вскроется на первом же тикете и осядет в метриках.':
+    'This is not a CV. Every field is a dimension the engine uses to compute overlap with a project. Claiming more than you do is not to your advantage: the mismatch surfaces on the very first ticket and settles into your metrics.',
+
+  // Подписи словарей: вид портфолио и полоса масштаба.
+  '3D-рендер': '3D render',
+  'Чертежи и разрезы': 'Drawings and sections',
+  'Скриншоты модели': 'Model screenshots',
+  'Фото со стройки': 'Site photographs',
+  'до 250 м²': 'up to 250 m²',
+  '250–1000 м²': '250–1000 m²',
+  '1000–3000 м²': '1000–3000 m²',
+  'от 3000 м²': 'over 3000 m²',
+
+  // --- Три стадии ---
+  'внутреннее имя —': 'internal name —',
+  'Здесь же проверяется сам проект. Bureau ведёт здания до {n} этажей в зонах лёгкого регулирования в трёх странах: {countries}. Если проект выходит за эту границу, мы отказываем — а не берём и не тянем.':
+    'The project itself is checked here too. Bureau handles buildings up to {n} storeys in light-regulation zones in three countries: {countries}. A project outside that boundary is declined — not taken on and then dragged along.',
+  'Затем пул проходит жёсткие гейты: дисциплина, юрисдикция, этажность, стадия, обмен моделями, язык, пересечение по времени. И порог по портфолио — {threshold}/10, ниже которого специалист не проходит, каким бы свободным он ни был.':
+    'The pool then goes through the hard gates: discipline, jurisdiction, storeys, stage, model exchange, language, working-hours overlap. And the portfolio threshold — {threshold}/10, below which a specialist does not pass, however free their week.',
+  'Умножение, а не сумма: сумма позволила бы качеству компенсировать недоступность, произведение — нет. Отличный специалист без свободной ёмкости бесполезен проекту с датой.':
+    'A product, not a sum: a sum would let quality make up for unavailability, a product does not. An excellent specialist with no free capacity is of no use to a project that has a date.',
+
+  // --- Демонстрация алгоритма ---
+  'Меняйте требования проекта и смотрите, что происходит с пулом. Считает тот же движок, что работает в продукте, — здесь он просто крутится в браузере на синтетическом пуле из {count} специалистов.':
+    'Change the project requirements and watch what happens to the pool. The counting is done by the same engine that runs in the product — here it simply runs in the browser against a synthetic pool of {count} specialists.',
+
+  // --- Специалистам ---
+  'Порог по портфолио — {threshold}/10': 'Portfolio threshold — {threshold}/10',
+
+  // --- Заявка специалиста ---
+  'Заявка принята': 'Application received',
+  'Дальше — разбор портфолио': 'Next — the portfolio review',
+  'Портфолио смотрит бюро и ставит рейтинг. Порог — {threshold}/10; ниже него заявка не проходит, и это не обсуждается отдельно с каждым. Если проходите — ключ доступа придёт на указанный адрес.':
+    'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10; below it an application does not pass, and that is not negotiated case by case. If you pass, the access key arrives at the address you gave.',
+  'Кто вы': 'Who you are',
+  'Что вы ведёте · измерения 1–4': 'What you handle · dimensions 1–4',
+  'Где и в чём · измерения 5–8': 'Where and in what · dimensions 5–8',
+  'Как вы работаете · измерения 9–12': 'How you work · dimensions 9–12',
+  'Имя для клиента': 'Name shown to the client',
+  'Сюда придёт ключ доступа': 'The access key comes to this address',
+  'Главный вход отбора: показанное весит больше заявленного':
+    'The main entrance to selection: what you show weighs more than what you claim',
+  Дисциплины: 'Disciplines',
+  Специализация: 'Specialisation',
+  'Отметьте только то, что вели сами. Конструктор по монолиту на деревянном доме — это не «почти то же самое», и движок разводит их специально':
+    'Tick only what you have led yourself. A concrete-frame engineer on a timber house is not “near enough the same thing”, and the engine keeps the two apart on purpose',
+  Типологии: 'Typologies',
+  'Максимальная этажность': 'Maximum storeys',
+  'Только та, на которую есть подтверждённый опыт': 'Only what you have proven experience with',
+  'Материальные системы': 'Material systems',
+  'Климатические зоны': 'Climate zones',
+  Юрисдикции: 'Jurisdictions',
+  'Где вы реально проходили согласования':
+    'Where you have actually taken projects through approvals',
+  'Право подписи': 'Signing rights',
+  'Только страны из списка выше. Без подписи в стране проект не берётся вовсе':
+    'Only countries from the list above. Without signing rights in a country the project is not taken at all',
+  'Уровень обмена по IFC': 'IFC exchange level',
+  'Общий формат заменяет общий пакет: с координацией по IFC вы совместимы с любой командой':
+    'A shared format replaces a shared software suite: with IFC coordination you are compatible with any team',
+  'Стадии документации': 'Documentation stages',
+  'Для согласований язык органов — жёсткое требование':
+    'For approvals the language of the authorities is a hard requirement',
+  Режим: 'Work mode',
+  'Смещение от UTC': 'UTC offset',
+  'По нему считается пересечение рабочего дня': 'Working-day overlap is calculated from it',
+  'Свободная ёмкость, ч/нед': 'Free capacity, h/week',
+  'Ноль означает, что в отборе вы не участвуете: формула — произведение':
+    'Zero means you are out of selection: the formula is a product',
+  'Срок выхода на задачу, дней': 'Days before you can start on a task',
+
+  // --- Демонстрация: вход, воронка, состав ---
+  'Требования проекта': 'Project requirements',
+  'Продуктовая граница — {n}': 'Product boundary — {n}',
+  Климат: 'Climate',
+  Материал: 'Material',
+  'Склон требует вертикальной планировки': 'A slope calls for grading and drainage',
+  'Софт проекта': 'Project software',
+  'Пустой список — обмен не ограничен': 'An empty list leaves the exchange unrestricted',
+  'Языки клиента': 'Client languages',
+  'в пуле': 'in the pool',
+  'прошли гейты': 'passed the gates',
+  'ролей в команде': 'roles on the team',
+  'Что отсекло дисциплину «{discipline}»': 'What cut down “{discipline}”',
+  '{count} в дисциплине': '{count} in the discipline',
+  Осталось: 'Left',
+  'Порог по портфолио — {threshold}/10, и он стоит до скоринга: это гейт, а не слагаемое.':
+    'The portfolio threshold is {threshold}/10, and it stands before scoring: a gate, not a term in the sum.',
+  'В этой дисциплине не осталось никого. Команда не собирается — ослабьте требования или расширьте пул.':
+    'No one is left in this discipline. The team does not assemble — relax the requirements or widen the pool.',
+  'право подписи': 'signing rights',
+  Роль: 'Role',
+  Балл: 'Score',
+  'Граф тикетов': 'Ticket graph',
+  'Тикет не открывается, пока не приняты те, от которых он зависит. Прямых чатов между специалистами не существует.':
+    'A ticket does not open until the ones it depends on are accepted. Direct chats between specialists do not exist.',
+  'ждёт:': 'waits for:',
+  '{hours} ч': '{hours} h',
+  'Команда не собрана': 'The team did not assemble',
+  'Специализация в этой роли не требуется.': 'This role needs no specialisation.',
+  или: 'or',
+  'Роль требует всё сразу: {list}.': 'The role requires all of it at once: {list}.',
+  'Роль требует специализацию: {list}.': 'The role requires a specialisation: {list}.',
+  'внутреннее имя стадии —': 'internal stage name —',
+
+  // --- Гейты: чем отсекло ---
+  'Портфолио ниже {threshold}/10': 'Portfolio below {threshold}/10',
+  'Не работает в этой дисциплине': 'Does not work in this discipline',
+  'Дисциплина та, специализация не та': 'Right discipline, wrong specialisation',
+  'Не проходил согласования в этой стране': 'Has not taken approvals through in this country',
+  'Нет подтверждённого опыта на такой этажности': 'No proven experience at this number of storeys',
+  'Не ведёт документацию до нужной стадии': 'Does not carry documentation to the stage required',
+  'Нет общего языка с клиентом или с органами':
+    'No language in common with the client or the authorities',
+  'Пересечение по времени меньше рабочего минимума':
+    'Working-hours overlap below the working minimum',
+  'Нет свободной ёмкости или не успевает выйти к сроку':
+    'No free capacity, or cannot start in time',
+  'Нет действующей подписки на доступ к проектам': 'No active subscription for access to projects',
 }

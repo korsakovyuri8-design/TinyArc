@@ -21,7 +21,17 @@ const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
 
 /** Страницы, переведённые целиком. Список растёт вместе со словарём. */
-const TRANSLATED = ['/', '/brief', '/enter', '/legal/offer', '/legal/privacy']
+const TRANSLATED = [
+  '/',
+  '/how-it-works',
+  '/algorithm',
+  '/specialists',
+  '/specialists/apply',
+  '/brief',
+  '/enter',
+  '/legal/offer',
+  '/legal/privacy',
+]
 
 function check(condition, message) {
   if (!condition) {

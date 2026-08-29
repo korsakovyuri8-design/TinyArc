@@ -34,6 +34,9 @@ import {
 } from '@/lib/labels'
 import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
+import { LocaleProvider, useT } from '@/lib/i18n/context'
+import { fill } from '@/lib/i18n/fill'
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale'
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 
 export type SpecialistFormAction = (
@@ -52,15 +55,23 @@ export type SpecialistFormAction = (
  * Заполненные импортом поля приходят в defaults и стоят отмеченными: человек
  * подтверждает или правит то, что бюро уже знало, а не набирает заново.
  */
+/**
+ * Язык по умолчанию русский, и это не забывчивость вызывающего: за формой в
+ * панели бюро сидит бюро, и панель остаётся русской намеренно. Публичные входы
+ * язык передают явно.
+ */
 export function SpecialistForm({
-  action: submit,
-  defaults = {},
-  submitLabel = 'Подать заявку',
-  done,
-  hidden = {},
-  showCapacity = true,
-  askConsent = false,
-}: {
+  locale = DEFAULT_LOCALE,
+  ...props
+}: SpecialistFormProps & { locale?: Locale }) {
+  return (
+    <LocaleProvider locale={locale}>
+      <SpecialistFields {...props} />
+    </LocaleProvider>
+  )
+}
+
+type SpecialistFormProps = {
   action: SpecialistFormAction
   defaults?: Record<string, string | string[]>
   submitLabel?: string
@@ -78,19 +89,35 @@ export function SpecialistForm({
   showCapacity?: boolean
   /** Спрашивать согласие: только там, где форму заполняет сам человек. */
   askConsent?: boolean
-}) {
+}
+
+/**
+ * Поля отдельным компонентом: переводчик берётся из контекста, а провайдер
+ * обязан стоять выше того, кто его читает.
+ */
+function SpecialistFields({
+  action: submit,
+  defaults = {},
+  submitLabel = 'Подать заявку',
+  done,
+  hidden = {},
+  showCapacity = true,
+  askConsent = false,
+}: SpecialistFormProps) {
   const [state, action, pending] = useActionState<ApplicationState, FormData>(submit, {})
+  const t = useT()
 
   if (state.submitted) {
     return (
       done ?? (
         <div className="panel panel-accent">
-          <div className="label label-accent">Заявка принята</div>
-          <h3 style={{ marginTop: 12 }}>Дальше — разбор портфолио</h3>
+          <div className="label label-accent">{t('Заявка принята')}</div>
+          <h3 style={{ marginTop: 12 }}>{t('Дальше — разбор портфолио')}</h3>
           <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-            Портфолио смотрит бюро и ставит рейтинг. Порог — {PORTFOLIO_THRESHOLD}/10; ниже него
-            заявка не проходит, и это не обсуждается отдельно с каждым. Если проходите — ключ
-            доступа придёт на указанный адрес.
+            {fill(
+              t('Портфолио смотрит бюро и ставит рейтинг. Порог — {threshold}/10; ниже него заявка не проходит, и это не обсуждается отдельно с каждым. Если проходите — ключ доступа придёт на указанный адрес.'),
+              { threshold: PORTFOLIO_THRESHOLD },
+            )}
           </p>
         </div>
       )
@@ -119,7 +146,7 @@ export function SpecialistForm({
       ))}
 
       <fieldset>
-        <legend>Кто вы</legend>
+        <legend>{t('Кто вы')}</legend>
 
         <div className="grid grid-2">
           <Field label="Имя для клиента" name="displayName" error={errors.displayName}>
@@ -148,7 +175,7 @@ export function SpecialistForm({
       </fieldset>
 
       <fieldset>
-        <legend>Что вы ведёте · измерения 1–4</legend>
+        <legend>{t('Что вы ведёте · измерения 1–4')}</legend>
 
         <Field label="Дисциплины" error={errors.disciplines}>
           <Choices defaultValue={list('disciplines') as never[]} name="disciplines" options={DISCIPLINES} labels={DISCIPLINE_LABELS} />
@@ -163,7 +190,7 @@ export function SpecialistForm({
             {DISCIPLINES.filter((d) => DISCIPLINE_SPECIALIZATIONS[d].length > 0).map((d) => (
               <div key={d}>
                 <div className="label" style={{ marginBottom: 8 }}>
-                  {DISCIPLINE_LABELS[d]}
+                  {t(DISCIPLINE_LABELS[d])}
                 </div>
                 <Choices
                   name="specializations"
@@ -202,7 +229,7 @@ export function SpecialistForm({
       </fieldset>
 
       <fieldset>
-        <legend>Где и в чём · измерения 5–8</legend>
+        <legend>{t('Где и в чём · измерения 5–8')}</legend>
 
         <Field label="Материальные системы" error={errors.materialSystems}>
           <Choices defaultValue={list('materialSystems') as never[]} name="materialSystems" options={MATERIAL_SYSTEMS} labels={MATERIAL_LABELS} />
@@ -248,7 +275,7 @@ export function SpecialistForm({
       </fieldset>
 
       <fieldset>
-        <legend>Как вы работаете · измерения 9–12</legend>
+        <legend>{t('Как вы работаете · измерения 9–12')}</legend>
 
         <Field label="Стадии документации" error={errors.docStages}>
           <Choices defaultValue={list('docStages') as never[]} name="docStages" options={DOC_STAGES} labels={DOC_STAGE_LABELS} />
@@ -342,7 +369,7 @@ export function SpecialistForm({
 
       {errors.form && (
         <div className="note note-fail" style={{ marginBottom: 20 }}>
-          {errors.form}
+          {t(errors.form)}
         </div>
       )}
 
@@ -353,7 +380,7 @@ export function SpecialistForm({
       */}
       {askConsent && <Consent error={errors.consent} />}
 
-      <Submit pending={pending}>{submitLabel}</Submit>
+      <Submit pending={pending}>{t(submitLabel)}</Submit>
     </form>
   )
 }

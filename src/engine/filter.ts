@@ -21,19 +21,6 @@ import {
 import { availability, timezoneOverlapHours } from './score'
 import type { GateName, ProjectRequirements, SpecialistProfile } from './types'
 
-export const GATE_LABELS: Record<GateName, string> = {
-  portfolio_threshold: `Портфолио ниже ${PORTFOLIO_THRESHOLD}/10`,
-  discipline: 'Не работает в этой дисциплине',
-  specialization: 'Дисциплина та, специализация не та',
-  jurisdiction: 'Не проходил согласования в этой стране',
-  storeys: 'Нет подтверждённого опыта на такой этажности',
-  doc_stage: 'Не ведёт документацию до нужной стадии',
-  language: 'Нет общего языка с клиентом или с органами',
-  timezone_overlap: 'Пересечение по времени меньше рабочего минимума',
-  availability: 'Нет свободной ёмкости или не успевает выйти к сроку',
-  subscription: 'Нет действующей подписки на доступ к проектам',
-}
-
 /**
  * Технологический шлюз: единый пакет внутри команды.
  *
