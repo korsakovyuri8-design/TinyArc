@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/db'
 import { LEGAL_VERSION } from '@/lib/legal'
-import { allow } from '@/lib/guard'
+import { allow, spend } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import {
   accessKey,
@@ -80,6 +80,10 @@ export async function submitApplication(
   if (existing) {
     return { errors: { email: 'Заявка с этим адресом уже есть.' }, values: raw }
   }
+
+  // Проверки пройдены — списываем дорогую отправку. До этого места заявка
+  // стоила одного разбора схемы.
+  await spend('application')
 
   await prisma.specialist.create({
     data: {

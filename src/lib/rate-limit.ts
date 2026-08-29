@@ -15,7 +15,21 @@ export type Bucket = { count: number; resetAt: number }
 
 export type Verdict = { allowed: boolean; retryAfterSeconds: number }
 
-export type Limit = { limit: number; windowMs: number }
+export type Limit = {
+  /** Сколько отправок формы вообще, включая отклонённые проверками. */
+  limit: number
+  windowMs: number
+  /**
+   * Сколько отправок, дошедших до дорогой работы.
+   *
+   * Отделено от `limit` потому, что цена у них разная. Отклонённая форма стоит
+   * одного разбора схемы; принятая — прогона по всему пулу и сотен строк в
+   * базе. Пока это был один счётчик, человек с двумя опечатками в брифе
+   * упирался в предел на третьей попытке и слышал «слишком часто» вместо
+   * «поправьте поле».
+   */
+  completed?: number
+}
 
 const HOUR = 60 * 60 * 1000
 const MINUTE = 60 * 1000
@@ -27,8 +41,8 @@ const MINUTE = 60 * 1000
  * дёшев, но это подбор ключа. Вход в панель — подбор пароля.
  */
 export const LIMITS = {
-  brief: { limit: 3, windowMs: HOUR },
-  application: { limit: 3, windowMs: HOUR },
+  brief: { limit: 20, windowMs: HOUR, completed: 3 },
+  application: { limit: 20, windowMs: HOUR, completed: 3 },
   enter: { limit: 10, windowMs: 15 * MINUTE },
   // Заказчик уже вошёл по ключу, поэтому предел мягкий: он защищает от
   // случайного двойного нажатия и от заваливания панели, а не от чужака.
@@ -37,6 +51,17 @@ export const LIMITS = {
 } as const satisfies Record<string, Limit>
 
 export type LimitName = keyof typeof LIMITS
+
+/**
+ * Ключ дорогого счётчика.
+ *
+ * Отдельное окно, а не поле в том же ведре: у дешёвых попыток и дорогих
+ * прогонов разные пределы, и складывать их в один счётчик означало бы снова
+ * наказывать за опечатку.
+ */
+export function completedKey(key: string): string {
+  return `${key}#completed`
+}
 
 /** Чистая функция: состояние приходит аргументом, время тоже. */
 export function hit(

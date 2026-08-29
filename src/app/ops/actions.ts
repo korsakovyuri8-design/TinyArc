@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
-import { allow } from '@/lib/guard'
+import { allow, forgive } from '@/lib/guard'
 import { assistant } from '@/lib/assist'
 import { sendAccessKey } from '@/lib/mail'
 import { chosenDirection } from '@/lib/services/direction'
@@ -43,6 +43,11 @@ export async function opsSignIn(_prev: OpsState, formData: FormData): Promise<Op
 
   const ok = await signInOperator(String(formData.get('password') ?? ''))
   if (!ok) return { error: 'Пароль не подошёл.' }
+
+  // Успех обнуляет счётчик: ограничитель здесь про подбор, а подбор — это
+  // неудачные попытки. Иначе обычная работа выбирает лимит и панель
+  // закрывается перед своими.
+  await forgive('opsLogin')
 
   redirect('/ops')
 }

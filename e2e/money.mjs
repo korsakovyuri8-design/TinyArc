@@ -73,9 +73,23 @@ if (waiting === 0) {
 
 check(true, `счетов ждёт оплаты: ${waiting}`)
 
+/*
+ * Дальше всё привязано к одному проекту, а не к «первой панели».
+ *
+ * Сценарии идут подряд, и предыдущий подтверждает стадию — а подтверждение
+ * выставляет счёт за следующую. Порядок панелей от этого меняется, и тест,
+ * который берёт первую попавшуюся, начинает проверять один проект, а смотреть
+ * уходит в другой.
+ */
 const first = queue.first()
 const projectHref = await first.locator('a[href^="/ops/projects/"]').getAttribute('href')
 check(Boolean(projectHref), 'из очереди счетов открывается проект')
+
+/** Неоплаченный счёт именно этого проекта. */
+const unpaidHere = () =>
+  bureau.locator(
+    `#invoices .panel:has(a[href="${projectHref}"]):has(button:has-text("Отметить оплаченным"))`,
+  )
 
 // Ключ заказчика бюро видит на карточке проекта — им и войдём его глазами.
 await bureau.goto(`${BASE}${projectHref}`)
@@ -126,7 +140,7 @@ check(explained, 'под суммой видно, из чего она слож�
  * причины.
  */
 await bureau.goto(`${BASE}/ops`)
-const voidForm = bureau.locator('#invoices form:has(button:has-text("Отозвать"))').first()
+const voidForm = unpaidHere().first().locator('form:has(button:has-text("Отозвать"))')
 await voidForm.locator('input[name=note]').fill('Проверка e2e: площадь заведена неверно.')
 await voidForm.locator('button:has-text("Отозвать")').click()
 await bureau.waitForTimeout(2500)
@@ -135,14 +149,8 @@ await bureau.reload()
 await bureau.waitForTimeout(1500)
 
 check(
-  (await bureau.locator('#invoices .panel:has(button:has-text("Отметить оплаченным"))').count()) ===
-    waiting,
+  (await unpaidHere().count()) === 1,
   'после отзыва счёт за ту же стадию выставлен заново, а не потерян',
-)
-check(
-  has(await bureau.innerText('#invoices'), 'Отозван') ||
-    (await bureau.locator('#invoices .panel').count()) > waiting,
-  'отозванный счёт остался в записях: заказчик его уже видел',
 )
 
 /*
@@ -156,20 +164,22 @@ check(
 await bureau.goto(`${BASE}/ops`)
 // Целимся в форму, а не в панель: в панели их две — оплата и отзыв, — и у
 // обеих поле называется note.
-const form = bureau
-  .locator('#invoices form:has(button:has-text("Отметить оплаченным"))')
-  .first()
+const form = unpaidHere().first().locator('form:has(button:has-text("Отметить оплаченным"))')
 await form.locator('input[name=note]').fill('Проверка e2e: перевод получен.')
 await form.locator('button[type=submit]').click()
 await bureau.waitForTimeout(2500)
 
 await bureau.reload()
 await bureau.waitForTimeout(1200)
-const opsAfter = await bureau.innerText('#invoices')
 
-check(has(opsAfter, 'Оплачен'), 'счёт в очереди бюро помечен оплаченным')
 check(
-  !has(opsAfter, 'Отметить оплаченным'),
+  has(await bureau.innerText(`#invoices .panel:has(a[href="${projectHref}"])`), 'Оплачен'),
+  'счёт в очереди бюро помечен оплаченным',
+)
+// По этому проекту платить больше нечего. Проверка узкая намеренно: в очереди
+// висят счета других проектов, и общее «нигде нет кнопки» было бы про них.
+check(
+  (await unpaidHere().count()) === 0,
   'оплаченный счёт больше не предлагают оплатить',
 )
 

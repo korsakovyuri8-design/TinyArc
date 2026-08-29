@@ -19,6 +19,7 @@ import { prisma } from '../db'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
 import { approvedStages, stagesAwaitingClient } from './approval'
 import { issueDueInvoices, paidStages } from './billing'
+import { notifyProject } from './notify'
 
 export class NotYours extends Error {
   constructor() {
@@ -83,8 +84,15 @@ export async function applyGates(projectId: string): Promise<string[]> {
   ])
 
   const ready = openable(tickets, approved, paid)
-  if (ready.length === 0) return []
 
+  /*
+   * Раннего выхода здесь нет намеренно.
+   *
+   * Пустой список — это как раз те два случая, ради которых письма и заводились:
+   * стадия не оплачена и стадия не подтверждена. Гейт ничего не открывает
+   * именно потому, что ждёт человека, — и если уйти отсюда молча, человек
+   * никогда не узнает, что ждут его.
+   */
   const now = new Date()
 
   for (const id of ready) {
@@ -95,6 +103,19 @@ export async function applyGates(projectId: string): Promise<string[]> {
       data: { status: 'open', openedAt: now, dueAt: dueDate(now, ticket.slaHours) },
     })
   }
+
+  /*
+   * Письма отправляются здесь же, а не там, где «случилось событие».
+   *
+   * Гейт — единственное место, где состояние проекта меняется: он открывает
+   * задачи, он же зовёт выставление счетов, и он же работает после каждой
+   * приёмки и подтверждения. Разносить отправку по местам событий значит
+   * однажды забыть одно из них и молча перестать звать человека.
+   *
+   * Повторные вызовы безопасны: каждое письмо уходит один раз, и сторожит это
+   * запись в базе, а не аккуратность вызывающего.
+   */
+  await notifyProject(projectId, ready)
 
   return ready
 }

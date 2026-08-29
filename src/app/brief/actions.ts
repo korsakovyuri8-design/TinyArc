@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
-import { allow } from '@/lib/guard'
+import { allow, spend } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { LEGAL_VERSION } from '@/lib/legal'
@@ -36,6 +36,10 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   }
 
   const input = parsed.data
+
+  // Форма прошла проверки — дальше начинается дорогое: прогон по всему пулу и
+  // сотни строк в базе. Вот за это и списывается бюджет, а не за опечатку.
+  await spend('brief')
 
   const project = await prisma.project.create({
     data: {

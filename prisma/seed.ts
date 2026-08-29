@@ -128,6 +128,11 @@ async function main() {
   await prisma.project.deleteMany({ where: { clientKey: { startsWith: 'seed-brief-' } } })
   await prisma.specialist.deleteMany({ where: { accessKey: { startsWith: 'seed-key-' } } })
 
+  // Записи об отправленных письмах не привязаны внешним ключом ни к проекту,
+  // ни к человеку: они переживают удаление того, о чём были. На стенде это
+  // просто мусор, но растущий с каждой пересборкой.
+  await prisma.notification.deleteMany({})
+
   const pool = demoPool()
   console.log(`Сид: кладём ${pool.length} специалистов…`)
 
