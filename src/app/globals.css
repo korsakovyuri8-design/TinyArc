@@ -372,11 +372,41 @@ textarea {
   padding: 11px 13px;
 }
 
+/*
+ * Видимый фокус — не украшение.
+ *
+ * Бриф это двадцать с лишним полей, и человек, идущий по ним с клавиатуры,
+ * обязан видеть, где он находится. Раньше здесь стоял `outline: none` с
+ * заменой на цвет рамки: на тёмном фоне разница между рамкой обычной и рамкой
+ * в фокусе почти не читается, а у ссылок, кнопок и флажков не было и этого.
+ *
+ * `:focus-visible`, а не `:focus`: браузер сам решает, показывать ли обводку
+ * после щелчка мышью. Показывать её всем подряд — верный способ, чтобы её
+ * однажды снова выключили.
+ */
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Флажок и переключатель обводятся вместе со своей подписью. */
+.choice:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 textarea {
@@ -638,4 +668,22 @@ ul.clean {
 
 .locale-switch .locale-current {
   color: var(--accent);
+}
+
+/*
+ * Человеку, который просил меньше движения, движение не показывается.
+ *
+ * Переходов здесь немного, но настройка операционной системы — это не
+ * пожелание: для части людей анимация в интерфейсе означает тошноту и
+ * головокружение, а не «менее живо».
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
