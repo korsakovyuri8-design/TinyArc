@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db'
 import { LEGAL_VERSION } from '@/lib/legal'
+import { currentLocale } from '@/lib/i18n'
 import { allow, spend } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import {
@@ -96,6 +97,7 @@ export async function submitApplication(
       // с чем именно человек согласился (см. src/lib/legal.ts).
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
+      consentLocale: await currentLocale(),
       // Рейтинг портфолио ставит бюро при разборе, а не заявитель о себе (п.9).
       portfolioRating: 0,
       status: 'pending',

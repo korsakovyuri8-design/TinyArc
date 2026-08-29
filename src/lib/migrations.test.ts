@@ -39,6 +39,7 @@ const APPLIED: Record<string, string> = {
   '0006_invoice_void': '4c41cd2d2b9c2af3ffe3ab1fa7c33d2f',
   '0007_notifications': '338cce0a88421233617b1265cfcd58f0',
   '0008_artifact_files': 'b1b9fb25e1b53887cd672575371ee101',
+  '0009_consent_locale': 'fee5efc6b6049b3084f7cd68a58d1426',
 }
 
 function checksum(name: string): string {

@@ -505,4 +505,223 @@ export const en: Record<string, string> = {
     'That did not work. Write to the bureau and we will sort it out.',
   'Неизвестная стадия.': 'Unknown stage.',
   'Сначала войдите по ключу.': 'Sign in with your key first.',
+
+  // --- Правовые документы ---
+  //
+  // Не подстрочник. Договор, переведённый дословно, звучит как перевод — а его
+  // будут читать перед тем, как заплатить.
+  'Правовые документы': 'Legal',
+  Редакция: 'Revision',
+  'применимое право —': 'governing law —',
+  'адрес:': 'address:',
+  'регистрационный номер': 'registration number',
+  'налоговый номер': 'tax number',
+  '— наименование не заполнено —': '— company name not set —',
+  '— адрес не заполнен —': '— address not set —',
+
+  'Прежде чем читать': 'Before you read',
+  'Это рабочая редакция, подготовленная вместе с продуктом и описывающая ровно то, как он устроен. Она не заменяет проверку юристом в юрисдикции регистрации и подлежит такой проверке до первого платного заказа.':
+    'This is a working revision, drafted alongside the product and describing exactly how it works. It does not replace review by a lawyer in the jurisdiction of registration, and it is subject to that review before the first paid order.',
+  'Реквизиты не заполнены': 'Company details are not filled in',
+  'Наименование, регистрационный номер и адрес подставляются из настроек окружения и сейчас пусты. Пока их нет, оферта договором не является: заключать его не с кем. Вымышленные реквизиты здесь не подставляются намеренно.':
+    'The company name, registration number and address come from environment settings and are currently empty. Until they are set, this offer is not a contract: there is no one to enter into it with. Invented details are deliberately not substituted here.',
+
+  '1. Кто оказывает услугу': '1. Who provides the service',
+  'Услугу оказывает': 'The service is provided by',
+  '(далее — Бюро).': '(the “Bureau”).',
+  'Бюро зарегистрировано в Черногории и действует по праву Черногории. Заказчиком может быть лицо из любой страны; право, применимое к договору, от этого не меняется.':
+    'The Bureau is registered in Montenegro and operates under Montenegrin law. The Client may be located in any country; this does not change the law governing the contract.',
+
+  '2. Что мы делаем и чего не делаем': '2. What we do and what we do not',
+  'Бюро выпускает проектную документацию силами команды специалистов, собранной алгоритмом под конкретный проект, и отвечает перед Заказчиком за результат целиком.':
+    'The Bureau produces design documentation using a team of specialists assembled algorithmically for the specific project, and is accountable to the Client for the result as a whole.',
+  'Бюро не выполняет и не обещает:': 'The Bureau does not perform and does not promise:',
+  'строительные работы, поставку материалов и технический надзор на площадке;':
+    'construction work, supply of materials or site supervision;',
+  'получение разрешения как гарантированный результат: Бюро готовит и подаёт комплект, решение принимает орган;':
+    'a permit as a guaranteed outcome: the Bureau prepares and submits the set, the authority makes the decision;',
+  'работу за пределами продуктовой границы — здания выше N этажей и зоны стандартного (тяжёлого) регулирования Бюро не берёт;':
+    'work outside the product boundary — the Bureau does not take buildings above N storeys or sites in standard (heavy) regulation zones;',
+  'выпуск разрешительной документации вне стран, где у команды есть право подписи. Сейчас это N. Проект вне этого перечня Бюро принять не может — не по договорённости, а потому что подписать комплект будет некому.':
+    'issuing permit documentation outside the countries where the team holds signing rights. Currently those are N. A project outside that list is one the Bureau cannot take — not as a matter of policy, but because there would be no one to sign the set.',
+
+  '3. Состав комплекта по стадиям': '3. What the set contains, by stage',
+  'Работа идёт стадиями: N. Заказчик выбирает целевую стадию в брифе; стадии за ней не заказываются и не оплачиваются.':
+    'Work proceeds in stages: N. The Client selects the target stage in the brief; stages beyond it are neither ordered nor paid for.',
+  'Состав задач каждой стадии определяется формой проекта — типологией, материальной системой, рельефом, подключением к сетям — и виден Заказчику в кабинете проекта до начала работ.':
+    'The tasks in each stage follow from the shape of the project — typology, structural system, terrain, utility connection — and are visible to the Client in the project workspace before work begins.',
+
+  '4. Цена и порядок оплаты': '4. Price and payment',
+  'Цена стадии рассчитывается автоматически и складывается из площади объекта, ставки стадии, множителя типологии и множителя страны, но не ниже установленного для стадии минимума. Расчёт показывается Заказчику вместе со счётом: он видит не только сумму, но и то, из чего она сложилась.':
+    'The price of a stage is calculated automatically from the floor area, the stage rate, the typology multiplier and the country multiplier, but never below the minimum set for that stage. The calculation is shown to the Client together with the invoice: they see not only the amount but what it is made of.',
+  'Стадия оплачивается до начала работ по ней.': 'A stage is paid for before work on it begins.',
+  'Открытие задачи означает, что за неё взялся конкретный специалист, и Бюро не вправе начинать стадию в долг перед исполнителями.':
+    'Opening a task means a specific specialist has taken it on, and the Bureau is not entitled to start a stage on credit against its contributors.',
+  'Счёт на очередную стадию выставляется только после того, как Заказчик подтвердил предыдущую. Платить вперёд за работу, которую Заказчик ещё не принял, не приходится ни разу.':
+    'An invoice for the next stage is issued only after the Client has confirmed the previous one. At no point does the Client pay in advance for work they have not yet accepted.',
+  'Цена, указанная в выставленном счёте, не пересматривается. Изменение расценок Бюро действует только на счета, выставленные после изменения.':
+    'The price stated on an issued invoice is not revised. A change in the Bureau’s rates applies only to invoices issued after the change.',
+
+  '5. Приёмка и подтверждение стадии': '5. Acceptance and confirmation of a stage',
+  'Стадия закрывается двумя действиями. Бюро принимает работу у специалистов — это означает «сделано так, как поставлено». Заказчик подтверждает стадию — это означает «поставлено было именно то, что заказывалось».':
+    'A stage closes on two acts. The Bureau accepts the work from the specialists — that means “done as specified”. The Client confirms the stage — that means “what was specified is what was ordered”.',
+  'Пока подтверждения нет, следующая стадия не начинается. Замечания Заказчика принимаются через его канал связи с Бюро и переводятся Бюро в круг правок в рамках оплаченной стадии.':
+    'Until confirmation arrives, the next stage does not begin. The Client’s comments are received through their channel to the Bureau and turned by the Bureau into a round of revisions within the stage already paid for.',
+
+  '6. Состав команды': '6. Composition of the team',
+  'Команду под проект определяет алгоритм по заявленным и подтверждённым признакам специалистов. Ни Заказчик, ни Бюро не назначают конкретных исполнителей: такого действия в системе не существует.':
+    'The team for a project is determined by an algorithm from the declared and verified attributes of specialists. Neither the Client nor the Bureau appoints particular contributors: no such action exists in the system.',
+  'Выбывшего участника заменяет следующий по расчёту кандидат. Замена не является изменением условий договора и не влияет на цену стадии.':
+    'A departing member is replaced by the next candidate in the calculation. A replacement is not a change to the terms of the contract and does not affect the price of the stage.',
+
+  '7. Права на результат': '7. Rights in the result',
+  'Материалы, выпущенные по договору и принятые Бюро, принадлежат Заказчику и передаются ему в полном объёме по завершении оплаченных стадий.':
+    'Materials produced under the contract and accepted by the Bureau belong to the Client and are handed over in full on completion of the stages paid for.',
+  'Бюро вправе указывать факт выполнения проекта и обезличенные его характеристики (типология, площадь, стадия, страна) в своих материалах. Адрес объекта, имя Заказчика и содержание документации при этом не раскрываются без его согласия.':
+    'The Bureau may state the fact that a project was carried out, together with its anonymised characteristics (typology, area, stage, country), in its own materials. The address of the property, the Client’s name and the contents of the documentation are not disclosed without the Client’s consent.',
+
+  '8. Ответственность': '8. Liability',
+  'Бюро отвечает за соответствие выпущенной документации поставленной задаче и требованиям, действующим в стране объекта на момент выпуска стадии.':
+    'The Bureau is responsible for the documentation conforming to the task set and to the requirements in force in the country of the property at the time the stage is issued.',
+  'Ответственность Бюро по каждой стадии ограничена суммой, фактически оплаченной за эту стадию. Бюро не отвечает за убытки, возникшие из-за сведений об участке, предоставленных Заказчиком и оказавшихся недостоверными, а также за изменения требований органов после выпуска стадии.':
+    'The Bureau’s liability for each stage is limited to the amount actually paid for that stage. The Bureau is not liable for losses arising from site information supplied by the Client that proves inaccurate, nor for changes in the authorities’ requirements after a stage has been issued.',
+
+  '9. Отказ от договора и возврат': '9. Withdrawal and refunds',
+  'Заказчик вправе отказаться от дальнейшей работы в любой момент. Оплаченная стадия, работа по которой ещё не начата (ни одна задача не открыта), возвращается полностью. По начатой стадии возвращается часть, соответствующая непринятым задачам на момент отказа: принятая работа выполнена людьми и оплачена им.':
+    'The Client may withdraw from further work at any time. A stage that has been paid for but not started (no task opened) is refunded in full. For a stage already underway, the share corresponding to tasks not yet accepted at the moment of withdrawal is refunded: accepted work was done by people and has been paid to them.',
+  'Бюро вправе отказаться от проекта, если после брифа выясняется, что он выходит за продуктовую границу, — с полным возвратом оплаченного.':
+    'The Bureau may decline a project if, after the brief, it turns out to fall outside the product boundary — with a full refund of anything paid.',
+
+  '10. Персональные данные': '10. Personal data',
+  'Обработка персональных данных описана в': 'The processing of personal data is described in the',
+  'Политике обработки данных': 'Data Processing Policy',
+  ', которая является неотъемлемой частью настоящей оферты.':
+    ', which forms an integral part of this offer.',
+  'Политика обработки данных →': 'Data processing policy →',
+  '← Публичная оферта': '← Terms of service',
+
+  '11. Применимое право и споры': '11. Governing law and disputes',
+  'К договору применяется право Черногории. Споры, не урегулированные переговорами, рассматриваются судом по месту регистрации Бюро.':
+    'The contract is governed by the law of Montenegro. Disputes not settled by negotiation are heard by the court at the Bureau’s place of registration.',
+  'Если Заказчик — потребитель, находящийся в стране, право которой предоставляет ему защиту, не отменяемую соглашением сторон, такая защита за ним сохраняется.':
+    'Where the Client is a consumer located in a country whose law affords them protection that cannot be set aside by agreement, that protection is preserved.',
+
+  '12. Язык оферты': '12. Language of the offer',
+  'Оферта существует на русском и английском языках, и обе редакции равнозначны.':
+    'This offer exists in Russian and in English, and both revisions are equally authentic.',
+  'При расхождении между ними преимущество имеет та, на языке которой оферта была показана Заказчику в момент принятия. Язык принятия фиксируется вместе с отметкой о согласии. Правило выбрано так намеренно: связывать человека редакцией, которой он не читал, нечестно, а «русская редакция главная, потому что мы её писали» — именно это и означало бы.':
+    'Where they differ, the one in the language in which the offer was shown to the Client at the moment of acceptance prevails. The language of acceptance is recorded together with the record of consent. The rule is deliberate: binding someone to a revision they never read is unfair, and “the Russian revision governs because we wrote it” would mean exactly that.',
+
+  '13. Изменения оферты': '13. Changes to this offer',
+  'Редакция оферты обозначена датой в начале документа. К уже заключённому договору применяется та редакция, которая действовала на момент согласия Заказчика: она фиксируется вместе с отметкой времени.':
+    'The revision of the offer is marked by the date at the top of the document. A contract already entered into is governed by the revision in force at the moment of the Client’s consent: it is recorded together with the timestamp.',
+  'Вопросы по договору:': 'Questions about the contract:',
+
+  // --- Политика обработки данных ---
+  'Обработка персональных данных': 'Processing of personal data',
+  Коротко: 'In short',
+  'Мы собираем то, без чего нельзя собрать команду и выпустить документацию, и не собираем ничего сверх. Контакты заказчика не уходят специалистам, контакты специалистов не уходят заказчику — это устроено не правилом, а тем, что нужные поля физически не попадают в браузер другой стороны.':
+    'We collect what it takes to assemble a team and issue documentation, and nothing beyond that. The client’s contact details never reach the specialists, and the specialists’ never reach the client — that is enforced not by a rule but by the fact that those fields physically never arrive in the other side’s browser.',
+  'Оператор не указан': 'No controller named',
+  'Наименование и адрес для обращений подставляются из настроек окружения и сейчас пусты. Без них человеку некуда обратиться по своим правам, а значит документ неполон.':
+    'The company name and the address for enquiries come from environment settings and are currently empty. Without them there is nowhere to exercise your rights, which makes this document incomplete.',
+
+  '1. Кто обрабатывает данные': '1. Who processes the data',
+  'Оператор —': 'The controller is',
+  'Черногория.': 'Montenegro.',
+  'Обращения по любым вопросам об этих данных:': 'Enquiries on any matter regarding this data:',
+  'Ответ даётся в срок не более 30 дней.': 'We reply within 30 days at most.',
+
+  '2. Что собирается у заказчика': '2. What we collect from the client',
+  'имя и адрес электронной почты — чтобы выдать ключ доступа и вести переписку;':
+    'name and email address — to issue an access key and to correspond;',
+  'данные проекта: типология, площадь, этажность, страна, участок, стадия, свободный текст брифа — из них рассчитывается состав команды и цена;':
+    'project data: typology, area, storeys, country, site, stage and the free text of the brief — the team composition and the price are calculated from these;',
+  'ключ доступа к кабинету — это учётные данные, а не идентификатор;':
+    'the workspace access key — these are credentials, not an identifier;',
+  'отметка о согласии с офертой и настоящим документом: дата, время и редакция.':
+    'the record of consent to the offer and to this document: date, time and revision.',
+  'Платёжных данных мы не собираем: приёма платежей на сайте нет, оплата идёт банковским переводом мимо продукта.':
+    'We collect no payment data: there is no payment processing on this site, and payment goes by bank transfer outside the product.',
+
+  '3. Что собирается у специалиста': '3. What we collect from the specialist',
+  'имя, адрес электронной почты, ссылка на портфолио;': 'name, email address, a link to the portfolio;',
+  'профессиональные признаки: дисциплины, специализации, типологии, материалы, страны и право подписи, программное обеспечение, языки, стадии, часовой пояс, заявленная свободная ёмкость;':
+    'professional attributes: disciplines, specialisations, typologies, materials, countries and signing rights, software, languages, stages, time zone, declared free capacity;',
+  'метрики поставки, которые считаются из событий задач и не редактируются никем, включая Бюро;':
+    'delivery metrics, computed from task events and editable by no one, the Bureau included;',
+  'ключ доступа и отметка о согласии — так же, как у заказчика.':
+    'the access key and the record of consent — the same as for a client.',
+  'Портфолио хранится ссылкой и структурированными признаками. Архив чужих файлов Бюро у себя не держит.':
+    'A portfolio is stored as a link and as structured attributes. The Bureau does not keep an archive of other people’s files.',
+
+  '4. Зачем и на каком основании': '4. Why, and on what basis',
+  'Исполнение договора.': 'Performance of the contract.',
+  'Данные проекта и профессиональные признаки нужны, чтобы собрать команду и выпустить документацию. Без них услуга не оказывается.':
+    'Project data and professional attributes are needed to assemble a team and issue documentation. Without them the service cannot be provided.',
+  'Согласие.': 'Consent.',
+  'Заявка в пул и отправка брифа — добровольные действия; согласие отзывается обращением на адрес выше.':
+    'Applying to the pool and submitting a brief are voluntary acts; consent can be withdrawn by writing to the address above.',
+  'Законный интерес.': 'Legitimate interest.',
+  'Ведение записей о принятой работе, выставленных счетах и подтверждениях стадий — то, чем при споре восстанавливается, что происходило.':
+    'Keeping records of accepted work, issued invoices and stage confirmations — this is what reconstructs events if there is a dispute.',
+
+  '5. Кому данные передаются': '5. Who the data goes to',
+  'Команде проекта': 'To the project team',
+  '— бриф раскрывается в объёме конкретной задачи, а не целиком. Имя и контакты заказчика не передаются.':
+    '— the brief is disclosed scoped to the specific task, not in full. The client’s name and contact details are not passed on.',
+  Заказчику: 'To the client',
+  '— состав команды с профессиональными признаками и разбором расчёта. Почта, ключ доступа и другие контакты специалистов не передаются.':
+    '— the team composition with professional attributes and the score breakdown. Specialists’ email, access key and other contact details are not passed on.',
+  'Между специалистами': 'Between specialists',
+  '— принятая работа становится входными данными следующей задачи с указанием дисциплины автора, но не его имени. Прямых каналов связи между специалистами не существует.':
+    '— accepted work becomes the input to the next task, credited to the author’s discipline but not their name. No direct channel between specialists exists.',
+  'Обработчикам:': 'To processors:',
+  'хостинг приложения и базы, отправка писем. Они обрабатывают данные по нашему поручению и не используют их для себя.':
+    'application and database hosting, email delivery. They process data on our instructions and do not use it for their own purposes.',
+  'Данные не продаются, не передаются рекламным сетям и не используются для профилирования за пределами расчёта состава команды.':
+    'Data is not sold, not passed to advertising networks and not used for profiling beyond computing the team composition.',
+
+  '6. Передача за пределы страны': '6. Transfers outside the country',
+  'Бюро зарегистрировано в Черногории, заказчик может находиться в любой стране, а хостинг и почтовый сервис расположены за её пределами. Это означает, что данные пересекают границы.':
+    'The Bureau is registered in Montenegro, the client may be located in any country, and hosting and email services sit outside it. That means data crosses borders.',
+  'К поставщикам, обрабатывающим данные, применяются договорные условия о защите данных. Если вы находитесь в Европейском союзе, вы вправе запросить сведения о том, на каком основании происходит такая передача.':
+    'Contractual data-protection terms apply to the providers that process the data. If you are located in the European Union, you may ask on what basis such a transfer takes place.',
+
+  '7. Сколько данные хранятся': '7. How long we keep data',
+  'данные проекта и переписка с бюро — пока идёт проект и три года после его закрытия: столько же живут претензии по выпущенной документации;':
+    'project data and correspondence with the bureau — for the life of the project and three years after it closes: that is how long claims about issued documentation live;',
+  'профиль специалиста — пока он в пуле; после выхода из пула профиль обезличивается, а метрики поставки остаются в обезличенном виде;':
+    'a specialist’s profile — while they are in the pool; on leaving, the profile is anonymised and delivery metrics remain in anonymised form;',
+  'записи о счетах и подтверждениях — срок, установленный требованиями к бухгалтерским документам страны регистрации.':
+    'records of invoices and confirmations — for the period required of accounting records in the country of registration.',
+
+  '8. Ваши права': '8. Your rights',
+  'Вы вправе:': 'You have the right to:',
+  'узнать, какие ваши данные у нас есть, и получить их копию;':
+    'find out what data of yours we hold and obtain a copy;',
+  'исправить неточные данные;': 'have inaccurate data corrected;',
+  'удалить данные — за вычетом того, что мы обязаны хранить по закону или по незакрытому договору;':
+    'have data erased — except what we must keep by law or under an open contract;',
+  'отозвать согласие;': 'withdraw consent;',
+  'возразить против обработки на основании законного интереса;':
+    'object to processing based on legitimate interest;',
+  'пожаловаться в надзорный орган по защите данных — в Черногории это Агентство по защите персональных данных, в стране вашего нахождения — соответствующий орган.':
+    'lodge a complaint with a data protection supervisory authority — in Montenegro that is the Agency for Personal Data Protection, or the corresponding authority where you are located.',
+  'Отдельно про специалистов: поля для оценки человека нет ни у кого, включая Бюро. Мнений о вас в системе не хранится — только события задач и то, что вы заявили сами.':
+    'A note for specialists: there is no field anywhere, the Bureau included, for rating a person. No opinions about you are stored in the system — only task events and what you declared yourself.',
+
+  '9. Что делают автоматические расчёты': '9. What the automated calculations do',
+  'Состав команды рассчитывается алгоритмом. Расчёт не выносит суждений о личности и не использует данных, кроме профессиональных признаков и событий задач. Специалисту показывается, какое именно условие не выполнено, а заказчику — разбор балла каждого участника.':
+    'Team composition is computed by an algorithm. The calculation makes no judgements about a person and uses no data beyond professional attributes and task events. A specialist is shown exactly which condition was not met; a client is shown the score breakdown for every member.',
+  'Модели искусственного интеллекта участвуют в подготовке черновиков и изображений и не участвуют в расчёте состава команды, в приёмке работы и в определении очерёдности задач.':
+    'AI models take part in preparing drafts and images. They take no part in computing team composition, in accepting work, or in setting the order of tasks.',
+
+  '10. Файлы cookie': '10. Cookies',
+  'Используется одна техническая cookie — подписанная сессия, которая помнит, в чей кабинет вы вошли. Аналитических и рекламных cookie нет.':
+    'One technical cookie is used — a signed session that remembers whose workspace you signed into. There are no analytics or advertising cookies.',
+
+  '11. Язык документа': '11. Language of this document',
+  'Документ существует на русском и английском языках, и обе редакции равнозначны. При расхождении преимущество имеет та, на языке которой документ был показан вам в момент согласия; язык согласия фиксируется вместе с ним.':
+    'This document exists in Russian and in English, and both revisions are equally authentic. Where they differ, the one in the language in which it was shown to you at the moment of consent prevails; the language of consent is recorded alongside it.',
 }

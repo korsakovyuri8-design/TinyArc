@@ -8,6 +8,7 @@ import { allow, spend } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { LEGAL_VERSION } from '@/lib/legal'
+import { currentLocale } from '@/lib/i18n'
 import { toList } from '@/lib/rows'
 import { sendAccessKey } from '@/lib/mail'
 import { prepareDirections } from '@/lib/services/direction'
@@ -48,6 +49,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       // Согласие вместе с редакцией: см. src/lib/legal.ts.
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
+      consentLocale: await currentLocale(),
       title: input.title,
       clientName: input.clientName,
       clientEmail: input.clientEmail,

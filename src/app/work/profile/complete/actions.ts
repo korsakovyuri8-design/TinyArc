@@ -12,6 +12,7 @@ import {
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 import { prisma } from '@/lib/db'
 import { LEGAL_VERSION } from '@/lib/legal'
+import { currentLocale } from '@/lib/i18n'
 import { toList } from '@/lib/rows'
 import { currentSpecialistId } from '@/lib/session'
 
@@ -97,6 +98,7 @@ export async function completeProfile(
       // «да», и молчаливо считать согласие полученным здесь нельзя.
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
+      consentLocale: await currentLocale(),
       portfolioUrl: input.portfolioUrl,
       disciplinesJson: toList(input.disciplines),
       specializationsJson: toList(input.specializations),
