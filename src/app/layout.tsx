@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { DM_Sans, Golos_Text, Playfair_Display, Space_Mono } from 'next/font/google'
-import Link from 'next/link'
+import { Link } from '@/components/Link'
+import { LocaleSwitch } from '@/components/LocaleSwitch'
+import { currentLocale, translate } from '@/lib/i18n'
 import './globals.css'
 import { siteUrl } from '@/lib/site'
 
@@ -64,21 +66,35 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await currentLocale()
+  const t = (text: string) => translate(text, locale)
+
   return (
-    <html lang="ru" className={`${playfair.variable} ${dmSans.variable} ${golos.variable} ${spaceMono.variable}`}>
+    <html lang={locale} className={`${playfair.variable} ${dmSans.variable} ${golos.variable} ${spaceMono.variable}`}>
       <body>
         <header className="site-header">
           <div className="shell">
-            <Link href="/" className="brand">
+            <Link locale={locale} href="/" className="brand">
               TinyArc<span style={{ color: 'var(--accent)' }}>/</span>Bureau
             </Link>
             <nav className="nav">
-              <Link href="/how-it-works">Как это работает</Link>
-              <Link href="/algorithm">Алгоритм</Link>
-              <Link href="/brief">Бриф</Link>
-              <Link href="/specialists">Специалистам</Link>
-              <Link href="/enter">Вход</Link>
+              <Link locale={locale} href="/how-it-works">
+                {t('Как это работает')}
+              </Link>
+              <Link locale={locale} href="/algorithm">
+                {t('Алгоритм')}
+              </Link>
+              <Link locale={locale} href="/brief">
+                {t('Бриф')}
+              </Link>
+              <Link locale={locale} href="/specialists">
+                {t('Специалистам')}
+              </Link>
+              <Link locale={locale} href="/enter">
+                {t('Вход')}
+              </Link>
+              <LocaleSwitch locale={locale} />
             </nav>
           </div>
         </header>
@@ -91,16 +107,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div>
                 <div className="label">The bureau that ends the bureau</div>
                 <p className="dim" style={{ marginTop: 12, maxWidth: '42ch' }}>
-                  Проект в составе TinyArc Group. Отдельный венчур, финансово и структурно
-                  отделённый от других проектов группы.
+                  {t(
+                    'Проект в составе TinyArc Group. Отдельный венчур, финансово и структурно отделённый от других проектов группы.',
+                  )}
                 </p>
               </div>
               <div className="stack">
-                <Link href="/how-it-works">Три стадии</Link>
-                <Link href="/algorithm">Демонстрация алгоритма</Link>
-                <Link href="/specialists">Вступить в пул</Link>
-                <Link href="/legal/offer">Публичная оферта</Link>
-                <Link href="/legal/privacy">Обработка данных</Link>
+                <Link locale={locale} href="/how-it-works">
+                  {t('Три стадии')}
+                </Link>
+                <Link locale={locale} href="/algorithm">
+                  {t('Демонстрация алгоритма')}
+                </Link>
+                <Link locale={locale} href="/specialists">
+                  {t('Вступить в пул')}
+                </Link>
+                <Link locale={locale} href="/legal/offer">
+                  {t('Публичная оферта')}
+                </Link>
+                <Link locale={locale} href="/legal/privacy">
+                  {t('Обработка данных')}
+                </Link>
               </div>
             </div>
           </div>

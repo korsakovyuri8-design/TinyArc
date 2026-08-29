@@ -608,3 +608,34 @@ ul.clean {
 .legal-body ul:last-child {
   margin-bottom: 0;
 }
+
+/*
+ * Переключатель языка.
+ *
+ * Тише остальной навигации: это не раздел продукта, а настройка. Текущий язык
+ * подсвечен, а не спрятан, — человек должен видеть, на чём он сейчас, иначе
+ * нажимает наугад.
+ */
+.locale-switch {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 6px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.locale-switch a {
+  color: var(--dim);
+  text-decoration: none;
+}
+
+.locale-switch a:hover {
+  color: var(--text);
+}
+
+.locale-switch .locale-current {
+  color: var(--accent);
+}

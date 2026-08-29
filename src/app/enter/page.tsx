@@ -1,31 +1,39 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
+import { Link } from '@/components/Link'
+import { translator } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/i18n/metadata'
 import { EnterForm } from './EnterForm'
 
-export const metadata: Metadata = { title: 'Вход — TinyArc Cloud Bureau' }
+export const generateMetadata = () => pageMetadata('Вход')
 
-export default function EnterPage() {
+export default async function EnterPage() {
+  const { locale, t } = await translator()
+
   return (
     <section style={{ paddingTop: 'clamp(48px, 8vw, 96px)' }}>
       <div className="shell" style={{ maxWidth: 520 }}>
-        <span className="eyebrow">Вход</span>
-        <h1>По ключу</h1>
+        <span className="eyebrow">{t('Вход')}</span>
+        <h1>{t('По ключу')}</h1>
         <p className="lead" style={{ marginTop: 18 }}>
-          Регистрации как отдельного действия здесь нет. Клиент получает ключ после брифа,
-          специалист — после того, как заявку подтвердили.
+          {t(
+            'Регистрации как отдельного действия здесь нет. Клиент получает ключ после брифа, специалист — после того, как заявку подтвердили.',
+          )}
         </p>
 
         <div style={{ marginTop: 36 }}>
-          <EnterForm />
+          <EnterForm locale={locale} />
         </div>
 
         <div className="divider" />
 
         <div className="stack" style={{ gap: 10 }}>
-          <Link href="/brief">Нет ключа и есть участок → оставить бриф</Link>
-          <Link href="/specialists">Нет ключа и вы специалист → подать заявку</Link>
-          <Link href="/ops" className="dim">
-            Вход для бюро
+          <Link locale={locale} href="/brief">
+            {t('Нет ключа и есть участок → оставить бриф')}
+          </Link>
+          <Link locale={locale} href="/specialists">
+            {t('Нет ключа и вы специалист → подать заявку')}
+          </Link>
+          <Link locale={locale} href="/ops" className="dim">
+            {t('Вход для бюро')}
           </Link>
         </div>
       </div>
