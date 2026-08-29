@@ -26,6 +26,7 @@ import {
   SOFTWARE_LABELS,
   TYPOLOGY_LABELS,
 } from '@/lib/labels'
+import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
 import { submitBrief, type BriefState } from './actions'
 
@@ -219,6 +220,8 @@ export function BriefForm() {
           {errors.form}
         </div>
       )}
+
+      <Consent error={errors.consent} />
 
       <div className="row" style={{ gap: 16 }}>
         <Submit pending={pending}>Собрать команду</Submit>

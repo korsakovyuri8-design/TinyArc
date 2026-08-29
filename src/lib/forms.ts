@@ -29,6 +29,19 @@ import {
 
 const trimmed = z.string().trim()
 
+/**
+ * Согласие с офертой и политикой обработки данных.
+ *
+ * Проверяется схемой, а не только атрибутом required в разметке. Атрибут
+ * снимается инструментами разработчика за секунду, и тогда запись появляется
+ * без согласия — а доказать потом, что человек соглашался, будет нечем.
+ *
+ * Чекбокс присылает "on" или не присылает ничего: незаполненное поле формы
+ * браузер не отправляет вовсе, поэтому пустая строка здесь — это «не отметил».
+ */
+const consent = z
+  .literal('on', { message: 'Без согласия с офертой и политикой данных заявку принять нельзя' })
+
 export const briefSchema = z.object({
   title: trimmed.min(2, 'Назовите проект').max(120),
   clientName: trimmed.min(2, 'Как к вам обращаться').max(120),
@@ -52,6 +65,8 @@ export const briefSchema = z.object({
   horizonDays: z.coerce.number().int().min(7).max(365),
 
   briefNotes: trimmed.max(4000).default(''),
+
+  consent,
 })
 
 export type BriefInput = z.infer<typeof briefSchema>
@@ -90,6 +105,23 @@ export const applicationSchema = z.object({
 })
 
 export type ApplicationInput = z.infer<typeof applicationSchema>
+
+/**
+ * Заявка вместе с согласием.
+ *
+ * Отдельной схемой, а не полем в основной: `applicationSchema` обслуживает три
+ * формы. Публичную заявку и дозаполнение профиля приглашённым — там согласие
+ * обязательно, потому что человек впервые отдаёт свои данные сам. И правку
+ * профиля в панели бюро — там его спрашивать не у кого: за формой сидит
+ * оператор, а не тот, чьи это данные.
+ *
+ * Приглашённый согласие даёт наравне с пришедшим сам, и это не формальность:
+ * его завели импортом из базы бюро, то есть до всякого согласия. Дозаполнение
+ * профиля — первый момент, когда он вообще может сказать «да».
+ */
+export const applicationWithConsentSchema = applicationSchema.extend({ consent })
+
+export type ApplicationWithConsentInput = z.infer<typeof applicationWithConsentSchema>
 
 /**
  * Право подписи — подмножество юрисдикций. Заявить подпись там, где не работал,

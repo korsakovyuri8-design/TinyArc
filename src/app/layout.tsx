@@ -99,6 +99,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/how-it-works">Три стадии</Link>
                 <Link href="/algorithm">Демонстрация алгоритма</Link>
                 <Link href="/specialists">Вступить в пул</Link>
+                <Link href="/legal/offer">Публичная оферта</Link>
+                <Link href="/legal/privacy">Обработка данных</Link>
               </div>
             </div>
           </div>

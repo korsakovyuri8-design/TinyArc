@@ -48,6 +48,7 @@ export default async function CompleteProfilePage() {
         </p>
 
         <SpecialistForm
+          askConsent
           action={completeProfile}
           submitLabel="Отправить на разбор"
           defaults={{

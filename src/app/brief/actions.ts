@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { allow } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
+import { LEGAL_VERSION } from '@/lib/legal'
 import { toList } from '@/lib/rows'
 import { sendAccessKey } from '@/lib/mail'
 import { prepareDirections } from '@/lib/services/direction'
@@ -39,6 +40,9 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   const project = await prisma.project.create({
     data: {
       clientKey: accessKey('brief'),
+      // Согласие вместе с редакцией: см. src/lib/legal.ts.
+      consentAt: new Date(),
+      consentVersion: LEGAL_VERSION,
       title: input.title,
       clientName: input.clientName,
       clientEmail: input.clientEmail,

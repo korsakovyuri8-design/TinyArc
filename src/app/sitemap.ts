@@ -15,6 +15,8 @@ const PUBLIC_PAGES = [
   { path: '/brief', priority: 0.9 },
   { path: '/specialists', priority: 0.7 },
   { path: '/specialists/apply', priority: 0.6 },
+  { path: '/legal/offer', priority: 0.3 },
+  { path: '/legal/privacy', priority: 0.3 },
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

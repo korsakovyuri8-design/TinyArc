@@ -1,11 +1,12 @@
 'use server'
 
 import { prisma } from '@/lib/db'
+import { LEGAL_VERSION } from '@/lib/legal'
 import { allow } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import {
   accessKey,
-  applicationSchema,
+  applicationWithConsentSchema,
   everyDisciplineCovered,
   fieldErrors,
   fromFormData,
@@ -45,7 +46,7 @@ export async function submitApplication(
   }
 
   const raw = fromFormData(formData, MULTI)
-  const parsed = applicationSchema.safeParse(raw)
+  const parsed = applicationWithConsentSchema.safeParse(raw)
 
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw }
 
@@ -87,6 +88,10 @@ export async function submitApplication(
       // Ключ выписывается сразу, но работать начнёт только после подтверждения:
       // статус, а не наличие ключа, решает, пускать ли (см. src/app/enter).
       accessKey: accessKey('spec'),
+      // Согласие пишется вместе с редакцией: по одной дате не восстановить,
+      // с чем именно человек согласился (см. src/lib/legal.ts).
+      consentAt: new Date(),
+      consentVersion: LEGAL_VERSION,
       // Рейтинг портфолио ставит бюро при разборе, а не заявитель о себе (п.9).
       portfolioRating: 0,
       status: 'pending',

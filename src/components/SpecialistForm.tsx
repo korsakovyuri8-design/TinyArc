@@ -32,6 +32,7 @@ import {
   TYPOLOGY_LABELS,
   WORK_MODE_LABELS,
 } from '@/lib/labels'
+import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 
@@ -58,6 +59,7 @@ export function SpecialistForm({
   done,
   hidden = {},
   showCapacity = true,
+  askConsent = false,
 }: {
   action: SpecialistFormAction
   defaults?: Record<string, string | string[]>
@@ -74,6 +76,8 @@ export function SpecialistForm({
    * всё равно уходит скрытым — схема проверяет форму целиком.
    */
   showCapacity?: boolean
+  /** Спрашивать согласие: только там, где форму заполняет сам человек. */
+  askConsent?: boolean
 }) {
   const [state, action, pending] = useActionState<ApplicationState, FormData>(submit, {})
 
@@ -341,6 +345,13 @@ export function SpecialistForm({
           {errors.form}
         </div>
       )}
+
+      {/*
+        Согласие показывается только там, где за формой сидит сам человек.
+        В панели бюро форму заполняет оператор, и спрашивать согласие у него
+        значило бы получать его не у того, чьи это данные.
+      */}
+      {askConsent && <Consent error={errors.consent} />}
 
       <Submit pending={pending}>{submitLabel}</Submit>
     </form>

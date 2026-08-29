@@ -135,6 +135,15 @@ for (const [name, value] of [
 ]) {
   await person.check(`input[name=${name}][value=${value}]`)
 }
+
+// Приглашённого завели импортом из базы бюро, то есть до всякого его согласия.
+// Дозаполнение профиля — первый момент, когда он может сказать «да».
+check(
+  (await person.locator('#consent').count()) > 0,
+  'у приглашённого спрашивают согласие: до сих пор его никто не спрашивал',
+)
+await person.check('#consent')
+
 await person.click('button[type=submit]')
 await person.waitForTimeout(2500)
 check((await person.textContent('body')).includes('Профиль отправлен'), 'профиль ушёл на разбор')

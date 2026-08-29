@@ -17,7 +17,7 @@ export default function ApplyPage() {
         </p>
 
         <div style={{ marginTop: 44 }}>
-          <SpecialistForm action={submitApplication} />
+          <SpecialistForm action={submitApplication} askConsent />
         </div>
       </div>
     </section>

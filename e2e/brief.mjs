@@ -46,6 +46,31 @@ await page.fill('#clientName', 'Проверка')
 await page.fill('#clientEmail', 'probe@example.com')
 await page.check('input[name="languages"][value="en"]')
 
+/*
+ * Согласие обязательно, и это проверяется дважды.
+ *
+ * Сначала без него: форма не должна пропустить. Проверка идёт на сервере, а не
+ * только атрибутом в разметке, — атрибут снимается инструментами разработчика,
+ * и тогда бриф появился бы без согласия, а доказать потом, что человек
+ * соглашался, было бы нечем.
+ *
+ * Отклонённая отправка расходует слот ограничителя частоты — он считает
+ * попытки до разбора формы, иначе его обходили бы кривым телом запроса. Значит
+ * прогон стоит двух брифов из трёх в час; ограничитель живёт в памяти, и на
+ * свежем сервере счёт начинается заново.
+ */
+await page.evaluate(() => {
+  document.querySelector('#consent')?.removeAttribute('required')
+})
+await page.click('button[type="submit"]')
+await page.waitForTimeout(2000)
+check(
+  page.url().includes('/brief'),
+  'без согласия бриф не принимается даже со снятым required',
+)
+
+await page.check('#consent')
+
 await Promise.all([
   page.waitForURL('**/project/direction**'),
   page.click('button[type="submit"]'),

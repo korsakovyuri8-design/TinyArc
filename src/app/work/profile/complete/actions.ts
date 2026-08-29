@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import {
-  applicationSchema,
+  applicationWithConsentSchema,
   everyDisciplineCovered,
   fieldErrors,
   fromFormData,
@@ -11,6 +11,7 @@ import {
 } from '@/lib/forms'
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 import { prisma } from '@/lib/db'
+import { LEGAL_VERSION } from '@/lib/legal'
 import { toList } from '@/lib/rows'
 import { currentSpecialistId } from '@/lib/session'
 
@@ -60,7 +61,7 @@ export async function completeProfile(
 
   // Имя и адрес берём из записи, а не из формы: они пришли из базы бюро.
   const raw = { ...fromFormData(formData, MULTI), displayName: row.displayName, email: row.email }
-  const parsed = applicationSchema.safeParse(raw)
+  const parsed = applicationWithConsentSchema.safeParse(raw)
 
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw }
 
@@ -91,6 +92,11 @@ export async function completeProfile(
     where: { id },
     data: {
       status: 'pending',
+      // Приглашённого завели импортом из базы бюро, то есть до всякого его
+      // согласия. Дозаполнение профиля — первый момент, когда он может сказать
+      // «да», и молчаливо считать согласие полученным здесь нельзя.
+      consentAt: new Date(),
+      consentVersion: LEGAL_VERSION,
       portfolioUrl: input.portfolioUrl,
       disciplinesJson: toList(input.disciplines),
       specializationsJson: toList(input.specializations),

@@ -10,6 +10,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   applicationSchema,
+  applicationWithConsentSchema,
+  briefSchema,
   everyDisciplineCovered,
   signaturesWithinJurisdictions,
   specializationsWithinDisciplines,
@@ -39,6 +41,33 @@ function application(patch: Record<string, unknown> = {}) {
     utcOffset: 1,
     weeklyCapacityHours: 20,
     leadTimeDays: 3,
+    consent: 'on',
+    ...patch,
+  }
+}
+
+/** Бриф, который проходит целиком. */
+function brief(patch: Record<string, unknown> = {}) {
+  return {
+    title: 'Вилла на Луштице',
+    clientName: 'Проверка',
+    clientEmail: 'client@example.com',
+    typology: 'villa',
+    storeys: 2,
+    areaSqm: 380,
+    jurisdiction: 'ME',
+    climateZone: 'mediterranean',
+    materialSystem: 'concrete',
+    regulatoryTrack: 'light',
+    targetStage: 'permit',
+    terrain: 'flat',
+    gridConnection: 'grid',
+    software: [],
+    languages: ['en'],
+    requiredHoursPerWeek: 10,
+    horizonDays: 30,
+    briefNotes: '',
+    consent: 'on',
     ...patch,
   }
 }
@@ -113,5 +142,39 @@ describe('заявка специалиста', () => {
 
   it('без дисциплины заявки нет', () => {
     expect(applicationSchema.safeParse(application({ disciplines: [] })).success).toBe(false)
+  })
+})
+
+/*
+ * Согласие (п.13, правовой слой).
+ *
+ * Проверяется схемой, а не разметкой. Атрибут required снимается инструментами
+ * разработчика за секунду; если за ним не стоит проверки на сервере, запись
+ * появится без согласия — и доказать потом, что человек соглашался, будет
+ * нечем. Отсутствие такой проверки не видно вообще ничем, кроме этого теста.
+ */
+describe('согласие с офертой', () => {
+  it('без отметки бриф не принимается', () => {
+    const { consent: _omitted, ...withoutConsent } = brief()
+
+    expect(briefSchema.safeParse(withoutConsent).success).toBe(false)
+  })
+
+  it('пустая строка согласием не считается', () => {
+    // Неотмеченный чекбокс браузер не присылает вовсе, но подделанная форма
+    // может прислать что угодно, в том числе пустое значение.
+    expect(briefSchema.safeParse({ ...brief(), consent: '' }).success).toBe(false)
+    expect(briefSchema.safeParse({ ...brief(), consent: 'off' }).success).toBe(false)
+  })
+
+  it('с отметкой принимается', () => {
+    expect(briefSchema.safeParse(brief()).success).toBe(true)
+  })
+
+  it('правка профиля в панели согласия не требует: за формой оператор', () => {
+    const { consent: _omitted, ...withoutConsent } = application()
+
+    expect(applicationSchema.safeParse(withoutConsent).success).toBe(true)
+    expect(applicationWithConsentSchema.safeParse(withoutConsent).success).toBe(false)
   })
 })

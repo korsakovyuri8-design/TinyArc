@@ -582,3 +582,29 @@ ul.clean {
   margin-bottom: 16px;
   display: block;
 }
+
+/*
+ * Правовые страницы: длинный текст, который читают, а не просматривают.
+ *
+ * Остальной продукт свёрстан плотно — панелями и таблицами. Здесь плотность
+ * вредит: человек должен дочитать до конца, а не сдаться на третьем абзаце.
+ */
+.legal-body p {
+  margin: 0 0 14px;
+  line-height: 1.7;
+}
+
+.legal-body ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+
+.legal-body li {
+  margin-bottom: 8px;
+}
+
+.legal-body p:last-child,
+.legal-body ul:last-child {
+  margin-bottom: 0;
+}

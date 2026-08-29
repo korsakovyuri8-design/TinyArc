@@ -21,7 +21,7 @@ const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
 /** Узкий из распространённых: если сходится здесь, сойдётся и шире. */
 const VIEWPORT = { width: 390, height: 844 }
 
-const PUBLIC_PAGES = ['/', '/how-it-works', '/algorithm', '/brief', '/specialists', '/specialists/apply', '/enter']
+const PUBLIC_PAGES = ['/', '/how-it-works', '/algorithm', '/brief', '/specialists', '/specialists/apply', '/enter', '/legal/offer', '/legal/privacy']
 
 /** Ключи синтетического пула: страницы за входом тоже открывают с телефона. */
 const BEHIND_KEY = [

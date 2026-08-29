@@ -1,6 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { preflight, secret } from './env'
 
+/**
+ * Настроенный бой: секреты, база и реквизиты юридического лица.
+ *
+ * Реквизиты входят сюда наравне с секретами не для полноты. Продукт берёт
+ * деньги и собирает персональные данные, а оферта без наименования — не
+ * договор: такой бой настроенным не считается.
+ */
+const CONFIGURED = {
+  NODE_ENV: 'production',
+  BUREAU_OPS_PASSWORD: 'x',
+  BUREAU_SESSION_SECRET: 'y',
+  DATABASE_URL: 'postgresql://h/db',
+  BUREAU_LEGAL_NAME: 'Bureau d.o.o.',
+  BUREAU_LEGAL_REGISTRATION: '50-0000000-000',
+  BUREAU_LEGAL_ADDRESS: 'Tivat, Montenegro',
+  BUREAU_LEGAL_EMAIL: 'legal@example.com',
+}
+
 describe('секреты окружения', () => {
   it('в разработке подставляет значение по умолчанию', () => {
     expect(secret('BUREAU_OPS_PASSWORD', { NODE_ENV: 'development' })).toBe('bureau-ops')
@@ -27,40 +45,21 @@ describe('секреты окружения', () => {
   })
 
   it('не пропускает неизвестный режим почты', () => {
-    const problems = preflight({
-      NODE_ENV: 'production',
-      BUREAU_OPS_PASSWORD: 'x',
-      BUREAU_SESSION_SECRET: 'y',
-      DATABASE_URL: 'postgresql://h/db',
-      BUREAU_MAIL: 'gmail',
-    })
+    const problems = preflight({ ...CONFIGURED, BUREAU_MAIL: 'gmail' })
 
     expect(problems).toHaveLength(1)
     expect(problems[0]).toContain('BUREAU_MAIL')
   })
 
   it('требует настройку провайдера, если почта настоящая', () => {
-    const problems = preflight({
-      NODE_ENV: 'production',
-      BUREAU_OPS_PASSWORD: 'x',
-      BUREAU_SESSION_SECRET: 'y',
-      DATABASE_URL: 'postgresql://h/db',
-      BUREAU_MAIL: 'resend',
-    })
+    const problems = preflight({ ...CONFIGURED, BUREAU_MAIL: 'resend' })
 
     expect(problems.some((p) => p.includes('RESEND_API_KEY'))).toBe(true)
     expect(problems.some((p) => p.includes('BUREAU_MAIL_FROM'))).toBe(true)
   })
 
   it('на настроенном бою молчит', () => {
-    expect(
-      preflight({
-        NODE_ENV: 'production',
-        BUREAU_OPS_PASSWORD: 'x',
-        BUREAU_SESSION_SECRET: 'y',
-        DATABASE_URL: 'postgresql://h/db',
-      }),
-    ).toEqual([])
+    expect(preflight(CONFIGURED)).toEqual([])
   })
 })
 

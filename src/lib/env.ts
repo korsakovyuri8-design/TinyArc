@@ -93,6 +93,29 @@ export function preflight(env: Record<string, string | undefined> = process.env)
     problems.push('BUREAU_IMAGES="openai": не задан OPENAI_API_KEY.')
   }
 
+  /*
+   * Реквизиты юридического лица.
+   *
+   * В бою это не придирка. Продукт берёт деньги и собирает персональные данные;
+   * оферта без наименования и регистрационного номера — это не договор, а
+   * политика обработки без адреса для обращений не даёт человеку сделать
+   * ровно то, на что у него есть право. В разработке пусто и нормально.
+   */
+  if (isProduction(env)) {
+    const required = {
+      BUREAU_LEGAL_NAME: 'наименование юридического лица',
+      BUREAU_LEGAL_REGISTRATION: 'регистрационный номер',
+      BUREAU_LEGAL_ADDRESS: 'юридический адрес',
+      BUREAU_LEGAL_EMAIL: 'адрес для правовых обращений и вопросов по данным',
+    }
+
+    for (const [name, what] of Object.entries(required)) {
+      if (!env[name]?.trim()) {
+        problems.push(`${name} не задан: без этого оферта и политика обработки неполны (${what}).`)
+      }
+    }
+  }
+
   const assist = env.BUREAU_ASSIST ?? 'stub'
   if (assist !== 'stub' && assist !== 'anthropic') {
     problems.push(`BUREAU_ASSIST="${assist}": такого режима нет. Доступны "stub" и "anthropic".`)
