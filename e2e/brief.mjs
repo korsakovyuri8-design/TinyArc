@@ -39,7 +39,7 @@ const page = await context.newPage()
 console.log('Путь клиента')
 
 await page.goto(`${BASE}/brief`)
-await page.fill('#title', 'Вилла на Луштице')
+await page.fill('#title', 'Villa on Luštica')
 await page.fill('#areaSqm', '380')
 await page.fill('#storeys', '2')
 await page.fill('#clientName', 'Проверка')
@@ -79,9 +79,9 @@ await Promise.all([
 check(page.url().includes('issued=1'), 'после брифа ведёт к выбору направления')
 
 const directionBody = await page.textContent('body')
-check(directionBody.includes('Ключ доступа'), 'ключ показан на экране, а не только в письме')
+check(directionBody.includes('Access key'), 'ключ показан на экране, а не только в письме')
 check(
-  directionBody.includes('не проект и не обещание'),
+  directionBody.includes('neither a design nor a promise'),
   'направление помечено как необязывающее',
 )
 
@@ -93,15 +93,15 @@ const options = await page.$$eval('form label.panel h3', (nodes) =>
   nodes.map((n) => n.textContent.trim()),
 )
 check(options.length === 4, `предложено вариантов: ${options.length}`)
-check(!options.includes('Террасирование'), 'на ровном участке террасирование не предлагается')
+check(!options.includes('Terracing'), 'на ровном участке террасирование не предлагается')
 
 // Выбор одного варианта и переход в кабинет.
 await page.click('form label.panel')
 await Promise.all([page.waitForURL('**/project?**'), page.click('button[type="submit"]')])
 
 const body = await page.textContent('body')
-check(body.includes('Вилла на Луштице'), 'кабинет открыт по свежей сессии')
-check(body.includes('Направление проекта'), 'выбранное направление показано в кабинете')
+check(body.includes('Villa on Luštica'), 'кабинет открыт по свежей сессии')
+check(body.includes('Design direction'), 'выбранное направление показано в кабинете')
 
 // Утечка учётных данных команды в кабинет клиента (концепт, п.13).
 check(!/seed-key-/.test(body), 'ключи специалистов в кабинет клиента не попадают')
@@ -127,7 +127,7 @@ check(freshPage.url().includes('/enter'), 'без cookie кабинет закр
 await freshPage.fill('#key', key.trim())
 await Promise.all([freshPage.waitForURL('**/project'), freshPage.click('button[type="submit"]')])
 check(
-  (await freshPage.textContent('body')).includes('Вилла на Луштице'),
+  (await freshPage.textContent('body')).includes('Villa on Luštica'),
   'вход по ключу возвращает в тот же проект с чистого браузера',
 )
 

@@ -62,11 +62,11 @@ const SEVERITY: Record<AlertKind, number> = {
 }
 
 export const ALERT_LABELS: Record<AlertKind, string> = {
-  conflict: 'Конфликт — нужен арбитр',
-  overdue: 'Просрочен',
-  unclaimed: 'Открыт, но не взят в работу',
-  awaiting_acceptance: 'Ждёт приёмки бюро',
-  due_soon: 'Срок близко',
+  conflict: 'Conflict — an arbiter is needed',
+  overdue: 'Overdue',
+  unclaimed: 'Open, not yet taken on',
+  awaiting_acceptance: 'Awaiting acceptance by the bureau',
+  due_soon: 'Deadline is near',
 }
 
 /**
@@ -78,11 +78,11 @@ export const ALERT_LABELS: Record<AlertKind, string> = {
  * человек, который разбирает очередь, а не отчёт.
  */
 export const ALERT_ACTIONS: Record<AlertKind, string> = {
-  conflict: 'Прочитать позиции сторон и вынести решение',
-  overdue: 'Написать в тикет: срок прошёл, нужна новая дата',
-  unclaimed: 'Написать в тикет или пересобрать роль',
-  awaiting_acceptance: 'Принять или вернуть на круг',
-  due_soon: 'Спросить в тикете, успевает ли к сроку',
+  conflict: 'Read both positions and rule on it',
+  overdue: 'Write in the ticket: the deadline has passed, a new date is needed',
+  unclaimed: 'Write in the ticket or reassemble the role',
+  awaiting_acceptance: 'Accept it or send it back for revision',
+  due_soon: 'Ask in the ticket whether they will make the deadline',
 }
 
 /** Виды, по которым бюро пишет исполнителю. Остальное решается у нас. */

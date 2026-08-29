@@ -1,12 +1,11 @@
 import Link from 'next/link'
-import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { directionsOf } from '@/lib/services/direction'
 import { currentProjectId } from '@/lib/session'
 import { DirectionPicker } from './DirectionPicker'
 
-export const metadata = { title: 'Направление проекта — TinyArc Cloud Bureau' }
+export const metadata = { title: 'Project direction — TinyArc Cloud Bureau' }
 
 export default async function DirectionPage({
   searchParams,
@@ -15,34 +14,30 @@ export default async function DirectionPage({
 }) {
   const { issued } = await searchParams
   const projectId = await currentProjectId()
-  if (!projectId) redirect(await localeHref('/enter'))
+  if (!projectId) redirect('/enter')
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
-  if (!project) redirect(await localeHref('/enter'))
+  if (!project) redirect('/enter')
 
   const directions = await directionsOf(projectId)
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
-        <span className="eyebrow">Направление</span>
-        <h1 style={{ maxWidth: '20ch' }}>Как здание относится к участку</h1>
+        <span className="eyebrow">Direction</span>
+        <h1 style={{ maxWidth: '20ch' }}>How the building relates to the site</h1>
 
         <p className="lead" style={{ marginTop: 22, maxWidth: '58ch' }}>
-          Варианты выведены из вашего брифа: типологии, рельефа и материальной системы.
-          Неприменимого здесь нет — например, террасирование появляется только на склоне.
+          The variants follow from your brief: typology, terrain and material system. Nothing inapplicable appears here — terracing, for instance, shows up only on a slope.
         </p>
 
         <p className="note" style={{ marginTop: 22 }}>
-          Это не проект и не обещание. Выбор фиксирует направление, в котором команде
-          двигаться, и ничего не определяет по конструкциям, площадям и нормам. Команда может
-          показать, что выбранное на этом участке невозможно, — это нормальный ход работы, а
-          не нарушение договорённости.
+          This is neither a design nor a promise. The choice fixes the direction for the team to move in and settles nothing about structure, areas or codes. The team may show that what you chose is impossible on this site — that is the work going normally, not an agreement being broken.
         </p>
 
         {issued === '1' && (
           <div className="panel panel-accent" style={{ marginTop: 28 }}>
-            <div className="label label-accent">Ключ доступа</div>
+            <div className="label label-accent">Access key</div>
             <p className="num" style={{ fontSize: '1.3rem', color: 'var(--accent)', margin: '12px 0' }}>
               {project.clientKey}
             </p>
@@ -55,14 +50,14 @@ export default async function DirectionPage({
 
         {directions.length === 0 ? (
           <div className="panel" style={{ marginTop: 40 }}>
-            <div className="label">Направлений нет</div>
+            <div className="label">No directions</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
               {project.status === 'rejected'
-                ? 'Проект вне продуктовой границы — выбирать облик нечему.'
-                : 'Варианты ещё не подготовлены.'}
+                ? 'The project is outside the product boundary — there is nothing to choose a direction for.'
+                : 'The variants are not prepared yet.'}
             </p>
             <p style={{ marginTop: 16, marginBottom: 0 }}>
-              <Link href="/project">В кабинет проекта →</Link>
+              <Link href="/project">To the project cabinet →</Link>
             </p>
           </div>
         ) : (
@@ -83,7 +78,7 @@ export default async function DirectionPage({
 
         <div className="divider" style={{ marginTop: 48 }} />
         <Link href="/project" className="dim">
-          Пропустить и перейти в кабинет — направление можно выбрать позже
+          Skip and go to the cabinet — a direction can be chosen later
         </Link>
       </div>
     </section>

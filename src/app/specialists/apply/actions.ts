@@ -2,7 +2,6 @@
 
 import { prisma } from '@/lib/db'
 import { LEGAL_VERSION } from '@/lib/legal'
-import { currentLocale } from '@/lib/i18n'
 import { allow, spend } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import {
@@ -55,14 +54,14 @@ export async function submitApplication(
 
   if (!signaturesWithinJurisdictions(input)) {
     return {
-      errors: { signsIn: 'Право подписи можно заявить только там, где вы работали.' },
+      errors: { signsIn: 'Signing rights can only be declared where you have worked.' },
       values: raw,
     }
   }
 
   if (!specializationsWithinDisciplines(input)) {
     return {
-      errors: { specializations: 'Специализация должна принадлежать выбранной дисциплине.' },
+      errors: { specializations: 'A specialisation must belong to a chosen discipline.' },
       values: raw,
     }
   }
@@ -71,7 +70,7 @@ export async function submitApplication(
     return {
       errors: {
         specializations:
-          'В каждой выбранной дисциплине отметьте хотя бы одну специализацию — иначе движку нечем вас отличить.',
+          'In each discipline you chose, mark at least one specialisation — otherwise the engine has nothing to tell you apart by.',
       },
       values: raw,
     }
@@ -79,7 +78,7 @@ export async function submitApplication(
 
   const existing = await prisma.specialist.findUnique({ where: { email: input.email } })
   if (existing) {
-    return { errors: { email: 'Заявка с этим адресом уже есть.' }, values: raw }
+    return { errors: { email: 'There is already an application from this address.' }, values: raw }
   }
 
   // Проверки пройдены — списываем дорогую отправку. До этого места заявка
@@ -97,7 +96,6 @@ export async function submitApplication(
       // с чем именно человек согласился (см. src/lib/legal.ts).
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
-      consentLocale: await currentLocale(),
       // Рейтинг портфолио ставит бюро при разборе, а не заявитель о себе (п.9).
       portfolioRating: 0,
       status: 'pending',

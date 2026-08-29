@@ -8,9 +8,7 @@
  */
 
 import { absolute, siteUrl } from '../site'
-import { translate } from '../i18n/dict'
-import { fill } from '../i18n/fill'
-import { localePath, type Locale } from '../i18n/locale'
+import { fill } from '../fill'
 import { ResendMailer, configFromEnv } from './resend'
 import { StubMailer } from './stub'
 import type { Mailer } from './types'
@@ -47,22 +45,20 @@ export async function sendAccessKey(
   to: string,
   who: 'client' | 'specialist',
   key: string,
-  locale: Locale,
 ): Promise<void> {
-  const t = (text: string) => translate(text, locale)
-  const where = who === 'client' ? t('кабинет проекта') : t('доску работ')
+  const where = who === 'client' ? 'the project cabinet' : 'the work board'
 
   await mailer().send({
     to,
-    subject: `TinyArc Cloud Bureau — ${t('ключ доступа')}`,
+    subject: 'TinyArc Cloud Bureau — access key',
     body: [
-      `${t('Ключ доступа:')} ${key}`,
+      `$Access key: ${key}`,
       '',
-      fill(t('Введите его на {url}, чтобы открыть {where}.'), {
-        url: absolute(localePath('/enter', locale)),
+      fill('Enter it at {url} to open {where}.', {
+        url: absolute('/enter'),
         where,
       }),
-      t('Ключ заменяет пароль — не пересылайте его.'),
+      'The key stands in for a password — do not forward it.',
       '',
       'TinyArc Cloud Bureau',
       siteUrl(),
@@ -85,25 +81,20 @@ export async function sendAccessKey(
  * `remindKeys`, и решает это по правилу «ключ, который не работает, называть
  * незачем».
  */
-export async function sendKeyReminder(
-  to: string,
-  lines: string[],
-  locale: Locale,
-): Promise<void> {
-  const t = (text: string) => translate(text, locale)
+export async function sendKeyReminder(to: string, lines: string[]): Promise<void> {
 
   await mailer().send({
     to,
-    subject: `TinyArc Cloud Bureau — ${t('ключ доступа')}`,
+    subject: 'TinyArc Cloud Bureau — access key',
     body: [
-      t('Вы попросили напомнить ключ. За этим адресом числится:'),
+      'You asked us to remind you of your key. This address holds:',
       '',
       ...lines,
       '',
-      fill(t('Вход: {url}'), { url: absolute(localePath('/enter', locale)) }),
-      t('Ключ заменяет пароль — не пересылайте его.'),
+      fill('Sign in: {url}', { url: absolute('/enter') }),
+      'The key stands in for a password — do not forward it.',
       '',
-      t('Если ключ не просили вы — письмо можно не читать: по нему ничего не произошло.'),
+      'If you did not ask for this, there is nothing to do: nothing happened on your account.',
       '',
       'TinyArc Cloud Bureau',
       siteUrl(),
@@ -128,23 +119,23 @@ export async function sendInvitation(
 ): Promise<void> {
   await mailer().send({
     to,
-    subject: 'TinyArc Cloud Bureau — приглашение в пул специалистов',
+    subject: 'TinyArc Cloud Bureau — an invitation to the specialist pool',
     body: [
-      `${displayName}, здравствуйте.`,
+      `${displayName}, hello.`,
       '',
-      'TinyArc Cloud Bureau собирает пул специалистов на проекты в Черногории,',
-      'Сербии и Греции — здания до пяти этажей. Мы ведём проект целиком и',
-      'подбираем под него команду расчётом, а не по знакомству.',
+      'TinyArc Cloud Bureau is assembling a pool of specialists for projects in',
+      'Montenegro, Serbia and Greece — buildings up to five storeys. We run the',
+      'project end to end and pick the team for it by computation, not by acquaintance.',
       '',
-      'Чтобы участвовать в отборе, нужно дозаполнить профиль: дисциплина и',
-      'специализация, юрисдикции, пакет, языки, часовой пояс и свободная',
-      'ёмкость. Без этих полей алгоритм вас не увидит — не потому, что вы не',
-      'подходите, а потому, что ему не с чем работать.',
+      'To take part in selection you need to fill in your profile: discipline and',
+      'specialisation, jurisdictions, software suite, languages, time zone and free',
+      'capacity. Without those fields the algorithm will not see you — not because',
+      'you do not fit, but because it has nothing to work with.',
       '',
-      `Ключ доступа: ${key}`,
-      `Профиль: ${absolute('/enter')}`,
+      `Access key: ${key}`,
+      `Profile: ${absolute('/enter')}`,
       '',
-      'Ключ заменяет пароль — не пересылайте его.',
+      'The key stands in for a password — do not forward it.',
       '',
       'TinyArc Cloud Bureau',
       siteUrl(),

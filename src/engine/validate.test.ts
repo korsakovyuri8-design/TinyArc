@@ -12,14 +12,14 @@ describe('продуктовая граница', () => {
 
     const tall = validateProject(requirements({ storeys: 6 }))
     expect(tall.ok).toBe(false)
-    expect(tall.ok === false && tall.reason).toContain('выше продуктовой границы')
+    expect(tall.ok === false && tall.reason).toContain('above the product boundary')
   })
 
   it('отказывает в зоне стандартного регулирования', () => {
     const heavy = validateProject(requirements({ regulatoryTrack: 'standard' }))
 
     expect(heavy.ok).toBe(false)
-    expect(heavy.ok === false && heavy.reason).toContain('лёгкого регулирования')
+    expect(heavy.ok === false && heavy.reason).toContain('light-regulation')
   })
 
   it('отказывает в неоткрытой стране', () => {

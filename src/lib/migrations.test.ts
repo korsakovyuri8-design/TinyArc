@@ -40,6 +40,7 @@ const APPLIED: Record<string, string> = {
   '0007_notifications': '338cce0a88421233617b1265cfcd58f0',
   '0008_artifact_files': 'b1b9fb25e1b53887cd672575371ee101',
   '0009_consent_locale': 'fee5efc6b6049b3084f7cd68a58d1426',
+  '0010_english_only': '96624dcdb91443fb14bc4f46fa2a5f4e',
 }
 
 function checksum(name: string): string {

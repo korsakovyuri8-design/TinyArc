@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
-import { toLocale } from '@/lib/i18n/locale'
 import { allow, forgive } from '@/lib/guard'
 import { assistant } from '@/lib/assist'
 import { sendAccessKey } from '@/lib/mail'
@@ -33,7 +32,7 @@ import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 export type OpsState = { error?: string; message?: string }
 
 async function requireOperator(): Promise<void> {
-  if (!(await isOperator())) throw new Error('Панель бюро закрыта.')
+  if (!(await isOperator())) throw new Error('The bureau panel is closed.')
 }
 
 export async function opsSignIn(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -43,7 +42,7 @@ export async function opsSignIn(_prev: OpsState, formData: FormData): Promise<Op
   if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
 
   const ok = await signInOperator(String(formData.get('password') ?? ''))
-  if (!ok) return { error: 'Пароль не подошёл.' }
+  if (!ok) return { error: 'Wrong password.' }
 
   // Успех обнуляет счётчик: ограничитель здесь про подбор, а подбор — это
   // неудачные попытки. Иначе обычная работа выбирает лимит и панель
@@ -71,7 +70,7 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   const rating = Number(formData.get('portfolioRating'))
 
   if (!Number.isFinite(rating) || rating < 0 || rating > 10) {
-    return { error: 'Рейтинг портфолио — число от 0 до 10.' }
+    return { error: 'A portfolio rating is a number from 0 to 10.' }
   }
 
   const passed = rating >= PORTFOLIO_THRESHOLD
@@ -84,7 +83,7 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   revalidatePath('/ops/applications')
   revalidatePath('/ops/pool')
 
-  if (!passed) return { message: `Ниже порога ${PORTFOLIO_THRESHOLD}/10 — заявка не проходит.` }
+  if (!passed) return { message: `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass.` }
 
   // Ключ выдаётся тем же каналом, которым с человеком разговаривали, и только
   // после подтверждения: до него ключ существует, но не работает.
@@ -93,13 +92,12 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
       specialist.email,
       'specialist',
       specialist.accessKey,
-      toLocale(specialist.consentLocale),
     )
-    return { message: 'Специалист в пуле, ключ доступа отправлен на его адрес.' }
+    return { message: 'The specialist is in the pool; the access key has gone to their address.' }
   } catch (error) {
-    console.error('Письмо с ключом не ушло:', error)
+    console.error('The email with the key did not go out:', error)
     return {
-      message: `Специалист в пуле, но письмо не ушло. Ключ: ${specialist.accessKey} — передайте вручную.`,
+      message: `The specialist is in the pool, but the email did not go out. Key: ${specialist.accessKey} — hand it over yourself.`,
     }
   }
 }
@@ -112,9 +110,9 @@ export async function rerunAssembly(_prev: OpsState, formData: FormData): Promis
   try {
     const { assembly } = await runAssembly(projectId)
     revalidatePath(`/ops/projects/${projectId}`)
-    return { message: `Прогон выполнен: ${assembly.outcome}. ${assembly.notes}`.trim() }
+    return { message: `Run complete: ${assembly.outcome}. ${assembly.notes}`.trim() }
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Прогон не удался.' }
+    return { error: error instanceof Error ? error.message : 'The run failed.' }
   }
 }
 
@@ -129,7 +127,7 @@ export async function setTicketSpec(_prev: OpsState, formData: FormData): Promis
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'Постановка сохранена.' }
+  return { message: 'The brief is saved.' }
 }
 
 /**
@@ -150,7 +148,7 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
   })
 
   if (ticket.spec.trim().length > 0) {
-    return { error: 'Постановка уже написана. Черновик её не перезаписывает — правьте вручную.' }
+    return { error: 'A brief is already written. The draft does not overwrite it — edit it by hand.' }
   }
 
   const [slot, direction, inbound] = await Promise.all([
@@ -181,17 +179,17 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
       inboundArtifacts: inbound.map((a) => a.name),
     })
 
-    const spec = [draft.spec, '', 'Проверить на приёмке:', ...draft.checklist.map((c) => `— ${c}`)]
+    const spec = [draft.spec, '', 'Check on acceptance:', ...draft.checklist.map((c) => `— ${c}`)]
       .join('\n')
       .trim()
 
     await prisma.ticket.update({ where: { id: ticketId }, data: { spec } })
     revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-    return { message: 'Черновик записан. Прочитайте и поправьте — он не готовая постановка.' }
+    return { message: 'The draft is saved. Read it and correct it — it is not a finished brief.' }
   } catch (error) {
-    console.error('Черновик постановки не получен:', error)
-    return { error: 'Помощник не ответил. Постановку можно написать руками — поле ниже.' }
+    console.error('No brief draft came back:', error)
+    return { error: 'The assistant did not answer. The brief can be written by hand — the field is below.' }
   }
 }
 
@@ -226,13 +224,13 @@ export async function summariseTicketConflict(
 
     return {
       message: [
-        ...summary.positions.map((p, i) => `Сторона ${i + 1}: ${p}`),
-        `Вопрос: ${summary.question}`,
+        ...summary.positions.map((p, i) => `Side ${i + 1}: ${p}`),
+        `Question: ${summary.question}`,
       ].join(' · '),
     }
   } catch (error) {
-    console.error('Сводка спора не получена:', error)
-    return { error: 'Помощник не ответил. Переписка по тикету — выше.' }
+    console.error('No summary of the dispute came back:', error)
+    return { error: 'The assistant did not answer. The ticket thread is above.' }
   }
 }
 
@@ -271,14 +269,14 @@ export async function proposeRating(_prev: OpsState, formData: FormData): Promis
       })),
     })
 
-    const gaps = proposal.gaps.length > 0 ? ` Пробелы: ${proposal.gaps.join('; ')}.` : ''
+    const gaps = proposal.gaps.length > 0 ? ` Gaps: ${proposal.gaps.join('; ')}.` : ''
 
     return {
-      message: `Предложение: ${proposal.rating.toFixed(1)}. ${proposal.reasoning}${gaps} Рейтинг ставите вы — полем ниже.`,
+      message: `Suggested: ${proposal.rating.toFixed(1)}. ${proposal.reasoning}${gaps} You set the rating — in the field below.`,
     }
   } catch (error) {
-    console.error('Предложение рейтинга не получено:', error)
-    return { error: 'Помощник не ответил. Смотрите портфолио сами — ссылка выше.' }
+    console.error('No rating suggestion came back:', error)
+    return { error: 'The assistant did not answer. Look at the portfolio yourself — the link is above.' }
   }
 }
 
@@ -312,20 +310,20 @@ export async function checkTicketCompleteness(
     })
 
     if (check.missing.length === 0 && check.worthChecking.length === 0) {
-      return { message: 'По постановке расхождений не видно. Содержимое файлов смотрите сами.' }
+      return { message: 'No discrepancies against the brief are visible. Look at the contents of the files yourself.' }
     }
 
     return {
       message: [
-        check.missing.length > 0 ? `Не хватает: ${check.missing.join('; ')}.` : null,
-        check.worthChecking.length > 0 ? `Посмотреть глазами: ${check.worthChecking.join('; ')}.` : null,
+        check.missing.length > 0 ? `Missing: ${check.missing.join('; ')}.` : null,
+        check.worthChecking.length > 0 ? `Worth a look: ${check.worthChecking.join('; ')}.` : null,
       ]
         .filter(Boolean)
         .join(' '),
     }
   } catch (error) {
-    console.error('Проверка комплектности не выполнена:', error)
-    return { error: 'Помощник не ответил. Приложенное — в списке выше.' }
+    console.error('The completeness check did not run:', error)
+    return { error: 'The assistant did not answer. What was attached is in the list above.' }
   }
 }
 
@@ -341,7 +339,7 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
 
   const alerts = await alertsForBureau()
 
-  if (alerts.length === 0) return { message: 'Очередь пуста — разбирать нечего.' }
+  if (alerts.length === 0) return { message: 'The queue is empty — nothing to work through.' }
 
   try {
     const plan = await assistant().planQueue({
@@ -356,7 +354,7 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
 
     return {
       message: [
-        `Первое: ${plan.first}`,
+        `First: ${plan.first}`,
         ...plan.steps.map((step, i) => `${i + 1}. ${step}`),
         plan.notes,
       ]
@@ -364,8 +362,8 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
         .join(' · '),
     }
   } catch (error) {
-    console.error('Очередь не разобрана:', error)
-    return { error: 'Помощник не ответил. Очередь ниже — она отсортирована движком.' }
+    console.error('The queue was not worked through:', error)
+    return { error: 'The assistant did not answer. The queue is below — sorted by the engine.' }
   }
 }
 
@@ -386,7 +384,7 @@ export async function draftTicketNudge(_prev: OpsState, formData: FormData): Pro
   const alert = alerts.find((a) => a.ticketId === ticketId && isNudgeKind(a.kind))
 
   if (!alert || !isNudgeKind(alert.kind)) {
-    return { error: 'По этой задаче писать пока не о чем: срок в порядке и работа идёт.' }
+    return { error: 'There is nothing to write about this task yet: the deadline is fine and the work is moving.' }
   }
 
   try {
@@ -399,11 +397,11 @@ export async function draftTicketNudge(_prev: OpsState, formData: FormData): Pro
     })
 
     return {
-      message: `Черновик: ${draft.body.replace(/\n+/g, ' ')} Прочитайте и отправьте формой ниже — сам он никуда не уходит.`,
+      message: `Draft: ${draft.body.replace(/\n+/g, ' ')} Read it and send it with the form below — by itself it goes nowhere.`,
     }
   } catch (error) {
-    console.error('Черновик напоминания не получен:', error)
-    return { error: 'Помощник не ответил. Напишите в тикет сами — форма ниже.' }
+    console.error('No nudge draft came back:', error)
+    return { error: 'The assistant did not answer. Write in the ticket yourself — the form is below.' }
   }
 }
 
@@ -416,9 +414,9 @@ export async function acceptTicket(_prev: OpsState, formData: FormData): Promise
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     await accept(ticketId)
     revalidatePath(`/ops/projects/${ticket.projectId}`)
-    return { message: 'Принято. Гейт открыл зависящие тикеты.' }
+    return { message: 'Accepted. The gate opened the tickets that depend on it.' }
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Не получилось.' }
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
   }
 }
 
@@ -428,15 +426,15 @@ export async function returnTicket(_prev: OpsState, formData: FormData): Promise
   const ticketId = String(formData.get('ticketId') ?? '')
   const note = String(formData.get('note') ?? '').trim()
 
-  if (!note) return { error: 'Скажите, что именно не так: возврат без причины — это не круг правок.' }
+  if (!note) return { error: 'Say what exactly is wrong: sending work back without a reason is not a revision round.' }
 
   try {
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     await requestRevision(ticketId, note)
     revalidatePath(`/ops/projects/${ticket.projectId}`)
-    return { message: 'Возвращено на круг.' }
+    return { message: 'Sent back for revision.' }
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Не получилось.' }
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
   }
 }
 
@@ -453,13 +451,13 @@ export async function resolveTicketConflict(_prev: OpsState, formData: FormData)
   const ticketId = String(formData.get('ticketId') ?? '')
   const ruling = String(formData.get('ruling') ?? '').trim()
 
-  if (!ruling) return { error: 'Решение без текста ничего не решает.' }
+  if (!ruling) return { error: 'A ruling with no text settles nothing.' }
 
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
   await resolveConflict(ticketId, ruling)
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'Решение записано в тикет, конфликт снят.' }
+  return { message: 'The ruling is written into the ticket and the conflict is cleared.' }
 }
 
 export async function bureauComment(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -467,13 +465,13 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
 
   const ticketId = String(formData.get('ticketId') ?? '')
   const body = String(formData.get('body') ?? '').trim()
-  if (!body) return { error: 'Пустой комментарий.' }
+  if (!body) return { error: 'The comment is empty.' }
 
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
   await comment(ticketId, { role: 'bureau' }, body)
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'Отправлено.' }
+  return { message: 'Sent.' }
 }
 
 /**
@@ -490,29 +488,29 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
   const intake = readIntake(text)
 
   if (intake.rows.length === 0) {
-    return { error: 'Не вижу ни одной строки. Нужен заголовок и хотя бы одна строка под ним.' }
+    return { error: 'I see no rows at all. A header row is needed, and at least one row under it.' }
   }
 
   const good = intake.rows.filter((r) => r.ok)
   const bad = intake.rows.filter((r) => !r.ok)
 
   const parts = [
-    `Прочитано строк: ${intake.rows.length}. Готовы к заведению: ${good.length}.`,
-    `Узнаны столбцы: ${intake.recognisedColumns.join(', ') || '—'}.`,
+    `Rows read: ${intake.rows.length}. Ready to create: ${good.length}.`,
+    `Columns recognised: ${intake.recognisedColumns.join(', ') || '—'}.`,
   ]
 
   if (intake.ignoredColumns.length > 0) {
-    parts.push(`Не узнаны и не импортируются: ${intake.ignoredColumns.join(', ')}.`)
+    parts.push(`Not recognised and not imported: ${intake.ignoredColumns.join(', ')}.`)
   }
 
   if (bad.length > 0) {
     parts.push(
-      `Строк с ошибкой ${bad.length}: ` +
+      `Rows with an error ${bad.length}: ` +
         bad
           .slice(0, 5)
           .map((r) => (r.ok ? '' : `${r.line} — ${r.problem}`))
           .join('; ') +
-        (bad.length > 5 ? ' и другие' : '') +
+        (bad.length > 5 ? ' and others' : '') +
         '.',
     )
   }
@@ -522,7 +520,7 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
   ].slice(0, 12)
 
   if (unrecognised.length > 0) {
-    parts.push(`Значения, которых нет в таксономии: ${unrecognised.join(', ')}.`)
+    parts.push(`Values absent from the taxonomy: ${unrecognised.join(', ')}.`)
   }
 
   return { message: parts.join(' ') }
@@ -546,7 +544,7 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
   const drafts = intake.rows.flatMap((r) => (r.ok ? [r.draft] : []))
 
   if (drafts.length === 0) {
-    return { error: 'Заводить нечего: ни одна строка не прошла разбор. Нажмите «Разобрать».' }
+    return { error: 'Nothing to create: not a single row parsed. Press “Parse”.' }
   }
 
   try {
@@ -558,18 +556,18 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
     revalidatePath('/ops')
 
     const parts = [
-      `Заведено: ${outcome.created}.`,
-      outcome.existing > 0 ? `Уже были в базе и не тронуты: ${outcome.existing}.` : '',
+      `Created: ${outcome.created}.`,
+      outcome.existing > 0 ? `Already in the database and left untouched: ${outcome.existing}.` : '',
       outcome.skipped > 0
-        ? `Сверх потолка в ${MAX_IMPORT_ROWS} строк осталось ${outcome.skipped} — вставьте их следующим заходом.`
+        ? `Over the ${MAX_IMPORT_ROWS}-row ceiling, ${outcome.skipped} remain — paste them on the next pass.`
         : '',
-      outcome.created > 0 ? 'Приглашения ещё не отправлены — кнопка ниже.' : '',
+      outcome.created > 0 ? 'The invitations have not been sent yet — the button is below.' : '',
     ]
 
     return { message: parts.filter(Boolean).join(' ') }
   } catch (error) {
-    console.error('Импорт не выполнен:', error)
-    return { error: error instanceof Error ? error.message : 'Импорт не выполнен.' }
+    console.error('The import did not run:', error)
+    return { error: error instanceof Error ? error.message : 'The import did not run.' }
   }
 }
 
@@ -590,26 +588,26 @@ export async function sendInvites(_prev: OpsState, _formData: FormData): Promise
     revalidatePath('/ops/applications')
 
     if (outcome.sent === 0 && outcome.unsent.length === 0) {
-      return { message: 'Звать некого: все заведённые уже приглашены.' }
+      return { message: 'No one to invite: everyone created has been invited already.' }
     }
 
     const parts = [
-      `Отправлено: ${outcome.sent}.`,
-      outcome.waiting > 0 ? `Ждут очереди: ${outcome.waiting} — нажмите ещё раз.` : '',
+      `Sent: ${outcome.sent}.`,
+      outcome.waiting > 0 ? `Waiting their turn: ${outcome.waiting} — press again.` : '',
     ]
 
     if (outcome.unsent.length > 0) {
       parts.push(
-        `Не ушло: ${outcome.unsent.length}. Ключи — ` +
+        `Did not go out: ${outcome.unsent.length}. The keys — ` +
           outcome.unsent.map((u) => `${u.email}: ${u.accessKey}`).join('; ') +
-          ' — передайте вручную.',
+          ' — hand it over by hand.',
       )
     }
 
     return { message: parts.filter(Boolean).join(' ') }
   } catch (error) {
-    console.error('Рассылка не выполнена:', error)
-    return { error: 'Рассылка не выполнена. Ключи видны в списке приглашённых.' }
+    console.error('The mailing did not run:', error)
+    return { error: 'The mailing did not run. The keys are visible in the invited list.' }
   }
 }
 
@@ -623,8 +621,8 @@ export async function reinviteSpecialist(_prev: OpsState, formData: FormData): P
   revalidatePath('/ops/applications')
 
   return sent
-    ? { message: 'Приглашение отправлено повторно.' }
-    : { message: `Письмо не ушло. Ключ: ${key} — передайте вручную.` }
+    ? { message: 'The invitation was sent again.' }
+    : { message: `The email did not go out. Key: ${key} — hand it over yourself.` }
 }
 
 /**
@@ -644,12 +642,12 @@ export async function answerClient(_prev: OpsState, formData: FormData): Promise
     revalidatePath('/ops')
     revalidatePath(`/ops/projects/${projectId}`)
 
-    return { message: 'Ответ отправлен: заказчик увидит его в кабинете проекта.' }
+    return { message: 'The answer is sent: the client will see it in the project cabinet.' }
   } catch (error) {
     if (error instanceof MessageRefused) return { error: error.message }
 
-    console.error('Ответ заказчику не отправлен:', error)
-    return { error: 'Не отправилось.' }
+    console.error('The answer to the client did not go out:', error)
+    return { error: 'It did not send.' }
   }
 }
 
@@ -692,14 +690,14 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
     return {
       message:
         opened.length > 0
-          ? `Оплата отмечена. Открыто задач: ${opened.length}.`
-          : 'Оплата отмечена. Задачи откроются, когда сойдутся остальные условия гейта.',
+          ? `Payment marked. Tasks opened: ${opened.length}.`
+          : 'The payment is marked. Tasks open once the rest of the gate’s conditions are met.',
     }
   } catch (error) {
     if (error instanceof BillingRefused) return { error: error.message }
 
-    console.error('Оплата не отмечена:', error)
-    return { error: 'Не получилось отметить оплату.' }
+    console.error('The payment was not marked:', error)
+    return { error: 'Marking the payment failed.' }
   }
 }
 
@@ -735,13 +733,13 @@ export async function voidProjectInvoice(_prev: OpsState, formData: FormData): P
     return {
       message:
         issued.length > 0
-          ? 'Счёт отозван, новый выставлен по текущим данным проекта.'
-          : 'Счёт отозван. Новый не выставлен: стадию сейчас держит не оплата.',
+          ? 'The invoice is void; a new one has been issued from the project’s current data.'
+          : 'The invoice is void. No new one was issued: payment is not what is holding the stage right now.',
     }
   } catch (error) {
     if (error instanceof BillingRefused) return { error: error.message }
 
-    console.error('Счёт не отозван:', error)
-    return { error: 'Не получилось отозвать счёт.' }
+    console.error('The invoice was not voided:', error)
+    return { error: 'Voiding the invoice failed.' }
   }
 }

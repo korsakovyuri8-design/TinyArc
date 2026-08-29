@@ -24,7 +24,7 @@ export async function sendToBureau(
   formData: FormData,
 ): Promise<ProjectState> {
   const projectId = await currentProjectId()
-  if (!projectId) return { error: 'Сначала войдите по ключу.' }
+  if (!projectId) return { error: 'Sign in with your key first.' }
 
   const verdict = await allow('clientMessage')
   if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
@@ -33,12 +33,12 @@ export async function sendToBureau(
     await say(projectId, String(formData.get('body') ?? ''))
     revalidatePath('/project')
 
-    return { message: 'Отправлено бюро. Ответ появится здесь же.' }
+    return { message: 'Sent to the bureau. The reply will appear right here.' }
   } catch (error) {
     if (error instanceof MessageRefused) return { error: error.message }
 
     console.error('Сообщение бюро не отправлено:', error)
-    return { error: 'Не отправилось. Попробуйте ещё раз.' }
+    return { error: 'It did not send. Please try again.' }
   }
 }
 
@@ -57,10 +57,10 @@ export async function approveProjectStage(
   formData: FormData,
 ): Promise<ProjectState> {
   const projectId = await currentProjectId()
-  if (!projectId) return { error: 'Сначала войдите по ключу.' }
+  if (!projectId) return { error: 'Sign in with your key first.' }
 
   const stage = String(formData.get('stage') ?? '')
-  if (!DOC_STAGES.includes(stage as DocStage)) return { error: 'Неизвестная стадия.' }
+  if (!DOC_STAGES.includes(stage as DocStage)) return { error: 'Unknown stage.' }
 
   try {
     await approveStage(projectId, stage as DocStage, String(formData.get('note') ?? ''))
@@ -78,11 +78,11 @@ export async function approveProjectStage(
     // открыта для команды», и после появления счёта это стало неправдой в
     // самом обидном месте: заказчик читает, что работа пошла, а она ждёт
     // оплаты. Что именно мешает — видно ниже на странице.
-    return { message: 'Стадия подтверждена.' }
+    return { message: 'Stage confirmed.' }
   } catch (error) {
     if (error instanceof ApprovalRefused) return { error: error.message }
 
     console.error('Стадия не подтверждена:', error)
-    return { error: 'Не получилось. Напишите бюро — разберём.' }
+    return { error: 'That did not work. Write to the bureau and we will sort it out.' }
   }
 }

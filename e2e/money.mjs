@@ -62,7 +62,7 @@ await bureau.waitForSelector('a[href="/ops/import"]')
 // таблиц на панели несколько, и «первая строка» указывает не сюда.
 // Именно неоплаченные: в очереди висят и оплаченные — по ним видно, что
 // действие прошло, когда строка не исчезает, а меняет статус.
-const queue = bureau.locator('#invoices .panel:has(button:has-text("Отметить оплаченным"))')
+const queue = bureau.locator('#invoices .panel:has(button:has-text("Mark as paid"))')
 const waiting = await queue.count()
 
 if (waiting === 0) {
@@ -88,12 +88,12 @@ check(Boolean(projectHref), 'из очереди счетов открывает
 /** Неоплаченный счёт именно этого проекта. */
 const unpaidHere = () =>
   bureau.locator(
-    `#invoices .panel:has(a[href="${projectHref}"]):has(button:has-text("Отметить оплаченным"))`,
+    `#invoices .panel:has(a[href="${projectHref}"]):has(button:has-text("Mark as paid"))`,
   )
 
 // Ключ заказчика бюро видит на карточке проекта — им и войдём его глазами.
 await bureau.goto(`${BASE}${projectHref}`)
-const key = (await bureau.locator('p:has-text("ключ") .num').first().textContent()).trim()
+const key = (await bureau.locator('p:has-text("key") .num').first().textContent()).trim()
 
 if (!check(Boolean(key), `ключ заказчика виден бюро: ${key ?? 'не найден'}`)) {
   await browser.close()
@@ -108,10 +108,10 @@ await client.waitForTimeout(1800)
 
 const before = await client.innerText('main')
 
-check(has(before, 'Счета'), 'заказчик видит счёт, а не молчание')
-check(has(before, 'Ждёт оплаты'), 'сказано, что счёт не оплачен')
+check(has(before, 'Invoices'), 'заказчик видит счёт, а не молчание')
+check(has(before, 'Awaiting payment'), 'сказано, что счёт не оплачен')
 check(
-  has(before, 'до начала работы по ней'),
+  has(before, 'before work on it begins'),
   'сказано, почему платят вперёд, а не после',
 )
 
@@ -121,11 +121,11 @@ check(
  * неоплаченной стадии это неправда, из-за которой заказчик ждёт нас, пока мы
  * ждём его.
  */
-check(has(before, 'Ждёт оплаты'), 'простой объяснён деньгами, а не очередью стадий')
+check(has(before, 'Awaiting payment'), 'простой объяснён деньгами, а не очередью стадий')
 
 // Разбор цены: сумма без него — это счёт, который можно только принять на веру.
 const explained =
-  /м² × \d+ EUR\/м²/i.test(before) || has(before, 'Нижняя граница чека')
+  /m² × \d+ EUR\/m²/i.test(before) || has(before, 'floor price for this stage')
 check(explained, 'под суммой видно, из чего она сложилась')
 
 /*
@@ -140,9 +140,9 @@ check(explained, 'под суммой видно, из чего она слож�
  * причины.
  */
 await bureau.goto(`${BASE}/ops`)
-const voidForm = unpaidHere().first().locator('form:has(button:has-text("Отозвать"))')
-await voidForm.locator('input[name=note]').fill('Проверка e2e: площадь заведена неверно.')
-await voidForm.locator('button:has-text("Отозвать")').click()
+const voidForm = unpaidHere().first().locator('form:has(button:has-text("Void"))')
+await voidForm.locator('input[name=note]').fill('e2e check: the floor area was entered wrong.')
+await voidForm.locator('button:has-text("Void")').click()
 await bureau.waitForTimeout(2500)
 
 await bureau.reload()
@@ -164,8 +164,8 @@ check(
 await bureau.goto(`${BASE}/ops`)
 // Целимся в форму, а не в панель: в панели их две — оплата и отзыв, — и у
 // обеих поле называется note.
-const form = unpaidHere().first().locator('form:has(button:has-text("Отметить оплаченным"))')
-await form.locator('input[name=note]').fill('Проверка e2e: перевод получен.')
+const form = unpaidHere().first().locator('form:has(button:has-text("Mark as paid"))')
+await form.locator('input[name=note]').fill('e2e check: transfer received.')
 await form.locator('button[type=submit]').click()
 await bureau.waitForTimeout(2500)
 
@@ -173,7 +173,7 @@ await bureau.reload()
 await bureau.waitForTimeout(1200)
 
 check(
-  has(await bureau.innerText(`#invoices .panel:has(a[href="${projectHref}"])`), 'Оплачен'),
+  has(await bureau.innerText(`#invoices .panel:has(a[href="${projectHref}"])`), 'Paid'),
   'счёт в очереди бюро помечен оплаченным',
 )
 // По этому проекту платить больше нечего. Проверка узкая намеренно: в очереди
@@ -187,8 +187,8 @@ await client.reload()
 await client.waitForTimeout(1200)
 const after = await client.innerText('main')
 
-check(has(after, 'Оплачен'), 'заказчик видит счёт оплаченным')
-check(!has(after, 'Ждёт оплаты'), 'простоя по оплате больше нет')
+check(has(after, 'Paid'), 'заказчик видит счёт оплаченным')
+check(!has(after, 'Awaiting payment'), 'простоя по оплате больше нет')
 
 /*
  * Главная проверка всего файла. Гейт, который закрывается, но не открывается,
@@ -196,7 +196,7 @@ check(!has(after, 'Ждёт оплаты'), 'простоя по оплате б
  * работа не пошла.
  */
 check(
-  has(after, 'Идёт работа'),
+  has(after, 'In progress'),
   'оплата открыла команде работу, а не просто сменила статус счёта',
 )
 

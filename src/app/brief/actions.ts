@@ -1,6 +1,5 @@
 'use server'
 
-import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
@@ -8,8 +7,6 @@ import { allow, spend } from '@/lib/guard'
 import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { LEGAL_VERSION } from '@/lib/legal'
-import { currentLocale } from '@/lib/i18n'
-import { toLocale } from '@/lib/i18n/locale'
 import { toList } from '@/lib/rows'
 import { sendAccessKey } from '@/lib/mail'
 import { prepareDirections } from '@/lib/services/direction'
@@ -50,7 +47,6 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       // Согласие вместе с редакцией: см. src/lib/legal.ts.
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
-      consentLocale: await currentLocale(),
       title: input.title,
       clientName: input.clientName,
       clientEmail: input.clientEmail,
@@ -92,7 +88,6 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       project.clientEmail,
       'client',
       project.clientKey,
-      toLocale(project.consentLocale),
     )
   } catch (error) {
     console.error('Письмо с ключом не ушло:', error)
@@ -100,5 +95,5 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
 
   // Сначала направление, потом кабинет: выбор нужен команде до того, как
   // откроется первый тикет, а не когда по нему уже что-то нарисовали.
-  redirect(await localeHref('/project/direction?issued=1'))
+  redirect('/project/direction?issued=1')
 }

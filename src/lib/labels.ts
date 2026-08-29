@@ -24,17 +24,17 @@ import type {
 } from '@/engine/taxonomy'
 
 export const DISCIPLINE_LABELS: Record<Discipline, string> = {
-  architecture: 'Архитектура',
-  structural: 'Конструкции',
-  mep: 'Инженерия (MEP)',
-  landscape: 'Ландшафт',
-  interiors: 'Интерьеры',
-  permitting: 'Согласования',
-  survey: 'Геодезия',
-  visualization: 'Визуализация',
-  cost_estimation: 'Сметы и объёмы',
-  dfma: 'Технология изготовления и сборки',
-  energy: 'Энергоэффективность',
+  architecture: 'Architecture',
+  structural: 'Structures',
+  mep: 'MEP',
+  landscape: 'Landscape',
+  interiors: 'Interiors',
+  permitting: 'Permitting',
+  survey: 'Survey',
+  visualization: 'Visualisation',
+  cost_estimation: 'Cost and quantities',
+  dfma: 'Design for manufacture and assembly',
+  energy: 'Energy performance',
 }
 
 /**
@@ -42,86 +42,86 @@ export const DISCIPLINE_LABELS: Record<Discipline, string> = {
  * свою строку с первого взгляда, иначе он отметит не то, и отбор поедет.
  */
 export const SPECIALIZATION_LABELS: Record<Specialization, string> = {
-  structural_concrete: 'Монолит и железобетон',
-  structural_steel: 'Металл и ЛСТК',
-  structural_timber: 'Дерево, каркас, CLT',
-  mep_hvac: 'Отопление, вентиляция, кондиционирование',
-  mep_electrical: 'Электрика и освещение',
-  mep_plumbing: 'Водоснабжение и канализация',
-  mep_off_grid: 'Автономные системы',
-  mep_smart_home: 'Умный дом',
-  arch_small_scale: 'Малые формы и модульное',
-  arch_large_scale: 'Городская застройка',
-  landscape_garden: 'Сад и благоустройство',
-  landscape_master_planning: 'Генплан территории',
-  landscape_grading: 'Вертикальная планировка и дренаж',
-  interiors_residential: 'Жилые интерьеры',
-  interiors_product: 'Встроенная мебель и предметный дизайн',
-  interiors_horeca: 'Общественные пространства',
-  viz_photoreal: 'Фотореализм',
-  viz_artistic: 'Атмосферная подача',
-  permit_zoning: 'Проверка зонирования',
-  permit_flood: 'Согласования по риску подтопления',
+  structural_concrete: 'Cast-in-place and reinforced concrete',
+  structural_steel: 'Steel and light-gauge framing',
+  structural_timber: 'Timber, framing, CLT',
+  mep_hvac: 'Heating, ventilation, air conditioning',
+  mep_electrical: 'Electrical and lighting',
+  mep_plumbing: 'Water supply and drainage',
+  mep_off_grid: 'Off-grid systems',
+  mep_smart_home: 'Home automation',
+  arch_small_scale: 'Small-scale and modular',
+  arch_large_scale: 'Urban-scale development',
+  landscape_garden: 'Garden and grounds',
+  landscape_master_planning: 'Site master planning',
+  landscape_grading: 'Grading and drainage',
+  interiors_residential: 'Residential interiors',
+  interiors_product: 'Built-in furniture and product design',
+  interiors_horeca: 'Public and hospitality spaces',
+  viz_photoreal: 'Photorealistic',
+  viz_artistic: 'Atmospheric',
+  permit_zoning: 'Zoning review',
+  permit_flood: 'Flood-risk approvals',
 }
 
 export const TERRAIN_LABELS: Record<Terrain, string> = {
-  flat: 'Ровный участок',
-  slope: 'Склон',
-  flood_prone: 'Риск подтопления',
+  flat: 'Flat site',
+  slope: 'Slope',
+  flood_prone: 'Flood risk',
 }
 
 export const GRID_LABELS: Record<GridConnection, string> = {
-  grid: 'Городские сети',
-  off_grid: 'Автономно',
+  grid: 'Utility connections',
+  off_grid: 'Off-grid',
 }
 
 export const AVAILABILITY_LABELS: Record<string, string> = {
-  available: 'Свободен',
-  part_time: 'Частично',
-  busy: 'Занят',
+  available: 'Available',
+  part_time: 'Part-time',
+  busy: 'Booked',
 }
 
 export const ARTIFACT_KIND_LABELS: Record<string, string> = {
-  model: 'Модель / DWG',
-  sheet: 'Чертёж',
-  render: 'Визуализация',
-  report: 'Расчёт или записка',
+  model: 'Model / DWG',
+  sheet: 'Drawing',
+  render: 'Visualisation',
+  report: 'Calculation or report',
 }
 
 export const PORTFOLIO_KIND_LABELS: Record<string, string> = {
-  render: '3D-рендер',
-  drawing: 'Чертежи и разрезы',
-  bim: 'Скриншоты модели',
-  site: 'Фото со стройки',
+  render: '3D render',
+  drawing: 'Drawings and sections',
+  bim: 'Model screenshots',
+  site: 'Site photographs',
 }
 
 export const TYPOLOGY_LABELS: Record<Typology, string> = {
-  villa: 'Вилла',
+  villa: 'Villa',
   townhouse: 'Townhouse',
   multi_family: 'Multi-family',
   mixed_use: 'Mixed-use',
 }
 
 export const SCALE_BAND_LABELS: Record<ScaleBand, string> = {
-  upto_250: 'до 250 м²',
-  '250_1000': '250–1000 м²',
-  '1000_3000': '1000–3000 м²',
-  '3000_plus': 'от 3000 м²',
+  upto_250: 'up to 250 m²',
+  '250_1000': '250–1000 m²',
+  '1000_3000': '1000–3000 m²',
+  '3000_plus': 'over 3000 m²',
 }
 
 export const MATERIAL_LABELS: Record<MaterialSystem, string> = {
-  concrete: 'Монолит',
-  masonry: 'Кладка',
-  timber: 'Дерево',
-  steel: 'Сталь',
-  hybrid: 'Гибрид',
+  concrete: 'Concrete',
+  masonry: 'Masonry',
+  timber: 'Timber',
+  steel: 'Steel',
+  hybrid: 'Hybrid',
 }
 
 export const CLIMATE_LABELS: Record<ClimateZone, string> = {
-  mediterranean: 'Средиземноморская',
-  continental: 'Континентальная',
-  alpine: 'Альпийская',
-  arid: 'Засушливая',
+  mediterranean: 'Mediterranean',
+  continental: 'Continental',
+  alpine: 'Alpine',
+  arid: 'Arid',
 }
 
 export const SOFTWARE_LABELS: Record<Software, string> = {
@@ -133,66 +133,66 @@ export const SOFTWARE_LABELS: Record<Software, string> = {
 }
 
 export const IFC_LABELS: Record<IfcLevel, string> = {
-  none: 'нет обмена',
-  import: 'импорт',
-  exchange: 'обмен',
-  coordination: 'координация',
+  none: 'no exchange',
+  import: 'import',
+  exchange: 'exchange',
+  coordination: 'coordination',
 }
 
 export const DOC_STAGE_LABELS: Record<DocStage, string> = {
-  concept: 'Концепция',
-  permit: 'Разрешение',
-  tender: 'Тендер',
-  construction: 'Рабочая документация',
+  concept: 'Concept',
+  permit: 'Permit',
+  tender: 'Tender',
+  construction: 'Construction documentation',
 }
 
 export const REGULATORY_LABELS: Record<RegulatoryTrack, string> = {
-  light: 'Лёгкое регулирование',
-  standard: 'Стандартное регулирование',
+  light: 'Light regulation',
+  standard: 'Standard regulation',
 }
 
 export const WORK_MODE_LABELS: Record<WorkMode, string> = {
-  remote: 'Удалённо',
-  hybrid: 'Гибрид',
+  remote: 'Remote',
+  hybrid: 'Hybrid',
 }
 
 export const TICKET_STATUS_LABELS: Record<string, string> = {
-  blocked: 'Ждёт зависимости',
-  open: 'Открыт, не взят',
-  in_progress: 'В работе',
-  submitted: 'Предъявлен',
-  revision: 'Возвращён на круг',
-  accepted: 'Принят',
+  blocked: 'Waiting on a dependency',
+  open: 'Open, unclaimed',
+  in_progress: 'In progress',
+  submitted: 'Submitted',
+  revision: 'Sent back for revision',
+  accepted: 'Accepted',
 }
 
 export const PROJECT_STATUS_LABELS: Record<string, string> = {
-  draft: 'Бриф принят',
-  rejected: 'Вне продуктовой границы',
-  assembled: 'Команда собрана',
-  delivering: 'Идёт выпуск',
-  delivered: 'Закрыт',
+  draft: 'Brief accepted',
+  rejected: 'Outside the product boundary',
+  assembled: 'Team assembled',
+  delivering: 'In production',
+  delivered: 'Closed',
 }
 
 export const SPECIALIST_STATUS_LABELS: Record<string, string> = {
-  invited: 'Приглашён, профиль не заполнен',
-  pending: 'Заявка на разборе',
-  active: 'В пуле',
-  paused: 'Снят по своей просьбе',
-  rejected: 'Не прошёл порог портфолио',
+  invited: 'Invited, profile incomplete',
+  pending: 'Application under review',
+  active: 'In the pool',
+  paused: 'Paused at their request',
+  rejected: 'Below the portfolio threshold',
 }
 
 export const OUTCOME_LABELS: Record<string, string> = {
-  ok: 'Команда собрана',
-  incomplete: 'Дисциплина не закрыта',
-  no_signatory: 'Нет права подписи в юрисдикции',
-  rejected: 'Проект вне продуктовой границы',
+  ok: 'Team assembled',
+  incomplete: 'A discipline is uncovered',
+  no_signatory: 'No signing rights in this jurisdiction',
+  rejected: 'Project is outside the product boundary',
 }
 
 /** Три стадии продукта. Внутреннее имя и публичное (концепт, п.7). */
 export const STAGES = [
-  { internal: 'Validate', public: 'Filter', note: 'Бриф становится требованиями, пул отсекается жёсткими гейтами' },
-  { internal: 'Assemble', public: 'Score', note: 'Выжившие ранжируются по Quality × Availability, собирается Tiny Team' },
-  { internal: 'Deliver', public: 'Relay', note: 'Команда ведёт проект по Blind Relay Protocol до пакета документации' },
+  { internal: 'Validate', public: 'Filter', note: 'The brief becomes requirements; hard gates cut the pool down' },
+  { internal: 'Assemble', public: 'Score', note: 'Survivors are ranked on Quality × Availability; the Tiny Team is assembled' },
+  { internal: 'Deliver', public: 'Relay', note: 'The team runs the project on the Blind Relay Protocol through to the documentation set' },
 ] as const
 
 /**
@@ -202,9 +202,9 @@ export const STAGES = [
  * читается как «нет доступа», и это ровно то, что происходит.
  */
 export const SUBSCRIPTION_LABELS: Record<Subscription, string> = {
-  none: 'Доступа нет',
-  founding: 'Бесплатно на пилоте',
-  active: 'Платный доступ',
+  none: 'No access',
+  founding: 'Free during the pilot',
+  active: 'Paid access',
 }
 
 /**
@@ -215,14 +215,14 @@ export const SUBSCRIPTION_LABELS: Record<Subscription, string> = {
  * он разошёлся бы с движком в тот день, когда порог изменят.
  */
 export const GATE_LABELS: Record<GateName, string> = {
-  portfolio_threshold: 'Портфолио ниже {threshold}/10',
-  discipline: 'Не работает в этой дисциплине',
-  specialization: 'Дисциплина та, специализация не та',
-  jurisdiction: 'Не проходил согласования в этой стране',
-  storeys: 'Нет подтверждённого опыта на такой этажности',
-  doc_stage: 'Не ведёт документацию до нужной стадии',
-  language: 'Нет общего языка с клиентом или с органами',
-  timezone_overlap: 'Пересечение по времени меньше рабочего минимума',
-  availability: 'Нет свободной ёмкости или не успевает выйти к сроку',
-  subscription: 'Нет действующей подписки на доступ к проектам',
+  portfolio_threshold: 'Portfolio below {threshold}/10',
+  discipline: 'Does not work in this discipline',
+  specialization: 'Right discipline, wrong specialisation',
+  jurisdiction: 'Has not taken approvals through in this country',
+  storeys: 'No proven experience at this number of storeys',
+  doc_stage: 'Does not carry documentation to the stage required',
+  language: 'No language in common with the client or the authorities',
+  timezone_overlap: 'Working-hours overlap below the working minimum',
+  availability: 'No free capacity, or cannot start in time',
+  subscription: 'No active subscription for access to projects',
 }

@@ -34,7 +34,7 @@ describe('черновик постановки без модели', () => {
   it('честно оставляет человеку то, что должен написать человек', async () => {
     const draft = await new StubAssistant().draftSpec(input())
 
-    expect(draft.spec).toContain('дописать')
+    expect(draft.spec).toContain('to be written in')
     expect(draft.checklist.length).toBeGreaterThan(0)
   })
 
@@ -103,8 +103,8 @@ describe('разбор свободного описания без модели
 
     expect(parsed.fields.jurisdiction).toBeUndefined()
     expect(parsed.fields.areaSqm).toBeUndefined()
-    expect(parsed.missing).toContain('страна')
-    expect(parsed.missing).toContain('площадь')
+    expect(parsed.missing).toContain('country')
+    expect(parsed.missing).toContain('floor area')
   })
 
   it('сохраняет сказанное клиентом целиком', async () => {
@@ -131,9 +131,9 @@ describe('разбор портфолио без модели', () => {
 
     // Ноль здесь — это «не оценивалось», и текст говорит об этом прямо.
     expect(proposal.rating).toBe(0)
-    expect(proposal.reasoning).toContain('Без модели')
-    expect(proposal.gaps).toContain('в профиле нет ни одной работы')
-    expect(proposal.gaps).toContain('не отмечена специализация')
+    expect(proposal.reasoning).toContain('Without a model')
+    expect(proposal.gaps).toContain('the profile holds not a single work')
+    expect(proposal.gaps).toContain('no specialisation is marked')
   })
 })
 
@@ -147,7 +147,7 @@ describe('проверка комплектности без модели', () =
       artifacts: [],
     })
 
-    expect(check.missing[0]).toContain('ни одного файла')
+    expect(check.missing[0]).toContain('not a single file')
   })
 
   it('поднимает строки постановки, которых не видно в приложенном', async () => {
@@ -203,7 +203,7 @@ describe('помощники менеджера без модели', () => {
       spec: '',
     })
 
-    expect(draft.ask).toContain('дату')
+    expect(draft.ask).toContain('date')
   })
 
   it('переводит очередь в действия, сохраняя порядок движка', async () => {
@@ -216,7 +216,7 @@ describe('помощники менеджера без модели', () => {
 
     expect(plan.first).toContain('Кровля')
     expect(plan.steps).toHaveLength(2)
-    expect(plan.steps[0]).toContain('решение')
+    expect(plan.steps[0]).toContain('rule on it')
     expect(plan.steps[1]).toContain('Фасады')
   })
 

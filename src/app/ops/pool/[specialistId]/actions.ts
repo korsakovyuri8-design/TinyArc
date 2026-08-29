@@ -52,11 +52,11 @@ export async function editSpecialist(
   _prev: ApplicationState,
   formData: FormData,
 ): Promise<ApplicationState> {
-  if (!(await isOperator())) return { errors: { form: 'Панель бюро закрыта.' } }
+  if (!(await isOperator())) return { errors: { form: 'The bureau panel is closed.' } }
 
   const id = String(formData.get('specialistId') ?? '')
   const row = await prisma.specialist.findUnique({ where: { id } })
-  if (!row) return { errors: { form: 'Специалист не найден.' } }
+  if (!row) return { errors: { form: 'Specialist not found.' } }
 
   // Имя и адрес — опознание человека, а не его характеристика. Меняются
   // отдельно и осознанно, а не заодно с уточнением специализации.
@@ -69,21 +69,21 @@ export async function editSpecialist(
 
   if (!signaturesWithinJurisdictions(input)) {
     return {
-      errors: { signsIn: 'Право подписи только там, где человек работал.' },
+      errors: { signsIn: 'Signing rights only where the person has worked.' },
       values: raw,
     }
   }
 
   if (!specializationsWithinDisciplines(input)) {
     return {
-      errors: { specializations: 'Специализация должна принадлежать заявленной дисциплине.' },
+      errors: { specializations: 'A specialisation must belong to a declared discipline.' },
       values: raw,
     }
   }
 
   if (!everyDisciplineCovered(input)) {
     return {
-      errors: { specializations: 'В каждой дисциплине отметьте, чем именно человек занимается.' },
+      errors: { specializations: 'In each discipline, mark what exactly the person does.' },
       values: raw,
     }
   }
@@ -133,13 +133,13 @@ export async function setSubscription(
   _prev: { error?: string; message?: string },
   formData: FormData,
 ): Promise<{ error?: string; message?: string }> {
-  if (!(await isOperator())) return { error: 'Панель бюро закрыта.' }
+  if (!(await isOperator())) return { error: 'The bureau panel is closed.' }
 
   const specialistId = String(formData.get('specialistId') ?? '')
   const value = String(formData.get('subscription') ?? '')
 
   if (!SUBSCRIPTIONS.includes(value as Subscription)) {
-    return { error: 'Неизвестное состояние подписки.' }
+    return { error: 'Unknown subscription state.' }
   }
 
   await prisma.specialist.update({
@@ -153,7 +153,7 @@ export async function setSubscription(
   return {
     message:
       value === 'none'
-        ? 'Доступ закрыт: в следующих прогонах отбора этого человека не будет.'
-        : 'Доступ открыт. Уже собранные команды это не пересобирает.',
+        ? 'Access closed: this person will not appear in the next selection runs.'
+        : 'Access open. This does not reassemble teams already put together.',
   }
 }

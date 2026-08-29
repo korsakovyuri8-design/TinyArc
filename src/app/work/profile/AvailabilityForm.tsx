@@ -2,23 +2,17 @@
 
 import { useActionState, useState } from 'react'
 import { AVAILABILITY_LABELS } from '@/lib/labels'
-import { LocaleProvider, useT } from '@/lib/i18n/context'
-import type { Locale } from '@/lib/i18n/locale'
 import { setAvailability, type ProfileState } from './actions'
 
 export function AvailabilityForm({
   status,
   hours,
-  locale,
 }: {
   status: string
   hours: number
-  locale: Locale
 }) {
   return (
-    <LocaleProvider locale={locale}>
-      <AvailabilityFields status={status} hours={hours} />
-    </LocaleProvider>
+          <AvailabilityFields status={status} hours={hours} />
   )
 }
 
@@ -29,12 +23,11 @@ export function AvailabilityForm({
 function AvailabilityFields({ status, hours }: { status: string; hours: number }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(setAvailability, {})
   const [chosen, setChosen] = useState(status)
-  const t = useT()
 
   return (
     <form action={action}>
       <div className="field">
-        <label>{t('Статус')}</label>
+        <label>Status</label>
         <div className="choices">
           {Object.entries(AVAILABILITY_LABELS).map(([value, label]) => (
             <label key={value} className="choice">
@@ -45,14 +38,14 @@ function AvailabilityFields({ status, hours }: { status: string; hours: number }
                 checked={chosen === value}
                 onChange={() => setChosen(value)}
               />
-              {t(label)}
+              {label}
             </label>
           ))}
         </div>
       </div>
 
       <div className="field">
-        <label htmlFor="weeklyCapacityHours">{t('Свободная ёмкость, ч/нед')}</label>
+        <label htmlFor="weeklyCapacityHours">Free capacity, h/week</label>
         <input
           id="weeklyCapacityHours"
           name="weeklyCapacityHours"
@@ -64,23 +57,23 @@ function AvailabilityFields({ status, hours }: { status: string; hours: number }
         />
         <div className="hint">
           {chosen === 'busy'
-            ? t('Статус «занят» обнуляет ёмкость: в отборе вас не будет, пока не вернёте часы.')
-            : t('Фактор доступности — множитель, а не слагаемое. Ноль часов означает выход из выборки.')}
+            ? 'The “busy” status zeroes your capacity: you stay out of selection until you put the hours back.'
+            : 'Availability is a multiplier, not a term added on. Zero hours means dropping out of selection.'}
         </div>
       </div>
 
       <button type="submit" className="btn btn-quiet" disabled={pending}>
-        {pending ? t('Сохраняем…') : t('Сохранить')}
+        {pending ? 'Saving…' : 'Save'}
       </button>
 
       {state.error && (
         <div className="hint" style={{ color: 'var(--fail)', marginTop: 8 }}>
-          {t(state.error)}
+          {state.error}
         </div>
       )}
       {state.message && (
         <div className="hint" style={{ color: 'var(--accent)', marginTop: 8 }}>
-          {t(state.message)}
+          {state.message}
         </div>
       )}
     </form>

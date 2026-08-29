@@ -72,21 +72,20 @@ check(
     : `ответы разошлись: «${known}» против «${unknown}»`,
 )
 
-const english = await ask('/en/enter', 'nobody-here-at-all@example.org')
-check(!/[А-Яа-яЁё]/.test(english), `по-английски отвечает по-английски: «${english}»`)
+check(!/[А-Яа-яЁё]/.test(known), `ответ по-английски: «${known}»`)
 
 /*
  * Ошибка входа тоже приходит с сервера, и её легко оставить русской: она
  * собирается в серверном действии, куда язык страницы сам собой не попадает.
  */
 const page = await (await browser.newContext()).newPage()
-await page.goto(`${BASE}/en/enter`)
+await page.goto(`${BASE}/enter`)
 await page.fill('input[name=key]', 'no-such-key-at-all')
 await page.click('form:has(input[name=key]) button[type=submit]')
 await page.waitForTimeout(1000)
 
 const failure = await page.locator('form:has(input[name=key]) .hint').last().innerText()
-check(!/[А-Яа-яЁё]/.test(failure), `отказ во входе — по-английски: «${failure.trim()}»`)
+check(!/[А-Яа-яЁё]/.test(failure), `отказ во входе по-английски: «${failure.trim()}»`)
 
 await browser.close()
 await prisma.$disconnect()

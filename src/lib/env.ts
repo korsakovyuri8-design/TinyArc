@@ -104,7 +104,7 @@ export function preflight(env: Record<string, string | undefined> = process.env)
   if (isProduction(env)) {
     const required = {
       BUREAU_LEGAL_NAME: 'наименование юридического лица',
-      BUREAU_LEGAL_REGISTRATION: 'регистрационный номер',
+      BUREAU_LEGAL_REGISTRATION: 'registration number',
       BUREAU_LEGAL_ADDRESS: 'юридический адрес',
       BUREAU_LEGAL_EMAIL: 'адрес для правовых обращений и вопросов по данным',
     }

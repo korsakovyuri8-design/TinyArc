@@ -45,9 +45,7 @@ import {
   TYPOLOGY_LABELS,
 } from '@/lib/labels'
 import { BreakdownRow } from './Breakdown'
-import { LocaleProvider, useT } from '@/lib/i18n/context'
-import { fill } from '@/lib/i18n/fill'
-import type { Locale } from '@/lib/i18n/locale'
+import { fill } from '@/lib/fill'
 
 const DEFAULT: ProjectRequirements = {
   typology: 'villa',
@@ -67,11 +65,9 @@ const DEFAULT: ProjectRequirements = {
   utcOffset: 1,
 }
 
-export function AlgorithmDemo({ locale }: { locale: Locale }) {
+export function AlgorithmDemo() {
   return (
-    <LocaleProvider locale={locale}>
-      <Demo />
-    </LocaleProvider>
+          <Demo />
   )
 }
 
@@ -80,7 +76,6 @@ export function AlgorithmDemo({ locale }: { locale: Locale }) {
  * контекста, а провайдер обязан стоять выше того, кто его читает.
  */
 function Demo() {
-  const t = useT()
   const [requirements, setRequirements] = useState<ProjectRequirements>(DEFAULT)
   const pool = useMemo(() => demoActivePool(), [])
   const assembly = useMemo(() => assemble(pool, requirements), [pool, requirements])
@@ -126,25 +121,25 @@ function Demo() {
     <div>
       {/* --- Вход ---------------------------------------------------------- */}
       <div className="panel" style={{ marginBottom: 40 }}>
-        <div className="label label-accent">{t('Требования проекта')}</div>
+        <div className="label label-accent">Project requirements</div>
 
         <div className="grid grid-3" style={{ marginTop: 20, gap: 18 }}>
-          <Field label="Типология">
+          <Field label="Typology">
             <select
               value={requirements.typology}
               onChange={(e) => patch({ typology: e.target.value as Typology })}
             >
               {TYPOLOGIES.map((value) => (
                 <option key={value} value={value}>
-                  {t(TYPOLOGY_LABELS[value])}
+                  {TYPOLOGY_LABELS[value]}
                 </option>
               ))}
             </select>
           </Field>
 
           <Field
-            label="Этажей"
-            hint={fill(t('Продуктовая граница — {n}'), { n: MAX_STOREYS })}
+            label="Storeys"
+            hint={fill('Product boundary — {n}', { n: MAX_STOREYS })}
           >
             <input
               type="number"
@@ -155,7 +150,7 @@ function Demo() {
             />
           </Field>
 
-          <Field label="Площадь, м²">
+          <Field label="Floor area, m²">
             <input
               type="number"
               min={40}
@@ -165,85 +160,85 @@ function Demo() {
             />
           </Field>
 
-          <Field label="Страна">
+          <Field label="Country">
             <select
               value={requirements.jurisdiction}
               onChange={(e) => patch({ jurisdiction: e.target.value as Jurisdiction })}
             >
               {JURISDICTIONS.map((j) => (
                 <option key={j} value={j}>
-                  {t(JURISDICTION_NAMES[j])}
+                  {JURISDICTION_NAMES[j]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Климат">
+          <Field label="Climate">
             <select
               value={requirements.climateZone}
               onChange={(e) => patch({ climateZone: e.target.value as ClimateZone })}
             >
               {CLIMATE_ZONES.map((c) => (
                 <option key={c} value={c}>
-                  {t(CLIMATE_LABELS[c])}
+                  {CLIMATE_LABELS[c]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Материал">
+          <Field label="Material">
             <select
               value={requirements.materialSystem}
               onChange={(e) => patch({ materialSystem: e.target.value as MaterialSystem })}
             >
               {MATERIAL_SYSTEMS.map((m) => (
                 <option key={m} value={m}>
-                  {t(MATERIAL_LABELS[m])}
+                  {MATERIAL_LABELS[m]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Стадия документации">
+          <Field label="Documentation stage">
             <select
               value={requirements.targetStage}
               onChange={(e) => patch({ targetStage: e.target.value as DocStage })}
             >
               {DOC_STAGES.map((s) => (
                 <option key={s} value={s}>
-                  {t(DOC_STAGE_LABELS[s])}
+                  {DOC_STAGE_LABELS[s]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Участок" hint="Склон требует вертикальной планировки">
+          <Field label="Site" hint="A slope calls for grading and drainage">
             <select
               value={requirements.terrain}
               onChange={(e) => patch({ terrain: e.target.value as Terrain })}
             >
               {TERRAINS.map((value) => (
                 <option key={value} value={value}>
-                  {t(TERRAIN_LABELS[value])}
+                  {TERRAIN_LABELS[value]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Сети">
+          <Field label="Utilities">
             <select
               value={requirements.gridConnection}
               onChange={(e) => patch({ gridConnection: e.target.value as GridConnection })}
             >
               {GRID_CONNECTIONS.map((g) => (
                 <option key={g} value={g}>
-                  {t(GRID_LABELS[g])}
+                  {GRID_LABELS[g]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Занятость, ч/нед">
+          <Field label="Workload, h/week">
             <input
               type="number"
               min={1}
@@ -253,7 +248,7 @@ function Demo() {
             />
           </Field>
 
-          <Field label="Горизонт, дней">
+          <Field label="Start within, days">
             <input
               type="number"
               min={7}
@@ -265,7 +260,7 @@ function Demo() {
         </div>
 
         <div className="grid grid-2" style={{ marginTop: 8, gap: 18 }}>
-          <Field label="Софт проекта" hint="Пустой список — обмен не ограничен">
+          <Field label="Project software" hint="An empty list leaves the exchange unrestricted">
             <div className="choices">
               {SOFTWARE.map((s) => (
                 <label key={s} className="choice">
@@ -280,13 +275,13 @@ function Demo() {
                       })
                     }
                   />
-                  {t(SOFTWARE_LABELS[s])}
+                  {SOFTWARE_LABELS[s]}
                 </label>
               ))}
             </div>
           </Field>
 
-          <Field label="Языки клиента">
+          <Field label="Client languages">
             <div className="choices">
               {LANGUAGES.map((l) => (
                 <label key={l} className="choice">
@@ -301,7 +296,7 @@ function Demo() {
                       })
                     }
                   />
-                  {t(LANGUAGE_NAMES[l as Language])}
+                  {LANGUAGE_NAMES[l as Language]}
                 </label>
               ))}
             </div>
@@ -315,16 +310,16 @@ function Demo() {
       {assembly.outcome === 'rejected' ? (
         <div className="panel" style={{ borderColor: 'var(--fail)' }}>
           <div className="label" style={{ color: 'var(--fail)' }}>
-            {t('Проект не берётся')}
+            We are not taking this project
           </div>
-          <p style={{ marginTop: 12, marginBottom: 0 }}>{t(assembly.notes)}</p>
+          <p style={{ marginTop: 12, marginBottom: 0 }}>{assembly.notes}</p>
         </div>
       ) : (
         <>
           <div className="grid grid-3" style={{ marginBottom: 28 }}>
-            <Counter value={assembly.pooledCount} label="в пуле" />
-            <Counter value={assembly.survivedCount} label="прошли гейты" accent />
-            <Counter value={required.length} label="ролей в команде" />
+            <Counter value={assembly.pooledCount} label="in the pool" />
+            <Counter value={assembly.survivedCount} label="passed the gates" accent />
+            <Counter value={required.length} label="roles on the team" />
           </div>
 
           <div className="row" style={{ gap: 8, marginBottom: 20 }}>
@@ -336,7 +331,7 @@ function Demo() {
                 style={{ padding: '9px 16px' }}
                 onClick={() => setFocus(r.discipline)}
               >
-                {t(DISCIPLINE_LABELS[r.discipline])}
+                {DISCIPLINE_LABELS[r.discipline]}
               </button>
             ))}
           </div>
@@ -344,12 +339,12 @@ function Demo() {
           <div className="panel" style={{ marginBottom: 40 }}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <span className="label">
-                {fill(t('Что отсекло дисциплину «{discipline}»'), {
-                  discipline: t(DISCIPLINE_LABELS[focused]),
+                {fill('What cut down “{discipline}”', {
+                  discipline: DISCIPLINE_LABELS[focused],
                 })}
               </span>
               <span className="num dim">
-                {fill(t('{count} в дисциплине'), { count: inDiscipline.length })}
+                {fill('{count} in the discipline', { count: inDiscipline.length })}
               </span>
             </div>
             <div className="stack" style={{ marginTop: 16 }}>
@@ -358,7 +353,7 @@ function Demo() {
                 .map(([gate, count]) => (
                   <div key={gate} className="row" style={{ justifyContent: 'space-between' }}>
                     <span className="muted" style={{ fontSize: '0.88rem' }}>
-                      {fill(t(GATE_LABELS[gate]), { threshold: PORTFOLIO_THRESHOLD })}
+                      {fill(GATE_LABELS[gate], { threshold: PORTFOLIO_THRESHOLD })}
                     </span>
                     <span className="num dim">−{count}</span>
                   </div>
@@ -371,16 +366,16 @@ function Demo() {
                   paddingTop: 10,
                 }}
               >
-                <span className="label label-accent">{t('Осталось')}</span>
+                <span className="label label-accent">Left</span>
                 <span className="num" style={{ color: 'var(--accent)' }}>
                   {passed.length}
                 </span>
               </div>
             </div>
             <p className="hint" style={{ marginTop: 16 }}>
-              {describeRole(focusedRole, t)}{' '}
+              {describeRole(focusedRole)}{' '}
               {fill(
-                t('Порог по портфолио — {threshold}/10, и он стоит до скоринга: это гейт, а не слагаемое.'),
+                'The portfolio threshold is {threshold}/10, and it stands before scoring: a gate, not a term in the sum.',
                 { threshold: PORTFOLIO_THRESHOLD },
               )}
             </p>
@@ -390,7 +385,7 @@ function Demo() {
           <Stage index={2} name="Score" internal="Assemble" />
 
           {passed.length === 0 ? (
-            <div className="note note-fail">{t('В этой дисциплине не осталось никого. Команда не собирается — ослабьте требования или расширьте пул.')}</div>
+            <div className="note note-fail">No one is left in this discipline. The team does not assemble — relax the requirements or widen the pool.</div>
           ) : (
             <div className="grid grid-2" style={{ marginBottom: 40 }}>
               {passed.slice(0, 6).map((candidate) => (
@@ -401,13 +396,13 @@ function Demo() {
                   <div className="row" style={{ justifyContent: 'space-between' }}>
                     <span className="num dim">#{candidate.rank}</span>
                     {candidate.specialist.signsIn.includes(requirements.jurisdiction) && (
-                      <span className="tag tag-accent">{t('право подписи')}</span>
+                      <span className="tag tag-accent">signing rights</span>
                     )}
                   </div>
                   <h3 style={{ marginTop: 8, marginBottom: 14 }}>
                     {candidate.specialist.displayName}
                   </h3>
-                  <BreakdownRow breakdown={candidate.breakdown} t={t} />
+                  <BreakdownRow breakdown={candidate.breakdown} />
                 </div>
               ))}
             </div>
@@ -424,23 +419,23 @@ function Demo() {
                   <table>
                     <thead>
                       <tr>
-                        <th>{t('Роль')}</th>
-                        <th>{t('Специалист')}</th>
-                        <th>{t('Софт')}</th>
-                        <th style={{ textAlign: 'right' }}>{t('Балл')}</th>
+                        <th>Role</th>
+                        <th>Specialist</th>
+                        <th>Software</th>
+                        <th style={{ textAlign: 'right' }}>Score</th>
                       </tr>
                     </thead>
                     <tbody>
                       {assembly.team.map((member) => (
                         <tr key={member.discipline}>
                           <td>
-                            {t(DISCIPLINE_LABELS[member.discipline])}
+                            {DISCIPLINE_LABELS[member.discipline]}
                             {member.role.specializations.length > 0 && (
                               <>
                                 <br />
                                 <span className="dim" style={{ fontSize: '0.78rem' }}>
                                   {member.role.specializations
-                                    .map((x) => t(SPECIALIZATION_LABELS[x]))
+                                    .map((x) => SPECIALIZATION_LABELS[x])
                                     .join(member.role.mode === 'all' ? ' + ' : ' / ')}
                                 </span>
                               </>
@@ -450,13 +445,13 @@ function Demo() {
                             {member.specialist.displayName}
                             {member.isSignatory && (
                               <span className="tag tag-accent" style={{ marginLeft: 10 }}>
-                                {t('подпись')}
+                                signatory
                               </span>
                             )}
                           </td>
                           <td className="dim">
                             {member.specialist.software
-                              .map((s) => t(SOFTWARE_LABELS[s]))
+                              .map((s) => SOFTWARE_LABELS[s])
                               .join(', ')}
                           </td>
                           <td className="num" style={{ textAlign: 'right', color: 'var(--accent)' }}>
@@ -471,9 +466,9 @@ function Demo() {
 
               <div className="panel">
                 <div className="label">
-                  {t('Граф тикетов')} · Blind Relay Protocol
+                  Ticket graph · Blind Relay Protocol
                 </div>
-                <p className="hint" style={{ marginTop: 10, marginBottom: 18 }}>{t('Тикет не открывается, пока не приняты те, от которых он зависит. Прямых чатов между специалистами не существует.')}</p>
+                <p className="hint" style={{ marginTop: 10, marginBottom: 18 }}>A ticket does not open until the ones it depends on are accepted. Direct chats between specialists do not exist.</p>
                 <ul className="clean">
                   {tickets.map((ticket, i) => (
                     <li
@@ -490,21 +485,21 @@ function Demo() {
                     >
                       <span className="num dim">{String(i + 1).padStart(2, '0')}</span>
                       <span>
-                        {t(ticket.title)}
+                        {ticket.title}
                         <br />
                         <span className="dim" style={{ fontSize: '0.8rem' }}>
-                          {t(DOC_STAGE_LABELS[ticket.stage])} ·{' '}
-                          {t(DISCIPLINE_LABELS[ticket.discipline])}
-                          {ticket.dependsOn.length > 0 && ` · ${t('ждёт:')} `}
+                          {DOC_STAGE_LABELS[ticket.stage]} ·{' '}
+                          {DISCIPLINE_LABELS[ticket.discipline]}
+                          {ticket.dependsOn.length > 0 && ' · waits for: '}
                           {unique(
                             ticket.dependsOn.map((k) =>
-                              t(DISCIPLINE_LABELS[k.split(':')[1] as Discipline]),
+                              DISCIPLINE_LABELS[k.split(':')[1] as Discipline],
                             ),
                           ).join(', ')}
                         </span>
                       </span>
                       <span className="tag">
-                        {fill(t('{hours} ч'), { hours: ticket.slaHours })}
+                        {fill('{hours} h', { hours: ticket.slaHours })}
                       </span>
                     </li>
                   ))}
@@ -514,9 +509,9 @@ function Demo() {
           ) : (
             <div className="panel" style={{ borderColor: 'var(--fail)' }}>
               <div className="label" style={{ color: 'var(--fail)' }}>
-                {t('Команда не собрана')}
+                The team did not assemble
               </div>
-              <p style={{ marginTop: 12, marginBottom: 0 }}>{t(assembly.notes)}</p>
+              <p style={{ marginTop: 12, marginBottom: 0 }}>{assembly.notes}</p>
             </div>
           )}
         </>
@@ -529,15 +524,15 @@ function unique<T>(items: T[]): T[] {
   return [...new Set(items)]
 }
 
-function describeRole(role: RequiredRole, t: (text: string) => string): string {
-  if (role.specializations.length === 0) return t('Специализация в этой роли не требуется.')
+function describeRole(role: RequiredRole): string {
+  if (role.specializations.length === 0) return 'This role needs no specialisation.'
 
   const list = role.specializations
-    .map((s) => t(SPECIALIZATION_LABELS[s]))
-    .join(role.mode === 'all' ? ' + ' : ` ${t('или')} `)
+    .map((s) => SPECIALIZATION_LABELS[s])
+    .join(role.mode === 'all' ? ' + ' : ' or ')
 
   return fill(
-    t(role.mode === 'all' ? 'Роль требует всё сразу: {list}.' : 'Роль требует специализацию: {list}.'),
+    role.mode === 'all' ? 'The role requires all of it at once: {list}.' : 'The role requires a specialisation: {list}.',
     { list },
   )
 }
@@ -551,19 +546,17 @@ function Field({
   hint?: string
   children: React.ReactNode
 }) {
-  const t = useT()
 
   return (
     <div className="field" style={{ marginBottom: 0 }}>
-      <label>{t(label)}</label>
+      <label>{label}</label>
       {children}
-      {hint && <div className="hint">{t(hint)}</div>}
+      {hint && <div className="hint">{hint}</div>}
     </div>
   )
 }
 
 function Counter({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
-  const t = useT()
 
   return (
     <div style={{ borderTop: '1px solid var(--border-strong)', paddingTop: 14 }}>
@@ -573,13 +566,12 @@ function Counter({ value, label, accent }: { value: number; label: string; accen
       >
         {value}
       </div>
-      <div className="label">{t(label)}</div>
+      <div className="label">{label}</div>
     </div>
   )
 }
 
 function Stage({ index, name, internal }: { index: number; name: string; internal: string }) {
-  const t = useT()
 
   return (
     <div className="row" style={{ gap: 14, alignItems: 'baseline', margin: '0 0 20px' }}>
@@ -590,7 +582,7 @@ function Stage({ index, name, internal }: { index: number; name: string; interna
         {name}
       </h3>
       <span className="dim" style={{ fontSize: '0.85rem' }}>
-        {t('внутреннее имя стадии —')} {internal}
+        internal stage name — {internal}
       </span>
     </div>
   )

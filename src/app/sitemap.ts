@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next'
 import { absolute } from '@/lib/site'
-import { LOCALES, localePath } from '@/lib/i18n/locale'
 
 /**
  * Публичные страницы продукта.
@@ -20,28 +19,9 @@ const PUBLIC_PAGES = [
   { path: '/legal/privacy', priority: 0.3 },
 ]
 
-/**
- * Каждая страница объявлена на обоих языках.
- *
- * Английская версия сделана ради рынка, который ищет по-английски, — а из
- * карты сайта о ней до сих пор нельзя было узнать: в ней стояли только русские
- * адреса. Поисковик находил бы английские страницы по ссылкам с русских, то
- * есть в последнюю очередь и не всегда.
- *
- * В `languages` перечислены обе версии, включая ту, чей это адрес. Набор
- * языковых версий должен быть полным в каждой записи: версия, не сославшаяся
- * сама на себя, для поисковика неполна.
- */
 export default function sitemap(): MetadataRoute.Sitemap {
-  return PUBLIC_PAGES.flatMap(({ path, priority }) =>
-    LOCALES.map((locale) => ({
-      url: absolute(localePath(path, locale)),
-      priority,
-      alternates: {
-        languages: Object.fromEntries(
-          LOCALES.map((other) => [other, absolute(localePath(path, other))]),
-        ),
-      },
-    })),
-  )
+  return PUBLIC_PAGES.map(({ path, priority }) => ({
+    url: absolute(path),
+    priority,
+  }))
 }

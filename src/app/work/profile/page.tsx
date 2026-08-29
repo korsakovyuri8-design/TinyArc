@@ -1,5 +1,4 @@
-import { Link } from '@/components/Link'
-import { localeHref } from '@/lib/i18n/redirect'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics, deliveryScore, historyWeight } from '@/engine/metrics'
 import {
@@ -20,20 +19,18 @@ import { AvailabilityForm } from './AvailabilityForm'
 import { toProfile } from '@/lib/rows'
 import { company } from '@/lib/legal'
 import { currentSpecialist } from '@/lib/session'
-import { translator } from '@/lib/i18n'
-import { pageMetadata } from '@/lib/i18n/metadata'
-import { fill } from '@/lib/i18n/fill'
+import { pageMetadata } from '@/lib/metadata'
+import { fill } from '@/lib/fill'
 
-export const generateMetadata = () => pageMetadata('Профиль и метрики')
+export const metadata = pageMetadata('Profile and metrics')
 
 export default async function ProfilePage() {
-  const { locale, t } = await translator()
   const row = await currentSpecialist()
-  if (!row) redirect(await localeHref('/enter'))
+  if (!row) redirect('/enter')
 
   // Приглашённому здесь нечего делать: ни задач, ни метрик у него ещё нет, а
   // нужен от него профиль. Ведём туда, а не показываем пустой экран.
-  if (row.status === 'invited') redirect(await localeHref('/work/profile/complete'))
+  if (row.status === 'invited') redirect('/work/profile/complete')
 
   const profile = toProfile(row)
   const metrics = deliveryMetrics(profile.delivery)
@@ -43,46 +40,46 @@ export default async function ProfilePage() {
   // Адрес бюро из настроек. Пока его нет — отвечать на письмо с ключом:
   // «напишите бюро» без адреса не действие, а отписка.
   const bureauEmail =
-    company().email || t('адрес бюро — ответом на письмо с ключом доступа')
+    company().email || 'the bureau’s address — reply to the email with your access key'
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell" style={{ maxWidth: 900 }}>
-        <Link locale={locale} href="/work" className="label">
-          {t('← к доске работ')}
+        <Link href="/work" className="label">
+          ← back to the work board
         </Link>
 
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 20 }}>
           <h1>{profile.displayName}</h1>
           <span className="tag tag-accent">
-            {t(SPECIALIST_STATUS_LABELS[row.status] ?? row.status)}
+            {SPECIALIST_STATUS_LABELS[row.status] ?? row.status}
           </span>
         </div>
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
           <Stat
             value={profile.portfolioRating.toFixed(1)}
-            label={t('портфолио')}
-            note={fill(t('порог {threshold}/10'), { threshold: PORTFOLIO_THRESHOLD })}
+            label={'portfolio'}
+            note={fill('threshold {threshold}/10', { threshold: PORTFOLIO_THRESHOLD })}
             accent={profile.portfolioRating >= PORTFOLIO_THRESHOLD}
           />
           <Stat
             value={metrics ? delivery.toFixed(1) : '—'}
-            label={t('балл поставки')}
+            label={'delivery score'}
             note={
               metrics
-                ? fill(t('вес в Quality — {percent}%'), { percent: Math.round(weight * 100) })
-                : t('истории пока нет')
+                ? fill('weight in Quality — {percent}%', { percent: Math.round(weight * 100) })
+                : 'no history yet'
             }
           />
           <Stat
             value={String(profile.weeklyCapacityHours)}
-            label={t('ч/нед свободно')}
+            label={'h/week free'}
             note={
               profile.weeklyCapacityHours === 0
-                ? t('при нуле вас нет в выборке')
-                : fill(t('{status}, выход за {days} дн.'), {
-                    status: t(AVAILABILITY_LABELS[row.availabilityStatus] ?? row.availabilityStatus),
+                ? 'at zero you are out of selection'
+                : fill('{status}, starts within {days} days', {
+                    status: AVAILABILITY_LABELS[row.availabilityStatus] ?? row.availabilityStatus,
                     days: profile.leadTimeDays,
                   })
             }
@@ -102,40 +99,40 @@ export default async function ProfilePage() {
           }}
         >
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <div className="label">{t('Доступ к проектам')}</div>
+            <div className="label">Access to projects</div>
             <span className={profile.subscription === 'none' ? 'tag tag-fail' : 'tag'}>
-              {t(SUBSCRIPTION_LABELS[profile.subscription])}
+              {SUBSCRIPTION_LABELS[profile.subscription]}
             </span>
           </div>
 
           {profile.subscription === 'none' ? (
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
               {fill(
-                t('Пока доступ закрыт, движок вас не рассматривает — независимо от портфолио и метрик. Это про оплату доступа, а не про качество вашей работы: отказ по деньгам и отказ по квалификации — разные вещи, и мы их не смешиваем. Чтобы открыть, напишите на {email}.'),
+                'While access is closed the engine does not consider you — whatever your portfolio and metrics. This is about paying for access, not about the quality of your work: being turned away over money and being turned away over qualification are different things, and we do not mix them. To open it, write to {email}.',
                 { email: bureauEmail },
               )}
             </p>
           ) : (
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Доступ открыт: вы участвуете в отборе на общих основаниях. Платит сторона предложения за доступ к спросу — с вашего гонорара бюро комиссию не берёт.')}</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Access is open: you take part in selection on the usual terms. The supply side pays for access to demand — the bureau takes no commission from your fee.</p>
           )}
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
 
-        <h2>{t('Доступность')}</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>{t('Единственное, чем вы управляете напрямую. Балл считает движок, время считаете вы.')}</p>
+        <h2>Availability</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>The one thing you control directly. The engine counts the score, you count the time.</p>
         <div className="panel" style={{ maxWidth: 460 }}>
           <AvailabilityForm
             status={row.availabilityStatus}
             hours={profile.weeklyCapacityHours}
-            locale={locale}
+           
           />
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
 
-        <h2>{t('Метрики качества')}</h2>
-        <p className="muted" style={{ marginTop: 12 }}>{t('Считаются из событий ваших тикетов. Ни бюро, ни клиент не могут их поправить: поля для оценки в системе нет.')}</p>
+        <h2>Quality metrics</h2>
+        <p className="muted" style={{ marginTop: 12 }}>Calculated from the events on your tickets. Neither the bureau nor the client can adjust them: there is no field for a rating in the system.</p>
 
         {metrics ? (
           <div className="grid grid-2" style={{ marginTop: 28 }}>
@@ -143,7 +140,7 @@ export default async function ProfilePage() {
               name="SLA compliance"
               value={`${Math.round(metrics.slaCompliance * 100)}%`}
               fill={metrics.slaCompliance}
-              note={fill(t('{onTime} из {delivered} в срок'), {
+              note={fill('{onTime} of {delivered} on time', {
                 onTime: profile.delivery.onTimeTickets,
                 delivered: metrics.delivered,
               })}
@@ -152,67 +149,67 @@ export default async function ProfilePage() {
               name="First Time Right"
               value={`${Math.round(metrics.firstTimeRight * 100)}%`}
               fill={metrics.firstTimeRight}
-              note={fill(t('{count} принято с первого раза'), {
+              note={fill('{count} accepted first time', {
                 count: profile.delivery.firstTimeRightTickets,
               })}
             />
             <Metric
               name="Response Time"
-              value={fill(t('{hours} ч'), { hours: metrics.responseHours.toFixed(1) })}
+              value={fill('{hours} h', { hours: metrics.responseHours.toFixed(1) })}
               fill={Math.max(0, 1 - metrics.responseHours / 48)}
-              note={t('до первого содержательного ответа')}
+              note={'to the first substantive reply'}
             />
             <Metric
               name="Revision Rate"
               value={metrics.revisionRate.toFixed(2)}
               fill={Math.max(0, 1 - metrics.revisionRate / 3)}
-              note={t('кругов правок на тикет')}
+              note={'revision rounds per ticket'}
             />
           </div>
         ) : (
           <div className="panel" style={{ marginTop: 24 }}>
-            <p className="muted" style={{ margin: 0 }}>{t('Закрытых тикетов пока нет, поэтому Quality у вас — это рейтинг портфолио. Как только появится история, она начнёт вытеснять портфолио: до 60% веса.')}</p>
+            <p className="muted" style={{ margin: 0 }}>You have no closed tickets yet, so your Quality is your portfolio rating. Once a history appears it starts displacing the portfolio: up to 60% of the weight.</p>
           </div>
         )}
 
         <div className="divider" style={{ marginTop: 44 }} />
 
-        <h2>{t('Что о вас знает движок')}</h2>
+        <h2>What the engine knows about you</h2>
         <div className="grid grid-2" style={{ marginTop: 24 }}>
           <Row
-            label={t('Дисциплины')}
+            label={'Disciplines'}
             value={profile.disciplines
-              .map((d) => t(DISCIPLINE_LABELS[d as Discipline]))
+              .map((d) => DISCIPLINE_LABELS[d as Discipline])
               .join(', ')}
           />
           <Row
-            label={t('Специализация')}
+            label={'Specialisation'}
             value={profile.specializations
-              .map((x) => t(SPECIALIZATION_LABELS[x as Specialization]))
+              .map((x) => SPECIALIZATION_LABELS[x as Specialization])
               .join(', ')}
           />
           <Row
-            label={t('Юрисдикции')}
+            label={'Jurisdictions'}
             value={profile.jurisdictions
-              .map((j) => t(JURISDICTION_NAMES[j as Jurisdiction]))
+              .map((j) => JURISDICTION_NAMES[j as Jurisdiction])
               .join(', ')}
           />
           <Row
-            label={t('Право подписи')}
+            label={'Signing rights'}
             value={
               profile.signsIn.length > 0
-                ? profile.signsIn.map((j) => t(JURISDICTION_NAMES[j as Jurisdiction])).join(', ')
-                : t('нет')
+                ? profile.signsIn.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')
+                : 'none'
             }
           />
-          <Row label={t('Максимальная этажность')} value={String(profile.maxStoreys)} />
-          <Row label={t('Софт')} value={profile.software.join(', ')} />
-          <Row label={t('Обмен по IFC')} value={profile.ifcLevel} />
-          <Row label={t('Ключ доступа')} value={row.accessKey} mono />
-          <Row label={t('Смещение от UTC')} value={String(profile.utcOffset)} mono />
+          <Row label={'Maximum storeys'} value={String(profile.maxStoreys)} />
+          <Row label={'Software'} value={profile.software.join(', ')} />
+          <Row label={'IFC exchange'} value={profile.ifcLevel} />
+          <Row label={'Access key'} value={row.accessKey} mono />
+          <Row label={'UTC offset'} value={String(profile.utcOffset)} mono />
         </div>
 
-        <p className="hint" style={{ marginTop: 28 }}>{t('Изменить эти поля можно через бюро: они входят в отбор, и править их самому в обход разбора — значит править собственный балл.')}</p>
+        <p className="hint" style={{ marginTop: 28 }}>These fields are changed through the bureau: they enter selection, and editing them yourself, around the review, would mean editing your own score.</p>
       </div>
     </section>
   )

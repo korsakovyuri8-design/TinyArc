@@ -50,7 +50,7 @@ await bureau.waitForSelector('a[href="/ops/import"]')
 // это не поломка: значит на стенде их уже подтвердили. Тогда проверяем
 // только то, что блок на месте и говорит об этом честно.
 const opsText = await bureau.textContent('main')
-check(opsText.includes('Стадии ждут заказчика'), 'у бюро есть очередь ожидания заказчика')
+check(opsText.includes('Stages awaiting the client'), 'у бюро есть очередь ожидания заказчика')
 
 /*
  * Строка берётся из очереди подтверждений, а не из первой таблицы на странице.
@@ -65,7 +65,7 @@ const hasWaiting = (await waiting.count()) > 0
 
 if (!hasWaiting) {
   console.log('  · стадий, ждущих подтверждения, на стенде нет — проверка пропущена')
-  check(opsText.includes('Никто не ждёт'), 'пустая очередь названа явно')
+  check(opsText.includes('No one is waiting'), 'пустая очередь названа явно')
   await browser.close()
   console.log(process.exitCode ? '\nЕсть расхождения.' : '\nВсё сошлось.')
   process.exit(process.exitCode ?? 0)
@@ -80,7 +80,7 @@ check(Boolean(projectLink), 'из очереди открывается прое
 // откусывало хвост от «seed-brief-tivat» и давало несуществующий ключ, по
 // которому вход молча не срабатывал.
 await bureau.goto(`${BASE}${projectLink}`)
-const key = (await bureau.locator('p:has-text("ключ") .num').first().textContent()).trim()
+const key = (await bureau.locator('p:has-text("key") .num').first().textContent()).trim()
 
 if (!check(Boolean(key), `ключ заказчика виден бюро: ${key ?? 'не найден'}`)) {
   await browser.close()
@@ -94,21 +94,21 @@ await client.click('button[type=submit]')
 await client.waitForTimeout(1800)
 
 const before = await client.textContent('main')
-check(before.includes('Ждёт вашего подтверждения'), 'заказчик видит, что от него ждут')
+check(before.includes('awaiting your confirmation'), 'заказчик видит, что от него ждут')
 check(
-  before.includes('следующая стадия не начинается'),
+  before.includes('the next stage does not start'),
   'сказано, почему подтверждение не формальность',
 )
 
-await client.click('button:has-text("Подтвердить стадию")')
+await client.click('button:has-text("Confirm the")')
 await client.waitForTimeout(2500)
 
 await client.goto(`${BASE}/project`)
 await client.waitForTimeout(700)
 const after = await client.textContent('main')
 
-check(after.includes('Вы подтвердили'), 'подтверждённое видно заметным блоком')
-check(!after.includes('Ждёт вашего подтверждения'), 'очередь подтверждения опустела')
+check(after.includes('You have confirmed'), 'подтверждённое видно заметным блоком')
+check(!after.includes('awaiting your confirmation'), 'очередь подтверждения опустела')
 
 await browser.close()
 

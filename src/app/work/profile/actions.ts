@@ -20,14 +20,14 @@ export async function setAvailability(
   formData: FormData,
 ): Promise<ProfileState> {
   const id = await currentSpecialistId()
-  if (!id) return { error: 'Сначала войдите по ключу.' }
+  if (!id) return { error: 'Sign in with your key first.' }
 
   const status = String(formData.get('availabilityStatus') ?? '')
-  if (!STATUSES.has(status)) return { error: 'Неизвестный статус.' }
+  if (!STATUSES.has(status)) return { error: 'Unknown status.' }
 
   const hours = Number(formData.get('weeklyCapacityHours'))
   if (!Number.isFinite(hours) || hours < 0 || hours > 60) {
-    return { error: 'Ёмкость — от 0 до 60 часов в неделю.' }
+    return { error: 'Capacity runs from 0 to 60 hours a week.' }
   }
 
   await prisma.specialist.update({
@@ -41,5 +41,5 @@ export async function setAvailability(
   })
 
   revalidatePath('/work/profile')
-  return { message: 'Доступность обновлена.' }
+  return { message: 'Availability updated.' }
 }

@@ -31,14 +31,14 @@ async function act(
   message?: string,
 ): Promise<WorkState> {
   const specialistId = await currentSpecialistId()
-  if (!specialistId) return { error: 'Сначала войдите по ключу.' }
+  if (!specialistId) return { error: 'Sign in with your key first.' }
 
   const ticketId = String(formData.get('ticketId') ?? '')
 
   try {
     await run(ticketId, specialistId)
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Не получилось.' }
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
   }
 
   revalidatePath(`/work/${ticketId}`)
@@ -48,12 +48,12 @@ async function act(
 }
 
 export async function claimTicket(_prev: WorkState, formData: FormData): Promise<WorkState> {
-  return act(formData, claim, 'Тикет взят в работу.')
+  return act(formData, claim, 'The ticket is now yours to work on.')
 }
 
 export async function postComment(_prev: WorkState, formData: FormData): Promise<WorkState> {
   const body = String(formData.get('body') ?? '').trim()
-  if (!body) return { error: 'Пустой комментарий.' }
+  if (!body) return { error: 'The comment is empty.' }
 
   return act(formData, (ticketId, specialistId) =>
     comment(ticketId, { role: 'specialist', specialistId }, body),
@@ -61,7 +61,7 @@ export async function postComment(_prev: WorkState, formData: FormData): Promise
 }
 
 export async function submitTicket(_prev: WorkState, formData: FormData): Promise<WorkState> {
-  return act(formData, submit, 'Работа предъявлена, ждёт приёмки бюро.')
+  return act(formData, submit, 'The work is handed in and waits for the bureau to accept it.')
 }
 
 /**
@@ -73,13 +73,13 @@ export async function raiseTicketConflict(
   formData: FormData,
 ): Promise<WorkState> {
   const note = String(formData.get('note') ?? '').trim()
-  if (!note) return { error: 'Опишите, в чём именно расхождение.' }
+  if (!note) return { error: 'Describe exactly what the disagreement is.' }
 
   return act(
     formData,
     (ticketId, specialistId) =>
       raiseConflict(ticketId, { role: 'specialist', specialistId }, note),
-    'Конфликт передан бюро.',
+    'The conflict has gone to the bureau.',
   )
 }
 
@@ -94,15 +94,15 @@ export async function askDiscipline(_prev: WorkState, formData: FormData): Promi
   const title = String(formData.get('title') ?? '').trim()
   const body = String(formData.get('body') ?? '').trim()
 
-  if (!discipline) return { error: 'Выберите дисциплину.' }
-  if (!title) return { error: 'Коротко назовите, что нужно.' }
-  if (!body) return { error: 'Опишите запрос: адресату нужно понять его без вас.' }
+  if (!discipline) return { error: 'Choose a discipline.' }
+  if (!title) return { error: 'Say briefly what you need.' }
+  if (!body) return { error: 'Describe the request: the recipient has to understand it without you.' }
 
   return act(
     formData,
     (ticketId, specialistId) =>
       requestFrom(ticketId, specialistId, discipline, title, body).then(() => undefined),
-    'Запрос заведён как тикет для смежной дисциплины.',
+    'The request is now a ticket for the adjacent discipline.',
   )
 }
 
@@ -116,13 +116,13 @@ export async function makeRender(_prev: WorkState, formData: FormData): Promise<
   const prompt = String(formData.get('prompt') ?? '').trim()
   const name = String(formData.get('name') ?? '').trim()
 
-  if (!prompt) return { error: 'Опишите, что нужно на изображении.' }
+  if (!prompt) return { error: 'Describe what the image should show.' }
 
   return act(
     formData,
     (ticketId, specialistId) =>
-      generateRender(ticketId, specialistId, prompt, name || 'Изображение'),
-    'Изображение приложено к тикету с пометкой, что оно сгенерировано.',
+      generateRender(ticketId, specialistId, prompt, name || 'Image'),
+    'The image is attached to the ticket, marked as generated.',
   )
 }
 
@@ -142,13 +142,13 @@ export async function addArtifact(_prev: WorkState, formData: FormData): Promise
   const upload = formData.get('file')
   const file = upload instanceof File && upload.size > 0 ? upload : null
 
-  if (!name) return { error: 'Назовите файл: смежник увидит это имя, а не ваше.' }
-  if (!file && !url) return { error: 'Приложите файл или дайте ссылку.' }
+  if (!name) return { error: 'Name the file: the adjacent discipline sees this name, not yours.' }
+  if (!file && !url) return { error: 'Attach a file or give a link.' }
 
   if (file) {
     if (file.size > MAX_FILE_BYTES) {
       return {
-        error: 'Файл больше потолка, указанного у поля. Это уже архив, а не чертёж: положите его отдельно и дайте ссылку.',
+        error: 'The file is over the limit stated by the field. That is an archive, not a drawing: keep it elsewhere and give a link.',
       }
     }
 
@@ -163,14 +163,14 @@ export async function addArtifact(_prev: WorkState, formData: FormData): Promise
           bytes,
           contentType: file.type || 'application/octet-stream',
         }).then(() => undefined),
-      'Файл загружен. Смежники получат его, когда тикет примут.',
+      'The file is uploaded. Adjacent disciplines get it once the ticket is accepted.',
     )
   }
 
   return act(
     formData,
     (ticketId, specialistId) => attachArtifact(ticketId, specialistId, { name, url, kind }),
-    'Ссылка приложена. Смежники получат её, когда тикет примут.',
+    'The link is attached. Adjacent disciplines get it once the ticket is accepted.',
   )
 }
 
@@ -188,13 +188,13 @@ export async function addArtifact(_prev: WorkState, formData: FormData): Promise
  */
 export async function leaveProject(_prev: WorkState, formData: FormData): Promise<WorkState> {
   const specialistId = await currentSpecialistId()
-  if (!specialistId) return { error: 'Сначала войдите по ключу.' }
+  if (!specialistId) return { error: 'Sign in with your key first.' }
 
   const projectId = String(formData.get('projectId') ?? '')
   const reason = String(formData.get('reason') ?? '').trim()
 
   if (!reason) {
-    return { error: 'Напишите причину: её увидит и бюро, и тот, кто придёт на замену.' }
+    return { error: 'Write the reason: both the bureau and your replacement will see it.' }
   }
 
   try {
@@ -215,7 +215,7 @@ export async function leaveProject(_prev: WorkState, formData: FormData): Promis
 
     if (error instanceof HandoverRefused) return { error: error.message }
 
-    console.error('Выход из проекта не выполнен:', error)
-    return { error: 'Не получилось. Напишите в тикет — бюро разберёт вручную.' }
+    console.error('Leaving the project did not go through:', error)
+    return { error: 'That did not work. Write in the ticket — the bureau will sort it by hand.' }
   }
 }

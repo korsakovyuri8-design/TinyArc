@@ -44,7 +44,7 @@ export async function stepOut(
   reason: string,
 ): Promise<HandoverResult> {
   if (!reason.trim()) {
-    throw new HandoverRefused('Без причины выход не оформляется: её увидит тот, кто придёт.')
+    throw new HandoverRefused('Leaving is not recorded without a reason: whoever replaces you will read it.')
   }
 
   const slot = await prisma.teamSlot.findFirst({
@@ -52,7 +52,7 @@ export async function stepOut(
     include: { run: true },
   })
 
-  if (!slot) throw new HandoverRefused('Вы не ведёте роль на этом проекте.')
+  if (!slot) throw new HandoverRefused('You do not hold a role on this project.')
 
   const [project, allSlots, ranked, withdrawn] = await Promise.all([
     prisma.project.findUniqueOrThrow({ where: { id: projectId } }),

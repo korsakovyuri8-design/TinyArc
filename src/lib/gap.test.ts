@@ -13,7 +13,7 @@ const gap = (patch: Partial<AssemblyGap> = {}): AssemblyGap => ({
 
 describe('нехватка состава для заказчика', () => {
   it('называет роль по-русски', () => {
-    expect(roleName(gap())).toBe('Конструкции — Дерево, каркас, CLT')
+    expect(roleName(gap())).toBe('Structures — Timber, framing, CLT')
   })
 
   it('«все» читается как «и», «любая» — как «или»', () => {
@@ -24,12 +24,12 @@ describe('нехватка состава для заказчика', () => {
     })
     const any = gap({ ...all, mode: 'any' })
 
-    expect(roleName(all)).toContain(' и ')
-    expect(roleName(any)).toContain(' или ')
+    expect(roleName(all)).toContain(' and ')
+    expect(roleName(any)).toContain(' or ')
   })
 
   it('дисциплина без специализаций называется одним словом', () => {
-    expect(roleName(gap({ discipline: 'survey', specializations: [] }))).toBe('Геодезия')
+    expect(roleName(gap({ discipline: 'survey', specializations: [] }))).toBe('Survey')
   })
 
   /**
@@ -60,13 +60,13 @@ describe('нехватка состава для заказчика', () => {
     const empty = clientExplanation(gap({ candidates: 0 }), 'ME').body
     const scarce = clientExplanation(gap({ candidates: 4 }), 'ME').body
 
-    expect(empty).toContain('такого специалиста в пуле сейчас нет')
+    expect(empty).toContain('no such specialist in the pool')
     expect(scarce).toContain('4')
     expect(scarce).not.toContain('в пуле сейчас нет')
   })
 
   it('называет страну по-русски', () => {
-    expect(clientExplanation(gap(), 'GR').body).toContain('Греция')
+    expect(clientExplanation(gap(), 'GR').body).toContain('Greece')
   })
 
   it('не обещает срока', () => {

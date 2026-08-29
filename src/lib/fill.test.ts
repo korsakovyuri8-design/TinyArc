@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { fill } from './fill'
-import { en } from './en'
 
 describe('подстановка во фразу', () => {
   it('подставляет по имени', () => {
@@ -42,24 +41,3 @@ describe('подстановка во фразу', () => {
  * Переводчик, потерявший `{amount}`, оставляет письмо без суммы — и заметить
  * это можно только получив такое письмо. Проверяется по всему словарю разом.
  */
-describe('целостность словаря', () => {
-  it('в переводе те же места подстановки, что в исходной фразе', () => {
-    const holes = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
-
-    for (const [russian, english] of Object.entries(en)) {
-      expect(holes(english), `перевод «${russian.slice(0, 45)}…» потерял подстановку`).toEqual(
-        holes(russian),
-      )
-    }
-  })
-
-  it('перевод не совпадает с исходной фразой', () => {
-    // Строка, скопированная в словарь без перевода, выглядит переведённой и
-    // проходит проверку на кириллицу, если фраза была латиницей.
-    for (const [russian, english] of Object.entries(en)) {
-      if (/[А-Яа-яЁё]/.test(russian)) {
-        expect(english, `«${russian.slice(0, 45)}…» не переведена`).not.toBe(russian)
-      }
-    }
-  })
-})

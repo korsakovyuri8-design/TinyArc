@@ -44,7 +44,7 @@ function check(condition, message) {
  * сохранялось, — на этом я потерял полчаса.
  */
 async function saved(page) {
-  return (await page.locator('.panel-accent .label', { hasText: 'Профиль сохранён' }).count()) > 0
+  return (await page.locator('.panel-accent .label', { hasText: 'Profile saved' }).count()) > 0
 }
 
 const browser = await chromium.launch(
@@ -92,7 +92,7 @@ const next = before === 3 ? 2 : 3
 await timezoneField.fill(String(next))
 // Кнопку называем по подписи: на странице профиля есть и другие формы —
 // смена подписки стоит выше, и «первая кнопка отправки» указывает на неё.
-await page.click('button:has-text("Сохранить профиль")')
+await page.click('button:has-text("Save the profile")')
 await page.waitForTimeout(2200)
 
 if (check(await saved(page), 'правка сохранена')) {
@@ -114,7 +114,7 @@ if (check(await saved(page), 'правка сохранена')) {
 await page.goto(`${BASE}/ops/pool`)
 // Слово «Геодезия» встречается и в матрице покрытия, где ссылок нет: берём
 // только строки поимённого списка, то есть те, где есть переход в профиль.
-const surveyors = page.locator('tbody tr:has(a[href^="/ops/pool/"])', { hasText: 'Геодезия' })
+const surveyors = page.locator('tbody tr:has(a[href^="/ops/pool/"])', { hasText: 'Survey' })
 
 if ((await surveyors.count()) > 0) {
   const link = await surveyors.first().locator('a[href^="/ops/pool/"]').getAttribute('href')
@@ -125,7 +125,7 @@ if ((await surveyors.count()) > 0) {
     'у геодезиста специализаций не отмечено — их у дисциплины и нет',
   )
 
-  await page.click('button:has-text("Сохранить профиль")')
+  await page.click('button:has-text("Save the profile")')
   await page.waitForTimeout(2200)
   check(await saved(page), 'профиль геодезиста сохраняется без специализации')
 } else {
@@ -160,7 +160,7 @@ for (const candidate of links) {
 
 if (free) {
   await page.check(`input[name=signsIn][value=${free}]`)
-  await page.click('button:has-text("Сохранить профиль")')
+  await page.click('button:has-text("Save the profile")')
   await page.waitForTimeout(2000)
   check(!(await saved(page)), 'подпись там, где человек не работал, не проходит и у бюро')
 } else {

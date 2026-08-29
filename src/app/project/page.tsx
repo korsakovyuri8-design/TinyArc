@@ -1,8 +1,6 @@
-import { Link } from '@/components/Link'
-import { fill } from '@/lib/i18n/fill'
-import { translator } from '@/lib/i18n'
-import { pageMetadata } from '@/lib/i18n/metadata'
-import { localeHref } from '@/lib/i18n/redirect'
+import Link from 'next/link'
+import { fill } from '@/lib/fill'
+import { pageMetadata } from '@/lib/metadata'
 import { redirect } from 'next/navigation'
 import {
   ARTIFACT_KIND_LABELS,
@@ -42,17 +40,16 @@ import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
 
-export const generateMetadata = () => pageMetadata('Кабинет проекта')
+export const metadata = pageMetadata('Project workspace')
 
 export default async function ProjectPage({
   searchParams,
 }: {
   searchParams: Promise<{ issued?: string }>
 }) {
-  const { locale, t } = await translator()
   const { issued } = await searchParams
   const projectId = await currentProjectId()
-  if (!projectId) redirect(await localeHref('/enter'))
+  if (!projectId) redirect('/enter')
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -64,7 +61,7 @@ export default async function ProjectPage({
     },
   })
 
-  if (!project) redirect(await localeHref('/enter'))
+  if (!project) redirect('/enter')
 
   const [run, direction, thread, pendingStages, approved, invoices] = await Promise.all([
     latestRun(project.id),
@@ -94,15 +91,15 @@ export default async function ProjectPage({
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
-        <span className="eyebrow">{t('Кабинет проекта')}</span>
+        <span className="eyebrow">Project workspace</span>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h1 style={{ maxWidth: '18ch' }}>{project.title}</h1>
-          <span className="tag tag-accent">{t(PROJECT_STATUS_LABELS[project.status] ?? project.status)}</span>
+          <span className="tag tag-accent">{PROJECT_STATUS_LABELS[project.status] ?? project.status}</span>
         </div>
 
         {issued === '1' && (
           <div className="panel panel-accent" style={{ marginTop: 32 }}>
-            <div className="label label-accent">{t('Сохраните ключ доступа')}</div>
+            <div className="label label-accent">Save your access key</div>
             <p
               className="num"
               style={{ fontSize: '1.4rem', color: 'var(--accent)', margin: '14px 0' }}
@@ -111,7 +108,7 @@ export default async function ProjectPage({
             </p>
             <p className="muted" style={{ marginBottom: 0 }}>
               {fill(
-                t('Ключ заменяет пароль: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на {email} — но если письмо не дойдёт, останется только этот экран.'),
+                'The key replaces a password: it gets you back into this workspace from any device. A copy went to {email} — but if that email never arrives, this screen is all there is.',
                 { email: project.clientEmail },
               )}
             </p>
@@ -119,13 +116,13 @@ export default async function ProjectPage({
         )}
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
-          <Fact label={t('Типология')} value={t(TYPOLOGY_LABELS[project.typology as Typology])} />
-          <Fact label={t('Этажей / площадь')} value={`${project.storeys} · ${project.areaSqm} ${t('м²')}`} />
-          <Fact label={t('Страна')} value={t(JURISDICTION_NAMES[project.jurisdiction as Jurisdiction])} />
-          <Fact label={t('Стадия документации')} value={t(DOC_STAGE_LABELS[project.targetStage as DocStage])} />
-          <Fact label={t('Ключ доступа')} value={project.clientKey} mono />
+          <Fact label={'Typology'} value={TYPOLOGY_LABELS[project.typology as Typology]} />
+          <Fact label={'Storeys / area'} value={`${project.storeys} · ${project.areaSqm} $m²`} />
+          <Fact label={'Country'} value={JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} />
+          <Fact label={'Documentation stage'} value={DOC_STAGE_LABELS[project.targetStage as DocStage]} />
+          <Fact label={'Access key'} value={project.clientKey} mono />
           <Fact
-            label={t('Пул → прошли гейты')}
+            label={'Pool → passed the gates'}
             value={run ? `${run.pooledCount} → ${run.survivedCount}` : '—'}
             mono
           />
@@ -133,7 +130,7 @@ export default async function ProjectPage({
 
         {project.status === 'rejected' && (
           <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-            <div className="label" style={{ color: 'var(--fail)' }}>{t('Проект не берётся')}</div>
+            <div className="label" style={{ color: 'var(--fail)' }}>We are not taking this project</div>
             <p style={{ marginTop: 12, marginBottom: 0 }}>{project.rejectionReason}</p>
           </div>
         )}
@@ -143,21 +140,21 @@ export default async function ProjectPage({
             outcome={run.outcome}
             gap={parseGap(run.gapJson)}
             jurisdiction={project.jurisdiction as Jurisdiction}
-            t={t}
+           
           />
         )}
 
         {project.status === 'delivered' && (
           <div className="panel panel-accent" style={{ marginTop: 40 }}>
-            <div className="label label-accent">{t('Проект закрыт')}</div>
-            <h3 style={{ marginTop: 12 }}>{t('Комплект у вас')}</h3>
+            <div className="label label-accent">Project closed</div>
+            <h3 style={{ marginTop: 12 }}>The set is yours</h3>
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              {t('Все стадии выпущены и подтверждены вами. Файлы ниже — то, за чем вы приходили. Доступ по ключу остаётся: кабинет не закрывается вместе с проектом, и вернуться к документации можно когда угодно.')}
+              Every stage has been issued and confirmed by you. The files below are what you came for. Your key keeps working: the workspace does not close with the project, and you can come back to the documentation whenever you need it.
               {nextStage && (
                 <>
                   {' '}
                   Следующий шаг за этой границей —{' '}
-                  <strong>{t(DOC_STAGE_LABELS[nextStage])}</strong>. Если он нужен, напишите
+                  <strong>{DOC_STAGE_LABELS[nextStage]}</strong>. Если он нужен, напишите
                   бюро: это отдельная работа и отдельный состав.
                 </>
               )}
@@ -167,13 +164,13 @@ export default async function ProjectPage({
 
         {direction ? (
           <div style={{ marginTop: 40 }}>
-            <ChosenDirection direction={direction} audience="client" t={t} />
+            <ChosenDirection direction={direction} audience="client" />
           </div>
         ) : (
           project.status !== 'rejected' && (
             <div className="note" style={{ marginTop: 40 }}>
-              {t('Направление проекта ещё не выбрано.')}{' '}
-              <Link locale={locale} href="/project/direction">{t('Выбрать →')}</Link>
+              No design direction has been chosen yet.{' '}
+              <Link href="/project/direction">Choose →</Link>
             </div>
           )
         )}
@@ -181,8 +178,8 @@ export default async function ProjectPage({
         {project.tickets.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
-            <h2>{t('Где сейчас проект')}</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>{t('Стадия закрывается, когда приняты все её задачи. Пропустить стадию нельзя: гейт просто не откроет следующую.')}</p>
+            <h2>Where the project stands</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>A stage closes once every task in it is accepted. Stages cannot be skipped: the gate simply will not open the next one.</p>
 
             <div className="grid grid-2">
               {stagesUpTo(project.targetStage as DocStage).map((stage) => {
@@ -193,7 +190,7 @@ export default async function ProjectPage({
                 return (
                   <div key={stage} className="panel">
                     <div className="row" style={{ justifyContent: 'space-between' }}>
-                      <span className="label label-accent">{t(DOC_STAGE_LABELS[stage])}</span>
+                      <span className="label label-accent">{DOC_STAGE_LABELS[stage]}</span>
                       <span className="num dim">
                         {done} / {inStage.length}
                       </span>
@@ -208,12 +205,12 @@ export default async function ProjectPage({
                         которой человек ждёт нас, пока мы ждём его.
                       */}
                       {share === 1
-                        ? t('Стадия закрыта')
+                        ? 'Stage closed'
                         : inStage.some((t) => t.status !== 'blocked')
-                          ? t('Идёт работа')
+                          ? 'In progress'
                           : unpaid.has(stage)
-                            ? t('Ждёт оплаты')
-                            : t('Ждёт предыдущей стадии')}
+                            ? 'Awaiting payment'
+                            : 'Waiting on the previous stage'}
                     </div>
                   </div>
                 )
@@ -225,8 +222,8 @@ export default async function ProjectPage({
         {run && team.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
-            <h2>{t('Ваша Tiny Team')}</h2>
-            <p className="muted" style={{ marginTop: 12 }}>{t('Состав собран движком. Ниже — разбор балла по каждому: рейтинг портфолио, вклад метрик поставки, соответствие проекту, фактор доступности.')}</p>
+            <h2>Your Tiny Team</h2>
+            <p className="muted" style={{ marginTop: 12 }}>The engine assembled this team. Below is the full score breakdown for each member: portfolio rating, the weight of delivery metrics, fit to the project, availability factor.</p>
 
             <div className="grid grid-2" style={{ marginTop: 28 }}>
               {team.map((slot) => {
@@ -238,9 +235,9 @@ export default async function ProjectPage({
                   <div key={slot.id} className="panel">
                     <div className="row" style={{ justifyContent: 'space-between' }}>
                       <span className="label label-accent">
-                        {t(DISCIPLINE_LABELS[slot.discipline as Discipline])}
+                        {DISCIPLINE_LABELS[slot.discipline as Discipline]}
                       </span>
-                      {slot.isSignatory && <span className="tag tag-accent">{t('подпись')}</span>}
+                      {slot.isSignatory && <span className="tag tag-accent">signatory</span>}
                     </div>
                     {(() => {
                       const need = parseList<Specialization>(
@@ -252,7 +249,7 @@ export default async function ProjectPage({
                       return (
                         <div className="dim" style={{ fontSize: '0.8rem', marginTop: 6 }}>
                           {need
-                            .map((x) => t(SPECIALIZATION_LABELS[x]))
+                            .map((x) => SPECIALIZATION_LABELS[x])
                             .join(slot.roleMode === 'all' ? ' + ' : ' / ')}
                         </div>
                       )
@@ -260,7 +257,7 @@ export default async function ProjectPage({
                     <h3 style={{ marginTop: 10, marginBottom: 16 }}>{slot.specialist.displayName}</h3>
                     {candidate && (
                       <BreakdownRow
-                        t={t}
+                       
                         breakdown={{
                           portfolioRating: candidate.portfolioRating,
                           deliveryScore: candidate.deliveryScore,
@@ -282,30 +279,30 @@ export default async function ProjectPage({
         {project.tickets.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
-            <h2>{t('Выпуск')}</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>{t('Тикет открывается, только когда приняты те, от которых он зависит. Специалисты между собой не переписываются — вся работа идёт через бюро.')}</p>
+            <h2>Production</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>A ticket opens only once the tickets it depends on are accepted. Specialists do not correspond with each other — all work goes through the bureau.</p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
               <table>
                 <thead>
                   <tr>
-                    <th>{t('Стадия')}</th>
-                    <th>{t('Задача')}</th>
-                    <th>{t('Дисциплина')}</th>
-                    <th>{t('Исполнитель')}</th>
-                    <th>{t('Состояние')}</th>
+                    <th>Stage</th>
+                    <th>Task</th>
+                    <th>Discipline</th>
+                    <th>Assignee</th>
+                    <th>State</th>
                   </tr>
                 </thead>
                 <tbody>
                   {project.tickets.map((ticket) => (
                     <tr key={ticket.id}>
-                      <td className="dim">{t(DOC_STAGE_LABELS[ticket.stage as DocStage])}</td>
-                      <td>{t(ticket.title)}</td>
-                      <td className="dim">{t(DISCIPLINE_LABELS[ticket.discipline as Discipline])}</td>
+                      <td className="dim">{DOC_STAGE_LABELS[ticket.stage as DocStage]}</td>
+                      <td>{ticket.title}</td>
+                      <td className="dim">{DISCIPLINE_LABELS[ticket.discipline as Discipline]}</td>
                       <td className="dim">{ticket.specialist?.displayName ?? '—'}</td>
                       <td>
                         <span className={`tag ${statusTone(ticket.status)}`}>
-                          {t(TICKET_STATUS_LABELS[ticket.status] ?? ticket.status)}
+                          {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
                         </span>
                       </td>
                     </tr>
@@ -318,25 +315,25 @@ export default async function ProjectPage({
 
         <div className="divider" style={{ marginTop: 48 }} />
         <div className="row" style={{ gap: 16 }}>
-          <Link locale={locale} href="/algorithm" className="btn btn-quiet">{t('Как считался отбор')}</Link>
+          <Link href="/algorithm" className="btn btn-quiet">How the selection was computed</Link>
         </div>
 
         {fileCount(documents) > 0 && (
           <>
             <div className="divider" style={{ marginTop: 48 }} />
 
-            <h2>{t('Комплект документации')}</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>{t('Собирается по мере закрытия стадий, а не выдаётся разом в конце: вы заплатили за стадию — вы получаете её файлы, когда она закрыта. Сгенерированные изображения сюда не входят ни на одной стадии, это материал работы, а не документация.')}</p>
+            <h2>Documentation set</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>It builds up as stages close rather than arriving all at once at the end: you paid for a stage, you get its files when that stage closes. Generated images never form part of it at any stage — they are working material, not documentation.</p>
 
             <div className="stack" style={{ gap: 28 }}>
               {documents.map((group) => (
                 <div key={group.stage}>
                   <div className="row" style={{ gap: 10, alignItems: 'baseline' }}>
                     <h3 style={{ margin: 0 }}>
-                      {t(DOC_STAGE_LABELS[group.stage as DocStage] ?? group.stage)}
+                      {DOC_STAGE_LABELS[group.stage as DocStage] ?? group.stage}
                     </h3>
                     <span className={group.approved ? 'tag tag-pass' : 'tag tag-wait'}>
-                      {group.approved ? t('подтверждена вами') : t('ждёт вашего подтверждения')}
+                      {group.approved ? 'confirmed by you' : 'awaiting your confirmation'}
                     </span>
                   </div>
 
@@ -360,8 +357,8 @@ export default async function ProjectPage({
                           <span>{file.name}</span>
                         )}
                         <span className="dim" style={{ fontSize: '0.82rem' }}>
-                          {t(DISCIPLINE_LABELS[file.discipline] ?? file.discipline)} ·{' '}
-                          {t(ARTIFACT_KIND_LABELS[file.kind] ?? file.kind)}
+                          {DISCIPLINE_LABELS[file.discipline] ?? file.discipline} ·{' '}
+                          {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
                         </span>
                       </div>
                     ))}
@@ -376,8 +373,8 @@ export default async function ProjectPage({
           <>
             <div className="divider" style={{ marginTop: 48 }} />
 
-            <h2>{t('Счета')}</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>{t('Стадия оплачивается до начала работы по ней. Команда — живые люди, и их время начинается в тот момент, когда открывается задача; начинать стадию в долг бюро не вправе. Цена названа целиком заранее и не пересчитывается по ходу: под каждым счётом видно, из чего он сложился.')}</p>
+            <h2>Invoices</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>A stage is paid for before work on it begins. The team are real people, and their time starts the moment a task opens; the bureau is not entitled to begin a stage on credit. The price is stated in full up front and is not recalculated along the way: under every invoice you can see what it is made of.</p>
 
             <div className="stack" style={{ gap: 16 }}>
               {invoices.map((invoice) => (
@@ -386,13 +383,13 @@ export default async function ProjectPage({
                   className={invoice.status === 'issued' ? 'panel panel-accent' : 'panel'}
                 >
                   <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <span className="label label-accent">{t(DOC_STAGE_LABELS[invoice.stage])}</span>
+                    <span className="label label-accent">{DOC_STAGE_LABELS[invoice.stage]}</span>
                     <span className="tag">
                       {invoice.status === 'paid'
-                        ? t('Оплачен')
+                        ? 'Paid'
                         : invoice.status === 'void'
-                          ? t('Отозван')
-                          : t('Ждёт оплаты')}
+                          ? 'Voided'
+                          : 'Awaiting payment'}
                     </span>
                   </div>
 
@@ -405,18 +402,18 @@ export default async function ProjectPage({
                       {invoice.basis.atFloor ? (
                         <>
                           {fill(
-                            t('Нижняя граница чека за эту стадию — {floor} {currency}. По площади вышло бы меньше, но посадка на участок, согласования и координация команды на маленьком объекте стоят почти столько же, сколько на большом.'),
+                            'The floor price for this stage is {floor} {currency}. By area it would come out lower, but siting, approvals and team coordination on a small building cost almost as much as on a large one.',
                             { floor: invoice.basis.floor, currency: invoice.currency },
                           )}
                         </>
                       ) : (
                         <>
-                          {invoice.basis.areaSqm} {t('м²')} × {invoice.basis.ratePerSqm}{' '}
-                          {invoice.currency}/{t('м²')}
+                          {invoice.basis.areaSqm} m² × {invoice.basis.ratePerSqm}{' '}
+                          {invoice.currency}/m²
                           {invoice.basis.typologyFactor !== 1 &&
-                            ` × ${invoice.basis.typologyFactor} ${t('за общие системы дома')}`}
+                            ` × ${invoice.basis.typologyFactor} for shared building systems`}
                           {invoice.basis.jurisdictionFactor !== 1 &&
-                            ` × ${invoice.basis.jurisdictionFactor} ${t('по уровню цен страны')}`}
+                            ` × ${invoice.basis.jurisdictionFactor} for the country’s price level`}
                         </>
                       )}
                     </p>
@@ -426,7 +423,7 @@ export default async function ProjectPage({
                     <>
                       {payTo ? (
                         <div style={{ marginTop: 16 }}>
-                          <div className="label">{t('Куда платить')}</div>
+                          <div className="label">Where to pay</div>
                           <p
                             className="dim"
                             style={{
@@ -443,10 +440,10 @@ export default async function ProjectPage({
                         // Реквизитов нет — так и сказано. «Мы свяжемся» на счёте
                         // означает, что заплатить сейчас нельзя, и написать это
                         // прямо честнее, чем оставить человека гадать.
-                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>{t('Реквизиты для оплаты ещё не опубликованы — бюро пришлёт их письмом.')}</p>
+                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Payment details have not been published yet — the bureau will send them by email.</p>
                       )}
 
-                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>{t('Отметку об оплате ставит бюро, увидев поступление: приёма платежей на сайте нет, и делать вид, что есть, значило бы обещать сверку, которой не существует.')}</p>
+                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>The bureau marks an invoice paid once it sees the money arrive: there is no payment processing on this site, and pretending otherwise would promise a reconciliation that does not exist.</p>
                     </>
                   )}
                 </div>
@@ -459,20 +456,20 @@ export default async function ProjectPage({
           <>
             <div className="divider" style={{ marginTop: 48 }} />
 
-            <h2>{t('Ждёт вашего подтверждения')}</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>{t('Бюро приняло все задачи этой стадии — это значит «сделано как заказано». Подтверждение с вашей стороны значит другое: «заказано было именно это». Пока его нет, следующая стадия не начинается.')}</p>
+            <h2>Awaiting your confirmation</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>The bureau has accepted every task in this stage — that means “done as specified”. Your confirmation means something else: “this is what was specified”. Until it arrives, the next stage does not start.</p>
 
             <div className="stack" style={{ gap: 24 }}>
               {pendingStages.map((stage) => (
                 <div key={stage} className="panel panel-accent">
                   <div className="label label-accent">
-                    {t(DOC_STAGE_LABELS[stage as DocStage] ?? stage)}
+                    {DOC_STAGE_LABELS[stage as DocStage] ?? stage}
                   </div>
                   <div style={{ marginTop: 16 }}>
                     <StageApproval
-                      locale={locale}
+                     
                       stage={stage}
-                      title={t(DOC_STAGE_LABELS[stage as DocStage] ?? stage)}
+                      title={DOC_STAGE_LABELS[stage as DocStage] ?? stage}
                     />
                   </div>
                 </div>
@@ -491,22 +488,22 @@ export default async function ProjectPage({
               человек нажал и остался без ответа. Подтверждённое и есть ответ,
               и увидеть его он должен сразу, а не искать глазами.
             */}
-            <h2>{t('Вы подтвердили')}</h2>
+            <h2>You have confirmed</h2>
             <div className="row" style={{ gap: 10, marginTop: 16 }}>
               {approved.map((s) => (
                 <span key={s} className="tag tag-pass">
-                  {t(DOC_STAGE_LABELS[s as DocStage] ?? s)}
+                  {DOC_STAGE_LABELS[s as DocStage] ?? s}
                 </span>
               ))}
             </div>
-            <p className="hint" style={{ marginTop: 14, maxWidth: '60ch' }}>{t('Команда работает по подтверждённому. Если что-то нужно изменить задним числом — напишите бюро: переделка на поздней стадии стоит дороже, и решать, как её провести, будем вместе.')}</p>
+            <p className="hint" style={{ marginTop: 14, maxWidth: '60ch' }}>The team is working to what you confirmed. If something has to change after the fact, write to the bureau: rework at a later stage costs more, and how to handle it is a decision we make together.</p>
           </>
         )}
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <h2>{t('Разговор с бюро')}</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>{t('Сроки, участок, изменившиеся обстоятельства — всё это сюда. Бюро отвечает перед вами за проект целиком, и вопрос по проекту — это вопрос к нему.')}</p>
+        <h2>Talking to the bureau</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>Deadlines, the site, changed circumstances — all of it goes here. The bureau answers to you for the project as a whole, and a question about the project is a question for the bureau.</p>
 
         {thread.length > 0 && (
           <div className="stack" style={{ gap: 14, marginBottom: 32 }}>
@@ -522,7 +519,7 @@ export default async function ProjectPage({
                 }}
               >
                 <span className="label">
-                  {m.authorRole === 'bureau' ? 'Бюро' : 'Вы'} ·{' '}
+                  {m.authorRole === 'bureau' ? 'Bureau' : 'You'} ·{' '}
                   {m.createdAt.toLocaleString('ru-RU')}
                 </span>
                 <p style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{m.body}</p>
@@ -532,7 +529,7 @@ export default async function ProjectPage({
         )}
 
         <div className="panel">
-          <ClientDialogue locale={locale} />
+          <ClientDialogue />
         </div>
       </div>
     </section>
@@ -572,24 +569,21 @@ function IncompleteRun({
   outcome,
   gap,
   jurisdiction,
-  t,
 }: {
   outcome: string
   gap: AssemblyGap | null
   jurisdiction: Jurisdiction
   /** Переводчик приходит сверху: это не страница, а её часть. */
-  t: (text: string) => string
 }) {
   if (outcome === 'no_signatory') {
     return (
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-        <div className="label" style={{ color: 'var(--fail)' }}>{t('Команда пока не собрана')}</div>
+        <div className="label" style={{ color: 'var(--fail)' }}>The team is not assembled yet</div>
         <p style={{ marginTop: 12, marginBottom: 0 }}>
           {fill(
-            t(
-              'Специалисты под ваш проект есть, но ни у кого из них нет права подписи в стране «{country}». Пакет документации без местной подписи не имеет силы — его не примут в органах, и браться за проект без неё значит продать вам бумагу. Бюро ищет подписанта; ключ доступа у вас, по нему вы вернётесь в проект.',
-            ),
-            { country: t(JURISDICTION_NAMES[jurisdiction] ?? jurisdiction) },
+            
+              'There are specialists for your project, but none of them holds signing rights in {country}. A documentation set without a local signature has no force — the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
+            { country: JURISDICTION_NAMES[jurisdiction] ?? jurisdiction },
           )}
         </p>
       </div>
@@ -599,8 +593,8 @@ function IncompleteRun({
   if (!gap) {
     return (
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
-        <div className="label" style={{ color: 'var(--fail)' }}>{t('Команда пока не собрана')}</div>
-        <p style={{ marginTop: 12, marginBottom: 0 }}>{t('Состав под ваш проект не сошёлся. Бюро разбирается; ключ доступа у вас, по нему вы вернётесь в проект.')}</p>
+        <div className="label" style={{ color: 'var(--fail)' }}>The team is not assembled yet</div>
+        <p style={{ marginTop: 12, marginBottom: 0 }}>A team for your project did not come together. The bureau is looking into it; you have your key and can come back to the project with it.</p>
       </div>
     )
   }

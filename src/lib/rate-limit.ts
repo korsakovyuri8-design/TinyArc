@@ -11,7 +11,7 @@
  * базе или Redis; интерфейс модуля от этого не меняется.
  */
 
-import { fill } from './i18n/fill'
+import { fill } from './fill'
 
 export type Bucket = { count: number; resetAt: number }
 
@@ -117,6 +117,6 @@ export function retryMessage(
   const minutes = Math.ceil(retryAfterSeconds / 60)
 
   return minutes <= 1
-    ? t('Слишком часто. Попробуйте через минуту.')
-    : fill(t('Слишком часто. Попробуйте через {minutes} мин.'), { minutes })
+    ? 'Too often. Try again in a minute.'
+    : fill('Too often. Try again in {minutes} min.', { minutes })
 }

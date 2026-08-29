@@ -192,11 +192,11 @@ export async function issueDueInvoices(projectId: string): Promise<DocStage[]> {
  */
 export async function voidInvoice(invoiceId: string, reason: string): Promise<DocStage> {
   const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } })
-  if (!invoice) throw new BillingRefused('Счёта нет.')
+  if (!invoice) throw new BillingRefused('There is no such invoice.')
 
   if (invoice.status === 'paid') {
     throw new BillingRefused(
-      'Счёт оплачен. Отзывать его нельзя: деньги пришли, и след платежа должен остаться. Возврат оформляется отдельно.',
+      'The invoice is paid. It cannot be voided: the money arrived, and the trace of the payment must remain. A refund is handled separately.',
     )
   }
 
@@ -204,7 +204,7 @@ export async function voidInvoice(invoiceId: string, reason: string): Promise<Do
 
   const note = reason.trim()
   if (!note) {
-    throw new BillingRefused('Скажите, почему отзываете: заказчик этот счёт уже видел.')
+    throw new BillingRefused('Say why you are voiding it: the client has already seen this invoice.')
   }
 
   await prisma.invoice.update({
@@ -230,10 +230,10 @@ export async function voidInvoice(invoiceId: string, reason: string): Promise<Do
  */
 export async function markPaid(invoiceId: string, note: string): Promise<DocStage> {
   const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } })
-  if (!invoice) throw new BillingRefused('Счёта нет.')
+  if (!invoice) throw new BillingRefused('There is no such invoice.')
 
   if (invoice.status === 'void') {
-    throw new BillingRefused('Счёт отозван. Оплаченным он не становится — выставьте заново.')
+    throw new BillingRefused('The invoice is void. It does not become paid — issue a new one.')
   }
 
   // Повторная отметка молча проходит: кнопку жмут дважды чаще, чем кажется.

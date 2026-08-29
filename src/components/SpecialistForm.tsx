@@ -34,9 +34,7 @@ import {
 } from '@/lib/labels'
 import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
-import { LocaleProvider, useT } from '@/lib/i18n/context'
-import { fill } from '@/lib/i18n/fill'
-import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale'
+import { fill } from '@/lib/fill'
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 
 export type SpecialistFormAction = (
@@ -55,22 +53,6 @@ export type SpecialistFormAction = (
  * Заполненные импортом поля приходят в defaults и стоят отмеченными: человек
  * подтверждает или правит то, что бюро уже знало, а не набирает заново.
  */
-/**
- * Язык по умолчанию русский, и это не забывчивость вызывающего: за формой в
- * панели бюро сидит бюро, и панель остаётся русской намеренно. Публичные входы
- * язык передают явно.
- */
-export function SpecialistForm({
-  locale = DEFAULT_LOCALE,
-  ...props
-}: SpecialistFormProps & { locale?: Locale }) {
-  return (
-    <LocaleProvider locale={locale}>
-      <SpecialistFields {...props} />
-    </LocaleProvider>
-  )
-}
-
 type SpecialistFormProps = {
   action: SpecialistFormAction
   defaults?: Record<string, string | string[]>
@@ -91,31 +73,26 @@ type SpecialistFormProps = {
   askConsent?: boolean
 }
 
-/**
- * Поля отдельным компонентом: переводчик берётся из контекста, а провайдер
- * обязан стоять выше того, кто его читает.
- */
-function SpecialistFields({
+export function SpecialistForm({
   action: submit,
   defaults = {},
-  submitLabel = 'Подать заявку',
+  submitLabel = 'Apply',
   done,
   hidden = {},
   showCapacity = true,
   askConsent = false,
 }: SpecialistFormProps) {
   const [state, action, pending] = useActionState<ApplicationState, FormData>(submit, {})
-  const t = useT()
 
   if (state.submitted) {
     return (
       done ?? (
         <div className="panel panel-accent">
-          <div className="label label-accent">{t('Заявка принята')}</div>
-          <h3 style={{ marginTop: 12 }}>{t('Дальше — разбор портфолио')}</h3>
+          <div className="label label-accent">Application received</div>
+          <h3 style={{ marginTop: 12 }}>Next — the portfolio review</h3>
           <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
             {fill(
-              t('Портфолио смотрит бюро и ставит рейтинг. Порог — {threshold}/10; ниже него заявка не проходит, и это не обсуждается отдельно с каждым. Если проходите — ключ доступа придёт на указанный адрес.'),
+              'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10; below it an application does not pass, and that is not negotiated case by case. If you pass, the access key arrives at the address you gave.',
               { threshold: PORTFOLIO_THRESHOLD },
             )}
           </p>
@@ -146,23 +123,23 @@ function SpecialistFields({
       ))}
 
       <fieldset>
-        <legend>{t('Кто вы')}</legend>
+        <legend>Who you are</legend>
 
         <div className="grid grid-2">
-          <Field label="Имя для клиента" name="displayName" error={errors.displayName}>
+          <Field label="Name shown to the client" name="displayName" error={errors.displayName}>
             <input id="displayName" name="displayName" defaultValue={values.displayName ?? ''} />
           </Field>
 
-          <Field label="Почта" name="email" error={errors.email} hint="Сюда придёт ключ доступа">
+          <Field label="Email" name="email" error={errors.email} hint="The access key comes to this address">
             <input id="email" name="email" type="email" defaultValue={values.email ?? ''} />
           </Field>
         </div>
 
         <Field
-          label="Портфолио"
+          label="Portfolio"
           name="portfolioUrl"
           error={errors.portfolioUrl}
-          hint="Главный вход отбора: показанное весит больше заявленного"
+          hint="The main entrance to selection: what you show weighs more than what you claim"
         >
           <input
             id="portfolioUrl"
@@ -175,22 +152,22 @@ function SpecialistFields({
       </fieldset>
 
       <fieldset>
-        <legend>{t('Что вы ведёте · измерения 1–4')}</legend>
+        <legend>What you handle · dimensions 1–4</legend>
 
-        <Field label="Дисциплины" error={errors.disciplines}>
+        <Field label="Disciplines" error={errors.disciplines}>
           <Choices defaultValue={list('disciplines') as never[]} name="disciplines" options={DISCIPLINES} labels={DISCIPLINE_LABELS} />
         </Field>
 
         <Field
-          label="Специализация"
+          label="Specialisation"
           error={errors.specializations}
-          hint="Отметьте только то, что вели сами. Конструктор по монолиту на деревянном доме — это не «почти то же самое», и движок разводит их специально"
+          hint="Tick only what you have led yourself. A concrete-frame engineer on a timber house is not “near enough the same thing”, and the engine keeps the two apart on purpose"
         >
           <div className="stack" style={{ gap: 16 }}>
             {DISCIPLINES.filter((d) => DISCIPLINE_SPECIALIZATIONS[d].length > 0).map((d) => (
               <div key={d}>
                 <div className="label" style={{ marginBottom: 8 }}>
-                  {t(DISCIPLINE_LABELS[d])}
+                  {DISCIPLINE_LABELS[d]}
                 </div>
                 <Choices
                   name="specializations"
@@ -203,19 +180,19 @@ function SpecialistFields({
           </div>
         </Field>
 
-        <Field label="Типологии" error={errors.typologies}>
+        <Field label="Typologies" error={errors.typologies}>
           <Choices defaultValue={list('typologies') as never[]} name="typologies" options={TYPOLOGIES} labels={TYPOLOGY_LABELS} />
         </Field>
 
-        <Field label="Масштаб" error={errors.scaleBands}>
+        <Field label="Scale" error={errors.scaleBands}>
           <Choices defaultValue={list('scaleBands') as never[]} name="scaleBands" options={SCALE_BANDS} labels={SCALE_BAND_LABELS} />
         </Field>
 
         <Field
-          label="Максимальная этажность"
+          label="Maximum storeys"
           name="maxStoreys"
           error={errors.maxStoreys}
-          hint="Только та, на которую есть подтверждённый опыт"
+          hint="Only what you have proven experience with"
         >
           <input
             id="maxStoreys"
@@ -229,41 +206,41 @@ function SpecialistFields({
       </fieldset>
 
       <fieldset>
-        <legend>{t('Где и в чём · измерения 5–8')}</legend>
+        <legend>Where and in what · dimensions 5–8</legend>
 
-        <Field label="Материальные системы" error={errors.materialSystems}>
+        <Field label="Material systems" error={errors.materialSystems}>
           <Choices defaultValue={list('materialSystems') as never[]} name="materialSystems" options={MATERIAL_SYSTEMS} labels={MATERIAL_LABELS} />
         </Field>
 
-        <Field label="Климатические зоны" error={errors.climateZones}>
+        <Field label="Climate zones" error={errors.climateZones}>
           <Choices defaultValue={list('climateZones') as never[]} name="climateZones" options={CLIMATE_ZONES} labels={CLIMATE_LABELS} />
         </Field>
 
         <Field
-          label="Юрисдикции"
+          label="Jurisdictions"
           error={errors.jurisdictions}
-          hint="Где вы реально проходили согласования"
+          hint="Where you have actually taken projects through approvals"
         >
           <Choices defaultValue={list('jurisdictions') as never[]} name="jurisdictions" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
         </Field>
 
         <Field
-          label="Право подписи"
+          label="Signing rights"
           error={errors.signsIn}
-          hint="Только страны из списка выше. Без подписи в стране проект не берётся вовсе"
+          hint="Only countries from the list above. Without signing rights in a country the project is not taken at all"
         >
           <Choices defaultValue={list('signsIn') as never[]} name="signsIn" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
         </Field>
 
-        <Field label="Софт" error={errors.software}>
+        <Field label="Software" error={errors.software}>
           <Choices defaultValue={list('software') as never[]} name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
         </Field>
 
         <Field
-          label="Уровень обмена по IFC"
+          label="IFC exchange level"
           name="ifcLevel"
           error={errors.ifcLevel}
-          hint="Общий формат заменяет общий пакет: с координацией по IFC вы совместимы с любой командой"
+          hint="A shared format replaces a shared software suite: with IFC coordination you are compatible with any team"
         >
           <Select
             name="ifcLevel"
@@ -275,13 +252,13 @@ function SpecialistFields({
       </fieldset>
 
       <fieldset>
-        <legend>{t('Как вы работаете · измерения 9–12')}</legend>
+        <legend>How you work · dimensions 9–12</legend>
 
-        <Field label="Стадии документации" error={errors.docStages}>
+        <Field label="Documentation stages" error={errors.docStages}>
           <Choices defaultValue={list('docStages') as never[]} name="docStages" options={DOC_STAGES} labels={DOC_STAGE_LABELS} />
         </Field>
 
-        <Field label="Регуляторный трек" error={errors.regulatoryTracks}>
+        <Field label="Regulatory track" error={errors.regulatoryTracks}>
           <Choices
             name="regulatoryTracks"
             options={REGULATORY_TRACKS}
@@ -293,15 +270,15 @@ function SpecialistFields({
         </Field>
 
         <Field
-          label="Языки"
+          label="Languages"
           error={errors.languages}
-          hint="Для согласований язык органов — жёсткое требование"
+          hint="For approvals the language of the authorities is a hard requirement"
         >
           <Choices defaultValue={list('languages') as never[]} name="languages" options={LANGUAGES} labels={LANGUAGE_NAMES} />
         </Field>
 
         <div className="grid grid-2">
-          <Field label="Режим" name="workMode" error={errors.workMode}>
+          <Field label="Work mode" name="workMode" error={errors.workMode}>
             <Select
               name="workMode"
               options={WORK_MODES}
@@ -311,10 +288,10 @@ function SpecialistFields({
           </Field>
 
           <Field
-            label="Смещение от UTC"
+            label="UTC offset"
             name="utcOffset"
             error={errors.utcOffset}
-            hint="По нему считается пересечение рабочего дня"
+            hint="Working-day overlap is calculated from it"
           >
             <input
               id="utcOffset"
@@ -328,10 +305,10 @@ function SpecialistFields({
 
           {showCapacity ? (
             <Field
-              label="Свободная ёмкость, ч/нед"
+              label="Free capacity, h/week"
               name="weeklyCapacityHours"
               error={errors.weeklyCapacityHours}
-              hint="Ноль означает, что в отборе вы не участвуете: формула — произведение"
+              hint="Zero means you are out of selection: the formula is a product"
             >
               <input
                 id="weeklyCapacityHours"
@@ -351,7 +328,7 @@ function SpecialistFields({
           )}
 
           <Field
-            label="Срок выхода на задачу, дней"
+            label="Days before you can start on a task"
             name="leadTimeDays"
             error={errors.leadTimeDays}
           >
@@ -369,7 +346,7 @@ function SpecialistFields({
 
       {errors.form && (
         <div className="note note-fail" style={{ marginBottom: 20 }}>
-          {t(errors.form)}
+          {errors.form}
         </div>
       )}
 
@@ -380,7 +357,7 @@ function SpecialistFields({
       */}
       {askConsent && <Consent error={errors.consent} />}
 
-      <Submit pending={pending}>{t(submitLabel)}</Submit>
+      <Submit pending={pending}>{submitLabel}</Submit>
     </form>
   )
 }

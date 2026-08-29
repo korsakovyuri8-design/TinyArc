@@ -1,10 +1,6 @@
 import type { Metadata } from 'next'
 import { DM_Sans, Golos_Text, Playfair_Display, Space_Mono } from 'next/font/google'
-import { Link } from '@/components/Link'
-import { LocaleSwitch } from '@/components/LocaleSwitch'
-import { headers } from 'next/headers'
-import { currentLocale, translate, translator } from '@/lib/i18n'
-import { LOCALES, PATH_HEADER, localePath } from '@/lib/i18n/locale'
+import Link from 'next/link'
 import './globals.css'
 import { siteUrl } from '@/lib/site'
 
@@ -45,76 +41,57 @@ const spaceMono = Space_Mono({
 })
 
 const DESCRIPTION =
-  'Бюро, которое заканчивает бюро. Алгоритм отбирает специалистов по фактам, собирает команду под проект и ведёт её до пакета документации. Здания до пяти этажей в Черногории, Сербии и Греции.'
+  'The bureau that ends the bureau. An algorithm selects specialists on facts, assembles a team for the project and runs it through to the documentation set. Buildings up to five storeys in Montenegro, Serbia and Greece.'
 
 /**
- * Метаданные на языке запроса.
+ * Метаданные сайта.
  *
  * metadataBase задаёт хост, относительно которого Next разворачивает
  * относительные ссылки — канонические адреса и og:image. Без него страница,
  * открытая по любому другому адресу (превью Render, IP), уводит поисковик и
  * мессенджер на себя, а не на домен продукта.
  *
- * Через generateMetadata, а не статическим объектом: статический считается на
- * сборке и не знает, кто пришёл, — русский заголовок в поисковой выдаче для
- * англоязычного запроса означает, что английской версии как будто нет.
- *
- * alternates.languages — то, чем поисковику объясняют, что это одна и та же
- * страница на двух языках, а не две разные и не дубль. Без них он выбирает
- * одну сам, и обычно не ту.
+ * Языковых вариантов больше нет: продукт существует на английском, и
+ * объяснять поисковику, что это одна страница на двух языках, стало нечего.
  */
-export async function generateMetadata(): Promise<Metadata> {
-  const { locale, t } = await translator()
-  const path = (await headers()).get(PATH_HEADER) ?? '/'
-
-  return {
-    metadataBase: new URL(siteUrl()),
-    title: t('TinyArc Cloud Bureau — AI-native архитектурное бюро'),
-    description: t(DESCRIPTION),
-    alternates: {
-      canonical: localePath(path, locale),
-      languages: Object.fromEntries(LOCALES.map((code) => [code, localePath(path, code)])),
-    },
-    openGraph: {
-      type: 'website',
-      url: localePath(path, locale),
-      siteName: 'TinyArc Cloud Bureau',
-      locale: locale === 'ru' ? 'ru_RU' : 'en_GB',
-      title: t('TinyArc Cloud Bureau — AI-native архитектурное бюро'),
-      description: t(DESCRIPTION),
-    },
-  }
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
+  title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
+  description: DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    siteName: 'TinyArc Cloud Bureau',
+    locale: 'en_GB',
+    title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
+    description: DESCRIPTION,
+  },
 }
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await currentLocale()
-  const t = (text: string) => translate(text, locale)
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale} className={`${playfair.variable} ${dmSans.variable} ${golos.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${golos.variable} ${spaceMono.variable}`}>
       <body>
         <header className="site-header">
           <div className="shell">
-            <Link locale={locale} href="/" className="brand">
+            <Link href="/" className="brand">
               TinyArc<span style={{ color: 'var(--accent)' }}>/</span>Bureau
             </Link>
             <nav className="nav">
-              <Link locale={locale} href="/how-it-works">
-                {t('Как это работает')}
+              <Link href="/how-it-works">
+                How it works
               </Link>
-              <Link locale={locale} href="/algorithm">
-                {t('Алгоритм')}
+              <Link href="/algorithm">
+                Algorithm
               </Link>
-              <Link locale={locale} href="/brief">
-                {t('Бриф')}
+              <Link href="/brief">
+                Brief
               </Link>
-              <Link locale={locale} href="/specialists">
-                {t('Специалистам')}
+              <Link href="/specialists">
+                For specialists
               </Link>
-              <Link locale={locale} href="/enter">
-                {t('Вход')}
+              <Link href="/enter">
+                Sign in
               </Link>
-              <LocaleSwitch locale={locale} />
             </nav>
           </div>
         </header>
@@ -127,26 +104,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div>
                 <div className="label">The bureau that ends the bureau</div>
                 <p className="dim" style={{ marginTop: 12, maxWidth: '42ch' }}>
-                  {t(
-                    'Проект в составе TinyArc Group. Отдельный венчур, финансово и структурно отделённый от других проектов группы.',
-                  )}
+                  {'Part of TinyArc Group. A separate venture, financially and structurally independent of the group’s other projects.'}
                 </p>
               </div>
               <div className="stack">
-                <Link locale={locale} href="/how-it-works">
-                  {t('Три стадии')}
+                <Link href="/how-it-works">
+                  Three stages
                 </Link>
-                <Link locale={locale} href="/algorithm">
-                  {t('Демонстрация алгоритма')}
+                <Link href="/algorithm">
+                  See the algorithm
                 </Link>
-                <Link locale={locale} href="/specialists">
-                  {t('Вступить в пул')}
+                <Link href="/specialists">
+                  Join the pool
                 </Link>
-                <Link locale={locale} href="/legal/offer">
-                  {t('Публичная оферта')}
+                <Link href="/legal/offer">
+                  Terms of service
                 </Link>
-                <Link locale={locale} href="/legal/privacy">
-                  {t('Обработка данных')}
+                <Link href="/legal/privacy">
+                  Data processing
                 </Link>
               </div>
             </div>

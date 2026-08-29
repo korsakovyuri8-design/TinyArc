@@ -52,7 +52,7 @@ export function OpsSignIn() {
   return (
     <form action={action}>
       <div className="field">
-        <label htmlFor="password">Пароль бюро</label>
+        <label htmlFor="password">Bureau password</label>
         <input id="password" name="password" type="password" autoComplete="current-password" />
         {state.error && (
           <div className="hint" style={{ color: 'var(--fail)' }}>
@@ -61,7 +61,7 @@ export function OpsSignIn() {
         )}
       </div>
       <button type="submit" className="btn btn-solid" disabled={pending}>
-        {pending ? 'Проверяем…' : 'Войти'}
+        {pending ? 'Checking…' : 'Sign in'}
       </button>
     </form>
   )

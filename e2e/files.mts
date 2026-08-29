@@ -114,7 +114,7 @@ await author.page.waitForTimeout(600)
  * файлы. Это не обход теста, а тот же порядок, что у человека: пока задача не
  * взята, время по ней не идёт, и прикладывать нечего.
  */
-const claim = author.page.locator('button:has-text("Взять в работу")')
+const claim = author.page.locator('button:has-text("Take it on")')
 if ((await claim.count()) > 0) {
   await claim.first().click()
   await author.page.waitForTimeout(2000)
@@ -138,7 +138,7 @@ await author.page.locator('form:has(#file) button[type=submit]').click()
 await author.page.waitForTimeout(2500)
 
 check(
-  (await author.page.innerText('main')).includes('Файл загружен'),
+  (await author.page.innerText('main')).includes('The file is uploaded'),
   'файл загружен, а не отвергнут',
 )
 

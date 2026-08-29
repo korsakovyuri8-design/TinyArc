@@ -72,9 +72,9 @@ const INTRA_STAGE_ORDER: Discipline[] = [
 const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
   concept: {
     architecture: [
-      { title: 'Посадка на участок и пятно застройки', slaHours: 24 },
-      { title: 'Объёмно-планировочное решение', slaHours: 48 },
-      { title: 'Черновые планировки этажей', slaHours: 48 },
+      { title: 'Siting and building footprint', slaHours: 24 },
+      { title: 'Massing and spatial layout', slaHours: 48 },
+      { title: 'Draft floor plans', slaHours: 48 },
     ],
     /*
      * Концепция — это то, что заказчик утверждает, и после утверждения она
@@ -84,78 +84,78 @@ const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
      * остальное затевалось. Задачи короткие: на этой стадии от смежника
      * нужен ответ «так строится», а не раздел.
      */
-    structural: [{ title: 'Проверка конструктивной осуществимости объёма', slaHours: 24 }],
-    mep: [{ title: 'Место под оборудование, шахты и вводы', slaHours: 24 }],
-    landscape: [{ title: 'Схема организации участка', slaHours: 24 }],
-    interiors: [{ title: 'Функциональная схема общественной части', slaHours: 24 }],
+    structural: [{ title: 'Structural feasibility check of the massing', slaHours: 24 }],
+    mep: [{ title: 'Space for plant, risers and service entries', slaHours: 24 }],
+    landscape: [{ title: 'Site organisation plan', slaHours: 24 }],
+    interiors: [{ title: 'Functional plan of the public areas', slaHours: 24 }],
     visualization: [
-      { title: 'Визуализация экстерьера', slaHours: 48 },
-      { title: 'Ключевой кадр интерьера', slaHours: 24 },
+      { title: 'Exterior visualisation', slaHours: 48 },
+      { title: 'Key interior view', slaHours: 24 },
     ],
   },
   permit: {
     survey: [
-      { title: 'Топографическая съёмка участка', slaHours: 48 },
-      { title: 'Отчёт по грунтам', slaHours: 48 },
+      { title: 'Topographic survey', slaHours: 48 },
+      { title: 'Geotechnical report', slaHours: 48 },
     ],
     architecture: [
-      { title: 'Планы этажей', slaHours: 48 },
-      { title: 'Фасады', slaHours: 24 },
-      { title: 'Разрезы', slaHours: 24 },
-      { title: 'Пояснительная записка', slaHours: 24 },
+      { title: 'Floor plans', slaHours: 48 },
+      { title: 'Elevations', slaHours: 24 },
+      { title: 'Sections', slaHours: 24 },
+      { title: 'Design and access statement', slaHours: 24 },
     ],
     structural: [
-      { title: 'Конструктивная схема', slaHours: 48 },
-      { title: 'Расчёт нагрузок', slaHours: 48 },
-      { title: 'Фундамент', slaHours: 24 },
+      { title: 'Structural scheme', slaHours: 48 },
+      { title: 'Load calculations', slaHours: 48 },
+      { title: 'Foundations', slaHours: 24 },
     ],
     mep: [
-      { title: 'Отопление и вентиляция', slaHours: 48 },
-      { title: 'Электрика и освещение', slaHours: 48 },
-      { title: 'Водоснабжение и канализация', slaHours: 48 },
+      { title: 'Heating and ventilation', slaHours: 48 },
+      { title: 'Electrical and lighting', slaHours: 48 },
+      { title: 'Water supply and drainage', slaHours: 48 },
     ],
     landscape: [
-      { title: 'Схема благоустройства', slaHours: 48 },
-      { title: 'Вертикальная планировка и дренаж', slaHours: 48 },
+      { title: 'Landscape layout', slaHours: 48 },
+      { title: 'Grading and drainage', slaHours: 48 },
     ],
-    interiors: [{ title: 'Планировочное решение интерьеров', slaHours: 48 }],
+    interiors: [{ title: 'Interior layout', slaHours: 48 }],
     permitting: [
-      { title: 'Проверка зонирования участка', slaHours: 24 },
-      { title: 'Комплектование пакета', slaHours: 48 },
-      { title: 'Подача и сопровождение', slaHours: 168 },
+      { title: 'Site zoning review', slaHours: 24 },
+      { title: 'Assembling the submission set', slaHours: 48 },
+      { title: 'Submission and follow-through', slaHours: 168 },
     ],
     energy: [
-      { title: 'Теплотехнический расчёт ограждающих конструкций', slaHours: 48 },
-      { title: 'Элаборат энергоэффективности', slaHours: 72 },
+      { title: 'Thermal calculation of the building envelope', slaHours: 48 },
+      { title: 'Energy performance report', slaHours: 72 },
     ],
   },
   tender: {
     architecture: [
-      { title: 'Спецификация отделки', slaHours: 48 },
-      { title: 'Ведомость проёмов', slaHours: 24 },
+      { title: 'Finishes schedule', slaHours: 48 },
+      { title: 'Door and window schedule', slaHours: 24 },
     ],
-    structural: [{ title: 'Ведомость материалов и объёмов', slaHours: 48 }],
-    mep: [{ title: 'Спецификация оборудования', slaHours: 48 }],
+    structural: [{ title: 'Materials and quantities schedule', slaHours: 48 }],
+    mep: [{ title: 'Equipment schedule', slaHours: 48 }],
     cost_estimation: [
-      { title: 'Сводная ведомость объёмов работ', slaHours: 72 },
-      { title: 'Сметный расчёт по разделам', slaHours: 72 },
+      { title: 'Consolidated bill of quantities', slaHours: 72 },
+      { title: 'Cost estimate by section', slaHours: 72 },
     ],
   },
   construction: {
     architecture: [
-      { title: 'Рабочие планы', slaHours: 48 },
-      { title: 'Узлы и детали', slaHours: 72 },
+      { title: 'Working plans', slaHours: 48 },
+      { title: 'Junctions and details', slaHours: 72 },
     ],
     structural: [
-      { title: 'Рабочие чертежи конструкций', slaHours: 72 },
-      { title: 'Армирование', slaHours: 48 },
+      { title: 'Structural working drawings', slaHours: 72 },
+      { title: 'Reinforcement', slaHours: 48 },
     ],
-    mep: [{ title: 'Рабочие схемы сетей', slaHours: 72 }],
+    mep: [{ title: 'Services working drawings', slaHours: 72 }],
     dfma: [
-      { title: 'Чертежи изготовления элементов', slaHours: 72 },
-      { title: 'Схема монтажа и узлы стыковки', slaHours: 48 },
+      { title: 'Fabrication drawings', slaHours: 72 },
+      { title: 'Erection sequence and connection details', slaHours: 48 },
     ],
-    interiors: [{ title: 'Рабочая документация интерьеров', slaHours: 72 }],
+    interiors: [{ title: 'Interior working drawings', slaHours: 72 }],
   },
 }
 

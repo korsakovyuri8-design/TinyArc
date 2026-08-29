@@ -79,7 +79,7 @@ describe('сборка Tiny Team', () => {
     const result = assemble(nobodySigns, requirements())
 
     expect(result.outcome).toBe('no_signatory')
-    expect(result.notes).toContain('подписи')
+    expect(result.notes).toContain('signing rights')
   })
 
   it('ставит ровно одного подписывающего', () => {

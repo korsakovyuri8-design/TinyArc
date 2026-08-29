@@ -1,5 +1,5 @@
 import { asHundred } from '@/engine/score'
-import { fill } from '@/lib/i18n/fill'
+import { fill } from '@/lib/fill'
 import type { ScoreBreakdown } from '@/engine/types'
 
 /**
@@ -25,28 +25,28 @@ export function BreakdownRow({
   return (
     <div className="stack" style={{ gap: 8 }}>
       <Line
-        label={t('Портфолио')}
+        label={'Portfolio'}
         value={breakdown.portfolioRating.toFixed(1)}
         fill={breakdown.portfolioRating / 10}
       />
       {breakdown.historyWeight > 0 ? (
         <Line
-          label={fill(t('Поставка · вес {percent}%'), { percent: historyPercent })}
+          label={fill('Delivery · weight {percent}%', { percent: historyPercent })}
           value={breakdown.deliveryScore.toFixed(1)}
           fill={breakdown.deliveryScore / 10}
         />
       ) : (
         <div className="dim" style={{ fontSize: '0.78rem' }}>
-          {t('Истории поставок нет — Quality это портфолио')}
+          No delivery history yet — Quality is the portfolio
         </div>
       )}
       <Line
-        label={t('Соответствие проекту')}
+        label={'Fit to the project'}
         value={breakdown.relevance.toFixed(2)}
         fill={breakdown.relevance}
       />
       <Line
-        label={t('Доступность')}
+        label={'Availability'}
         value={breakdown.availability.toFixed(2)}
         fill={breakdown.availability}
       />
@@ -67,7 +67,7 @@ export function BreakdownRow({
         </div>
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 4 }}>
           <span className="dim" style={{ fontSize: '0.78rem' }}>
-            {t('Совпадение с проектом')}
+            Match with the project
           </span>
           <span className="num dim" style={{ fontSize: '0.78rem' }}>
             {hundred.matchPercent}%

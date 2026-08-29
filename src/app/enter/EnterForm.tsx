@@ -2,8 +2,6 @@
 
 import { useActionState } from 'react'
 import { Field, Submit } from '@/components/Fields'
-import { LocaleProvider, useT } from '@/lib/i18n/context'
-import type { Locale } from '@/lib/i18n/locale'
 import { enterWithKey, remindKey, type EnterState, type RecoverState } from './actions'
 
 /**
@@ -12,30 +10,27 @@ import { enterWithKey, remindKey, type EnterState, type RecoverState } from './a
  * их было бы поздно, а часть из них подставляет минуты и не нашлась бы в
  * словаре как есть.
  */
-export function EnterForm({ locale }: { locale: Locale }) {
+export function EnterForm() {
   return (
-    <LocaleProvider locale={locale}>
-      <KeyForm />
-    </LocaleProvider>
+          <KeyForm />
   )
 }
 
 function KeyForm() {
   const [state, action, pending] = useActionState<EnterState, FormData>(enterWithKey, {})
-  const t = useT()
 
   return (
     <form action={action}>
       <Field
-        label="Ключ доступа"
+        label="Access key"
         name="key"
         error={state.error}
-        hint="Клиенту он пришёл после брифа, специалисту — после подтверждения заявки"
+        hint="Sent to clients after the brief, to specialists after approval"
       >
-        <input id="key" name="key" autoComplete="off" placeholder={t('brief-… или spec-…')} />
+        <input id="key" name="key" autoComplete="off" placeholder={'brief-… or spec-…'} />
       </Field>
 
-      <Submit pending={pending}>{t('Войти')}</Submit>
+      <Submit pending={pending}>Sign in</Submit>
     </form>
   )
 }
@@ -51,31 +46,28 @@ function KeyForm() {
  * Ответ один и тот же, нашёлся адрес или нет: иначе форма отвечает не тому,
  * кто забыл ключ, а тому, кто проверяет, кто у нас в заказчиках.
  */
-export function RecoverForm({ locale }: { locale: Locale }) {
+export function RecoverForm() {
   return (
-    <LocaleProvider locale={locale}>
-      <RecoverFields />
-    </LocaleProvider>
+          <RecoverFields />
   )
 }
 
 function RecoverFields() {
   const [state, action, pending] = useActionState<RecoverState, FormData>(remindKey, {})
-  const t = useT()
 
   return (
     <form action={action}>
       <Field
-        label="Адрес почты"
+        label="Email address"
         name="email"
         error={state.error}
-        hint="Тот, на который выдавали ключ"
+        hint="The one the key was issued to"
       >
         <input id="email" name="email" type="email" autoComplete="email" />
       </Field>
 
       <button type="submit" className="btn btn-quiet" disabled={pending}>
-        {pending ? '…' : t('Напомнить ключ')}
+        {pending ? '…' : 'Remind me'}
       </button>
 
       {state.message && (

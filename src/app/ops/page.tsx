@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { amount, date, dateTime } from '@/lib/format'
 import { ALERT_ACTIONS, ALERT_LABELS, alertAudience, projectHeat } from '@/engine/pm'
 import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
@@ -16,18 +17,17 @@ import { isOperator } from '@/lib/session'
 import { markInvoicePaid, planBureauQueue, voidProjectInvoice } from './actions'
 import { OpsAction, OpsSignIn } from './OpsForms'
 
-export const metadata = { title: 'Панель бюро — TinyArc Cloud Bureau' }
+export const metadata = { title: 'Bureau panel — TinyArc Cloud Bureau' }
 
 export default async function OpsPage() {
   if (!(await isOperator())) {
     return (
       <section style={{ paddingTop: 'clamp(48px, 8vw, 96px)' }}>
         <div className="shell" style={{ maxWidth: 460 }}>
-          <span className="eyebrow">Панель бюро</span>
-          <h1>Вход</h1>
+          <span className="eyebrow">Bureau panel</span>
+          <h1>Sign in</h1>
           <p className="muted" style={{ marginTop: 16 }}>
-            Панель закрывает разбор заявок, постановку задач и приёмку. Права назначить
-            специалиста в команду она не даёт никому — такого поля нет в схеме.
+            The panel covers application review, writing briefs and accepting work. It gives no one the right to assign a specialist to a team — there is no such field in the schema.
           </p>
           <div style={{ marginTop: 32 }}>
             <OpsSignIn />
@@ -61,42 +61,41 @@ export default async function OpsPage() {
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
-        <span className="eyebrow">Панель бюро</span>
-        <h1>Что сейчас на столе</h1>
+        <span className="eyebrow">Bureau panel</span>
+        <h1>What is on the table now</h1>
 
         <div className="grid grid-3" style={{ marginTop: 40 }}>
-          <Tile value={pending} label="заявок на разборе" href="/ops/applications" accent={pending > 0} />
-          <Tile value={active} label="в пуле" href="/ops/pool" />
-          <Tile value={projects} label="проектов" href="/ops/projects" />
-          <Tile value={submitted} label="ждут приёмки" href="/ops/projects" accent={submitted > 0} />
-          <Tile value={openTickets} label="тикетов в работе" href="/ops/projects" />
+          <Tile value={pending} label="applications under review" href="/ops/applications" accent={pending > 0} />
+          <Tile value={active} label="in the pool" href="/ops/pool" />
+          <Tile value={projects} label="projects" href="/ops/projects" />
+          <Tile value={submitted} label="await acceptance" href="/ops/projects" accent={submitted > 0} />
+          <Tile value={openTickets} label="tickets in progress" href="/ops/projects" />
         </div>
 
         <div className="divider" style={{ marginTop: 48 }} />
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h2>Цифровой менеджер</h2>
+          <h2>Digital manager</h2>
           {conflicts.length > 0 && (
             <span className="tag tag-fail">Conflict Detected · {conflicts.length}</span>
           )}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>
-          Он следит и сигналит — не чертит и не считает нагрузки. Чертежи делают люди, которых
-          подобрал алгоритм; задача менеджера — чтобы эстафета не вставала.
+          It watches and signals — it does not draw and does not run calculations. The drawings are made by the people the algorithm selected; the manager’s job is to keep the relay moving.
         </p>
 
         {alerts.length === 0 ? (
-          <p className="dim">Тихо: сроки в порядке, всё взято в работу, приёмка не копится.</p>
+          <p className="dim">Quiet: deadlines are fine, everything has been picked up, acceptance is not piling up.</p>
         ) : (
           <>
             {heat.length > 1 && (
               <div className="stack" style={{ gap: 8, marginBottom: 24 }}>
-                <div className="label">Где встало</div>
+                <div className="label">Where it stalled</div>
                 {heat.map((h) => (
                   <div key={h.projectId} className="row" style={{ gap: 12, alignItems: 'baseline' }}>
                     <Link href={`/ops/projects/${h.projectId}`}>{titles.get(h.projectId)}</Link>
                     <span className="dim" style={{ fontSize: '0.85rem' }}>
-                      {ALERT_LABELS[h.worst].toLowerCase()} · сигналов {h.total} · {Math.round(h.hours)} ч
+                      {ALERT_LABELS[h.worst].toLowerCase()} · signals {h.total} · {Math.round(h.hours)} h
                     </span>
                   </div>
                 ))}
@@ -104,10 +103,9 @@ export default async function OpsPage() {
             )}
 
             <div style={{ marginBottom: 24 }}>
-              <OpsAction action={planBureauQueue} label="Разобрать очередь" />
+              <OpsAction action={planBureauQueue} label="Work through the queue" />
               <p className="hint" style={{ marginTop: 8 }}>
-                Помощник переведёт очередь в список действий на сегодня. Порядок срочности
-                считает движок — помощник его не пересчитывает.
+                The assistant turns the queue into a list of actions for today. The order of urgency is computed by the engine — the assistant does not recompute it.
               </p>
             </div>
           </>
@@ -118,12 +116,12 @@ export default async function OpsPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Сигнал</th>
-                  <th>Задача</th>
-                  <th>Проект</th>
-                  <th>Часов</th>
-                  <th>Кому</th>
-                  <th>Что делать</th>
+                  <th>Signal</th>
+                  <th>Task</th>
+                  <th>Project</th>
+                  <th>Hours</th>
+                  <th>To whom</th>
+                  <th>What to do</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,7 +144,7 @@ export default async function OpsPage() {
                     <td className="dim">{alert.projectTitle}</td>
                     <td className="num dim">{Math.round(alert.hours)}</td>
                     <td className="dim">
-                      {alertAudience(alert.kind) === 'bureau' ? 'бюро' : 'специалисту'}
+                      {alertAudience(alert.kind) === 'bureau' ? 'bureau' : 'specialist'}
                     </td>
                     <td className="dim">{ALERT_ACTIONS[alert.kind]}</td>
                   </tr>
@@ -163,17 +161,15 @@ export default async function OpsPage() {
             className="row"
             style={{ justifyContent: 'space-between', alignItems: 'baseline' }}
           >
-            <h2>Счета</h2>
+            <h2>Invoices</h2>
             {waitingInvoices > 0 && <span className="tag tag-wait">{waitingInvoices}</span>}
           </div>
           <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-            Стадия не открывается, пока счёт не оплачен (п.14а). Приёма платежей на сайте нет:
-            отметку ставит человек, увидев поступление. Автоматический «приём» без сверки с
-            банком означал бы, что непроведённый платёж открывает работу живым людям.
+            A stage does not open until its invoice is paid (§14a). There is no payment processing on the site: a person marks it after seeing the money arrive. An automatic “received” without checking the bank would mean an unsettled payment opens work for living people.
           </p>
 
           {invoices.length === 0 ? (
-            <p className="dim">Счетов пока нет: их выставляет гейт, когда стадия готова.</p>
+            <p className="dim">No invoices yet: the gate issues them when a stage is ready.</p>
           ) : (
             <div className="stack" style={{ gap: 16 }}>
               {invoices.map((invoice) => (
@@ -181,14 +177,14 @@ export default async function OpsPage() {
                   <div className="row" style={{ justifyContent: 'space-between' }}>
                     <Link href={`/ops/projects/${invoice.projectId}`}>{invoice.projectTitle}</Link>
                     {invoice.status === 'paid' ? (
-                      <span className="tag">Оплачен</span>
+                      <span className="tag">Paid</span>
                     ) : (
                       <span
                         className={
                           invoice.hours > INVOICE_NUDGE_HOURS ? 'tag tag-fail' : 'tag tag-wait'
                         }
                       >
-                        {Math.round(invoice.hours)} ч
+                        {Math.round(invoice.hours)} h
                       </span>
                     )}
                   </div>
@@ -196,9 +192,9 @@ export default async function OpsPage() {
                   <div className="dim" style={{ marginTop: 8, fontSize: '0.85rem' }}>
                     {DOC_STAGE_LABELS[invoice.stage]} ·{' '}
                     <strong style={{ color: 'var(--text)' }}>
-                      {invoice.amount.toLocaleString('ru-RU')} {invoice.currency}
+                      {amount(invoice.amount)} {invoice.currency}
                     </strong>
-                    {invoice.paidAt && ` · ${invoice.paidAt.toLocaleDateString('ru-RU')}`}
+                    {invoice.paidAt && ` · ${date(invoice.paidAt)}`}
                   </div>
 
                   {invoice.status === 'issued' && (
@@ -206,31 +202,29 @@ export default async function OpsPage() {
                       <OpsAction
                         action={markInvoicePaid}
                         hidden={{ invoiceId: invoice.invoiceId, projectId: invoice.projectId }}
-                        label="Отметить оплаченным"
+                        label="Mark as paid"
                         solid
                       >
                         <input
                           type="text"
                           name="note"
-                          placeholder="Чем подтверждена оплата"
+                          placeholder="What confirms the payment"
                           style={{ marginBottom: 10 }}
                         />
                       </OpsAction>
 
                       {/*
-                        Отзыв рядом, но без выделения: счёт выставляет гейт, а
-                        ошибается человек — неверная площадь даёт неверную
-                        сумму. Причина обязательна: заказчик счёт уже видел.
+                        Voiding sits alongside but is not highlighted: the gate issues the invoice, and it is a person who errs — a wrong floor area gives a wrong sum. A reason is required: the client has already seen the invoice.
                       */}
                       <OpsAction
                         action={voidProjectInvoice}
                         hidden={{ invoiceId: invoice.invoiceId, projectId: invoice.projectId }}
-                        label="Отозвать"
+                        label="Void"
                       >
                         <input
                           type="text"
                           name="note"
-                          placeholder="Почему отзываете"
+                          placeholder="Why you are voiding it"
                           style={{ marginBottom: 10 }}
                         />
                       </OpsAction>
@@ -251,25 +245,23 @@ export default async function OpsPage() {
             className="row"
             style={{ justifyContent: 'space-between', alignItems: 'baseline' }}
           >
-            <h2>Стадии ждут заказчика</h2>
+            <h2>Stages awaiting the client</h2>
             {approvals.length > 0 && <span className="tag tag-wait">{approvals.length}</span>}
           </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Работа принята, следующая стадия не открывается: ждём слова заказчика. Его молчание
-          останавливает выпуск не хуже просрочки исполнителя, и висеть оно должно здесь, а не
-          у него в кабинете.
+          The work is accepted, the next stage does not open: we are waiting on the client’s word. Their silence stops delivery as surely as a missed deadline, and it belongs here, not out of sight in their cabinet.
         </p>
 
         {approvals.length === 0 ? (
-          <p className="dim">Никто не ждёт: все законченные стадии подтверждены.</p>
+          <p className="dim">No one is waiting: every finished stage is confirmed.</p>
         ) : (
           <div className="table-scroll panel" style={{ padding: 0 }}>
             <table>
               <thead>
                 <tr>
-                  <th>Проект</th>
-                  <th>Стадия</th>
-                  <th>Ждём</th>
+                  <th>Project</th>
+                  <th>Stage</th>
+                  <th>Waiting</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,7 +275,7 @@ export default async function OpsPage() {
                       <span
                         className={a.hours > APPROVAL_NUDGE_HOURS ? 'tag tag-fail' : 'tag tag-wait'}
                       >
-                        {Math.round(a.hours)} ч
+                        {Math.round(a.hours)} h
                       </span>
                     </td>
                   </tr>
@@ -297,18 +289,17 @@ export default async function OpsPage() {
         <div className="divider" style={{ marginTop: 48 }} />
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h2>Заказчики ждут ответа</h2>
+          <h2>Clients awaiting an answer</h2>
           {questions.length > 0 && (
             <span className="tag tag-fail">{questions.length}</span>
           )}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Единственный канал, который есть у заказчика, и его контрагент — мы. Молчание здесь
-          читается не как занятость, а как то, что проектом никто не занимается.
+          This is the only channel the client has, and we are the party on the other end. Silence here does not read as busy — it reads as nobody working on the project.
         </p>
 
         {questions.length === 0 ? (
-          <p className="dim">Вопросов без ответа нет.</p>
+          <p className="dim">No unanswered questions.</p>
         ) : (
           <div className="stack" style={{ gap: 16 }}>
             {questions.map((q) => (
@@ -320,8 +311,8 @@ export default async function OpsPage() {
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <Link href={`/ops/projects/${q.projectId}`}>{q.projectTitle}</Link>
                   <span className={q.hours > ANSWER_SLA_HOURS ? 'tag tag-fail' : 'tag tag-wait'}>
-                    {Math.round(q.hours)} ч
-                    {q.count > 1 && ` · сообщений ${q.count}`}
+                    {Math.round(q.hours)} h
+                    {q.count > 1 && ` · messages ${q.count}`}
                   </span>
                 </div>
                 <p style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>{q.body}</p>
@@ -333,26 +324,24 @@ export default async function OpsPage() {
         <div className="divider" style={{ marginTop: 48 }} />
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h2>Не смогли взять</h2>
+          <h2>Could not take on</h2>
           {lost.length > 0 && <span className="tag tag-fail">{lost.length}</span>}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Брифы, под которые состав не собрался. Это не список ошибок, а список найма — и
-          самый дорогой, какой есть: не «кого бы нанять вообще», а за какой заказ нам уже
-          заплатили бы, будь у нас этот человек.
+          Briefs for which no team came together. This is not a list of failures but a hiring list — and the most expensive one there is: not “who might we hire”, but which commission we would already have been paid for, had we had this person.
         </p>
 
         {lost.length === 0 ? (
-          <p className="dim">Все брифы, дошедшие до прогона, собрались.</p>
+          <p className="dim">Every brief that reached a run came together.</p>
         ) : (
           <div className="table-scroll panel" style={{ padding: 0 }}>
             <table>
               <thead>
                 <tr>
-                  <th>Проект</th>
-                  <th>Страна</th>
-                  <th>Кого не хватило</th>
-                  <th>Ждёт</th>
+                  <th>Project</th>
+                  <th>Country</th>
+                  <th>Who was missing</th>
+                  <th>Waiting</th>
                 </tr>
               </thead>
               <tbody>
@@ -362,18 +351,18 @@ export default async function OpsPage() {
                     <td className="dim">{JURISDICTION_NAMES[row.jurisdiction] ?? row.jurisdiction}</td>
                     <td>
                       {row.outcome === 'no_signatory' ? (
-                        <span className="tag tag-fail">некому подписать</span>
+                        <span className="tag tag-fail">no one to sign</span>
                       ) : row.gap ? (
                         <span className="dim" style={{ fontSize: '0.85rem' }}>
                           {roleName(row.gap)}
-                          {row.gap.candidates > 0 && ` · кандидатов ${row.gap.candidates}`}
+                          {row.gap.candidates > 0 && ` · candidates ${row.gap.candidates}`}
                         </span>
                       ) : (
-                        <span className="dim">состав не сошёлся</span>
+                        <span className="dim">no team came together</span>
                       )}
                     </td>
                     <td className="num dim">
-                      {Math.max(0, Math.floor((Date.now() - row.since.getTime()) / 86_400_000))} дн.
+                      {Math.max(0, Math.floor((Date.now() - row.since.getTime()) / 86_400_000))} days
                     </td>
                   </tr>
                 ))}
@@ -385,10 +374,10 @@ export default async function OpsPage() {
         <div className="divider" style={{ marginTop: 48 }} />
 
         <div className="stack" style={{ gap: 10 }}>
-          <Link href="/ops/applications">Заявки специалистов →</Link>
-          <Link href="/ops/import">Импорт базы специалистов →</Link>
-          <Link href="/ops/pool">Пул и метрики →</Link>
-          <Link href="/ops/projects">Проекты и прогоны →</Link>
+          <Link href="/ops/applications">Specialist applications →</Link>
+          <Link href="/ops/import">Specialist database import →</Link>
+          <Link href="/ops/pool">Pool and metrics →</Link>
+          <Link href="/ops/projects">Projects and runs →</Link>
         </div>
       </div>
     </section>

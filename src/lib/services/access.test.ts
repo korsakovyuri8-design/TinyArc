@@ -7,7 +7,6 @@ describe('что называет письмо с напоминанием', () 
   it('перечисляет проекты заказчика по одному', () => {
     const lines = keyLines(
       { projects: [project, { title: 'Вилла в Тивате', clientKey: 'brief-xyz' }], specialist: null },
-      'ru',
     )
 
     expect(lines).toHaveLength(2)
@@ -18,16 +17,14 @@ describe('что называет письмо с напоминанием', () 
   it('называет доску работ, когда ключ специалиста работает', () => {
     const lines = keyLines(
       { projects: [], specialist: { accessKey: 'spec-1', status: 'active' } },
-      'ru',
     )
 
-    expect(lines).toEqual(['Доска работ — ключ spec-1'])
+    expect(lines).toEqual(['Work board — key spec-1'])
   })
 
   it('называет её и приглашённому: он входит дозаполнять профиль', () => {
     const lines = keyLines(
       { projects: [], specialist: { accessKey: 'spec-2', status: 'invited' } },
-      'ru',
     )
 
     expect(lines).toHaveLength(1)
@@ -40,19 +37,14 @@ describe('что называет письмо с напоминанием', () 
    */
   it('молчит про ключ, который ещё или уже не работает', () => {
     for (const status of ['pending', 'rejected']) {
-      expect(keyLines({ projects: [], specialist: { accessKey: 'spec-3', status } }, 'ru')).toEqual(
+      expect(keyLines({ projects: [], specialist: { accessKey: 'spec-3', status } })).toEqual(
         [],
       )
     }
   })
 
   it('за адресом может не числиться ничего', () => {
-    expect(keyLines({ projects: [], specialist: null }, 'ru')).toEqual([])
+    expect(keyLines({ projects: [], specialist: null })).toEqual([])
   })
 
-  it('говорит на языке человека', () => {
-    const [line] = keyLines({ projects: [project], specialist: null }, 'en')
-
-    expect(line).toBe('Project “Дом в Нови-Саде” — key brief-abc')
-  })
 })

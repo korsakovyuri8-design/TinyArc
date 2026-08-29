@@ -38,7 +38,7 @@ export function specialist(patch: Partial<SpecialistProfile> = {}): SpecialistPr
 
   return {
     id: patch.id ?? 'spec-1',
-    displayName: 'Специалист',
+    displayName: 'Specialist',
     disciplines,
     specializations: disciplines.flatMap((d) => DEFAULT_SPECIALIZATIONS[d]),
     typologies: ['villa'],
@@ -103,7 +103,7 @@ export function fullPool(): SpecialistProfile[] {
   return disciplines.map((d, i) =>
     specialist({
       id: `spec-${d}`,
-      displayName: `Специалист ${d}`,
+      displayName: `Specialist ${d}`,
       disciplines: [d],
       portfolioRating: 9 - i * 0.1,
     }),

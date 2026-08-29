@@ -85,7 +85,7 @@ describe('описание для генератора', () => {
 
 describe('поиск направления по ключу', () => {
   it('возвращает подпись для выбранного варианта', () => {
-    expect(directionByKey('courtyard')?.title).toBe('Внутренний двор')
+    expect(directionByKey('courtyard')?.title).toBe('Courtyard')
   })
 
   it('на неизвестный ключ отвечает пустотой, а не выдумкой', () => {

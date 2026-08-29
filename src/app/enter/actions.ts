@@ -1,9 +1,7 @@
 'use server'
 
-import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { allow, forgive, spend } from '@/lib/guard'
-import { translator } from '@/lib/i18n'
 import { remindKeys } from '@/lib/services/access'
 import { retryMessage } from '@/lib/rate-limit'
 import {
@@ -24,14 +22,13 @@ export type RecoverState = { error?: string; message?: string }
  * числится, — ключ сам знает, чей он.
  */
 export async function enterWithKey(_prev: EnterState, formData: FormData): Promise<EnterState> {
-  const { t } = await translator()
 
   // Вход по ключу дёшев, но это перебор ключа: ограничиваем именно поэтому.
   const verdict = await allow('enter')
-  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds, t) }
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
 
   const key = String(formData.get('key') ?? '').trim()
-  if (!key) return { error: t('Введите ключ доступа.') }
+  if (!key) return { error: 'Enter your access key.' }
 
   /*
    * Успешный вход обнуляет счётчик.
@@ -46,7 +43,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
   if (project) {
     await forgive('enter')
     await signInClient(project.id)
-    redirect(await localeHref('/project'))
+    redirect('/project')
   }
 
   const specialist = await specialistByKey(key)
@@ -57,24 +54,24 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
     if (specialist.status === 'invited') {
       await forgive('enter')
       await signInSpecialist(specialist.id)
-      redirect(await localeHref('/work/profile/complete'))
+      redirect('/work/profile/complete')
     }
 
     if (specialist.status !== 'active') {
       return {
         error:
           specialist.status === 'pending'
-            ? t('Заявка ещё на разборе. Ключ заработает, когда портфолио пройдёт порог.')
-            : t('Этот ключ больше не активен.'),
+            ? 'The application is still under review. The key starts working once the portfolio passes the threshold.'
+            : 'This key is no longer active.',
       }
     }
 
     await forgive('enter')
     await signInSpecialist(specialist.id)
-    redirect(await localeHref('/work'))
+    redirect('/work')
   }
 
-  return { error: t('Такого ключа нет.') }
+  return { error: 'No such key.' }
 }
 
 /**
@@ -91,24 +88,23 @@ export async function remindKey(
   _prev: RecoverState,
   formData: FormData,
 ): Promise<RecoverState> {
-  const { locale, t } = await translator()
 
   const verdict = await allow('recover')
-  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds, t) }
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
 
   const email = String(formData.get('email') ?? '').trim()
-  if (!email.includes('@')) return { error: t('Введите адрес почты.') }
+  if (!email.includes('@')) return { error: 'Enter an email address.' }
 
   await spend('recover')
 
   try {
-    await remindKeys(email, locale)
+    await remindKeys(email)
   } catch (error) {
     // Молча: сказать «письмо не ушло» — значит сказать, что адрес нашёлся.
     console.error('Напоминание ключа не ушло:', error)
   }
 
   return {
-    message: t('Если этот адрес у нас есть, письмо с ключом уже ушло. Проверьте почту.'),
+    message: 'If we have this address, the email with the key has already gone out. Check your inbox.',
   }
 }

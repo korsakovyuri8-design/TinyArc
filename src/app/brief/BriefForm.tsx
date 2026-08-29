@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { fill } from '@/lib/i18n/fill'
+import { fill } from '@/lib/fill'
 import {
   CLIMATE_ZONES,
   DOC_STAGES,
@@ -29,19 +29,15 @@ import {
 } from '@/lib/labels'
 import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
-import { LocaleProvider, useT } from '@/lib/i18n/context'
-import type { Locale } from '@/lib/i18n/locale'
 import { submitBrief, type BriefState } from './actions'
 
-export function BriefForm({ locale }: { locale: Locale }) {
+export function BriefForm() {
   const [state, action, pending] = useActionState<BriefState, FormData>(submitBrief, {})
   const errors = state.errors ?? {}
   const values = (state.values ?? {}) as Record<string, string>
 
   return (
-    <LocaleProvider locale={locale}>
-      <BriefFields action={action} pending={pending} errors={errors} values={values} />
-    </LocaleProvider>
+          <BriefFields action={action} pending={pending} errors={errors} values={values} />
   )
 }
 
@@ -60,36 +56,35 @@ function BriefFields({
   errors: Record<string, string>
   values: Record<string, string>
 }) {
-  const t = useT()
 
   return (
     <form action={action}>
       <fieldset>
-        <legend>{t('Проект')}</legend>
+        <legend>Project</legend>
 
-        <Field label="Название" name="title" error={errors.title}>
-          <input id="title" name="title" defaultValue={values.title ?? ''} placeholder={t('Вилла в Тивате')} />
+        <Field label="Name" name="title" error={errors.title}>
+          <input id="title" name="title" defaultValue={values.title ?? ''} placeholder={'Villa in Tivat'} />
         </Field>
 
         <div className="grid grid-2">
-          <Field label="Типология" name="typology" error={errors.typology}>
+          <Field label="Typology" name="typology" error={errors.typology}>
             <Select name="typology" options={TYPOLOGIES} labels={TYPOLOGY_LABELS} defaultValue="villa" />
           </Field>
 
           <Field
-            label="Этажей"
+            label="Storeys"
             name="storeys"
             error={errors.storeys}
-            hint={fill(t('Bureau ведёт здания до {n} этажей'), { n: MAX_STOREYS })}
+            hint={fill('Bureau takes buildings up to {n} storeys', { n: MAX_STOREYS })}
           >
             <input id="storeys" name="storeys" type="number" min={1} max={60} defaultValue={values.storeys ?? 2} />
           </Field>
 
-          <Field label="Площадь, м²" name="areaSqm" error={errors.areaSqm}>
+          <Field label="Floor area, m²" name="areaSqm" error={errors.areaSqm}>
             <input id="areaSqm" name="areaSqm" type="number" min={10} defaultValue={values.areaSqm ?? 400} />
           </Field>
 
-          <Field label="Страна" name="jurisdiction" error={errors.jurisdiction}>
+          <Field label="Country" name="jurisdiction" error={errors.jurisdiction}>
             <Select
               name="jurisdiction"
               options={JURISDICTIONS}
@@ -98,7 +93,7 @@ function BriefFields({
             />
           </Field>
 
-          <Field label="Климатическая зона" name="climateZone" error={errors.climateZone}>
+          <Field label="Climate zone" name="climateZone" error={errors.climateZone}>
             <Select
               name="climateZone"
               options={CLIMATE_ZONES}
@@ -107,7 +102,7 @@ function BriefFields({
             />
           </Field>
 
-          <Field label="Материальная система" name="materialSystem" error={errors.materialSystem}>
+          <Field label="Structural system" name="materialSystem" error={errors.materialSystem}>
             <Select
               name="materialSystem"
               options={MATERIAL_SYSTEMS}
@@ -117,10 +112,10 @@ function BriefFields({
           </Field>
 
           <Field
-            label="Регуляторный трек"
+            label="Regulatory track"
             name="regulatoryTrack"
             error={errors.regulatoryTrack}
-            hint="Bureau работает в зонах лёгкого регулирования"
+            hint="Bureau works in light-regulation zones"
           >
             <Select
               name="regulatoryTrack"
@@ -130,7 +125,7 @@ function BriefFields({
             />
           </Field>
 
-          <Field label="Стадия документации" name="targetStage" error={errors.targetStage}>
+          <Field label="Documentation stage" name="targetStage" error={errors.targetStage}>
             <Select
               name="targetStage"
               options={DOC_STAGES}
@@ -140,19 +135,19 @@ function BriefFields({
           </Field>
 
           <Field
-            label="Участок"
+            label="Site"
             name="terrain"
             error={errors.terrain}
-            hint="Склон требует вертикальной планировки, подтопление — отдельных согласований"
+            hint="A slope requires grading design; flood risk requires separate approvals"
           >
             <Select name="terrain" options={TERRAINS} labels={TERRAIN_LABELS} defaultValue="flat" />
           </Field>
 
           <Field
-            label="Сети"
+            label="Utilities"
             name="gridConnection"
             error={errors.gridConnection}
-            hint="Автономка — это другая инженерия, а не та же со звёздочкой"
+            hint="Off-grid is different engineering, not the same engineering with a footnote"
           >
             <Select
               name="gridConnection"
@@ -165,26 +160,26 @@ function BriefFields({
       </fieldset>
 
       <fieldset>
-        <legend>{t('Условия работы')}</legend>
+        <legend>Working conditions</legend>
 
         <Field
-          label="Софт"
+          label="Software"
           error={errors.software}
-          hint="Справочно: отметьте, если у вас уже есть модель от прежнего подрядчика. Состав команды это не ограничивает — команда сама сходится на одном пакете"
+          hint="For reference only: tick this if you already have a model from a previous consultant. It does not constrain the team — the team converges on one package by itself"
         >
           <Choices name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
         </Field>
 
-        <Field label="Языки" error={errors.languages} hint="На чём вам удобно разговаривать">
+        <Field label="Languages" error={errors.languages} hint="What you are comfortable working in">
           <Choices name="languages" options={LANGUAGES} labels={LANGUAGE_NAMES} defaultValue={['en']} />
         </Field>
 
         <div className="grid grid-2">
           <Field
-            label="Занятость, ч/нед"
+            label="Workload, h/week"
             name="requiredHoursPerWeek"
             error={errors.requiredHoursPerWeek}
-            hint="Сколько времени специалиста нужно проекту"
+            hint="How much of a specialist’s time the project needs"
           >
             <input
               id="requiredHoursPerWeek"
@@ -197,10 +192,10 @@ function BriefFields({
           </Field>
 
           <Field
-            label="Горизонт, дней"
+            label="Start within, days"
             name="horizonDays"
             error={errors.horizonDays}
-            hint="За сколько дней команда должна выйти на задачу"
+            hint="How soon the team must start work"
           >
             <input
               id="horizonDays"
@@ -215,28 +210,28 @@ function BriefFields({
       </fieldset>
 
       <fieldset>
-        <legend>{t('Контакт')}</legend>
+        <legend>Contact</legend>
 
         <div className="grid grid-2">
-          <Field label="Как к вам обращаться" name="clientName" error={errors.clientName}>
+          <Field label="How to address you" name="clientName" error={errors.clientName}>
             <input id="clientName" name="clientName" defaultValue={values.clientName ?? ''} />
           </Field>
 
           <Field
-            label="Почта"
+            label="Email"
             name="clientEmail"
             error={errors.clientEmail}
-            hint="Ключ доступа к кабинету придёт сюда"
+            hint="Your access key will be sent here"
           >
             <input id="clientEmail" name="clientEmail" type="email" defaultValue={values.clientEmail ?? ''} />
           </Field>
         </div>
 
         <Field
-          label="Что важно знать про участок"
+          label="What matters about the site"
           name="briefNotes"
           error={errors.briefNotes}
-          hint="Команде это выдаётся в объёме задачи, а не целиком"
+          hint="The team sees this scoped to their task, not in full"
         >
           <textarea id="briefNotes" name="briefNotes" defaultValue={values.briefNotes ?? ''} />
         </Field>
@@ -251,9 +246,9 @@ function BriefFields({
       <Consent error={errors.consent} />
 
       <div className="row" style={{ gap: 16 }}>
-        <Submit pending={pending}>{t('Собрать команду')}</Submit>
+        <Submit pending={pending}>Assemble the team</Submit>
         <span className="dim" style={{ fontSize: '0.85rem' }}>
-          {t('Движок посчитает сразу — без «мы с вами свяжемся»')}
+          The engine answers immediately — no “we’ll get back to you”
         </span>
       </div>
     </form>

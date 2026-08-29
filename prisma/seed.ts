@@ -35,8 +35,8 @@ const prisma = new PrismaClient({ adapter: adapterFor(databaseUrl()) })
 const SEED_PROJECTS = [
   {
     clientKey: 'seed-brief-tivat',
-    title: 'Вилла в Тивате',
-    clientName: 'Марина',
+    title: 'Villa in Tivat',
+    clientName: 'Marina',
     clientEmail: 'marina@example.com',
     typology: 'villa',
     storeys: 2,
@@ -53,12 +53,12 @@ const SEED_PROJECTS = [
     horizonDays: 45,
     utcOffset: 1,
     briefNotes:
-      'Участок с уклоном к морю. Важен вид с верхнего этажа и теневой двор. Склон крутой — нужна вертикальная планировка.',
+      'The site slopes towards the sea. The view from the top floor matters, and a shaded courtyard. The slope is steep — grading is needed.',
   },
   {
     clientKey: 'seed-brief-novisad',
-    title: 'Townhouse в Нови-Саде',
-    clientName: 'Душан',
+    title: 'Townhouse in Novi Sad',
+    clientName: 'Dušan',
     clientEmail: 'dusan@example.com',
     typology: 'townhouse',
     storeys: 3,
@@ -74,11 +74,11 @@ const SEED_PROJECTS = [
     requiredHoursPerWeek: 12,
     horizonDays: 60,
     utcOffset: 1,
-    briefNotes: 'Четыре секции, общий двор. Нужен внятный расчёт по инсоляции.',
+    briefNotes: 'Four sections, a shared courtyard. A clear daylight calculation is needed.',
   },
   {
     clientKey: 'seed-brief-athens',
-    title: 'Mixed-use в Афинах',
+    title: 'Mixed-use in Athens',
     clientName: 'Eleni',
     clientEmail: 'eleni@example.com',
     typology: 'mixed_use',
@@ -95,12 +95,12 @@ const SEED_PROJECTS = [
     requiredHoursPerWeek: 16,
     horizonDays: 90,
     utcOffset: 2,
-    briefNotes: 'Первый этаж — коммерция, выше жильё. Ограничение по высоте по кварталу.',
+    briefNotes: 'Commercial on the ground floor, housing above. A height limit applies across the block.',
   },
   {
     // Намеренно вне продуктовой границы: стенд должен показывать и отказ (п.5).
     clientKey: 'seed-brief-rejected',
-    title: 'Девятиэтажка в Баре',
+    title: 'Nine-storey block in Bar',
     clientName: 'Vuk',
     clientEmail: 'vuk@example.com',
     typology: 'multi_family',
@@ -117,7 +117,7 @@ const SEED_PROJECTS = [
     requiredHoursPerWeek: 20,
     horizonDays: 120,
     utcOffset: 1,
-    briefNotes: 'Девять этажей — проверка того, что движок отказывает, а не тянет.',
+    briefNotes: 'Nine storeys — a check that the engine declines rather than drags it along.',
   },
 ] as const
 
@@ -184,10 +184,10 @@ async function main() {
         portfolio: {
           create: [
             {
-              title: 'Работа из портфолио',
+              title: 'A work from the portfolio',
               kind: person.disciplines.includes('visualization') ? 'render' : 'drawing',
               url: person.portfolioUrl,
-              roleDescription: 'Вёл раздел целиком: от постановки до выпуска.',
+              roleDescription: 'Led the section end to end: from brief to delivery.',
               softwareJson: toList(person.software),
               areaSqm: 480,
               durationMonths: 4,
@@ -297,7 +297,7 @@ async function payStage(projectId: string, stage: DocStage): Promise<boolean> {
 
   if (!invoice || invoice.status === 'paid') return false
 
-  await markPaid(invoice.id, 'Оплата по сиду: перевод от заказчика.')
+  await markPaid(invoice.id, 'Seeded payment: transfer from the client.')
   await applyGates(projectId)
 
   console.log(`  оплачена стадия «${stage}»: ${invoice.amount} ${invoice.currency}`)
@@ -326,11 +326,11 @@ async function advanceFirstProject(projectId: string): Promise<void> {
 
     await prisma.ticket.update({
       where: { id: open.id },
-      data: { spec: 'Постановка из сида: состав, границы и что передаётся дальше по графу.' },
+      data: { spec: 'Seeded brief: deliverables, bounds and what passes on down the graph.' },
     })
 
     await claim(open.id, open.specialistId)
-    await comment(open.id, { role: 'specialist', specialistId: open.specialistId }, 'Взял в работу.')
+    await comment(open.id, { role: 'specialist', specialistId: open.specialistId }, 'Taken on.')
     await attachArtifact(open.id, open.specialistId, {
       name: `${open.title}.ifc`,
       url: 'https://example.com/files/handoff.ifc',
@@ -354,8 +354,8 @@ async function advanceFirstProject(projectId: string): Promise<void> {
       asking.id,
       asking.specialistId,
       'structural',
-      'Проверить проём в осях 3–4',
-      'Вентканал 200×400 по стене в осях 3–4 упирается в дверной проём. Нужно подтвердить, что проём можно сдвинуть на 200 мм к оси 4 без усиления перемычки.',
+      'Check the opening on gridlines 3–4',
+      'A 200×400 duct along the wall on gridlines 3–4 runs into the door opening. We need confirmation that the opening can move 200 mm towards gridline 4 without strengthening the lintel.',
     )
 
     const request = await prisma.ticket.findUniqueOrThrow({ where: { id: requestId } })
@@ -365,7 +365,7 @@ async function advanceFirstProject(projectId: string): Promise<void> {
       await comment(
         requestId,
         { role: 'specialist', specialistId: request.specialistId },
-        'Сдвиг на 200 мм проходит, перемычка без изменений.',
+        'A 200 mm shift works, the lintel stays as is.',
       )
       await submit(requestId, request.specialistId)
       await accept(requestId)
@@ -402,7 +402,7 @@ async function raiseStandingConflict(projectId: string): Promise<void> {
   await raiseConflict(
     next.id,
     { role: 'specialist', specialistId: next.specialistId },
-    'Вентканал по инженерному разделу проходит там, где по архитектуре стоит дверь. Нужно решение, что двигать.',
+    'The duct in the MEP set runs where the architectural set has a door. A decision is needed on which one moves.',
   )
   console.log(`  поднят конфликт на соседнем проекте: ${next.title}`)
 }

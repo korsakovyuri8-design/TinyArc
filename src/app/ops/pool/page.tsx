@@ -14,7 +14,7 @@ import { DISCIPLINE_LABELS, SPECIALIST_STATUS_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
 
-export const metadata = { title: 'Пул — панель бюро' }
+export const metadata = { title: 'Pool — bureau panel' }
 
 export default async function PoolPage() {
   if (!(await isOperator())) redirect('/ops')
@@ -43,12 +43,12 @@ export default async function PoolPage() {
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
         <Link href="/ops" className="label">
-          ← панель
+          ← panel
         </Link>
-        <h1 style={{ marginTop: 18 }}>Пул</h1>
+        <h1 style={{ marginTop: 18 }}>Pool</h1>
 
         <div className="panel" style={{ marginTop: 32 }}>
-          <div className="label label-accent">Покрытие по дисциплинам</div>
+          <div className="label label-accent">Coverage by discipline</div>
           <div className="row" style={{ marginTop: 16, gap: 10 }}>
             {(Object.keys(DISCIPLINE_LABELS) as Discipline[]).map((d) => {
               const count = coverage.get(d) ?? 0
@@ -60,18 +60,15 @@ export default async function PoolPage() {
             })}
           </div>
           <p className="hint" style={{ marginTop: 14 }}>
-            Ноль в дисциплине означает, что любой проект, которому она нужна, соберётся неполным.
+            A zero in a discipline means any project that needs it will assemble incomplete.
           </p>
         </div>
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <h2>Что мы можем взять</h2>
+        <h2>What we can take on</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Доля форм проекта внутри продуктовой границы, под которые пул способен собрать
-          состав. Считается способность, а не загрузка: «сегодня все заняты» — это не «мы
-          этого не умеем». Без права подписи в стране доля нулевая при любом числе людей —
-          пакет без подписи юридической силы не имеет.
+          The share of project shapes inside the product boundary for which the pool can assemble a team. What is counted is capability, not workload: “everyone is busy today” is not “we cannot do this”. Without signing rights in a country the share is zero however many people there are — a documentation set without a signature has no legal force.
         </p>
 
         <div className="grid grid-3">
@@ -97,18 +94,16 @@ export default async function PoolPage() {
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <h2>Глубина по ролям и странам</h2>
+        <h2>Depth by role and country</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          В скобках — сколько из них имеют право подписи. Меньше {MIN_DEPTH} человек на роль —
-          это не покрытие: роль держится на чьём-то отпуске. Отбор при этом формально работает
-          ровно до того дня, когда единственный подходящий занят.
+          In brackets — how many of them hold signing rights. Fewer than {MIN_DEPTH} people on a role is not coverage: the role rests on someone's holiday. Selection formally keeps working right up to the day the only suitable person is busy.
         </p>
 
         <div className="table-scroll panel" style={{ padding: 0 }}>
           <table>
             <thead>
               <tr>
-                <th>Роль</th>
+                <th>Role</th>
                 {JURISDICTIONS.map((j) => (
                   <th key={j}>{JURISDICTION_NAMES[j]}</th>
                 ))}
@@ -142,28 +137,27 @@ export default async function PoolPage() {
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <h2>Кого не хватает</h2>
+        <h2>Who is missing</h2>
 
         {holes.length === 0 ? (
           <p className="dim" style={{ marginTop: 20 }}>
-            Дыр нет: каждую роль в каждой стране закрывают минимум {MIN_DEPTH} человека.
+            No holes: every role in every country is covered by at least {MIN_DEPTH} people.
           </p>
         ) : (
           <>
             <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-              Отсортировано по числу форм проекта, которые дыра закрывает. Это список найма,
-              а не список претензий: пробел закрывается человеком, а не ожиданием.
+              Sorted by the number of project shapes the hole covers. This is a hiring list, not a list of grievances: a gap is closed by a person, not by waiting.
             </p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
               <table>
                 <thead>
                   <tr>
-                    <th>Страна</th>
-                    <th>Роль</th>
-                    <th>Специализация</th>
-                    <th>Форм проекта</th>
-                    <th>Что именно</th>
+                    <th>Country</th>
+                    <th>Role</th>
+                    <th>Specialisation</th>
+                    <th>Project shapes</th>
+                    <th>Exactly what</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,7 +173,7 @@ export default async function PoolPage() {
                       <td className="num dim">{gap.shapes}</td>
                       <td>
                         <span className={gap.severity === 'none' ? 'tag tag-fail' : 'tag tag-wait'}>
-                          {gap.severity === 'none' ? 'нет никого' : 'держится на одном'}
+                          {gap.severity === 'none' ? 'nobody at all' : 'rests on one person'}
                         </span>
                       </td>
                     </tr>
@@ -190,7 +184,7 @@ export default async function PoolPage() {
 
             {holes.length > 30 && (
               <p className="hint" style={{ marginTop: 12 }}>
-                Показаны первые 30 из {holes.length}.
+                Showing the first 30 of {holes.length}.
               </p>
             )}
           </>
@@ -198,20 +192,20 @@ export default async function PoolPage() {
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <h2>Пул поимённо</h2>
+        <h2>The pool by name</h2>
 
         <div className="table-scroll panel" style={{ marginTop: 24, padding: 0 }}>
           <table>
             <thead>
               <tr>
-                <th>Специалист</th>
-                <th>Дисциплины</th>
-                <th>Портфолио</th>
-                <th>Сдано</th>
-                <th>В срок</th>
-                <th>С первого раза</th>
-                <th>Ёмкость</th>
-                <th>Статус</th>
+                <th>Specialist</th>
+                <th>Disciplines</th>
+                <th>Portfolio</th>
+                <th>Delivered</th>
+                <th>On time</th>
+                <th>First time</th>
+                <th>Capacity</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -245,7 +239,7 @@ export default async function PoolPage() {
                     <td className="num dim">
                       {metrics ? `${Math.round(metrics.firstTimeRight * 100)}%` : '—'}
                     </td>
-                    <td className="num dim">{profile.weeklyCapacityHours} ч</td>
+                    <td className="num dim">{profile.weeklyCapacityHours} h</td>
                     <td>
                       <span className={`tag ${row.status === 'active' ? 'tag-pass' : ''}`}>
                         {SPECIALIST_STATUS_LABELS[row.status] ?? row.status}

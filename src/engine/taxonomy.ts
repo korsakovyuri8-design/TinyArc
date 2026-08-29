@@ -141,9 +141,9 @@ export const JURISDICTIONS = ['ME', 'RS', 'GR'] as const
 export type Jurisdiction = (typeof JURISDICTIONS)[number]
 
 export const JURISDICTION_NAMES: Record<Jurisdiction, string> = {
-  ME: 'Черногория',
-  RS: 'Сербия',
-  GR: 'Греция',
+  ME: 'Montenegro',
+  RS: 'Serbia',
+  GR: 'Greece',
 }
 
 /** Смещение от UTC, в котором живёт стройка. Часовой пояс клиента не спрашивают. */
@@ -227,11 +227,11 @@ export const LANGUAGES = ['en', 'sr', 'cnr', 'el', 'ru'] as const
 export type Language = (typeof LANGUAGES)[number]
 
 export const LANGUAGE_NAMES: Record<Language, string> = {
-  en: 'английский',
-  sr: 'сербский',
-  cnr: 'черногорский',
-  el: 'греческий',
-  ru: 'русский',
+  en: 'English',
+  sr: 'Serbian',
+  cnr: 'Montenegrin',
+  el: 'Greek',
+  ru: 'Russian',
 }
 
 // --- 12. Режим работы ------------------------------------------------------

@@ -12,7 +12,6 @@ import {
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 import { prisma } from '@/lib/db'
 import { LEGAL_VERSION } from '@/lib/legal'
-import { currentLocale } from '@/lib/i18n'
 import { toList } from '@/lib/rows'
 import { currentSpecialistId } from '@/lib/session'
 
@@ -47,15 +46,15 @@ export async function completeProfile(
   formData: FormData,
 ): Promise<ApplicationState> {
   const id = await currentSpecialistId()
-  if (!id) return { errors: { form: 'Сначала войдите по ключу.' } }
+  if (!id) return { errors: { form: 'Sign in with your key first.' } }
 
   const row = await prisma.specialist.findUnique({ where: { id } })
-  if (!row) return { errors: { form: 'Запись не найдена.' } }
+  if (!row) return { errors: { form: 'Record not found.' } }
 
   if (row.status !== 'invited') {
     return {
       errors: {
-        form: 'Профиль уже на разборе или в пуле. Изменения в полях отбора идут через бюро.',
+        form: 'The profile is already under review or in the pool. Changes to selection fields go through the bureau.',
       },
     }
   }
@@ -70,21 +69,21 @@ export async function completeProfile(
 
   if (!signaturesWithinJurisdictions(input)) {
     return {
-      errors: { signsIn: 'Право подписи можно заявить только там, где вы работали.' },
+      errors: { signsIn: 'Signing rights can only be declared where you have worked.' },
       values: raw,
     }
   }
 
   if (!specializationsWithinDisciplines(input)) {
     return {
-      errors: { specializations: 'Специализация должна принадлежать заявленной дисциплине.' },
+      errors: { specializations: 'A specialisation must belong to a declared discipline.' },
       values: raw,
     }
   }
 
   if (!everyDisciplineCovered(input)) {
     return {
-      errors: { specializations: 'В каждой дисциплине отметьте, чем именно вы занимаетесь.' },
+      errors: { specializations: 'In each discipline, mark what exactly you do.' },
       values: raw,
     }
   }
@@ -98,7 +97,6 @@ export async function completeProfile(
       // «да», и молчаливо считать согласие полученным здесь нельзя.
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
-      consentLocale: await currentLocale(),
       portfolioUrl: input.portfolioUrl,
       disciplinesJson: toList(input.disciplines),
       specializationsJson: toList(input.specializations),

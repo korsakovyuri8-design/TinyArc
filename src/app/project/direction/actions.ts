@@ -1,6 +1,5 @@
 'use server'
 
-import { localeHref } from '@/lib/i18n/redirect'
 import { redirect } from 'next/navigation'
 import { chooseDirection } from '@/lib/services/direction'
 import { currentProjectId } from '@/lib/session'
@@ -12,15 +11,15 @@ export async function pickDirection(
   formData: FormData,
 ): Promise<DirectionState> {
   const projectId = await currentProjectId()
-  if (!projectId) return { error: 'Сначала войдите по ключу.' }
+  if (!projectId) return { error: 'Sign in with your key first.' }
 
   const key = String(formData.get('key') ?? '')
 
   try {
     await chooseDirection(projectId, key)
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Не получилось.' }
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
   }
 
-  redirect(await localeHref('/project?issued=1'))
+  redirect('/project?issued=1')
 }

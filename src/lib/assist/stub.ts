@@ -25,31 +25,35 @@ import type {
  * Это поиск по ключевым словам, а не понимание. Он честно ошибается в сторону
  * «не нашёл»: пропустить поле и дать человеку заполнить его самому безопаснее,
  * чем угадать и подставить.
+ *
+ * Слова английские: продукт существует на английском, и бриф пишут на нём.
+ * Русские остались рядом намеренно — они ничего не стоят, а владелец участка,
+ * дописывающий пару фраз на родном языке, встречается чаще, чем кажется.
  */
 const KEYWORDS: Record<string, Record<string, string[]>> = {
   typology: {
-    villa: ['вилл', 'дом ', 'коттедж', 'особняк'],
-    townhouse: ['таунхаус', 'townhouse', 'блокирован'],
-    multi_family: ['многоквартир', 'жилой дом', 'апартамент'],
-    mixed_use: ['смешан', 'mixed', 'коммерц', 'первый этаж'],
+    villa: ['villa', 'house', 'cottage', 'mansion', 'вилл', 'дом ', 'коттедж'],
+    townhouse: ['townhouse', 'town house', 'terraced', 'row house', 'таунхаус'],
+    multi_family: ['multi-family', 'multi family', 'apartment', 'residential block', 'многоквартир', 'апартамент'],
+    mixed_use: ['mixed-use', 'mixed use', 'commercial', 'ground floor', 'смешан', 'коммерц'],
   },
   jurisdiction: {
-    ME: ['черногор', 'тиват', 'будв', 'котор', 'бар ', 'подгориц'],
-    RS: ['серби', 'белград', 'нови-сад', 'нови сад'],
-    GR: ['греци', 'афин', 'салоник', 'крит'],
+    ME: ['montenegro', 'tivat', 'budva', 'kotor', 'bar ', 'podgorica', 'черногор', 'тиват'],
+    RS: ['serbia', 'belgrade', 'novi sad', 'серби', 'белград'],
+    GR: ['greece', 'athens', 'thessaloniki', 'crete', 'греци', 'афин'],
   },
   terrain: {
-    slope: ['склон', 'уклон', 'рельеф', 'перепад'],
-    flood_prone: ['подтопл', 'затопл', 'паводок', 'у воды'],
+    slope: ['slope', 'sloping', 'hillside', 'level difference', 'склон', 'уклон', 'рельеф'],
+    flood_prone: ['flood', 'flooding', 'waterfront', 'подтопл', 'затопл', 'паводок'],
   },
   gridConnection: {
-    off_grid: ['автоном', 'off-grid', 'без сетей', 'солнечн'],
+    off_grid: ['off-grid', 'off grid', 'autonomous', 'no mains', 'solar', 'автоном', 'солнечн'],
   },
   materialSystem: {
-    concrete: ['монолит', 'бетон', 'железобетон'],
-    masonry: ['кладк', 'кирпич', 'блок'],
-    timber: ['дерев', 'брус', 'clt', 'каркасн'],
-    steel: ['металл', 'сталь', 'лстк'],
+    concrete: ['concrete', 'cast-in-place', 'reinforced', 'монолит', 'бетон'],
+    masonry: ['masonry', 'brick', 'block', 'кладк', 'кирпич'],
+    timber: ['timber', 'wood', 'clt', 'frame', 'дерев', 'брус'],
+    steel: ['steel', 'metal', 'light-gauge', 'металл', 'сталь'],
   },
 }
 
@@ -81,7 +85,7 @@ export class StubAssistant implements Assistant {
 
   async draftSpec(input: SpecInput): Promise<SpecDraft> {
     const lines = [
-      `${input.ticketTitle}. Стадия: ${input.stage}.`,
+      `${input.ticketTitle}. Stage: ${input.stage}.`,
       '',
       `Объект: ${input.typology}, ${input.storeys} эт., ${input.areaSqm} м², ${input.jurisdiction}.`,
       `Участок: ${input.terrain}. Сети: ${input.gridConnection}. Материал: ${input.materialSystem}.`,
@@ -96,17 +100,17 @@ export class StubAssistant implements Assistant {
     }
 
     if (input.inboundArtifacts.length > 0) {
-      lines.push('', `Входные материалы: ${input.inboundArtifacts.join(', ')}.`)
+      lines.push('', `Input material: ${input.inboundArtifacts.join(', ')}.`)
     }
 
-    lines.push('', 'Границы задачи и состав выпуска — дописать.')
+    lines.push('', 'The bounds of the task and the deliverables — to be written in.')
 
     return {
       spec: lines.join('\n'),
       checklist: [
-        'Состав выпуска перечислен',
-        'Что передаётся дальше по графу — названо',
-        'Ограничения участка учтены',
+        'The deliverables are listed',
+        'What passes on down the graph is named',
+        'Site constraints are accounted for',
       ],
     }
   }
@@ -124,12 +128,12 @@ export class StubAssistant implements Assistant {
     }
 
     const wanted = [
-      ['typology', 'типология'],
-      ['jurisdiction', 'страна'],
-      ['storeys', 'этажность'],
-      ['areaSqm', 'площадь'],
-      ['terrain', 'рельеф участка'],
-      ['materialSystem', 'материал'],
+      ['typology', 'typology'],
+      ['jurisdiction', 'country'],
+      ['storeys', 'storeys'],
+      ['areaSqm', 'floor area'],
+      ['terrain', 'site terrain'],
+      ['materialSystem', 'material'],
     ] as const
 
     return {
@@ -143,15 +147,15 @@ export class StubAssistant implements Assistant {
     // Без модели портфолио не смотрится. Отдаём не оценку, а материал для
     // человека: сколько работ, какого рода, и чего в них не хватает.
     const gaps: string[] = []
-    if (input.works.length === 0) gaps.push('в профиле нет ни одной работы')
-    if (input.works.every((w) => !w.roleDescription)) gaps.push('не описана роль в работах')
-    if (input.specializations.length === 0) gaps.push('не отмечена специализация')
+    if (input.works.length === 0) gaps.push('the profile holds not a single work')
+    if (input.works.every((w) => !w.roleDescription)) gaps.push('the role in the works is not described')
+    if (input.specializations.length === 0) gaps.push('no specialisation is marked')
 
     return {
       rating: 0,
       reasoning:
-        `Работ в профиле: ${input.works.length}. Дисциплины: ${input.disciplines.join(', ') || '—'}. ` +
-        'Без модели портфолио не оценивается — смотрите ссылку и ставьте рейтинг сами.',
+        `Works in the profile: ${input.works.length}. Disciplines: ${input.disciplines.join(', ') || '—'}. ` +
+        'Without a model the portfolio is not assessed — open the link and set the rating yourself.',
       gaps,
     }
   }
@@ -167,7 +171,7 @@ export class StubAssistant implements Assistant {
     const names = input.artifacts.map((a) => a.name.toLowerCase()).join(' ')
 
     return {
-      missing: input.artifacts.length === 0 ? ['к тикету не приложено ни одного файла'] : [],
+      missing: input.artifacts.length === 0 ? ['not a single file is attached to the ticket'] : [],
       worthChecking: wanted
         .filter((line) => !names.includes(line.toLowerCase().slice(0, 12)))
         .slice(0, 5),
@@ -200,9 +204,9 @@ export class StubAssistant implements Assistant {
     }[input.kind]
 
     const ask = {
-      unclaimed: 'Берёте задачу или её передать другому исполнителю?',
-      overdue: 'Назовите дату, к которой работа будет предъявлена.',
-      due_soon: 'Успеваете к сроку? Если нет — что мешает.',
+      unclaimed: 'Are you taking this on, or should it go to someone else?',
+      overdue: 'Name the date by which the work will be handed in.',
+      due_soon: 'Will you make the deadline? If not — what is in the way.',
     }[input.kind]
 
     return { body: `${opening}\n\n${ask}`, ask }
@@ -212,7 +216,7 @@ export class StubAssistant implements Assistant {
     // Порядок сигналов уже посчитан движком, и переставлять его здесь нечем.
     // Заглушка честно делает одно: превращает очередь в список действий.
     if (input.alerts.length === 0) {
-      return { first: 'Очередь пуста.', steps: [], notes: '' }
+      return { first: 'The queue is empty.', steps: [], notes: '' }
     }
 
     const head = input.alerts[0]!
@@ -223,7 +227,7 @@ export class StubAssistant implements Assistant {
         .slice(0, 8)
         .map((a) => `${ALERT_ACTIONS[a.kind]}: «${a.title}» (${a.projectTitle}, ${Math.round(a.hours)} ч).`),
       notes:
-        'Без модели очередь не разбирается — это её пересказ по порядку срочности, ' +
+        'Without a model the queue is not worked through — this is a retelling of it in order of urgency, ' +
         `посчитанному движком: ${ALERT_LABELS[head.kind].toLowerCase()} идёт первым.`,
     }
   }

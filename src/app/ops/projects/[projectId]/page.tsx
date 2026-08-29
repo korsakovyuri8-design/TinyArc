@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { amount, date, dateTime } from '@/lib/format'
 import { notFound, redirect } from 'next/navigation'
 import {
   JURISDICTION_NAMES,
@@ -45,7 +46,7 @@ import {
 } from '../../actions'
 import { OpsAction } from '../../OpsForms'
 
-export const metadata = { title: 'Проект — панель бюро' }
+export const metadata = { title: 'Project — bureau panel' }
 
 export default async function OpsProjectPage({
   params,
@@ -103,7 +104,7 @@ export default async function OpsProjectPage({
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
         <Link href="/ops/projects" className="label">
-          ← проекты
+          ← projects
         </Link>
 
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 18 }}>
@@ -115,25 +116,23 @@ export default async function OpsProjectPage({
 
         <p className="dim" style={{ marginTop: 10 }}>
           {TYPOLOGY_LABELS[project.typology as Typology]} ·{' '}
-          {JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} · {project.storeys} эт. ·{' '}
-          {project.areaSqm} м² · {TERRAIN_LABELS[project.terrain as Terrain]} ·{' '}
-          {GRID_LABELS[project.gridConnection as 'grid' | 'off_grid']} · до стадии «
+          {JURISDICTION_NAMES[project.jurisdiction as Jurisdiction]} · {project.storeys} floors ·{' '}
+          {project.areaSqm} m² · {TERRAIN_LABELS[project.terrain as Terrain]} ·{' '}
+          {GRID_LABELS[project.gridConnection as 'grid' | 'off_grid']} · to stage “
           {DOC_STAGE_LABELS[project.targetStage as DocStage]}»
         </p>
 
         {/*
-          Заказчик и его ключ. Ключ виден здесь по той же причине, по которой
-          виден ключ приглашённого специалиста: при почте-заглушке письмо не
-          уходит, а передать доступ всё равно надо. Панель закрыта паролем.
+          The client and their key. The key is visible here for the same reason an invited specialist's key is: with the stub mailer nothing is sent, and access still has to be handed over. The panel is behind a password.
         */}
         <p className="dim" style={{ marginTop: 8, fontSize: '0.85rem' }}>
-          {project.clientName} · {project.clientEmail} · ключ{' '}
+          {project.clientName} · {project.clientEmail} · key{' '}
           <span className="num">{project.clientKey}</span>
         </p>
 
         {project.briefNotes && (
           <div className="panel" style={{ marginTop: 24 }}>
-            <div className="label">Бриф клиента</div>
+            <div className="label">Client brief</div>
             <p style={{ marginTop: 10, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
               {project.briefNotes}
             </p>
@@ -142,7 +141,7 @@ export default async function OpsProjectPage({
 
         {direction && (
           <div style={{ marginTop: 32 }}>
-            <ChosenDirection direction={direction} audience="team" t={(x) => x} />
+            <ChosenDirection direction={direction} audience="team" />
           </div>
         )}
 
@@ -150,15 +149,15 @@ export default async function OpsProjectPage({
         <div className="divider" style={{ marginTop: 40 }} />
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h2>Прогон сборки</h2>
+            <h2>Assembly run</h2>
             {run && (
               <p className="dim" style={{ marginTop: 10 }}>
-                {OUTCOME_LABELS[run.outcome] ?? run.outcome} · пул {run.pooledCount} → прошли{' '}
-                {run.survivedCount} · {run.createdAt.toLocaleString('ru-RU')}
+                {OUTCOME_LABELS[run.outcome] ?? run.outcome} · pool {run.pooledCount} → passed{' '}
+                {run.survivedCount} · {dateTime(run.createdAt)}
               </p>
             )}
           </div>
-          <OpsAction action={rerunAssembly} hidden={{ projectId: project.id }} label="Пересобрать" />
+          <OpsAction action={rerunAssembly} hidden={{ projectId: project.id }} label="Reassemble" />
         </div>
 
         {run?.notes && <p className="note note-fail" style={{ marginTop: 16 }}>{run.notes}</p>}
@@ -168,11 +167,11 @@ export default async function OpsProjectPage({
             <table>
               <thead>
                 <tr>
-                  <th>Дисциплина</th>
-                  <th>Специалист</th>
+                  <th>Discipline</th>
+                  <th>Specialist</th>
                   <th>Quality</th>
                   <th>Availability</th>
-                  <th>Балл</th>
+                  <th>Score</th>
                 </tr>
               </thead>
               <tbody>
@@ -208,7 +207,7 @@ export default async function OpsProjectPage({
                         {slot.specialist.displayName}
                         {slot.isSignatory && (
                           <span className="tag tag-accent" style={{ marginLeft: 10 }}>
-                            подпись
+                            signatory
                           </span>
                         )}
                       </td>
@@ -230,15 +229,13 @@ export default async function OpsProjectPage({
           <>
             <div className="divider" style={{ marginTop: 44 }} />
             <div className="panel" style={{ marginBottom: 32 }}>
-              <div className="label label-accent">Разговор с заказчиком</div>
+              <div className="label label-accent">Conversation with the client</div>
               <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                Команда этой переписки не видит. Просьбу заказчика в задачу переводит бюро —
-                иначе клиент начинает руководить исполнителями, и отвечать за результат
-                становится некому.
+                The team does not see this exchange. The bureau turns a client’s request into a task — otherwise the client starts directing the people doing the work, and no one is left answering for the result.
               </p>
 
               {thread.length === 0 ? (
-                <p className="dim" style={{ marginBottom: 16 }}>Заказчик пока молчит.</p>
+                <p className="dim" style={{ marginBottom: 16 }}>The client has said nothing yet.</p>
               ) : (
                 <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
                   {thread.map((m) => (
@@ -253,9 +250,9 @@ export default async function OpsProjectPage({
                       }}
                     >
                       <span className="label">
-                        {m.authorRole === 'bureau' ? 'Бюро' : 'Заказчик'} ·{' '}
-                        {m.createdAt.toLocaleString('ru-RU')}
-                        {m.authorRole === 'client' && !m.answeredAt && ' · без ответа'}
+                        {m.authorRole === 'bureau' ? 'Bureau' : 'Client'} ·{' '}
+                        {dateTime(m.createdAt)}
+                        {m.authorRole === 'client' && !m.answeredAt && ' · unanswered'}
                       </span>
                       <p style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
                         {m.body}
@@ -268,10 +265,10 @@ export default async function OpsProjectPage({
               <OpsAction
                 action={answerClient}
                 hidden={{ projectId: project.id }}
-                label="Ответить заказчику"
+                label="Answer the client"
               >
                 <div className="field">
-                  <label htmlFor="answer">Ответ</label>
+                  <label htmlFor="answer">Answer</label>
                   <textarea id="answer" name="body" style={{ minHeight: 70 }} />
                 </div>
               </OpsAction>
@@ -280,11 +277,10 @@ export default async function OpsProjectPage({
             {withdrawals.length > 0 && (
               <div className="panel" style={{ marginBottom: 32, borderColor: 'var(--fail)' }}>
                 <div className="label" style={{ color: 'var(--fail)' }}>
-                  Кто вышел из проекта
+                  Who left the project
                 </div>
                 <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                  Это не оценка людей — поля оценки в системе нет. Это факт, по которому видно,
-                  где состав держался на одном человеке.
+                  This is not a rating of people — there is no rating field in the system. It is a fact that shows where a line-up rested on one person.
                 </p>
                 <div className="stack" style={{ gap: 12 }}>
                   {withdrawals.map((w) => (
@@ -293,12 +289,12 @@ export default async function OpsProjectPage({
                         <strong>{w.specialist.displayName}</strong>
                         <span className="dim" style={{ fontSize: '0.82rem' }}>
                           {DISCIPLINE_LABELS[w.discipline as Discipline] ?? w.discipline} ·{' '}
-                          {w.createdAt.toLocaleDateString('ru-RU')}
+                          {date(w.createdAt)}
                         </span>
                         <span className={w.replacedById ? 'tag' : 'tag tag-fail'}>
                           {w.replacedById
-                            ? `роль принял ${replacedBy.get(w.replacedById) ?? '—'}`
-                            : 'замены не нашлось'}
+                            ? `role taken over by ${replacedBy.get(w.replacedById) ?? '—'}`
+                            : 'no replacement found'}
                         </span>
                       </div>
                       <p className="muted" style={{ margin: '6px 0 0', fontSize: '0.88rem' }}>
@@ -310,9 +306,9 @@ export default async function OpsProjectPage({
               </div>
             )}
 
-            <h2>Тикеты</h2>
+            <h2>Tickets</h2>
             <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>
-              Постановку пишет бюро. Гейты открывают тикеты сами — руками статус не ставится.
+              The bureau writes the brief. Gates open tickets by themselves — no status is set by hand.
             </p>
 
             <div className="stack" style={{ gap: 24 }}>
@@ -324,7 +320,7 @@ export default async function OpsProjectPage({
                       {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
                     </span>
                     <div className="row" style={{ gap: 8 }}>
-                      {ticket.kind === 'request' && <span className="tag tag-accent">запрос</span>}
+                      {ticket.kind === 'request' && <span className="tag tag-accent">request</span>}
                       <span className="tag">
                         {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
                       </span>
@@ -333,11 +329,11 @@ export default async function OpsProjectPage({
 
                   <h3 style={{ marginTop: 12 }}>{ticket.title}</h3>
                   <p className="dim" style={{ marginTop: 6, fontSize: '0.85rem' }}>
-                    {ticket.specialist?.displayName ?? 'не назначен'} · SLA {ticket.slaHours} ч
-                    {ticket.dueAt && ` · до ${ticket.dueAt.toLocaleString('ru-RU')}`}
-                    {ticket.revisionRounds > 0 && ` · кругов правок: ${ticket.revisionRounds}`}
+                    {ticket.specialist?.displayName ?? 'not assigned'} · SLA {ticket.slaHours} h
+                    {ticket.dueAt && ` · due ${dateTime(ticket.dueAt)}`}
+                    {ticket.revisionRounds > 0 && ` · revision rounds: ${ticket.revisionRounds}`}
                     {ticket.status === 'blocked' &&
-                      ` · ждёт: ${ticket.dependsOn
+                      ` · waits for: ${ticket.dependsOn
                         .filter((d) => d.prerequisite.status !== 'accepted')
                         .map((d) => DISCIPLINE_LABELS[d.prerequisite.discipline as Discipline])
                         .join(', ')}`}
@@ -349,30 +345,29 @@ export default async function OpsProjectPage({
                       style={{ marginTop: 18, borderColor: 'var(--fail)', padding: 18 }}
                     >
                       <div className="label" style={{ color: 'var(--fail)' }}>
-                        Conflict Detected · {ticket.conflictRaisedAt.toLocaleString('ru-RU')}
+                        Conflict Detected · {dateTime(ticket.conflictRaisedAt)}
                       </div>
                       <p style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>{ticket.conflictNote}</p>
                       <p className="hint" style={{ marginBottom: 14 }}>
-                        Работа по тикету стоит. Между собой участники не договариваются — решает
-                        бюро.
+                        Work on the ticket is on hold. The participants do not settle it between themselves — the bureau rules.
                       </p>
 
                       <div style={{ marginBottom: 16 }}>
                         <OpsAction
                           action={summariseTicketConflict}
                           hidden={{ ticketId: ticket.id }}
-                          label="Свести к позициям"
+                          label="Reduce to positions"
                         />
                       </div>
 
                       <OpsAction
                         action={resolveTicketConflict}
                         hidden={{ ticketId: ticket.id }}
-                        label="Вынести решение"
+                        label="Rule on it"
                         solid
                       >
                         <div className="field">
-                          <label htmlFor={`ruling-${ticket.id}`}>Решение арбитра</label>
+                          <label htmlFor={`ruling-${ticket.id}`}>The arbiter’s ruling</label>
                           <textarea
                             id={`ruling-${ticket.id}`}
                             name="ruling"
@@ -387,17 +382,16 @@ export default async function OpsProjectPage({
                     <div style={{ marginTop: 18 }}>
                       <span className="tag tag-wait">
                         {ALERT_LABELS[nudgeable.get(ticket.id)!.kind]} ·{' '}
-                        {Math.round(nudgeable.get(ticket.id)!.hours)} ч
+                        {Math.round(nudgeable.get(ticket.id)!.hours)} h
                       </span>
                       <div style={{ marginTop: 12 }}>
                         <OpsAction
                           action={draftTicketNudge}
                           hidden={{ ticketId: ticket.id }}
-                          label="Черновик напоминания"
+                          label="Draft a nudge"
                         />
                         <p className="hint" style={{ marginTop: 8 }}>
-                          Помощник напишет черновик. Отправляете вы — комментарием в тикет:
-                          другого канала до исполнителя нет.
+                          The assistant writes a draft. You send it — as a comment in the ticket: there is no other channel to the person doing the work.
                         </p>
                       </div>
                     </div>
@@ -409,11 +403,10 @@ export default async function OpsProjectPage({
                         <OpsAction
                           action={draftTicketSpec}
                           hidden={{ ticketId: ticket.id }}
-                          label="Черновик постановки"
+                          label="Draft the brief"
                         />
                         <p className="hint" style={{ marginTop: 8 }}>
-                          Помощник соберёт черновик из фактов проекта. Это заготовка, которую
-                          надо прочитать и поправить, — постановку пишет бюро.
+                          The assistant assembles a draft from the facts of the project. It is a starting point to read and correct — the bureau writes the brief.
                         </p>
                       </div>
                     )}
@@ -421,10 +414,10 @@ export default async function OpsProjectPage({
                     <OpsAction
                       action={setTicketSpec}
                       hidden={{ ticketId: ticket.id }}
-                      label="Сохранить постановку"
+                      label="Save the brief"
                     >
                       <div className="field">
-                        <label htmlFor={`spec-${ticket.id}`}>Постановка задачи</label>
+                        <label htmlFor={`spec-${ticket.id}`}>The task brief</label>
                         <textarea
                           id={`spec-${ticket.id}`}
                           name="spec"
@@ -437,7 +430,7 @@ export default async function OpsProjectPage({
 
                   {ticket.comments.length > 0 && (
                     <div style={{ marginTop: 22 }}>
-                      <div className="label">Переписка в тикете</div>
+                      <div className="label">Ticket thread</div>
                       <div className="stack" style={{ marginTop: 12, gap: 10 }}>
                         {ticket.comments.map((c) => (
                           <div
@@ -451,8 +444,8 @@ export default async function OpsProjectPage({
                             }}
                           >
                             <span className="label">
-                              {c.authorRole === 'bureau' ? 'Бюро' : 'Специалист'} ·{' '}
-                              {c.createdAt.toLocaleDateString('ru-RU')}
+                              {c.authorRole === 'bureau' ? 'Bureau' : 'Specialist'} ·{' '}
+                              {date(c.createdAt)}
                             </span>
                             <p style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
                               {c.body}
@@ -468,10 +461,10 @@ export default async function OpsProjectPage({
                       <OpsAction
                         action={bureauComment}
                         hidden={{ ticketId: ticket.id }}
-                        label="Написать в тикет"
+                        label="Write in the ticket"
                       >
                         <div className="field">
-                          <label htmlFor={`body-${ticket.id}`}>Комментарий бюро</label>
+                          <label htmlFor={`body-${ticket.id}`}>Bureau comment</label>
                           <textarea
                             id={`body-${ticket.id}`}
                             name="body"
@@ -487,11 +480,10 @@ export default async function OpsProjectPage({
                       <OpsAction
                         action={checkTicketCompleteness}
                         hidden={{ ticketId: ticket.id }}
-                        label="Сверить с постановкой"
+                        label="Check against the brief"
                       />
                       <p className="hint" style={{ marginTop: 8 }}>
-                        Помощник называет расхождения по списку файлов. Содержимое смотрите
-                        сами — принимаете вы.
+                        The assistant names discrepancies from the file list. You look at the contents yourself — you are the one accepting.
                       </p>
                     </div>
                   )}
@@ -501,16 +493,16 @@ export default async function OpsProjectPage({
                       <OpsAction
                         action={acceptTicket}
                         hidden={{ ticketId: ticket.id }}
-                        label="Принять"
+                        label="Accept"
                         solid
                       />
                       <OpsAction
                         action={returnTicket}
                         hidden={{ ticketId: ticket.id }}
-                        label="Вернуть на круг"
+                        label="Send back for revision"
                       >
                         <div className="field">
-                          <label htmlFor={`note-${ticket.id}`}>Что именно не так</label>
+                          <label htmlFor={`note-${ticket.id}`}>What exactly is wrong</label>
                           <textarea
                             id={`note-${ticket.id}`}
                             name="note"

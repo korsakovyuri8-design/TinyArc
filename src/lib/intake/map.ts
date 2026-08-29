@@ -48,9 +48,9 @@ import type {
 const COLUMNS: Record<string, string[]> = {
   email: ['email', 'mail', 'почта', 'эл почта', 'элпочта', 'адрес', 'emailaddress'],
   displayName: ['name', 'имя', 'фио', 'displayname', 'fullname', 'специалист', 'контакт'],
-  portfolioUrl: ['portfolio', 'портфолио', 'ссылка', 'url', 'сайт', 'behance', 'link'],
-  disciplines: ['discipline', 'disciplines', 'дисциплина', 'дисциплины', 'роль', 'специальность', 'направление', 'профессия'],
-  specializations: ['specialization', 'specializations', 'специализация', 'специализации'],
+  portfolioUrl: ['portfolio', 'портфолио', 'ссылка', 'url', 'сайт', 'site', 'behance', 'link'],
+  disciplines: ['discipline', 'disciplines', 'role', 'roles', 'profession', 'дисциплина', 'дисциплины', 'роль', 'специальность', 'направление', 'профессия'],
+  specializations: ['specialization', 'specializations', 'specialisation', 'specialisations', 'специализация', 'специализации'],
   jurisdictions: ['jurisdiction', 'jurisdictions', 'страна', 'страны', 'юрисдикция', 'country', 'countries', 'регион'],
   software: ['software', 'софт', 'по', 'программы', 'tools'],
   languages: ['language', 'languages', 'язык', 'языки'],
@@ -59,7 +59,7 @@ const COLUMNS: Record<string, string[]> = {
   climateZones: ['climate', 'климат'],
   docStages: ['stage', 'stages', 'стадия', 'стадии'],
   maxStoreys: ['storeys', 'floors', 'этажность', 'этажи', 'максэтажность'],
-  utcOffset: ['utc', 'timezone', 'tz', 'часовойпояс', 'пояс'],
+  utcOffset: ['utc', 'timezone', 'timezones', 'tz', 'часовойпояс', 'пояс'],
   note: ['note', 'notes', 'заметка', 'комментарий', 'комментарии', 'город', 'city'],
 }
 
@@ -194,12 +194,12 @@ export function readIntake(text: string): Intake {
     const line = i + 2
     const { draft, unrecognised } = draftFrom(row)
 
-    if (!draft.displayName) return { ok: false, line, problem: 'нет имени', name: draft.email }
+    if (!draft.displayName) return { ok: false, line, problem: 'no name', name: draft.email }
     if (!looksLikeEmail(draft.email)) {
-      return { ok: false, line, problem: 'адрес не похож на почту', name: draft.displayName }
+      return { ok: false, line, problem: 'the address does not look like an email', name: draft.displayName }
     }
     if (seen.has(draft.email)) {
-      return { ok: false, line, problem: 'этот адрес уже был выше', name: draft.displayName }
+      return { ok: false, line, problem: 'this address already appeared above', name: draft.displayName }
     }
 
     seen.add(draft.email)

@@ -1,11 +1,10 @@
-import { Link } from '@/components/Link'
+import Link from 'next/link'
 import { LEGAL_VERSION, company, isIdentified } from '@/lib/legal'
-import { translator } from '@/lib/i18n'
-import { pageMetadata } from '@/lib/i18n/metadata'
+import { pageMetadata } from '@/lib/metadata'
 
 export const generateMetadata = () =>
   pageMetadata(
-    'Обработка данных',
+    'Data processing',
     'Какие данные Бюро собирает, зачем, кому передаёт и как их удалить.',
   )
 
@@ -22,140 +21,141 @@ export const generateMetadata = () =>
  * документ обязан отвечать прямо.
  */
 export default async function PrivacyPage() {
-  const { locale, t } = await translator()
   const details = company()
   const identified = isIdentified(details)
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)', paddingBottom: 80 }}>
       <div className="shell" style={{ maxWidth: 760 }}>
-        <span className="eyebrow">{t('Правовые документы')}</span>
-        <h1>{t('Обработка персональных данных')}</h1>
+        <span className="eyebrow">Legal</span>
+        <h1>Processing of personal data</h1>
 
         <p className="dim" style={{ marginTop: 12, fontSize: '0.85rem' }}>
-          {t('Редакция')} {LEGAL_VERSION}
+          Revision {LEGAL_VERSION}
         </p>
 
         <div className="panel panel-accent" style={{ marginTop: 28 }}>
-          <div className="label label-accent">{t('Коротко')}</div>
-          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Мы собираем то, без чего нельзя собрать команду и выпустить документацию, и не собираем ничего сверх. Контакты заказчика не уходят специалистам, контакты специалистов не уходят заказчику — это устроено не правилом, а тем, что нужные поля физически не попадают в браузер другой стороны.')}</p>
+          <div className="label label-accent">In short</div>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>We collect what it takes to assemble a team and issue documentation, and nothing beyond that. The client’s contact details never reach the specialists, and the specialists’ never reach the client — that is enforced not by a rule but by the fact that those fields physically never arrive in the other side’s browser.</p>
         </div>
 
         {!identified && (
           <div className="panel" style={{ marginTop: 20, borderColor: 'var(--fail)' }}>
-            <div className="label" style={{ color: 'var(--fail)' }}>{t('Оператор не указан')}</div>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Наименование и адрес для обращений подставляются из настроек окружения и сейчас пусты. Без них человеку некуда обратиться по своим правам, а значит документ неполон.')}</p>
+            <div className="label" style={{ color: 'var(--fail)' }}>No controller named</div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>The company name and the address for enquiries come from environment settings and are currently empty. Without them there is nowhere to exercise your rights, which makes this document incomplete.</p>
           </div>
         )}
 
-        <Article title={t('1. Кто обрабатывает данные')}>
+        <Article title={'1. Who processes the data'}>
           <p>
-            {t('Оператор —')} {details.name || t('— наименование не заполнено —')}
-            {details.registration && `, ${t('регистрационный номер')} ${details.registration}`}
-            {details.address && `, ${t('адрес:')} ${details.address}`}, {t('Черногория.')}
+            The controller is {details.name || '— company name not set —'}
+            {details.registration && `, $registration number ${details.registration}`}
+            {details.address && `, $address: ${details.address}`}, Montenegro.
           </p>
           <p>
-            {t('Обращения по любым вопросам об этих данных:')}{' '}
-            {details.email || t('— адрес не заполнен —')}. {t('Ответ даётся в срок не более 30 дней.')}
+            Enquiries on any matter regarding this data:{' '}
+            {details.email || '— address not set —'}. We reply within 30 days at most.
           </p>
         </Article>
 
-        <Article title={t('2. Что собирается у заказчика')}>
+        <Article title={'2. What we collect from the client'}>
           <ul>
-            <li>{t('имя и адрес электронной почты — чтобы выдать ключ доступа и вести переписку;')}</li>
-            <li>{t('данные проекта: типология, площадь, этажность, страна, участок, стадия, свободный текст брифа — из них рассчитывается состав команды и цена;')}</li>
-            <li>{t('ключ доступа к кабинету — это учётные данные, а не идентификатор;')}</li>
-            <li>{t('отметка о согласии с офертой и настоящим документом: дата, время и редакция.')}</li>
+            <li>name and email address — to issue an access key and to correspond;</li>
+            <li>project data: typology, area, storeys, country, site, stage and the free text of the brief — the team composition and the price are calculated from these;</li>
+            <li>the workspace access key — these are credentials, not an identifier;</li>
+            <li>the record of consent to the offer and to this document: date, time and revision.</li>
           </ul>
-          <p>{t('Платёжных данных мы не собираем: приёма платежей на сайте нет, оплата идёт банковским переводом мимо продукта.')}</p>
+          <p>We collect no payment data: there is no payment processing on this site, and payment goes by bank transfer outside the product.</p>
         </Article>
 
-        <Article title={t('3. Что собирается у специалиста')}>
+        <Article title={'3. What we collect from the specialist'}>
           <ul>
-            <li>{t('имя, адрес электронной почты, ссылка на портфолио;')}</li>
-            <li>{t('профессиональные признаки: дисциплины, специализации, типологии, материалы, страны и право подписи, программное обеспечение, языки, стадии, часовой пояс, заявленная свободная ёмкость;')}</li>
-            <li>{t('метрики поставки, которые считаются из событий задач и не редактируются никем, включая Бюро;')}</li>
-            <li>{t('ключ доступа и отметка о согласии — так же, как у заказчика.')}</li>
+            <li>name, email address, a link to the portfolio;</li>
+            <li>professional attributes: disciplines, specialisations, typologies, materials, countries and signing rights, software, languages, stages, time zone, declared free capacity;</li>
+            <li>delivery metrics, computed from task events and editable by no one, the Bureau included;</li>
+            <li>the access key and the record of consent — the same as for a client.</li>
           </ul>
-          <p>{t('Портфолио хранится ссылкой и структурированными признаками. Архив чужих файлов Бюро у себя не держит.')}</p>
+          <p>A portfolio is stored as a link and as structured attributes. The Bureau does not keep an archive of other people’s files.</p>
         </Article>
 
-        <Article title={t('4. Зачем и на каком основании')}>
+        <Article title={'4. Why, and on what basis'}>
           <ul>
             <li>
-              <strong>{t('Исполнение договора.')}</strong>{t('Данные проекта и профессиональные признаки нужны, чтобы собрать команду и выпустить документацию. Без них услуга не оказывается.')}</li>
+              <strong>Performance of the contract.</strong>Project data and professional attributes are needed to assemble a team and issue documentation. Without them the service cannot be provided.</li>
             <li>
-              <strong>{t('Согласие.')}</strong>{t('Заявка в пул и отправка брифа — добровольные действия; согласие отзывается обращением на адрес выше.')}</li>
+              <strong>Consent.</strong>Applying to the pool and submitting a brief are voluntary acts; consent can be withdrawn by writing to the address above.</li>
             <li>
-              <strong>{t('Законный интерес.')}</strong>{t('Ведение записей о принятой работе, выставленных счетах и подтверждениях стадий — то, чем при споре восстанавливается, что происходило.')}</li>
+              <strong>Legitimate interest.</strong>Keeping records of accepted work, issued invoices and stage confirmations — this is what reconstructs events if there is a dispute.</li>
           </ul>
         </Article>
 
-        <Article title={t('5. Кому данные передаются')}>
+        <Article title={'5. Who the data goes to'}>
           <ul>
             <li>
-              <strong>{t('Команде проекта')}</strong>{' '}
-              {t('— бриф раскрывается в объёме конкретной задачи, а не целиком. Имя и контакты заказчика не передаются.')}
+              <strong>To the project team</strong>{' '}
+              — the brief is disclosed scoped to the specific task, not in full. The client’s name and contact details are not passed on.
             </li>
             <li>
-              <strong>{t('Заказчику')}</strong>{' '}
-              {t('— состав команды с профессиональными признаками и разбором расчёта. Почта, ключ доступа и другие контакты специалистов не передаются.')}
+              <strong>To the client</strong>{' '}
+              — the team composition with professional attributes and the score breakdown. Specialists’ email, access key and other contact details are not passed on.
             </li>
             <li>
-              <strong>{t('Между специалистами')}</strong>{' '}
-              {t('— принятая работа становится входными данными следующей задачи с указанием дисциплины автора, но не его имени. Прямых каналов связи между специалистами не существует.')}
+              <strong>Between specialists</strong>{' '}
+              — accepted work becomes the input to the next task, credited to the author’s discipline but not their name. No direct channel between specialists exists.
             </li>
             <li>
-              <strong>{t('Обработчикам:')}</strong>{t('хостинг приложения и базы, отправка писем. Они обрабатывают данные по нашему поручению и не используют их для себя.')}</li>
+              <strong>To processors:</strong>application and database hosting, email delivery. They process data on our instructions and do not use it for their own purposes.</li>
           </ul>
-          <p>{t('Данные не продаются, не передаются рекламным сетям и не используются для профилирования за пределами расчёта состава команды.')}</p>
+          <p>Data is not sold, not passed to advertising networks and not used for profiling beyond computing the team composition.</p>
         </Article>
 
-        <Article title={t('6. Передача за пределы страны')}>
-          <p>{t('Бюро зарегистрировано в Черногории, заказчик может находиться в любой стране, а хостинг и почтовый сервис расположены за её пределами. Это означает, что данные пересекают границы.')}</p>
-          <p>{t('К поставщикам, обрабатывающим данные, применяются договорные условия о защите данных. Если вы находитесь в Европейском союзе, вы вправе запросить сведения о том, на каком основании происходит такая передача.')}</p>
+        <Article title={'6. Transfers outside the country'}>
+          <p>The Bureau is registered in Montenegro, the client may be located in any country, and hosting and email services sit outside it. That means data crosses borders.</p>
+          <p>Contractual data-protection terms apply to the providers that process the data. If you are located in the European Union, you may ask on what basis such a transfer takes place.</p>
         </Article>
 
-        <Article title={t('7. Сколько данные хранятся')}>
+        <Article title={'7. How long we keep data'}>
           <ul>
-            <li>{t('данные проекта и переписка с бюро — пока идёт проект и три года после его закрытия: столько же живут претензии по выпущенной документации;')}</li>
-            <li>{t('профиль специалиста — пока он в пуле; после выхода из пула профиль обезличивается, а метрики поставки остаются в обезличенном виде;')}</li>
-            <li>{t('записи о счетах и подтверждениях — срок, установленный требованиями к бухгалтерским документам страны регистрации.')}</li>
+            <li>project data and correspondence with the bureau — for the life of the project and three years after it closes: that is how long claims about issued documentation live;</li>
+            <li>a specialist’s profile — while they are in the pool; on leaving, the profile is anonymised and delivery metrics remain in anonymised form;</li>
+            <li>records of invoices and confirmations — for the period required of accounting records in the country of registration.</li>
           </ul>
         </Article>
 
-        <Article title={t('8. Ваши права')}>
-          <p>{t('Вы вправе:')}</p>
+        <Article title={'8. Your rights'}>
+          <p>You have the right to:</p>
           <ul>
-            <li>{t('узнать, какие ваши данные у нас есть, и получить их копию;')}</li>
-            <li>{t('исправить неточные данные;')}</li>
-            <li>{t('удалить данные — за вычетом того, что мы обязаны хранить по закону или по незакрытому договору;')}</li>
-            <li>{t('отозвать согласие;')}</li>
-            <li>{t('возразить против обработки на основании законного интереса;')}</li>
-            <li>{t('пожаловаться в надзорный орган по защите данных — в Черногории это Агентство по защите персональных данных, в стране вашего нахождения — соответствующий орган.')}</li>
+            <li>find out what data of yours we hold and obtain a copy;</li>
+            <li>have inaccurate data corrected;</li>
+            <li>have data erased — except what we must keep by law or under an open contract;</li>
+            <li>withdraw consent;</li>
+            <li>object to processing based on legitimate interest;</li>
+            <li>lodge a complaint with a data protection supervisory authority — in Montenegro that is the Agency for Personal Data Protection, or the corresponding authority where you are located.</li>
           </ul>
-          <p>{t('Отдельно про специалистов: поля для оценки человека нет ни у кого, включая Бюро. Мнений о вас в системе не хранится — только события задач и то, что вы заявили сами.')}</p>
+          <p>A note for specialists: there is no field anywhere, the Bureau included, for rating a person. No opinions about you are stored in the system — only task events and what you declared yourself.</p>
         </Article>
 
-        <Article title={t('9. Что делают автоматические расчёты')}>
-          <p>{t('Состав команды рассчитывается алгоритмом. Расчёт не выносит суждений о личности и не использует данных, кроме профессиональных признаков и событий задач. Специалисту показывается, какое именно условие не выполнено, а заказчику — разбор балла каждого участника.')}</p>
-          <p>{t('Модели искусственного интеллекта участвуют в подготовке черновиков и изображений и не участвуют в расчёте состава команды, в приёмке работы и в определении очерёдности задач.')}</p>
+        <Article title={'9. What the automated calculations do'}>
+          <p>Team composition is computed by an algorithm. The calculation makes no judgements about a person and uses no data beyond professional attributes and task events. A specialist is shown exactly which condition was not met; a client is shown the score breakdown for every member.</p>
+          <p>AI models take part in preparing drafts and images. They take no part in computing team composition, in accepting work, or in setting the order of tasks.</p>
         </Article>
 
-        <Article title={t('10. Файлы cookie')}>
-          <p>{t('Используется одна техническая cookie — подписанная сессия, которая помнит, в чей кабинет вы вошли. Аналитических и рекламных cookie нет.')}</p>
+        <Article title={'10. Cookies'}>
+          <p>One technical cookie is used — a signed session that remembers whose workspace you signed into. There are no analytics or advertising cookies.</p>
         </Article>
 
-        <Article title={t('11. Язык документа')}>
+        <Article title={'11. Language of this document'}>
           <p>
-            {t('Документ существует на русском и английском языках, и обе редакции равнозначны. При расхождении преимущество имеет та, на языке которой документ был показан вам в момент согласия; язык согласия фиксируется вместе с ним.')}
+            The document exists in English, and English is the language of the service. A
+            translation made for convenience does not bind either side: where a translation
+            differs from this text, this text governs.
           </p>
         </Article>
 
         <div className="divider" style={{ marginTop: 44 }} />
 
         <p style={{ marginTop: 24 }}>
-          <Link locale={locale} href="/legal/offer">{t('← Публичная оферта')}</Link>
+          <Link href="/legal/offer">← Terms of service</Link>
         </p>
       </div>
     </section>

@@ -22,8 +22,8 @@ export class MessageRefused extends Error {}
 
 export async function say(projectId: string, body: string): Promise<void> {
   const text = body.trim()
-  if (!text) throw new MessageRefused('Пустое сообщение.')
-  if (text.length > 4000) throw new MessageRefused('Слишком длинно: до четырёх тысяч знаков.')
+  if (!text) throw new MessageRefused('The message is empty.')
+  if (text.length > 4000) throw new MessageRefused('Too long: up to four thousand characters.')
 
   await prisma.clientMessage.create({
     data: { projectId, authorRole: 'client', body: text },
@@ -38,7 +38,7 @@ export async function say(projectId: string, body: string): Promise<void> {
  */
 export async function answer(projectId: string, body: string): Promise<void> {
   const text = body.trim()
-  if (!text) throw new MessageRefused('Пустой ответ.')
+  if (!text) throw new MessageRefused('The answer is empty.')
 
   await prisma.$transaction([
     prisma.clientMessage.create({

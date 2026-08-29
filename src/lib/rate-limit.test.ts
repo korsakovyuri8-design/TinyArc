@@ -67,8 +67,8 @@ describe('ограничение частоты', () => {
   })
 
   it('говорит человеку, когда возвращаться', () => {
-    expect(retryMessage(30)).toContain('минуту')
-    expect(retryMessage(600)).toContain('10 мин')
+    expect(retryMessage(30)).toContain('a minute')
+    expect(retryMessage(600)).toContain('10 min')
   })
 })
 

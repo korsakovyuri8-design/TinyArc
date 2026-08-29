@@ -32,25 +32,25 @@ const MODEL = 'claude-opus-5'
  * бюро подписывает не читая.
  */
 const SYSTEM = [
-  'Ты помогаешь архитектурному бюро готовить тексты для внутренней работы.',
-  'Здания до пяти этажей в Черногории, Сербии и Греции.',
+  'You help an architectural practice prepare text for its internal work.',
+  'Buildings up to five storeys in Montenegro, Serbia and Greece.',
   '',
-  'Границы, которые не нарушаются:',
-  '— ты не проектируешь: не назначаешь сечения, нагрузки, диаметры и марки;',
-  '— ты не принимаешь работу и не оцениваешь людей;',
-  '— результат — черновик, который правит человек, а не готовый документ.',
+  'Boundaries that are never crossed:',
+  '— you do not design: you assign no sections, loads, diameters or grades;',
+  '— you do not accept work and do not rate people;',
+  '— the result is a draft a person edits, not a finished document.',
   '',
-  'Пиши по-русски, кратко и по делу, без вводных и без похвал.',
-  'Если данных не хватает, так и напиши — не додумывай факты об объекте.',
+  'Write in English, short and to the point, with no preamble and no praise.',
+  'If the data is not enough, say so — do not invent facts about the building.',
 ].join('\n')
 
 const SpecSchema = z.object({
   spec: z
     .string()
-    .describe('Постановка задачи: что сделать, в каких границах, что передать дальше.'),
+    .describe('The task brief: what to do, within what bounds, what to hand on.'),
   checklist: z
     .array(z.string())
-    .describe('Что должно оказаться на выходе. Проверяемые пункты, не пожелания.'),
+    .describe('What has to come out of it. Checkable items, not wishes.'),
 })
 
 const BriefSchema = z.object({
@@ -65,43 +65,43 @@ const BriefSchema = z.object({
       materialSystem: z.enum(['concrete', 'masonry', 'timber', 'steel', 'hybrid']).optional(),
       targetStage: z.enum(['concept', 'permit', 'tender', 'construction']).optional(),
     })
-    .describe('Только то, что прямо сказано в тексте. Не выводить и не додумывать.'),
-  missing: z.array(z.string()).describe('Поля, которых в тексте нет. По-русски, коротко.'),
-  notes: z.string().describe('Что ещё сказал клиент про участок и задачу.'),
+    .describe('Only what the text states outright. Do not infer and do not fill in.'),
+  missing: z.array(z.string()).describe('Fields the text does not contain. Short.'),
+  notes: z.string().describe('What else the client said about the site and the task.'),
 })
 
 const PortfolioSchema = z.object({
-  rating: z.number().min(0).max(10).describe('Предложение рейтинга портфолио, 0–10.'),
-  reasoning: z.string().describe('На чём основано. Проверяемо по содержимому профиля.'),
-  gaps: z.array(z.string()).describe('Чего в портфолио не хватает, чтобы судить увереннее.'),
+  rating: z.number().min(0).max(10).describe('A suggested portfolio rating, 0–10.'),
+  reasoning: z.string().describe('What it rests on. Checkable against the profile.'),
+  gaps: z.array(z.string()).describe('What the portfolio lacks for a firmer judgement.'),
 })
 
 const CompletenessSchema = z.object({
-  missing: z.array(z.string()).describe('Чего не хватает по постановке. Пусто — замечаний нет.'),
-  worthChecking: z.array(z.string()).describe('Что посмотреть глазами перед приёмкой.'),
+  missing: z.array(z.string()).describe('What is missing against the brief. Empty means no remarks.'),
+  worthChecking: z.array(z.string()).describe('What to look at yourself before accepting.'),
 })
 
 const RequestSchema = z.object({
-  title: z.string().describe('Короткое название запроса, до семидесяти знаков.'),
-  body: z.string().describe('Запрос так, чтобы адресат понял его без автора.'),
+  title: z.string().describe('A short title for the request, up to seventy characters.'),
+  body: z.string().describe('The request written so the recipient understands it without the author.'),
 })
 
 const NudgeSchema = z.object({
-  body: z.string().describe('Комментарий в тикет. Без упрёков и без общих слов.'),
-  ask: z.string().describe('Один вопрос, на который исполнитель должен ответить.'),
+  body: z.string().describe('A comment for the ticket. No reproach and no generalities.'),
+  ask: z.string().describe('One question the person doing the work must answer.'),
 })
 
 const QueueSchema = z.object({
-  first: z.string().describe('С чего начать. Одна строка: действие, задача, проект.'),
-  steps: z.array(z.string()).describe('Шаги на сегодня по порядку. Каждый — действие.'),
-  notes: z.string().describe('Что здесь может подождать, хоть и выглядит срочным.'),
+  first: z.string().describe('Where to start. One line: action, task, project.'),
+  steps: z.array(z.string()).describe('Steps for today, in order. Each one an action.'),
+  notes: z.string().describe('What here can wait, even though it looks urgent.'),
 })
 
 const ConflictSchema = z.object({
   positions: z
     .array(z.string())
-    .describe('Позиции сторон, по одной строке на сторону. Без указания, кто прав.'),
-  question: z.string().describe('Один вопрос, на который должен ответить арбитр.'),
+    .describe('The positions, one line per side. Without saying who is right.'),
+  question: z.string().describe('One question the arbiter has to answer.'),
 })
 
 export class AnthropicAssistant implements Assistant {
@@ -115,29 +115,29 @@ export class AnthropicAssistant implements Assistant {
 
   async draftSpec(input: SpecInput): Promise<SpecDraft> {
     const facts = [
-      `Проект: ${input.projectTitle}`,
-      `Объект: ${input.typology}, ${input.storeys} эт., ${input.areaSqm} м², ${input.jurisdiction}`,
-      `Участок: ${input.terrain}; сети: ${input.gridConnection}; материал: ${input.materialSystem}`,
-      `Стадия: ${input.stage}`,
-      `Дисциплина: ${input.discipline}`,
+      `Project: ${input.projectTitle}`,
+      `Building: ${input.typology}, ${input.storeys} storeys, ${input.areaSqm} m², ${input.jurisdiction}`,
+      `Site: ${input.terrain}; utilities: ${input.gridConnection}; material: ${input.materialSystem}`,
+      `Stage: ${input.stage}`,
+      `Discipline: ${input.discipline}`,
       input.specializations.length > 0
-        ? `Специализация роли: ${input.specializations.join(', ')}`
+        ? `Specialisation for the role: ${input.specializations.join(', ')}`
         : null,
-      `Задача: ${input.ticketTitle}`,
+      `Task: ${input.ticketTitle}`,
       input.direction
-        ? `Направление, выбранное клиентом: ${input.direction.title} — ${input.direction.summary}. Это ориентир, а не требование.`
+        ? `Direction chosen by the client: ${input.direction.title} — ${input.direction.summary}. A reference point, not a requirement.`
         : null,
       input.inboundArtifacts.length > 0
-        ? `Входные материалы от смежников: ${input.inboundArtifacts.join(', ')}`
-        : 'Входных материалов от смежников нет.',
+        ? `Input material from adjacent disciplines: ${input.inboundArtifacts.join(', ')}`
+        : 'There is no input material from adjacent disciplines.',
     ]
       .filter(Boolean)
       .join('\n')
 
     return this.ask<SpecDraft>(
       [
-        'Напиши черновик постановки для одной атомарной задачи.',
-        'Исполнитель видит только свою задачу: то, что не написано, он не узнает.',
+        'Write a draft brief for one atomic task.',
+        'The person doing the work sees only their own task: what is not written, they will not learn.',
         '',
         facts,
       ].join('\n'),
@@ -158,7 +158,7 @@ export class AnthropicAssistant implements Assistant {
     })
 
     const parsed = response.parsed_output
-    if (!parsed) throw new Error('Модель вернула ответ, который не разобрался в схему.')
+    if (!parsed) throw new Error('The model returned an answer that did not parse into the schema.')
 
     return parsed as T
   }
@@ -166,9 +166,9 @@ export class AnthropicAssistant implements Assistant {
   async parseBrief(input: BriefInput): Promise<BriefParse> {
     return this.ask<BriefParse>(
       [
-        'Разбери описание проекта в поля брифа.',
-        'Заполняй только то, что прямо сказано. Не выводи из общих соображений:',
-        'непроставленное поле клиент дозаполнит сам, а угаданное он не заметит.',
+        'Parse the project description into brief fields.',
+        'Fill in only what is stated outright. Do not infer from general reasoning:',
+        'an empty field the client will fill in themselves, a guessed one they will not notice.',
         '',
         input.text,
       ].join('\n'),
@@ -179,26 +179,26 @@ export class AnthropicAssistant implements Assistant {
   async proposePortfolioRating(input: PortfolioInput): Promise<PortfolioProposal> {
     return this.ask<PortfolioProposal>(
       [
-        'Предложи рейтинг портфолио от нуля до десяти для разбора заявки специалиста.',
-        'Это предложение: рейтинг ставит человек, и он должен видеть, на чём оно основано.',
-        'Порог допуска в пул — восемь, поэтому цена ошибки в обе стороны высока.',
+        'Suggest a portfolio rating from zero to ten for reviewing a specialist application.',
+        'It is a suggestion: a person sets the rating, and they must see what it rests on.',
+        'The threshold for the pool is eight, so an error either way is expensive.',
         '',
-        `Имя: ${input.displayName}`,
-        `Ссылка: ${input.portfolioUrl}`,
-        `Дисциплины: ${input.disciplines.join(', ') || '—'}`,
-        `Специализация: ${input.specializations.join(', ') || '—'}`,
-        `Юрисдикции: ${input.jurisdictions.join(', ') || '—'}`,
-        `Максимальная этажность: ${input.maxStoreys}`,
+        `Name: ${input.displayName}`,
+        `Link: ${input.portfolioUrl}`,
+        `Disciplines: ${input.disciplines.join(', ') || '—'}`,
+        `Specialisation: ${input.specializations.join(', ') || '—'}`,
+        `Jurisdictions: ${input.jurisdictions.join(', ') || '—'}`,
+        `Maximum storeys: ${input.maxStoreys}`,
         '',
-        'Работы в профиле:',
+        'Works in the profile:',
         input.works.length > 0
           ? input.works
               .map(
                 (w) =>
-                  `— ${w.title} (${w.kind})${w.areaSqm ? `, ${w.areaSqm} м²` : ''}: ${w.roleDescription || 'роль не описана'}`,
+                  `— ${w.title} (${w.kind})${w.areaSqm ? `, ${w.areaSqm} m²` : ''}: ${w.roleDescription || 'role not described'}`,
               )
               .join('\n')
-          : '(пусто)',
+          : '(empty)',
       ].join('\n'),
       PortfolioSchema,
     )
@@ -207,20 +207,20 @@ export class AnthropicAssistant implements Assistant {
   async checkCompleteness(input: CompletenessInput): Promise<CompletenessCheck> {
     return this.ask<CompletenessCheck>(
       [
-        'Сверь приложенные файлы с постановкой перед приёмкой.',
-        'Ты не принимаешь работу: кнопку нажимает человек. Твоё дело — назвать то,',
-        'что по постановке должно быть, а в списке файлов не видно.',
-        'Судить о содержимом файлов по названиям нельзя — говори об этом прямо.',
+        'Check the attached files against the brief before acceptance.',
+        'You do not accept the work: a person presses the button. Your job is to name what',
+        'the brief calls for and the file list does not show.',
+        'File contents cannot be judged by their names — say so plainly.',
         '',
-        `Задача: ${input.ticketTitle} (${input.discipline}, стадия ${input.stage})`,
+        `Task: ${input.ticketTitle} (${input.discipline}, stage ${input.stage})`,
         '',
-        'Постановка:',
-        input.spec || '(пусто)',
+        'Brief:',
+        input.spec || '(empty)',
         '',
-        'Приложено:',
+        'Attached:',
         input.artifacts.length > 0
           ? input.artifacts.map((a) => `— ${a.name} (${a.kind})`).join('\n')
-          : '(ничего)',
+          : '(nothing)',
       ].join('\n'),
       CompletenessSchema,
       2000,
@@ -230,14 +230,14 @@ export class AnthropicAssistant implements Assistant {
   async draftRequest(input: RequestDraftInput): Promise<RequestDraft> {
     return this.ask<RequestDraft>(
       [
-        'Приведи заметку специалиста в запрос смежной дисциплине.',
-        'Адресат не видит ни задачи автора, ни его модели: запрос должен быть понятен сам по себе.',
-        'Не добавляй фактов, которых в заметке нет — оси, размеры и отметки не выдумывай.',
+        'Turn the specialist’s note into a request to an adjacent discipline.',
+        'The recipient sees neither the author’s task nor their model: the request must stand on its own.',
+        'Add no facts the note does not contain — do not invent gridlines, dimensions or levels.',
         '',
-        `От: ${input.fromDiscipline}. Кому: ${input.toDiscipline}.`,
-        `Задача автора: ${input.ticketTitle}`,
+        `From: ${input.fromDiscipline}. To: ${input.toDiscipline}.`,
+        `The author’s task: ${input.ticketTitle}`,
         '',
-        'Заметка:',
+        'Note:',
         input.rough,
       ].join('\n'),
       RequestSchema,
@@ -247,23 +247,23 @@ export class AnthropicAssistant implements Assistant {
 
   async draftNudge(input: NudgeInput): Promise<NudgeDraft> {
     const why = {
-      unclaimed: `задача открыта ${Math.round(input.hours)} ч и никем не взята в работу`,
-      overdue: `срок по задаче прошёл ${Math.round(input.hours)} ч назад`,
-      due_soon: `до срока по задаче осталось ${Math.round(input.hours)} ч`,
+      unclaimed: `the task has been open ${Math.round(input.hours)} h and nobody has taken it on`,
+      overdue: `the task deadline passed ${Math.round(input.hours)} h ago`,
+      due_soon: `${Math.round(input.hours)} h left before the task deadline`,
     }[input.kind]
 
     return this.ask<NudgeDraft>(
       [
-        'Напиши черновик комментария бюро в тикет по вставшей задаче.',
-        'Цель — сдвинуть работу, а не назначить виноватого: без упрёков и без оценок человека.',
-        'Причина у исполнителя может быть уважительной, и ты её не знаешь — не предполагай её.',
-        'Заканчивай одним вопросом, на который он обязан ответить.',
+        'Write a draft bureau comment for a ticket where work has stalled.',
+        'The aim is to move the work, not to assign blame: no reproach and no judgement of the person.',
+        'Their reason may be a good one, and you do not know it — do not assume it.',
+        'End with one question they are obliged to answer.',
         '',
-        `Задача: ${input.ticketTitle} (${input.discipline})`,
-        `Почему пишем: ${why}`,
+        `Task: ${input.ticketTitle} (${input.discipline})`,
+        `Why we are writing: ${why}`,
         '',
-        'Постановка:',
-        input.spec || '(постановка не написана)',
+        'Brief:',
+        input.spec || '(no brief written)',
       ].join('\n'),
       NudgeSchema,
       1500,
@@ -273,20 +273,20 @@ export class AnthropicAssistant implements Assistant {
   async planQueue(input: QueueInput): Promise<QueuePlan> {
     return this.ask<QueuePlan>(
       [
-        'Разбери очередь сигналов менеджера в план на сегодня.',
-        'Порядок срочности уже посчитан и передан как есть — не переставляй его без причины,',
-        'а если причина есть, назови её. Каждый шаг — действие бюро, а не наблюдение.',
-        'Ты не пишешь исполнителям и ничего не принимаешь: план читает человек.',
+        'Turn the manager’s queue of signals into a plan for today.',
+        'The order of urgency is already computed and passed as is — do not reorder it without a reason,',
+        'and if there is a reason, name it. Each step is an action of the bureau, not an observation.',
+        'You do not write to the people doing the work and you accept nothing: a person reads the plan.',
         '',
-        'Очередь:',
+        'Queue:',
         input.alerts.length > 0
           ? input.alerts
               .map(
                 (a) =>
-                  `— [${a.kind}] «${a.title}» (${a.discipline}), проект «${a.projectTitle}», ${Math.round(a.hours)} ч`,
+                  `— [${a.kind}] “${a.title}” (${a.discipline}), project “${a.projectTitle}”, ${Math.round(a.hours)} h`,
               )
               .join('\n')
-          : '(пусто)',
+          : '(empty)',
       ].join('\n'),
       QueueSchema,
       2000,
@@ -295,19 +295,19 @@ export class AnthropicAssistant implements Assistant {
 
   async summariseConflict(input: ConflictInput): Promise<ConflictSummary> {
     const thread = input.comments
-      .map((c) => `${c.author === 'bureau' ? 'Бюро' : 'Специалист'}: ${c.body}`)
+      .map((c) => `${c.author === 'bureau' ? 'Bureau' : 'Specialist'}: ${c.body}`)
       .join('\n')
 
     return this.ask<ConflictSummary>(
       [
-        'Сведи спор по задаче к позициям сторон и одному вопросу для арбитра.',
-        'Не решай спор и не указывай, кто прав: решает человек.',
+        'Reduce the dispute on the task to the positions of the sides and one question for the arbiter.',
+        'Do not settle the dispute and do not say who is right: a person rules.',
         '',
-        `Задача: ${input.ticketTitle}`,
-        `Причина обращения: ${input.conflictNote}`,
+        `Task: ${input.ticketTitle}`,
+        `Why it was raised: ${input.conflictNote}`,
         '',
-        'Переписка по задаче:',
-        thread || '(пусто)',
+        'The thread on the task:',
+        thread || '(empty)',
       ].join('\n'),
       ConflictSchema,
       2000,

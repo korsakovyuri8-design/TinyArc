@@ -24,14 +24,14 @@ import { notifyProject } from './notify'
 
 export class NotYours extends Error {
   constructor() {
-    super('Тикет назначен не вам.')
+    super('This ticket is assigned to someone else.')
     this.name = 'NotYours'
   }
 }
 
 export class NoSuchRole extends Error {
   constructor(readonly discipline: string) {
-    super('В команде проекта нет такой дисциплины — просить некого.')
+    super('The project team has no such discipline — there is no one to ask.')
     this.name = 'NoSuchRole'
   }
 }
@@ -39,7 +39,7 @@ export class NoSuchRole extends Error {
 export class TooLarge extends Error {
   constructor(readonly bytes: number) {
     super(
-      'Файл больше потолка, указанного у поля. Это уже не чертёж, а архив: положите его отдельно и приложите ссылкой.',
+      'The file is over the limit stated by the field. That is an archive, not a drawing: keep it elsewhere and attach it as a link.',
     )
     this.name = 'TooLarge'
   }
@@ -47,7 +47,7 @@ export class TooLarge extends Error {
 
 export class NotOpen extends Error {
   constructor(readonly status: string) {
-    super('Тикет сейчас в другом статусе: это действие недоступно.')
+    super('The ticket is in a different state right now: this action is unavailable.')
     this.name = 'NotOpen'
   }
 }

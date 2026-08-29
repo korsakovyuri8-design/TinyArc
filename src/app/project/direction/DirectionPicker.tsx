@@ -44,9 +44,9 @@ export function DirectionPicker({ directions }: { directions: DirectionCard[] })
             <div style={{ padding: 22 }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <span className={selected === direction.key ? 'label label-accent' : 'label'}>
-                  {selected === direction.key ? 'выбрано' : 'вариант'}
+                  {selected === direction.key ? 'chosen' : 'option'}
                 </span>
-                {direction.source === 'stub' && <span className="tag">схема</span>}
+                {direction.source === 'stub' && <span className="tag">diagram</span>}
               </div>
 
               <h3 style={{ marginTop: 12, fontFamily: 'var(--serif)' }}>{direction.title}</h3>
@@ -56,7 +56,7 @@ export function DirectionPicker({ directions }: { directions: DirectionCard[] })
               </p>
 
               <div className="label" style={{ marginTop: 16 }}>
-                Чем оплачивается
+                What it costs you
               </div>
               <p className="dim" style={{ marginTop: 6, marginBottom: 0, fontSize: '0.86rem' }}>
                 {direction.tradeoff}
@@ -74,10 +74,10 @@ export function DirectionPicker({ directions }: { directions: DirectionCard[] })
 
       <div className="row" style={{ gap: 16, marginTop: 32 }}>
         <button type="submit" className="btn btn-solid" disabled={pending || !selected}>
-          {pending ? 'Сохраняем…' : 'Это направление'}
+          {pending ? 'Saving…' : 'This direction'}
         </button>
         <span className="dim" style={{ fontSize: '0.85rem' }}>
-          {selected ? 'Выбор уйдёт команде до первого тикета' : 'Выберите один вариант'}
+          {selected ? 'The choice reaches the team before the first ticket' : 'Choose one option'}
         </span>
       </div>
     </form>

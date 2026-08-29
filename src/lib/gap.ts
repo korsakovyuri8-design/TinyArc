@@ -35,7 +35,7 @@ export function roleName(gap: AssemblyGap): string {
 
   // «all» значит, что нужен один человек, закрывающий всё перечисленное; «any»
   // — что достаточно любого из. Для читателя это «и» против «или».
-  return `${discipline} — ${parts.join(gap.mode === 'all' ? ' и ' : ' или ')}`
+  return `${discipline} — ${parts.join(gap.mode === 'all' ? ' and ' : ' or ')}`
 }
 
 /**
@@ -53,18 +53,18 @@ export function clientExplanation(
   const where = JURISDICTION_NAMES[jurisdiction] ?? jurisdiction
 
   return {
-    headline: 'Команда пока не собрана',
+    headline: 'The team is not assembled yet',
     body:
       gap.candidates === 0
-        ? `Под ваш проект нужна роль, которую мы пока не закрыли: ${who}. ` +
-          `Со стажем согласований в стране «${where}» такого специалиста в пуле сейчас нет. ` +
-          'Мы не подставляем вместо него того, кто рядом: это ровно та подмена, ' +
-          'из-за которой проекты потом переделывают. ' +
-          'Бюро ищет человека под эту роль — ключ доступа у вас, по нему вы вернётесь в проект.'
-        : `Под ваш проект нужна роль, которую мы пока не закрыли: ${who}. ` +
-          `Подходящие в стране «${where}» есть — ${gap.candidates}, — но ни один состав ` +
-          'не сходится целиком: у одних нет свободного времени к вашему сроку, ' +
-          'у других не совпадает рабочий пакет с остальной командой. ' +
-          'Бюро разбирает это вручную — ключ доступа у вас, по нему вы вернётесь в проект.',
+        ? `Your project needs a role we have not covered yet: ${who}. ` +
+          `There is no such specialist in the pool with approvals experience in ${where} right now. ` +
+          'We do not put someone adjacent in their place: that substitution is exactly what ' +
+          'makes projects get redone later. ' +
+          'The bureau is looking for a person for this role — you have your key and can come back to the project with it.'
+        : `Your project needs a role we have not covered yet: ${who}. ` +
+          `Suitable people in ${where} exist — ${gap.candidates} of them — but no team ` +
+          'comes together in full: some have no free time before your deadline, ' +
+          'others do not share a working suite with the rest of the team. ' +
+          'The bureau is sorting this out by hand — you have your key and can come back to the project with it.',
   }
 }

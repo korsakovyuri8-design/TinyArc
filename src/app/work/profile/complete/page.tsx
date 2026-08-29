@@ -1,58 +1,55 @@
-import { Link } from '@/components/Link'
-import { localeHref } from '@/lib/i18n/redirect'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { SpecialistForm } from '@/components/SpecialistForm'
 import { toProfile } from '@/lib/rows'
 import { currentSpecialist } from '@/lib/session'
 import { completeProfile } from './actions'
-import { translator } from '@/lib/i18n'
-import { pageMetadata } from '@/lib/i18n/metadata'
-import { fill } from '@/lib/i18n/fill'
+import { pageMetadata } from '@/lib/metadata'
+import { fill } from '@/lib/fill'
 
-export const generateMetadata = () => pageMetadata('Заполнить профиль')
+export const metadata = pageMetadata('Complete your profile')
 
 export default async function CompleteProfilePage() {
-  const { locale, t } = await translator()
   const row = await currentSpecialist()
-  if (!row) redirect(await localeHref('/enter'))
+  if (!row) redirect('/enter')
 
   // Профиль, уже ушедший на разбор, здесь не правится: поля отбора меняются
   // через бюро, иначе человек правит собственный балл.
-  if (row.status !== 'invited') redirect(await localeHref('/work/profile'))
+  if (row.status !== 'invited') redirect('/work/profile')
 
   const profile = toProfile(row)
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell" style={{ maxWidth: 760 }}>
-        <Link locale={locale} href="/work/profile" className="label">
-          {t('← профиль')}
+        <Link href="/work/profile" className="label">
+          ← profile
         </Link>
 
         <h1 style={{ marginTop: 18 }}>
-          {fill(t('{name}, заполните профиль'), { name: profile.displayName })}
+          {fill('{name}, complete your profile', { name: profile.displayName })}
         </h1>
 
-        <p className="muted" style={{ marginTop: 16 }}>{t('Вас позвало бюро — заявку вы не подавали. Из нашей базы известны имя и адрес, и, возможно, дисциплина со страной: они уже отмечены ниже. Остальное знаете только вы.')}</p>
+        <p className="muted" style={{ marginTop: 16 }}>The bureau invited you — you did not apply. From our records we know your name and address, and possibly your discipline and country: those are already ticked below. The rest only you know.</p>
 
         <div className="panel" style={{ marginTop: 28 }}>
-          <div className="label label-accent">{t('Зачем эти поля')}</div>
-          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Команду под проект собирает алгоритм, а не человек. Он отбирает по фактам: юрисдикция, пакет, стадия, язык, часовой пояс, свободная ёмкость. Пустое поле — это не «нейтрально», это «не проходит»: половина из них — жёсткие гейты. Пока профиль не заполнен, вас просто нет в выборке.')}</p>
+          <div className="label label-accent">What these fields are for</div>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>The team for a project is assembled by an algorithm, not a person. It selects on facts: jurisdiction, software suite, stage, language, time zone, free capacity. An empty field is not “neutral”, it is “does not pass”: half of them are hard gates. Until the profile is filled in, you are simply not in the pool.</p>
         </div>
 
         <p className="hint" style={{ marginTop: 20, marginBottom: 36 }}>
           {fill(
-            t('После сохранения профиль уходит на разбор портфолио. Порог — {threshold}/10, и рейтинг ставит бюро: вы даёте данные о себе, а не оценку себе.'),
+            'Once saved, the profile goes for portfolio review. The threshold is {threshold}/10, and the bureau sets the rating: you give facts about yourself, not a rating of yourself.',
             { threshold: PORTFOLIO_THRESHOLD },
           )}
         </p>
 
         <SpecialistForm
           askConsent
-          locale={locale}
+         
           action={completeProfile}
-          submitLabel="Отправить на разбор"
+          submitLabel="Send for review"
           defaults={{
             portfolioUrl: row.portfolioUrl,
             disciplines: profile.disciplines,
@@ -69,15 +66,15 @@ export default async function CompleteProfilePage() {
           }}
           done={
             <div className="panel panel-accent">
-              <div className="label label-accent">{t('Профиль отправлен')}</div>
-              <h3 style={{ marginTop: 12 }}>{t('Дальше — разбор портфолио')}</h3>
+              <div className="label label-accent">Profile submitted</div>
+              <h3 style={{ marginTop: 12 }}>Next — the portfolio review</h3>
               <p className="muted" style={{ marginTop: 12, marginBottom: 16 }}>
                 {fill(
-                  t('Бюро смотрит портфолио и ставит рейтинг. Порог — {threshold}/10. Ключ доступа у вас уже есть — тот же, по которому вы вошли.'),
+                  'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10. You already have the access key — the one you signed in with.',
                   { threshold: PORTFOLIO_THRESHOLD },
                 )}
               </p>
-              <Link locale={locale} href="/work/profile">{t('К профилю →')}</Link>
+              <Link href="/work/profile">To the profile →</Link>
             </div>
           }
         />

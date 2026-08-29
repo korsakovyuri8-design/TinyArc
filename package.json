@@ -19,7 +19,7 @@
     "setup": "prisma generate && prisma db push && npm run db:seed",
     "demo": "npm run setup && next dev",
     "preflight": "tsx scripts/preflight.ts",
-    "e2e": "node e2e/brief.mjs && node e2e/intake.mjs && node e2e/mobile.mjs && node e2e/locale.mjs && tsx e2e/cabinets.mts && tsx e2e/recover.mts && node e2e/ops-edit.mjs && node e2e/dialogue.mjs && node e2e/approval.mjs && node e2e/money.mjs && tsx e2e/files.mts && tsx e2e/notify.mts"
+    "e2e": "node e2e/brief.mjs && node e2e/intake.mjs && node e2e/mobile.mjs && tsx e2e/english.mts && tsx e2e/recover.mts && node e2e/ops-edit.mjs && node e2e/dialogue.mjs && node e2e/approval.mjs && node e2e/money.mjs && tsx e2e/files.mts && tsx e2e/notify.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

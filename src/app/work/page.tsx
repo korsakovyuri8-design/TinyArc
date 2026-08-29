@@ -1,16 +1,13 @@
-import { Link } from '@/components/Link'
-import { localeHref } from '@/lib/i18n/redirect'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib/labels'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
 import { ticketsOf } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
-import { translator } from '@/lib/i18n'
-import { pageMetadata } from '@/lib/i18n/metadata'
-import { dateTime } from '@/lib/i18n/format'
-import type { Locale } from '@/lib/i18n/locale'
+import { pageMetadata } from '@/lib/metadata'
+import { dateTime } from '@/lib/format'
 
-export const generateMetadata = () => pageMetadata('Мои задачи')
+export const metadata = pageMetadata('My tasks')
 
 type Ticket = Awaited<ReturnType<typeof ticketsOf>>[number]
 
@@ -20,14 +17,13 @@ export default async function WorkPage({
   searchParams: Promise<{ left?: string }>
 }) {
   const { left } = await searchParams
-  const { locale, t } = await translator()
 
   const specialist = await currentSpecialist()
-  if (!specialist) redirect(await localeHref('/enter'))
+  if (!specialist) redirect('/enter')
 
   // Приглашённому здесь нечего делать: ни задач, ни метрик у него ещё нет, а
   // нужен от него профиль. Ведём туда, а не показываем пустой экран.
-  if (specialist.status === 'invited') redirect(await localeHref('/work/profile/complete'))
+  if (specialist.status === 'invited') redirect('/work/profile/complete')
 
   const tickets = await ticketsOf(specialist.id)
 
@@ -35,33 +31,33 @@ export default async function WorkPage({
   // тикет уже не его, и страница ушла бы из-под ног ошибкой доступа.
   const leftNotice =
     left === 'passed'
-      ? t('Вы вышли из проекта. Роль передана следующему по рангу из того же прогона, ваши незакрытые задачи по нему перешли к нему же.')
+      ? 'You have left the project. The role went to the next by rank from the same run, and your open tasks on it went with the role.'
       : left === 'orphaned'
-        ? t('Вы вышли из проекта. Замены в прогоне не нашлось — роль вернулась бюро, и оно ищет исполнителя.')
+        ? 'You have left the project. No replacement was found in the run — the role went back to the bureau, which is looking for someone.'
         : null
 
   // Канбан: ждёт гейта → открыт → в работе → сдано.
   const columns: { title: string; note: string; tickets: Ticket[] }[] = [
     {
-      title: t('Ждёт гейта'),
-      note: t('Зависимости ещё не приняты'),
+      title: 'Waiting on a gate',
+      note: 'Its dependencies are not accepted yet',
       tickets: tickets.filter((ticket) => ticket.status === 'blocked'),
     },
     {
-      title: t('К взятию'),
-      note: t('Открыт, но не взят в работу'),
+      title: 'To pick up',
+      note: 'Open, not yet taken on',
       tickets: tickets.filter((ticket) => ticket.status === 'open'),
     },
     {
-      title: t('В работе'),
-      note: t('Взят или вернулся на круг'),
+      title: 'In progress',
+      note: 'Taken on, or back for another round',
       tickets: tickets.filter(
         (ticket) => ticket.status === 'in_progress' || ticket.status === 'revision',
       ),
     },
     {
-      title: t('Сдано'),
-      note: t('Предъявлено или принято'),
+      title: 'Submitted',
+      note: 'Handed in or accepted',
       tickets: tickets.filter(
         (ticket) => ticket.status === 'submitted' || ticket.status === 'accepted',
       ),
@@ -73,31 +69,31 @@ export default async function WorkPage({
       <div className="shell">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <div>
-            <span className="eyebrow">{t('Доска работ')}</span>
+            <span className="eyebrow">Work board</span>
             <h1>{specialist.displayName}</h1>
           </div>
-          <Link locale={locale} href="/work/profile" className="btn btn-quiet">
-            {t('Профиль и метрики')}
+          <Link href="/work/profile" className="btn btn-quiet">
+            Profile and metrics
           </Link>
         </div>
 
         {leftNotice && (
           <div className="panel panel-accent" style={{ marginTop: 28 }}>
-            <div className="label label-accent">{t('Выход оформлен')}</div>
+            <div className="label label-accent">Your exit is recorded</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 12 }}>
               {leftNotice}
             </p>
             <p className="hint" style={{ margin: 0 }}>
-              {t('На балл это не влияет: выход не считается ошибкой и в отбор не входит. Но если вы вышли из-за загрузки, поправьте свободную ёмкость —')}{' '}
-              <Link locale={locale} href="/work/profile">{t('в профиле')}</Link>.{' '}
-              {t('Отбор считает по ней, и заявленные часы, которых нет, приведут к тому же ещё раз.')}
+              This does not touch your score: leaving is not counted as a failure and does not enter selection. But if you left because of workload, correct your free capacity —{' '}
+              <Link href="/work/profile">in your profile</Link>.{' '}
+              Selection counts on it, and declared hours you do not have will bring you here again.
             </p>
           </div>
         )}
 
         {tickets.length === 0 ? (
           <div className="panel" style={{ marginTop: 40 }}>
-            <div className="label">{t('Задач пока нет')}</div>
+            <div className="label">No tasks yet</div>
             {/*
               Причина названа там, где человек её ищет. Пустая доска без
               объяснения читается как «меня не выбирают», то есть как приговор
@@ -105,9 +101,9 @@ export default async function WorkPage({
               человек будет переделывать портфолио, а мешает не оно.
             */}
             {specialist.subscription === 'none' ? (
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Задач не будет, пока закрыт доступ к проектам: без него движок вас не рассматривает. Это про доступ, а не про качество вашей работы — ни портфолио, ни метрики здесь ни при чём. Что делать — написано в профиле.')}</p>
+              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>There will be no tasks while access to projects is closed: without it the engine does not consider you. This is about access, not about the quality of your work — neither portfolio nor metrics come into it. What to do is written in your profile.</p>
             ) : (
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{t('Тикеты появляются, когда движок ставит вас в команду проекта. Откликаться никуда не нужно — отбор идёт без вашего участия.')}</p>
+              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Tickets appear when the engine puts you on a project team. There is nothing to apply to — selection runs without your involvement.</p>
             )}
           </div>
         ) : (
@@ -140,11 +136,11 @@ export default async function WorkPage({
                 <div className="stack" style={{ marginTop: 16, gap: 12 }}>
                   {column.tickets.length === 0 && (
                     <p className="dim" style={{ fontSize: '0.85rem' }}>
-                      {t('Пусто.')}
+                      Empty.
                     </p>
                   )}
                   {column.tickets.map((ticket) => (
-                    <Card key={ticket.id} ticket={ticket} locale={locale} t={t} />
+                    <Card key={ticket.id} ticket={ticket} />
                   ))}
                 </div>
               </div>
@@ -158,19 +154,14 @@ export default async function WorkPage({
 
 function Card({
   ticket,
-  locale,
-  t,
 }: {
   ticket: Ticket
-  locale: Locale
-  /** Переводчик страницы: карточка вложена в неё и своего контекста не имеет. */
-  t: (text: string) => string
 }) {
   const overdue = ticket.dueAt && ticket.status !== 'accepted' && ticket.dueAt < new Date()
 
   return (
     <Link
-      locale={locale}
+     
       href={`/work/${ticket.id}`}
       className="panel"
       style={{
@@ -185,36 +176,36 @@ function Card({
       }}
     >
       <div className="label">
-        {t(DOC_STAGE_LABELS[ticket.stage as DocStage])} ·{' '}
-        {t(DISCIPLINE_LABELS[ticket.discipline as Discipline])}
+        {DOC_STAGE_LABELS[ticket.stage as DocStage]} ·{' '}
+        {DISCIPLINE_LABELS[ticket.discipline as Discipline]}
       </div>
 
-      <div style={{ marginTop: 10, fontSize: '0.95rem' }}>{t(ticket.title)}</div>
+      <div style={{ marginTop: 10, fontSize: '0.95rem' }}>{ticket.title}</div>
 
       <div className="dim" style={{ marginTop: 8, fontSize: '0.8rem' }}>
         {ticket.project.title}
         {ticket.waitingOn.length > 0 && (
           <>
             <br />
-            {t('Ждёт:')}{' '}
-            {ticket.waitingOn.map((d) => t(DISCIPLINE_LABELS[d as Discipline])).join(', ')}
+            Waits for:{' '}
+            {ticket.waitingOn.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')}
           </>
         )}
         {ticket.dueAt && ticket.status !== 'accepted' && (
           <>
             <br />
-            {t('Срок:')} {dateTime(ticket.dueAt, locale)}
+            Due: {dateTime(ticket.dueAt)}
           </>
         )}
       </div>
 
       <div className="row" style={{ marginTop: 12, gap: 8 }}>
         <span className={`tag ${ticket.status === 'accepted' ? 'tag-pass' : ''}`}>
-          {t(TICKET_STATUS_LABELS[ticket.status] ?? ticket.status)}
+          {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
         </span>
-        {ticket.conflictRaisedAt && <span className="tag tag-fail">{t('конфликт')}</span>}
+        {ticket.conflictRaisedAt && <span className="tag tag-fail">conflict</span>}
         {overdue && !ticket.conflictRaisedAt && (
-          <span className="tag tag-wait">{t('просрочен')}</span>
+          <span className="tag tag-wait">overdue</span>
         )}
       </div>
     </Link>

@@ -40,16 +40,16 @@ const trimmed = z.string().trim()
  * браузер не отправляет вовсе, поэтому пустая строка здесь — это «не отметил».
  */
 const consent = z
-  .literal('on', { message: 'Без согласия с офертой и политикой данных заявку принять нельзя' })
+  .literal('on', { message: 'We cannot accept a submission without agreement to the terms and the data policy' })
 
 export const briefSchema = z.object({
-  title: trimmed.min(2, 'Назовите проект').max(120),
-  clientName: trimmed.min(2, 'Как к вам обращаться').max(120),
-  clientEmail: z.email('Нужен рабочий адрес: ключ доступа придёт на него'),
+  title: trimmed.min(2, 'Name the project').max(120),
+  clientName: trimmed.min(2, 'How to address you').max(120),
+  clientEmail: z.email('We need a working address: the access key goes there'),
 
   typology: z.enum(TYPOLOGIES),
-  storeys: z.coerce.number().int().min(1, 'Минимум один этаж').max(60),
-  areaSqm: z.coerce.number().int().min(10, 'Слишком мало').max(200_000),
+  storeys: z.coerce.number().int().min(1, 'At least one storey').max(60),
+  areaSqm: z.coerce.number().int().min(10, 'Too small').max(200_000),
   jurisdiction: z.enum(JURISDICTIONS),
   climateZone: z.enum(CLIMATE_ZONES),
   materialSystem: z.enum(MATERIAL_SYSTEMS),
@@ -59,7 +59,7 @@ export const briefSchema = z.object({
   gridConnection: z.enum(GRID_CONNECTIONS),
 
   software: z.array(z.enum(SOFTWARE)),
-  languages: z.array(z.enum(LANGUAGES)).min(1, 'Укажите хотя бы один язык'),
+  languages: z.array(z.enum(LANGUAGES)).min(1, 'Name at least one language'),
 
   requiredHoursPerWeek: z.coerce.number().int().min(1).max(40),
   horizonDays: z.coerce.number().int().min(7).max(365),
@@ -72,11 +72,11 @@ export const briefSchema = z.object({
 export type BriefInput = z.infer<typeof briefSchema>
 
 export const applicationSchema = z.object({
-  displayName: trimmed.min(2, 'Как вас показывать клиенту').max(120),
-  email: z.email('Нужен рабочий адрес: ключ доступа придёт на него'),
-  portfolioUrl: z.url('Ссылка на портфолио обязательна: это главный вход отбора'),
+  displayName: trimmed.min(2, 'How to show you to the client').max(120),
+  email: z.email('We need a working address: the access key goes there'),
+  portfolioUrl: z.url('A portfolio link is required: it is the main entrance to selection'),
 
-  disciplines: z.array(z.enum(DISCIPLINES)).min(1, 'Выберите хотя бы одну дисциплину'),
+  disciplines: z.array(z.enum(DISCIPLINES)).min(1, 'Choose at least one discipline'),
   /**
    * Минимума по списку здесь нет намеренно.
    *
@@ -86,18 +86,18 @@ export const applicationSchema = z.object({
    * не длиной списка, а словарём дисциплины: см. everyDisciplineCovered.
    */
   specializations: z.array(z.enum(SPECIALIZATIONS)),
-  typologies: z.array(z.enum(TYPOLOGIES)).min(1, 'С какими типологиями работали'),
-  scaleBands: z.array(z.enum(SCALE_BANDS)).min(1, 'Какой масштаб вели'),
+  typologies: z.array(z.enum(TYPOLOGIES)).min(1, 'Which typologies you have worked on'),
+  scaleBands: z.array(z.enum(SCALE_BANDS)).min(1, 'Which scale you have led'),
   maxStoreys: z.coerce.number().int().min(1).max(60),
-  materialSystems: z.array(z.enum(MATERIAL_SYSTEMS)).min(1, 'Какие системы вели'),
-  climateZones: z.array(z.enum(CLIMATE_ZONES)).min(1, 'В каком климате строили'),
-  jurisdictions: z.array(z.enum(JURISDICTIONS)).min(1, 'Где проходили согласования'),
+  materialSystems: z.array(z.enum(MATERIAL_SYSTEMS)).min(1, 'Which systems you have led'),
+  climateZones: z.array(z.enum(CLIMATE_ZONES)).min(1, 'Which climates you have built in'),
+  jurisdictions: z.array(z.enum(JURISDICTIONS)).min(1, 'Where you have taken projects through approvals'),
   signsIn: z.array(z.enum(JURISDICTIONS)),
-  software: z.array(z.enum(SOFTWARE)).min(1, 'В чём работаете'),
+  software: z.array(z.enum(SOFTWARE)).min(1, 'What you work in'),
   ifcLevel: z.enum(IFC_LEVELS),
-  docStages: z.array(z.enum(DOC_STAGES)).min(1, 'До какой стадии ведёте'),
+  docStages: z.array(z.enum(DOC_STAGES)).min(1, 'How far you carry documentation'),
   regulatoryTracks: z.array(z.enum(REGULATORY_TRACKS)).min(1),
-  languages: z.array(z.enum(LANGUAGES)).min(1, 'На каких языках работаете'),
+  languages: z.array(z.enum(LANGUAGES)).min(1, 'Which languages you work in'),
   workMode: z.enum(WORK_MODES),
   utcOffset: z.coerce.number().int().min(-12).max(14),
   weeklyCapacityHours: z.coerce.number().int().min(0).max(60),

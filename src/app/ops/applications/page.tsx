@@ -14,7 +14,7 @@ import { isOperator } from '@/lib/session'
 import { proposeRating, reinviteSpecialist, reviewApplication } from '../actions'
 import { OpsAction } from '../OpsForms'
 
-export const metadata = { title: 'Заявки — панель бюро' }
+export const metadata = { title: 'Applications — bureau panel' }
 
 export default async function ApplicationsPage() {
   if (!(await isOperator())) redirect('/ops')
@@ -36,34 +36,33 @@ export default async function ApplicationsPage() {
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
         <Link href="/ops" className="label">
-          ← панель
+          ← panel
         </Link>
-        <h1 style={{ marginTop: 18 }}>Заявки на разборе</h1>
+        <h1 style={{ marginTop: 18 }}>Applications under review</h1>
         <p className="muted" style={{ marginTop: 14, maxWidth: '58ch' }}>
-          Единственное решение здесь — рейтинг портфолио. Пускать или нет, следует из порога
-          {' '}{PORTFOLIO_THRESHOLD}/10 автоматически: это правило продукта, а не усмотрение.
+          The only decision here is the portfolio rating. Whether someone passes follows from the threshold
+          {' '}{PORTFOLIO_THRESHOLD}/10 automatically: that is a product rule, not discretion.
         </p>
 
         {invited.length > 0 && (
           <>
             <div className="divider" style={{ marginTop: 40 }} />
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <h2>Приглашены, профиль не заполнен</h2>
+              <h2>Invited, profile not filled in</h2>
               <span className="tag tag-wait">{invited.length}</span>
             </div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '58ch' }}>
-              Эти заведены импортом базы. Мяч у них, не у нас: пока профиль не заполнен, отбор
-              их не видит — не по решению бюро, а потому что нечем считать.
+              These came in through a database import. The ball is in their court, not ours: until the profile is filled in, selection does not see them — not by a decision of the bureau, but because there is nothing to compute on.
             </p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
               <table>
                 <thead>
                   <tr>
-                    <th>Кто</th>
-                    <th>Почта</th>
-                    <th>Ключ</th>
-                    <th>Молчит</th>
+                    <th>Who</th>
+                    <th>Email</th>
+                    <th>Key</th>
+                    <th>Silent for</th>
                     <th />
                   </tr>
                 </thead>
@@ -82,13 +81,13 @@ export default async function ApplicationsPage() {
                             Панель закрыта паролем — это не публичное место. */}
                         <td className="num dim" style={{ fontSize: '0.78rem' }}>{row.accessKey}</td>
                         <td className="num dim">
-                          {days === null ? 'не звали' : `${days} дн.`}
+                          {days === null ? 'not invited yet' : `${days} days`}
                         </td>
                         <td>
                           <OpsAction
                             action={reinviteSpecialist}
                             hidden={{ specialistId: row.id }}
-                            label="Позвать ещё раз"
+                            label="Invite again"
                           />
                         </td>
                       </tr>
@@ -104,7 +103,7 @@ export default async function ApplicationsPage() {
 
         {rows.length === 0 ? (
           <p className="dim" style={{ marginTop: 40 }}>
-            Разобрано всё.
+            Everything is reviewed.
           </p>
         ) : (
           <div className="grid grid-2" style={{ marginTop: 36 }}>
@@ -120,7 +119,7 @@ export default async function ApplicationsPage() {
 
                   <p style={{ marginTop: 14, marginBottom: 14 }}>
                     <a href={row.portfolioUrl} target="_blank" rel="noreferrer noopener">
-                      Портфолио ↗
+                      Portfolio ↗
                     </a>
                   </p>
 
@@ -141,8 +140,8 @@ export default async function ApplicationsPage() {
                           </div>
                           <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
                             {work.roleDescription}
-                            {work.areaSqm ? ` · ${work.areaSqm} м²` : ''}
-                            {work.durationMonths ? ` · ${work.durationMonths} мес.` : ''}
+                            {work.areaSqm ? ` · ${work.areaSqm} m²` : ''}
+                            {work.durationMonths ? ` · ${work.durationMonths} months` : ''}
                           </div>
                         </div>
                       ))}
@@ -150,21 +149,21 @@ export default async function ApplicationsPage() {
                   )}
 
                   <div className="stack" style={{ gap: 6, fontSize: '0.85rem' }}>
-                    <Line label="Дисциплины" value={profile.disciplines.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')} />
+                    <Line label="Disciplines" value={profile.disciplines.map((d) => DISCIPLINE_LABELS[d as Discipline]).join(', ')} />
                     <Line
-                      label="Специализация"
+                      label="Specialisation"
                       value={profile.specializations
                         .map((x) => SPECIALIZATION_LABELS[x as Specialization])
                         .join(', ')}
                     />
-                    <Line label="Юрисдикции" value={profile.jurisdictions.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')} />
+                    <Line label="Jurisdictions" value={profile.jurisdictions.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ')} />
                     <Line
-                      label="Подпись"
-                      value={profile.signsIn.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ') || 'нет'}
+                      label="Signing"
+                      value={profile.signsIn.map((j) => JURISDICTION_NAMES[j as Jurisdiction]).join(', ') || 'none'}
                     />
-                    <Line label="Этажность" value={String(profile.maxStoreys)} />
-                    <Line label="Софт / IFC" value={`${profile.software.join(', ')} · ${profile.ifcLevel}`} />
-                    <Line label="Ёмкость" value={`${profile.weeklyCapacityHours} ч/нед, выход ${profile.leadTimeDays} дн.`} />
+                    <Line label="Storey count" value={String(profile.maxStoreys)} />
+                    <Line label="Software / IFC" value={`${profile.software.join(', ')} · ${profile.ifcLevel}`} />
+                    <Line label="Capacity" value={`${profile.weeklyCapacityHours} h/week, starts within ${profile.leadTimeDays} days`} />
                   </div>
 
                   <div className="divider" style={{ margin: '18px 0' }} />
@@ -173,18 +172,18 @@ export default async function ApplicationsPage() {
                     <OpsAction
                       action={proposeRating}
                       hidden={{ specialistId: row.id }}
-                      label="Что видно в портфолио"
+                      label="What the portfolio shows"
                     />
                   </div>
 
                   <OpsAction
                     action={reviewApplication}
                     hidden={{ specialistId: row.id }}
-                    label="Поставить рейтинг"
+                    label="Set the rating"
                     solid
                   >
                     <div className="field">
-                      <label htmlFor={`rating-${row.id}`}>Рейтинг портфолио, 0–10</label>
+                      <label htmlFor={`rating-${row.id}`}>Portfolio rating, 0–10</label>
                       <input
                         id={`rating-${row.id}`}
                         name="portfolioRating"

@@ -18,9 +18,7 @@
 
 import { prisma } from '../db'
 import { sendKeyReminder } from '../mail'
-import { translate } from '../i18n/dict'
-import { fill } from '../i18n/fill'
-import type { Locale } from '../i18n/locale'
+import { fill } from '../fill'
 
 /** Статусы специалиста, при которых ключ действительно открывает доску. */
 const KEY_WORKS = new Set(['active', 'invited'])
@@ -37,13 +35,12 @@ export type KeyOwner = {
  * правило «ключ, который не работает, не называем» ломается молча и заметно
  * только тому, кто получил письмо и не смог войти.
  */
-export function keyLines(owner: KeyOwner, locale: Locale): string[] {
-  const t = (text: string) => translate(text, locale)
+export function keyLines(owner: KeyOwner): string[] {
   const lines: string[] = []
 
   for (const project of owner.projects) {
     lines.push(
-      fill(t('Проект «{title}» — ключ {key}'), {
+      fill('Project “{title}” — key {key}', {
         title: project.title,
         key: project.clientKey,
       }),
@@ -51,7 +48,7 @@ export function keyLines(owner: KeyOwner, locale: Locale): string[] {
   }
 
   if (owner.specialist && KEY_WORKS.has(owner.specialist.status)) {
-    lines.push(fill(t('Доска работ — ключ {key}'), { key: owner.specialist.accessKey }))
+    lines.push(fill('Work board — key {key}', { key: owner.specialist.accessKey }))
   }
 
   return lines
@@ -68,7 +65,7 @@ export function keyLines(owner: KeyOwner, locale: Locale): string[] {
  * не числится» — это тот же ответ на вопрос о чужом адресе, только доставленный
  * почтой.
  */
-export async function remindKeys(email: string, locale: Locale): Promise<void> {
+export async function remindKeys(email: string): Promise<void> {
   const address = email.trim().toLowerCase()
   if (!address) return
 
@@ -84,8 +81,8 @@ export async function remindKeys(email: string, locale: Locale): Promise<void> {
     }),
   ])
 
-  const lines = keyLines({ projects, specialist }, locale)
+  const lines = keyLines({ projects, specialist })
   if (lines.length === 0) return
 
-  await sendKeyReminder(address, lines, locale)
+  await sendKeyReminder(address, lines)
 }

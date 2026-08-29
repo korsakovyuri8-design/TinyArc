@@ -41,88 +41,88 @@ const LOW_RISE: Typology[] = ['villa', 'townhouse']
 const CATALOGUE: Entry[] = [
   {
     key: 'terraced',
-    title: 'Террасирование',
+    title: 'Terracing',
     summary:
-      'Объём разбит на уровни, каждый следует линии склона. Здание читается как продолжение рельефа, а не как поставленный на него предмет.',
+      'The volume is broken into levels, each following the line of the slope. The building reads as a continuation of the terrain rather than an object set down on it.',
     tradeoff:
-      'Больше подпорных конструкций и сложнее гидроизоляция. Каждый уровень требует своей отметки и своего входа.',
+      'More retaining structures and harder waterproofing. Every level needs its own datum and its own entrance.',
     applies: (s) => s.terrain === 'slope',
     fragment:
       'terraced volumes stepping down a hillside, each level following the natural slope, retaining walls integrated into the architecture',
   },
   {
     key: 'embedded',
-    title: 'Врезка в склон',
+    title: 'Cut into the slope',
     summary:
-      'Часть объёма уходит в землю, кровля становится эксплуатируемой площадкой. Со стороны подъезда здание почти не читается.',
+      'Part of the volume goes into the ground and the roof becomes usable terrace. From the approach the building is barely legible.',
     tradeoff:
-      'Дорогая гидроизоляция и вентиляция заглублённой части. Инсоляция помещений в грунте требует отдельного решения.',
+      'Expensive waterproofing and ventilation for the buried part. Daylight to the below-grade rooms needs a solution of its own.',
     applies: (s) => s.terrain === 'slope',
     fragment:
       'building embedded into the hillside, green accessible roof, only the glazed facade facing the valley is visible',
   },
   {
     key: 'stilts',
-    title: 'Поднятый уровень',
+    title: 'Raised level',
     summary:
-      'Основной объём поднят над землёй на опорах, нижний уровень остаётся открытым или техническим.',
+      'The main volume is lifted on supports; the lower level stays open or serves as plant space.',
     tradeoff:
-      'Сложнее теплотехника перекрытия над улицей, дороже вертикальные связи. Зато участок под зданием остаётся проницаемым.',
+      'Harder thermal performance for the slab over open air and costlier vertical circulation. In exchange, the ground under the building stays permeable.',
     applies: (s) => s.terrain === 'flood_prone',
     fragment:
       'main volume raised on slender columns above ground level, open shaded undercroft beneath, flood-resilient base',
   },
   {
     key: 'courtyard',
-    title: 'Внутренний двор',
+    title: 'Courtyard',
     summary:
-      'Объём обёрнут вокруг закрытого двора. Приватность обеспечивается планировкой, а не забором и не расстоянием до соседа.',
+      'The volume wraps a closed courtyard. Privacy comes from the plan, not from a fence or from distance to the neighbour.',
     tradeoff:
-      'Больше наружных стен на ту же площадь и, соответственно, теплопотерь. Требует участка, где двор помещается.',
+      'More external wall for the same floor area, and heat loss to match. It needs a site the courtyard actually fits on.',
     applies: (s) => s.typology !== 'mixed_use',
     fragment:
       'courtyard house, volumes wrapped around a private enclosed patio, inward-facing glazing, solid outer walls',
   },
   {
     key: 'pavilions',
-    title: 'Павильоны',
+    title: 'Pavilions',
     summary:
-      'Объём разобран на несколько связанных частей вместо одного тела. Функции разведены, между ними — открытые переходы.',
+      'The volume is broken into several connected parts instead of one body. Functions are separated, with open links between them.',
     tradeoff:
-      'Периметр и стоимость наружных ограждений растут заметно. Инженерные сети приходится вести между корпусами.',
+      'Perimeter and envelope cost rise noticeably. Services have to be run between the blocks.',
     applies: (s) => LOW_RISE.includes(s.typology),
     fragment:
       'several separate low pavilions connected by covered walkways, dispersed plan, landscape flowing between volumes',
   },
   {
     key: 'compact',
-    title: 'Компактный объём',
+    title: 'Compact volume',
     summary:
-      'Одно плотное тело с минимальным периметром. Самая экономная геометрия по стоимости оболочки и по теплу.',
+      'A single dense body with minimal perimeter. The most economical geometry for envelope cost and for heat.',
     tradeoff:
-      'Меньше фасадного фронта и видовых точек. Планировка жёстче: перемещать стены почти негде.',
+      'Less façade frontage and fewer viewpoints. The plan is more rigid: there is barely anywhere to move a wall.',
     applies: () => true,
     fragment:
       'compact single volume, minimal envelope, restrained geometry, precise proportions',
   },
   {
     key: 'linear',
-    title: 'Линейный объём',
+    title: 'Linear volume',
     summary:
-      'Здание вытянуто вдоль участка одной полосой. Все основные помещения получают одну ориентацию и один вид.',
+      'The building runs along the site as a single band. Every principal room gets the same orientation and the same view.',
     tradeoff:
-      'Длинные коммуникации и коридоры. Требует участка с выраженной длинной стороной.',
+      'Long service runs and long corridors. It needs a site with a pronounced long side.',
     applies: () => true,
     fragment:
       'long linear volume stretched along the site, continuous glazed facade on one side, repetitive structural rhythm',
   },
   {
     key: 'stacked',
-    title: 'Ступенчатая этажность',
+    title: 'Stepped storeys',
     summary:
-      'Верхние этажи отступают внутрь, освобождая террасы. Объём теряет массивность к верху.',
+      'The upper floors step back, freeing up terraces. The volume sheds mass towards the top.',
     tradeoff:
-      'Каждый отступ — это переход конструктивной схемы и узел, который надо решать отдельно.',
+      'Every setback is a change in the structural scheme and a junction that has to be solved on its own.',
     applies: (s) => s.typology === 'multi_family' || s.typology === 'mixed_use',
     fragment:
       'stepped massing with setback upper floors forming large private terraces, tapering silhouette',
@@ -131,9 +131,9 @@ const CATALOGUE: Entry[] = [
     key: 'podium',
     title: 'Объём на подиуме',
     summary:
-      'Здание стоит на выраженном цоколе, который выравнивает участок и отделяет жилые уровни от земли.',
+      'The building sits on a pronounced plinth that levels the site and lifts the living floors off the ground.',
     tradeoff:
-      'Подиум — это объём, который надо построить и в котором надо что-то разместить, иначе он становится дорогой пустотой.',
+      'A podium is a volume you have to build and then fill with something, or it becomes expensive emptiness.',
     applies: (s) => s.typology !== 'villa' || s.terrain !== 'flat',
     fragment:
       'building resting on a pronounced stone podium that levels the site, clear separation between base and upper volume',

@@ -1,58 +1,56 @@
-import { Link } from '@/components/Link'
-import { fill } from '@/lib/i18n/fill'
-import { translator } from '@/lib/i18n'
-import { pageMetadata } from '@/lib/i18n/metadata'
+import Link from 'next/link'
+import { fill } from '@/lib/fill'
+import { pageMetadata } from '@/lib/metadata'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 
 export const generateMetadata = () =>
   pageMetadata(
-    'Специалистам',
-    'Пул специалистов Bureau: отбор по двенадцати измерениям, порог по портфолио 8/10, работа по тикетам, метрики вместо отзывов.',
+    'For specialists',
+    'The Bureau specialist pool: selection across twelve dimensions, a portfolio threshold of 8/10, work on tickets, metrics instead of reviews.',
   )
 
 export default async function SpecialistsPage() {
-  const { locale, t } = await translator()
 
   return (
     <>
       <section style={{ paddingTop: 'clamp(48px, 8vw, 96px)' }}>
         <div className="shell">
-          <span className="eyebrow">{t('Пул')}</span>
-          <h1 style={{ maxWidth: '16ch' }}>{t('Проекты приходят к вам, а не вы к ним')}</h1>
-          <p className="lead" style={{ marginTop: 24, maxWidth: '54ch' }}>{t('Ни тендеров, ни писем «расскажите о себе», ни торга по ставке. Движок сам решает, кто попадает в команду, — по фактам, которые вы заявили, и по тому, как вы сдавали прошлые тикеты.')}</p>
-          <Link locale={locale} href="/specialists/apply" className="btn btn-solid" style={{ marginTop: 32 }}>{t('Подать заявку')}</Link>
+          <span className="eyebrow">The pool</span>
+          <h1 style={{ maxWidth: '16ch' }}>Projects come to you, not the other way round</h1>
+          <p className="lead" style={{ marginTop: 24, maxWidth: '54ch' }}>No tenders, no “tell us about yourself” emails, no haggling over rates. The engine decides who joins a team — from the facts you declared and from how you delivered past tickets.</p>
+          <Link href="/specialists/apply" className="btn btn-solid" style={{ marginTop: 32 }}>Apply</Link>
         </div>
       </section>
 
       <section>
         <div className="shell">
-          <span className="eyebrow">{t('Условия честные, но не мягкие')}</span>
+          <span className="eyebrow">The terms are fair, not soft</span>
           <div className="grid grid-2">
             <Term
-              title={fill(t('Порог по портфолио — {threshold}/10'), {
+              title={fill('Portfolio threshold — {threshold}/10', {
                 threshold: PORTFOLIO_THRESHOLD,
               })}
-              body={t('Гейт стоит до скоринга. Ниже порога заявка не проходит, какой бы свободной ни была ваша неделя.')}
+              body={'The gate comes before the scoring. Below the threshold an application does not pass, however free your week is.'}
             />
             <Term
-              title={t('Оценок не существует')}
-              body={t('Ни клиент, ни бюро не могут поставить вам балл. Считаются только сроки, приёмка с первого раза, время отклика и круги правок.')}
+              title={'There are no ratings'}
+              body={'Neither the client nor the bureau can score you. Only deadlines, first-time acceptance, response time and revision rounds are counted.'}
             />
             <Term
-              title={t('Прямых чатов нет')}
-              body={t('Вы видите свой тикет и комментарии по нему. Соседей по команде — как роли, не как имена.')}
+              title={'There are no direct chats'}
+              body={'You see your ticket and the comments on it. Teammates appear as roles, not as names.'}
             />
             <Term
-              title={t('Метрики двигают доступ')}
-              body={t('Сорванные сроки снижают Quality и убирают вас из следующих команд. Без разбирательств и без второго шанса, выданного вручную.')}
+              title={'Metrics move your access'}
+              body={'Missed deadlines lower Quality and take you out of the next teams. Without a hearing and without a second chance handed out by anyone.'}
             />
             <Term
-              title={t('Ёмкость — это множитель')}
-              body={t('Формула Quality × Availability. Нулевая свободная ёмкость обнуляет балл: качество недоступность не компенсирует.')}
+              title={'Capacity is a multiplier'}
+              body={'The formula is Quality × Availability. Zero free capacity zeroes the score: quality does not compensate for unavailability.'}
             />
             <Term
-              title={t('Плата за доступ')}
-              body={t('Подписка специалиста — за доступ к проектам. Комиссии с вашей ставки нет.')}
+              title={'Paying for access'}
+              body={'The specialist subscription pays for access to projects. There is no commission on your fee.'}
             />
           </div>
         </div>
@@ -62,13 +60,13 @@ export default async function SpecialistsPage() {
         <div className="shell">
           <div className="split">
             <div>
-              <span className="eyebrow">{t('Как идёт работа')}</span>
-              <h2>{t('Тикет, гейт, приёмка')}</h2>
+              <span className="eyebrow">How the work runs</span>
+              <h2>Ticket, gate, acceptance</h2>
             </div>
             <div className="stack" style={{ gap: 22 }}>
-              <Step n="01" title={t('Тикет открывается гейтом')}>{t('Пока не приняты задачи, от которых зависит ваша, тикет закрыт. Вы видите название и стадию, но не содержание — входных артефактов ещё нет.')}</Step>
-              <Step n="02" title={t('Вы работаете и комментируете в тикете')}>{t('Первый содержательный ответ засекает Response Time. Всё общение — в тикете, и это единственное место, где его вообще можно вести.')}</Step>
-              <Step n="03" title={t('Бюро принимает или возвращает на круг')}>{t('Приёмка в срок и с первого раза поднимает Quality. Возврат добавляет круг правок и снижает First Time Right.')}</Step>
+              <Step n="01" title={'The gate opens the ticket'}>Until the tasks yours depends on are accepted, the ticket stays closed. You see the title and the stage but not the content — the input files do not exist yet.</Step>
+              <Step n="02" title={'You work and comment in the ticket'}>Your first substantive reply starts the Response Time clock. All communication happens in the ticket, and that is the only place it can happen at all.</Step>
+              <Step n="03" title={'The bureau accepts or sends it back'}>Acceptance on time and first time raises Quality. A return adds a revision round and lowers First Time Right.</Step>
             </div>
           </div>
         </div>
@@ -77,8 +75,8 @@ export default async function SpecialistsPage() {
       <section>
         <div className="shell">
           <div className="row" style={{ gap: 16 }}>
-            <Link locale={locale} href="/specialists/apply" className="btn btn-solid">{t('Подать заявку')}</Link>
-            <Link locale={locale} href="/enter" className="btn btn-quiet">{t('У меня уже есть ключ')}</Link>
+            <Link href="/specialists/apply" className="btn btn-solid">Apply</Link>
+            <Link href="/enter" className="btn btn-quiet">I already have a key</Link>
           </div>
         </div>
       </section>

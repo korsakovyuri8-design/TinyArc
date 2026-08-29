@@ -1,7 +1,5 @@
 import Link from 'next/link'
 import { LEGAL_VERSION } from '@/lib/legal'
-import { useLocale, useT } from '@/lib/i18n/context'
-import { localePath } from '@/lib/i18n/locale'
 
 /**
  * Согласие с офертой и политикой обработки данных.
@@ -15,14 +13,9 @@ import { localePath } from '@/lib/i18n/locale'
  *
  * Обязательность проверяется схемой на сервере, а не только атрибутом здесь —
  * `required` снимается инструментами разработчика за секунду.
- *
- * Ссылки уводят на документ того языка, на котором человек согласие даёт:
- * согласие с редакцией, которую он не прочитал, потому что она открылась на
- * другом языке, — не согласие (п.13а).
+
  */
 export function Consent({ error }: { error?: string }) {
-  const t = useT()
-  const locale = useLocale()
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -39,21 +32,21 @@ export function Consent({ error }: { error?: string }) {
           style={{ marginTop: 4, width: 'auto', flex: '0 0 auto' }}
         />
         <span className="muted" style={{ fontSize: '0.9rem' }}>
-          {t('Я прочитал и принимаю')}{' '}
-          <Link href={localePath('/legal/offer', locale)} target="_blank">
-            {t('публичную оферту')}
+          I have read and accept the{' '}
+          <Link href="/legal/offer" target="_blank">
+            terms of service
           </Link>{' '}
-          {t('и')}{' '}
-          <Link href={localePath('/legal/privacy', locale)} target="_blank">
-            {t('политику обработки данных')}
+          and the{' '}
+          <Link href="/legal/privacy" target="_blank">
+            data processing policy
           </Link>
-          {t('в редакции')} {LEGAL_VERSION}.
+          , revision {LEGAL_VERSION}.
         </span>
       </label>
 
       {error && (
         <div className="hint" style={{ color: 'var(--fail)', marginTop: 8 }}>
-          {t(error)}
+          {error}
         </div>
       )}
     </div>

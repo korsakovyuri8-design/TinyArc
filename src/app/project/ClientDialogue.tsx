@@ -1,9 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { fill } from '@/lib/i18n/fill'
-import { LocaleProvider, useT } from '@/lib/i18n/context'
-import type { Locale } from '@/lib/i18n/locale'
+import { fill } from '@/lib/fill'
 import { approveProjectStage, sendToBureau, type ProjectState } from './actions'
 
 /**
@@ -13,47 +11,44 @@ import { approveProjectStage, sendToBureau, type ProjectState } from './actions'
  * а не прямо тому, кто чертит. Человеку это не очевидно, и без объяснения
  * молчание команды в ответ читается как невнимание.
  */
-export function ClientDialogue({ locale }: { locale: Locale }) {
+export function ClientDialogue() {
   return (
-    <LocaleProvider locale={locale}>
-      <DialogueForm />
-    </LocaleProvider>
+          <DialogueForm />
   )
 }
 
 function DialogueForm() {
   const [state, action, pending] = useActionState<ProjectState, FormData>(sendToBureau, {})
-  const t = useT()
 
   return (
     <form action={action}>
       <div className="field">
-        <label htmlFor="body">{t('Что сказать бюро')}</label>
+        <label htmlFor="body">What to tell the bureau</label>
         <textarea
           id="body"
           name="body"
           style={{ minHeight: 90 }}
-          placeholder={t('Нужно сдвинуть срок на месяц — уезжаю. Или: передумал по направлению, хочу вернуться к первому варианту.')}
+          placeholder={'I need to push the deadline by a month — I’m travelling. Or: I’ve changed my mind on the direction and want to go back to the first option.'}
         />
       </div>
 
       <button type="submit" className="btn btn-solid" disabled={pending}>
-        {pending ? '…' : t('Отправить бюро')}
+        {pending ? '…' : 'Send to the bureau'}
       </button>
 
       {state.error && (
         <div className="hint" style={{ color: 'var(--fail)', marginTop: 10 }}>
-          {t(state.error)}
+          {state.error}
         </div>
       )}
       {state.message && (
         <div className="hint" style={{ color: 'var(--accent)', marginTop: 10 }}>
-          {t(state.message)}
+          {state.message}
         </div>
       )}
 
       <p className="hint" style={{ marginTop: 14 }}>
-        {t('Сказанное идёт бюро, а не команде. Так и задумано: бюро отвечает перед вами за проект целиком и переводит вашу просьбу в постановку задач. Просьба, отданная исполнителю напрямую, ломает ровно то, за что вы платите — ответственность за результат.')}
+        What you write goes to the bureau, not to the team. That is deliberate: the bureau answers to you for the project as a whole and turns your request into task specifications. A request handed straight to a contributor breaks precisely what you are paying for — accountability for the result.
       </p>
     </form>
   )
@@ -70,16 +65,12 @@ function DialogueForm() {
 export function StageApproval({
   stage,
   title,
-  locale,
 }: {
   stage: string
   title: string
-  locale: Locale
 }) {
   return (
-    <LocaleProvider locale={locale}>
-      <ApprovalForm stage={stage} title={title} />
-    </LocaleProvider>
+          <ApprovalForm stage={stage} title={title} />
   )
 }
 
@@ -88,34 +79,33 @@ function ApprovalForm({ stage, title }: { stage: string; title: string }) {
     approveProjectStage,
     {},
   )
-  const t = useT()
 
   return (
     <form action={action}>
       <input type="hidden" name="stage" value={stage} />
 
       <div className="field">
-        <label htmlFor={`note-${stage}`}>{t('Что сказать, подтверждая (необязательно)')}</label>
+        <label htmlFor={`note-${stage}`}>Anything to say as you confirm (optional)</label>
         <textarea id={`note-${stage}`} name="note" style={{ minHeight: 60 }} />
       </div>
 
       <button type="submit" className="btn btn-solid" disabled={pending}>
-        {pending ? '…' : fill(t('Подтвердить стадию «{stage}»'), { stage: t(title) })}
+        {pending ? '…' : fill('Confirm the “{stage}” stage', { stage: title })}
       </button>
 
       {state.error && (
         <div className="hint" style={{ color: 'var(--fail)', marginTop: 10 }}>
-          {t(state.error)}
+          {state.error}
         </div>
       )}
       {state.message && (
         <div className="hint" style={{ color: 'var(--accent)', marginTop: 10 }}>
-          {t(state.message)}
+          {state.message}
         </div>
       )}
 
       <p className="hint" style={{ marginTop: 12 }}>
-        {t('Подтверждение откроет команде следующую стадию. Пока его нет, работа по ней не начинается — это не задержка, а защита: документация по неподтверждённой концепции переделывается целиком. Если есть замечания, не подтверждайте, а напишите бюро ниже: оно превратит их в круг правок.')}
+        Confirming opens the next stage for the team. Until you do, no work on it begins — that is not a delay but a safeguard: documentation built on an unconfirmed concept gets redone in full. If you have comments, do not confirm — write to the bureau below and it will turn them into a round of revisions.
       </p>
     </form>
   )

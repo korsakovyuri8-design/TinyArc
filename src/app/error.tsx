@@ -1,8 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { translate } from '@/lib/i18n/dict'
-import { DEFAULT_LOCALE, isLocale, type Locale } from '@/lib/i18n/locale'
+import { useEffect } from 'react'
 
 /**
  * Страница сбоя.
@@ -12,12 +10,6 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from '@/lib/i18n/locale'
  * и что нажать сейчас. Повтор — первым, потому что в половине случаев это
  * сорванное соединение с базой, и второй заход проходит.
  *
- * Язык берётся из атрибута `lang`, который поставил макет: клиентский
- * компонент заголовков запроса не видит, а свойств ему никто не передаёт.
- * Чтение — в useEffect, чтобы отрисовка на сервере и в браузере совпали;
- * английский появляется через кадр после первой отрисовки. Ради страницы,
- * которую человек видит раз в год, это честный размен: расхождение разметки
- * стоило бы предупреждения в консоли и второй отрисовки всей страницы.
  */
 export default function Error({
   error,
@@ -26,33 +18,25 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE)
-
-  useEffect(() => {
-    const lang = document.documentElement.lang
-    if (isLocale(lang)) setLocale(lang)
-  }, [])
-
   useEffect(() => {
     console.error('Страница упала:', error)
   }, [error])
 
-  const t = (text: string) => translate(text, locale)
 
   return (
     <section style={{ paddingTop: 'clamp(48px, 8vw, 96px)' }}>
       <div className="shell" style={{ maxWidth: 620 }}>
-        <span className="eyebrow">{t('Сбой')}</span>
-        <h1 style={{ maxWidth: '18ch' }}>{t('Страница не собралась')}</h1>
+        <span className="eyebrow">Failure</span>
+        <h1 style={{ maxWidth: '18ch' }}>The page did not come together</h1>
 
-        <p className="lead" style={{ marginTop: 20 }}>{t('Это наша сторона, а не ваша. Отправленное раньше — бриф, комментарий, загруженный файл — на месте: сбой произошёл при показе страницы, а не при записи.')}</p>
+        <p className="lead" style={{ marginTop: 20 }}>This is our side, not yours. What you sent earlier — a brief, a comment, an uploaded file — is where you left it: the failure happened while showing the page, not while writing.</p>
 
         <div className="row" style={{ gap: 16, marginTop: 32 }}>
           <button type="button" className="btn btn-solid" onClick={reset}>
-            {t('Попробовать снова')}
+            Try again
           </button>
           <a href="/" className="btn btn-quiet">
-            {t('На главную')}
+            To the home page
           </a>
         </div>
 
@@ -63,7 +47,7 @@ export default function Error({
         */}
         {error.digest && (
           <p className="hint" style={{ marginTop: 24 }}>
-            {t('Если повторится, назовите бюро эту метку:')}{' '}
+            If it happens again, give the bureau this mark:{' '}
             <span className="num">{error.digest}</span>
           </p>
         )}

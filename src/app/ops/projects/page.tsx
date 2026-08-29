@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 import { PROJECT_STATUS_LABELS, TYPOLOGY_LABELS } from '@/lib/labels'
 import { isOperator } from '@/lib/session'
 
-export const metadata = { title: 'Проекты — панель бюро' }
+export const metadata = { title: 'Projects — bureau panel' }
 
 export default async function ProjectsPage() {
   if (!(await isOperator())) redirect('/ops')
@@ -22,25 +22,25 @@ export default async function ProjectsPage() {
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
         <Link href="/ops" className="label">
-          ← панель
+          ← panel
         </Link>
-        <h1 style={{ marginTop: 18 }}>Проекты</h1>
+        <h1 style={{ marginTop: 18 }}>Projects</h1>
 
         {projects.length === 0 ? (
           <p className="dim" style={{ marginTop: 36 }}>
-            Брифов пока нет.
+            No briefs yet.
           </p>
         ) : (
           <div className="table-scroll panel" style={{ marginTop: 32, padding: 0 }}>
             <table>
               <thead>
                 <tr>
-                  <th>Проект</th>
-                  <th>Типология</th>
-                  <th>Страна</th>
-                  <th>Тикетов</th>
-                  <th>Ждут приёмки</th>
-                  <th>Статус</th>
+                  <th>Project</th>
+                  <th>Typology</th>
+                  <th>Country</th>
+                  <th>Tickets</th>
+                  <th>Await acceptance</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>

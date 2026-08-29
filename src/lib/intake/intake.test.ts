@@ -114,13 +114,13 @@ describe('что импорт отказывается брать', () => {
   it('строку без имени', () => {
     const [row] = readIntake('Имя;Почта\n;ivan@example.com').rows
 
-    expect(row).toMatchObject({ ok: false, problem: 'нет имени' })
+    expect(row).toMatchObject({ ok: false, problem: 'no name' })
   })
 
   it('строку с адресом, который не адрес', () => {
     const [row] = readIntake('Имя;Почта\nИван;телеграм @ivan').rows
 
-    expect(row).toMatchObject({ ok: false, problem: 'адрес не похож на почту' })
+    expect(row).toMatchObject({ ok: false, problem: 'the address does not look like an email' })
   })
 
   it('повтор адреса внутри файла', () => {
@@ -129,7 +129,7 @@ describe('что импорт отказывается брать', () => {
     ).rows
 
     expect(rows[0]!.ok).toBe(true)
-    expect(rows[1]).toMatchObject({ ok: false, problem: 'этот адрес уже был выше' })
+    expect(rows[1]).toMatchObject({ ok: false, problem: 'this address already appeared above' })
   })
 
   it('специализацию не из заявленной дисциплины', () => {

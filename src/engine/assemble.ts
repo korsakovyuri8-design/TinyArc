@@ -252,7 +252,7 @@ export function assemble(
       outcome: 'no_signatory',
       gap: null,
       notes:
-        'Состав собирается, но ни в одном варианте нет специалиста с правом подписи в юрисдикции проекта. Пакет без локальной подписи не имеет силы, поэтому проект не берётся (п.10, п.21).',
+        'A team does come together, but no variant includes a specialist with signing rights in the project’s jurisdiction. A documentation set without a local signature has no force, so the project is not taken on (§10, §21).',
       team: toTeam(withoutSignatory, requirements),
     }
   }
@@ -309,10 +309,10 @@ function scarcestRole(
 function describeGap(gap: AssemblyGap): string {
   const what =
     gap.specializations.length === 0
-      ? `дисциплина «${gap.discipline}»`
-      : `«${gap.discipline}» со специализацией ${gap.specializations.join(gap.mode === 'all' ? ' + ' : ' / ')}`
+      ? `discipline «${gap.discipline}»`
+      : `«${gap.discipline}» with specialisation ${gap.specializations.join(gap.mode === 'all' ? ' + ' : ' / ')}`
 
   return gap.candidates === 0
-    ? `Роль не закрыта: ${what}. В пуле нет ни одного специалиста, проходящего гейты.`
-    : `Состав не собирается. Самая дефицитная роль — ${what}: кандидатов ${gap.candidates}, и ни один вариант не проходит по ёмкости и пакету одновременно.`
+    ? `The role is not covered: ${what}. There is not a single specialist in the pool who passes the gates.`
+    : `No team comes together. The scarcest role is ${what}: candidates ${gap.candidates}, and no variant passes on capacity and software suite at the same time.`
 }

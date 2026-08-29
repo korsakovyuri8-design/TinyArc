@@ -53,10 +53,10 @@ await client.waitForTimeout(1800)
 check(client.url().includes('/project'), 'заказчик вошёл в кабинет')
 
 await client.fill('#body', QUESTION)
-await client.click('button:has-text("Отправить бюро")')
+await client.click('button:has-text("Send to the bureau")')
 await client.waitForTimeout(2200)
 check(
-  (await client.locator('.hint', { hasText: 'Отправлено бюро' }).count()) > 0,
+  (await client.locator('.hint', { hasText: 'Sent to the bureau' }).count()) > 0,
   'сообщение принято',
 )
 
@@ -72,15 +72,15 @@ check((await waiting.count()) > 0, 'вопрос стоит в очереди б
 const link = await waiting.first().locator('a[href^="/ops/projects/"]').getAttribute('href')
 await bureau.goto(`${BASE}${link}`)
 check(
-  (await bureau.locator('span.label', { hasText: 'без ответа' }).count()) > 0,
+  (await bureau.locator('span.label', { hasText: 'unanswered' }).count()) > 0,
   'на карточке проекта видно, что вопрос без ответа',
 )
 
 await bureau.fill('#answer', ANSWER)
-await bureau.click('button:has-text("Ответить заказчику")')
+await bureau.click('button:has-text("Answer the client")')
 await bureau.waitForTimeout(2200)
 check(
-  (await bureau.locator('.hint', { hasText: 'Ответ отправлен' }).count()) > 0,
+  (await bureau.locator('.hint', { hasText: 'The answer is sent' }).count()) > 0,
   'бюро ответило',
 )
 

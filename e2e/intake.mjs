@@ -49,8 +49,8 @@ await bureau.click('button[type=submit]')
 await bureau.waitForSelector('a[href="/ops/import"]')
 
 const CSV = [
-  'Имя;Почта;Роль;Страна;Софт;Ставка',
-  `Пробный Специалист;${EMAIL};Ландшафтный архитектор;Черногория;Revit, ArchiCAD;40`,
+  'Name;Email;Role;Country;Software;Rate',
+  `Test Specialist;${EMAIL};Landscape architect;Montenegro;Revit, ArchiCAD;40`,
   'Без Почты;телеграм;Архитектор;Сербия;Revit;30',
 ].join('\n')
 
@@ -60,29 +60,29 @@ await bureau.click('form:has(#csv-preview) button[type=submit]')
 await bureau.waitForTimeout(1500)
 
 let text = await bureau.textContent('body')
-check(text.includes('Готовы к заведению: 1'), 'предпросмотр отделяет годные строки от битых')
-check(text.includes('адрес не похож на почту'), 'называет строку, которую не возьмёт')
-check(text.includes('ставка'), 'называет столбец, который не прочитан')
+check(text.includes('Ready to create: 1'), 'предпросмотр отделяет годные строки от битых')
+check(text.includes('the address does not look like an email'), 'называет строку, которую не возьмёт')
+check(text.includes('rate'), 'называет столбец, который не прочитан')
 
 await bureau.fill('#csv-run', CSV)
 await bureau.click('form:has(#csv-run) button[type=submit]')
 await bureau.waitForTimeout(2500)
 text = await bureau.textContent('body')
-check(text.includes('Заведено: 1'), 'заведена одна запись')
-check(text.includes('Приглашения ещё не отправлены'), 'заведение не рассылает писем само')
+check(text.includes('Created: 1'), 'заведена одна запись')
+check(text.includes('The invitations have not been sent yet'), 'заведение не рассылает писем само')
 
 await bureau.fill('#csv-run', CSV)
 await bureau.click('form:has(#csv-run) button[type=submit]')
 await bureau.waitForTimeout(2000)
 check(
-  (await bureau.textContent('body')).includes('Заведено: 0'),
+  (await bureau.textContent('body')).includes('Created: 0'),
   'повторный импорт того же файла не создаёт дублей',
 )
 
-await bureau.click('form:has(button:has-text("Разослать приглашения")) button[type=submit]')
+await bureau.click('form:has(button:has-text("Send the invitations")) button[type=submit]')
 await bureau.waitForTimeout(3000)
 check(
-  (await bureau.textContent('body')).includes('Отправлено:'),
+  (await bureau.textContent('body')).includes('Sent:'),
   'рассылка отдельной кнопкой отчитывается о числе писем',
 )
 
@@ -106,7 +106,7 @@ await person.waitForTimeout(2000)
 check(person.url().includes('/work/profile/complete'), 'ключ приглашённого пускает и ведёт к профилю')
 
 text = await person.textContent('body')
-check(text.includes('Пробный Специалист'), 'обращение по имени из базы бюро')
+check(text.includes('Test Specialist'), 'обращение по имени из базы бюро')
 
 check(
   await person.isChecked('input[name=disciplines][value=landscape]'),
@@ -146,7 +146,7 @@ await person.check('#consent')
 
 await person.click('button[type=submit]')
 await person.waitForTimeout(2500)
-check((await person.textContent('body')).includes('Профиль отправлен'), 'профиль ушёл на разбор')
+check((await person.textContent('body')).includes('Profile submitted'), 'профиль ушёл на разбор')
 
 await person.goto(`${BASE}/work/profile/complete`)
 await person.waitForTimeout(800)

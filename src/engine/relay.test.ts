@@ -35,7 +35,7 @@ describe('план графа тикетов', () => {
 
     // Планы, фасады, разрезы, записка — четыре тикета, а не один «раздел».
     expect(architectureAtPermit.length).toBeGreaterThan(1)
-    expect(architectureAtPermit.map((t) => t.title)).toContain('Фасады')
+    expect(architectureAtPermit.map((t) => t.title)).toContain('Elevations')
   })
 
   it('не заводит работу, которую некому делать', () => {

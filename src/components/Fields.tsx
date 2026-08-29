@@ -9,7 +9,6 @@
  * непереведённым по забывчивости: язык берётся из контекста формы.
  */
 
-import { useT } from '@/lib/i18n/context'
 
 export function Field({
   label,
@@ -24,16 +23,15 @@ export function Field({
   hint?: string
   children: React.ReactNode
 }) {
-  const t = useT()
 
   return (
     <div className="field">
-      <label htmlFor={name}>{t(label)}</label>
+      <label htmlFor={name}>{label}</label>
       {children}
-      {hint && !error && <div className="hint">{t(hint)}</div>}
+      {hint && !error && <div className="hint">{hint}</div>}
       {error && (
         <div className="hint" style={{ color: 'var(--fail)' }}>
-          {t(error)}
+          {error}
         </div>
       )}
     </div>
@@ -51,7 +49,6 @@ export function Choices<T extends string>({
   labels: Record<T, string>
   defaultValue?: readonly T[]
 }) {
-  const t = useT()
 
   return (
     <div className="choices">
@@ -63,7 +60,7 @@ export function Choices<T extends string>({
             value={option}
             defaultChecked={defaultValue.includes(option)}
           />
-          {t(labels[option])}
+          {labels[option]}
         </label>
       ))}
     </div>
@@ -81,13 +78,12 @@ export function Select<T extends string>({
   labels: Record<T, string>
   defaultValue?: T
 }) {
-  const t = useT()
 
   return (
     <select id={name} name={name} defaultValue={defaultValue}>
       {options.map((option) => (
         <option key={option} value={option}>
-          {t(labels[option])}
+          {labels[option]}
         </option>
       ))}
     </select>
@@ -95,11 +91,10 @@ export function Select<T extends string>({
 }
 
 export function Submit({ pending, children }: { pending: boolean; children: React.ReactNode }) {
-  const t = useT()
 
   return (
     <button type="submit" className="btn btn-solid" disabled={pending}>
-      {pending ? t('Считаем…') : children}
+      {pending ? 'Working…' : children}
     </button>
   )
 }
