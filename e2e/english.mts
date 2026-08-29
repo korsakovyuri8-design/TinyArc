@@ -184,7 +184,14 @@ await bureau.fill('input[type=password]', PASSWORD)
 await bureau.click('button[type=submit]')
 await bureau.waitForSelector('a[href="/ops/import"]')
 
-for (const path of ['/ops', '/ops/applications', '/ops/import', '/ops/pool', '/ops/projects']) {
+for (const path of [
+  '/ops',
+  '/ops/applications',
+  '/ops/import',
+  '/ops/pool',
+  '/ops/projects',
+  '/ops/letters',
+]) {
   await clean(bureau, path)
 }
 await clean(bureau, `/ops/projects/${ticket.project.id}`)

@@ -173,6 +173,25 @@ export const PROJECT_STATUS_LABELS: Record<string, string> = {
   delivered: 'Closed',
 }
 
+/**
+ * Поводы для письма — словами, а не ключами.
+ *
+ * Ключ повода живёт в базе и в коде; в панели он читается человеком, который
+ * по этому списку решает, кого сегодня позвать руками.
+ */
+export const NOTIFICATION_LABELS: Record<string, string> = {
+  invoice_issued: 'Invoice issued',
+  invoice_paid: 'Payment received',
+  stage_awaiting: 'Stage awaits your confirmation',
+  ticket_open: 'Task opened',
+  ticket_accepted: 'Work accepted',
+  ticket_revision: 'Work sent back for revision',
+  ticket_comment: 'The bureau wrote in the ticket',
+  client_answer: 'The bureau answered',
+  conflict_resolved: 'The arbiter ruled',
+  application_declined: 'Application declined',
+}
+
 export const SPECIALIST_STATUS_LABELS: Record<string, string> = {
   invited: 'Invited, profile incomplete',
   pending: 'Application under review',

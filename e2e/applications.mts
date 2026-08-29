@@ -126,6 +126,46 @@ if (passing) {
   check(false, 'на стенде нет принятого специалиста: проверку не на ком провести')
 }
 
+/*
+ * Журнал писем. Он писался с самого начала и не был виден нигде: на пилоте
+ * почта выключена, и система знала, кого позвать, а оператор — нет. Строка
+ * ответа действия этого не заменяет, она живёт до первой перерисовки.
+ */
+{
+  await page.goto(`${BASE}/ops/letters`)
+  await page.waitForTimeout(800)
+
+  const rows = () => page.locator('tbody tr')
+  const all = await rows().count()
+  check(all > 0, `журнал показывает письма: строк ${all}`)
+
+  // На стенде почта выключена, и панель обязана сказать это здесь громче
+  // всего: иначе список читается как «всех уже позвали».
+  check(
+    (await page.locator('text=Email delivery is off').count()) > 0,
+    'сказано, что письма никуда не ушли и звать надо руками',
+  )
+
+  const seen = await page.innerText('tbody')
+  check(seen.includes(applicant.email), 'отказ по заявке виден в журнале с адресом')
+  check(!seen.includes('application_declined'), 'повод назван словами, а не ключом из базы')
+
+  await page.goto(`${BASE}/ops/letters?q=${encodeURIComponent(applicant.email)}`)
+  await page.waitForTimeout(600)
+  const narrowed = await rows().count()
+  check(
+    narrowed > 0 && narrowed < all,
+    `поиск по адресу отвечает на «мне ничего не приходило»: строк ${narrowed} из ${all}`,
+  )
+
+  await page.goto(`${BASE}/ops/letters?q=${encodeURIComponent('nobody@example.invalid')}`)
+  await page.waitForTimeout(600)
+  check(
+    (await page.locator('text=Nothing was written to that address').count()) > 0,
+    'пустой ответ сказан словами, а не пустой таблицей',
+  )
+}
+
 await browser.close()
 await prisma.$disconnect()
 

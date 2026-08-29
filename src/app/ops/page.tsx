@@ -378,6 +378,7 @@ export default async function OpsPage() {
           <Link href="/ops/import">Specialist database import →</Link>
           <Link href="/ops/pool">Pool and metrics →</Link>
           <Link href="/ops/projects">Projects and runs →</Link>
+          <Link href="/ops/letters">Letters sent →</Link>
         </div>
       </div>
     </section>
