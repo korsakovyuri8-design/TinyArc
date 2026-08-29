@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MIN_DEPTH, allShapes, coverage, gaps, readiness } from './readiness'
 import { specialist } from './fixtures'
+import { DISCIPLINES } from './taxonomy'
 import type { SpecialistProfile } from './types'
 
 /** Полный пул: по два человека на каждую роль в каждой стране. */
@@ -16,6 +17,9 @@ function fullPool(): SpecialistProfile[] {
     { disciplines: ['visualization'] as const, specializations: ['viz_photoreal'] as const },
     { disciplines: ['survey'] as const, specializations: [] as const },
     { disciplines: ['permitting'] as const, specializations: ['permit_zoning', 'permit_flood'] as const },
+    { disciplines: ['cost_estimation'] as const, specializations: [] as const },
+    { disciplines: ['dfma'] as const, specializations: [] as const },
+    { disciplines: ['energy'] as const, specializations: [] as const },
   ]
 
   for (const role of roles) {
@@ -40,6 +44,18 @@ describe('перебор форм проекта', () => {
   it('покрывает границу продукта целиком', () => {
     // 4 типологии × 4 стадии × 5 материалов × 3 рельефа × 2 подключения.
     expect(allShapes()).toHaveLength(4 * 4 * 5 * 3 * 2)
+  })
+})
+
+describe('полнота самого стенда', () => {
+  it('в пуле есть каждая дисциплина таксономии', () => {
+    // Иначе «полный пул» тихо перестаёт быть полным на следующей дисциплине,
+    // и тесты ниже начинают подтверждать вчерашнюю границу продукта.
+    const covered = new Set(fullPool().flatMap((s) => s.disciplines))
+
+    for (const discipline of DISCIPLINES) {
+      expect(covered.has(discipline), `${discipline} не заведена в стенде`).toBe(true)
+    }
   })
 })
 

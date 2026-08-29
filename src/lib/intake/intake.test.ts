@@ -47,10 +47,10 @@ describe('распознавание значений', () => {
   })
 
   it('делит ячейку-список и собирает нераспознанное отдельно', () => {
-    const result = matchMany('Архитектор; Ландшафт; Сметчик', DISCIPLINE_ALIASES)
+    const result = matchMany('Архитектор; Ландшафт; Астролог', DISCIPLINE_ALIASES)
 
     expect(result.values).toEqual(['architecture', 'landscape'])
-    expect(result.unknown).toEqual(['Сметчик'])
+    expect(result.unknown).toEqual(['Астролог'])
   })
 
   it('не угадывает: неизвестное остаётся неизвестным', () => {

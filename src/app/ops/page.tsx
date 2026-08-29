@@ -155,10 +155,16 @@ export default async function OpsPage() {
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h2>Стадии ждут заказчика</h2>
-          {approvals.length > 0 && <span className="tag tag-wait">{approvals.length}</span>}
-        </div>
+        {/* id — точка опоры для e2e: таблиц на панели несколько, и «первая
+            строка первой таблицы» указывает не на эту. */}
+        <div id="approvals">
+          <div
+            className="row"
+            style={{ justifyContent: 'space-between', alignItems: 'baseline' }}
+          >
+            <h2>Стадии ждут заказчика</h2>
+            {approvals.length > 0 && <span className="tag tag-wait">{approvals.length}</span>}
+          </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
           Работа принята, следующая стадия не открывается: ждём слова заказчика. Его молчание
           останавливает выпуск не хуже просрочки исполнителя, и висеть оно должно здесь, а не
@@ -197,6 +203,7 @@ export default async function OpsPage() {
             </table>
           </div>
         )}
+        </div>
 
         <div className="divider" style={{ marginTop: 48 }} />
 

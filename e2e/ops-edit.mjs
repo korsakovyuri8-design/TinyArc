@@ -73,12 +73,23 @@ check(
   'рейтинг здесь не правится: он меняется разбором',
 )
 
-// Правка факта доходит до базы. Юрисдикцию добавляем, а не снимаем: без
-// юрисдикции специалиста не бывает, и снятие упёрлось бы в другую проверку.
-const before = await page.isChecked('input[name=jurisdictions][value=RS]')
-if (before) await page.uncheck('input[name=jurisdictions][value=RS]')
-else await page.check('input[name=jurisdictions][value=RS]')
-await page.uncheck('input[name=signsIn][value=RS]').catch(() => {})
+/*
+ * Правка факта доходит до базы. Правится часовой пояс, а не юрисдикция.
+ *
+ * Раньше здесь переключалась галочка страны: «отмечена — снять, не отмечена —
+ * поставить». Это держалось на том, кто окажется первым в списке пула, а
+ * порядок в пуле меняется от состава пула. Первым оказался человек, у которого
+ * RS — единственная страна; снятие оставило его без юрисдикций вовсе, форма
+ * законно отказала, и тест сообщил «правка не сохранена» про исправную правку.
+ *
+ * Часовой пояс свободен от перекрёстных проверок и, в отличие от галочки,
+ * возвращается в исходное: тест можно гонять подряд, не вычерпывая профиль.
+ */
+const timezoneField = page.locator('#utcOffset')
+const before = Number(await timezoneField.inputValue())
+const next = before === 3 ? 2 : 3
+
+await timezoneField.fill(String(next))
 await page.click('button[type=submit]')
 await page.waitForTimeout(2200)
 
@@ -90,8 +101,10 @@ if (check(await saved(page), 'правка сохранена')) {
   await fresh.waitForSelector('a[href="/ops/import"]')
   await fresh.goto(`${BASE}${href}`)
 
-  const after = await fresh.isChecked('input[name=jurisdictions][value=RS]')
-  check(after === !before, `изменение дошло до базы (${before} → ${after})`)
+  // Читаем с чистой сессии: страница после сохранения могла бы показать то,
+  // что отправили, а не то, что записали.
+  const after = Number(await fresh.locator('#utcOffset').inputValue())
+  check(after === next, `изменение дошло до базы (${before} → ${after})`)
   await fresh.close()
 }
 
@@ -117,19 +130,40 @@ if ((await surveyors.count()) > 0) {
   console.log('  · геодезиста в пуле нет, проверка пропущена')
 }
 
-// Проверки те же, что на публичной заявке: оператор их не обходит.
-await page.goto(`${BASE}${href}`)
-const free = await page
-  .locator('input[name=jurisdictions]:not(:checked)')
-  .first()
-  .getAttribute('value')
-  .catch(() => null)
+/*
+ * Проверки те же, что на публичной заявке: оператор их не обходит.
+ *
+ * Профиль под эту проверку ищется, а не берётся первый попавшийся: нужен
+ * человек, у которого есть страна без отметки, а у первого в списке все три
+ * могут оказаться отмечены. Проверка, которая тихо пропускается на неудобных
+ * данных, — это проверка, которой нет.
+ */
+await page.goto(`${BASE}/ops/pool`)
+const links = await page.$$eval('tbody a[href^="/ops/pool/"]', (nodes) =>
+  nodes.map((n) => n.getAttribute('href')).slice(0, 12),
+)
+
+let free = null
+
+for (const candidate of links) {
+  await page.goto(`${BASE}${candidate}`)
+  free = await page
+    .locator('input[name=jurisdictions]:not(:checked)')
+    .first()
+    .getAttribute('value')
+    .catch(() => null)
+
+  if (free) break
+}
 
 if (free) {
   await page.check(`input[name=signsIn][value=${free}]`)
   await page.click('button[type=submit]')
   await page.waitForTimeout(2000)
   check(!(await saved(page)), 'подпись там, где человек не работал, не проходит и у бюро')
+} else {
+  // Молча пропущенная проверка — это проверка, которой нет.
+  check(false, 'не нашлось профиля со свободной страной: проверку подписи негде провести')
 }
 
 await browser.close()

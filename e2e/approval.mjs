@@ -52,8 +52,16 @@ await bureau.waitForSelector('a[href="/ops/import"]')
 const opsText = await bureau.textContent('main')
 check(opsText.includes('Стадии ждут заказчика'), 'у бюро есть очередь ожидания заказчика')
 
-const waiting = bureau.locator('tbody tr', { hasText: 'ч' })
-const hasWaiting = (await waiting.count()) > 0 && opsText.includes('Концепция')
+/*
+ * Строка берётся из очереди подтверждений, а не из первой таблицы на странице.
+ *
+ * Здесь стоял `tbody tr` по всей панели с отбором по букве «ч» — под него
+ * подходила любая строка любой таблицы, и тест уходил на соседний проект, где
+ * подтверждать нечего. Провал при этом выглядел как поломка приёмки, а сломан
+ * был поиск.
+ */
+const waiting = bureau.locator('#approvals tbody tr')
+const hasWaiting = (await waiting.count()) > 0
 
 if (!hasWaiting) {
   console.log('  · стадий, ждущих подтверждения, на стенде нет — проверка пропущена')

@@ -51,10 +51,16 @@ const INTRA_STAGE_ORDER: Discipline[] = [
   'architecture',
   'structural',
   'mep',
+  // Технолог считает по конструкции, энергетик — по конструкции и инженерии.
+  // Обоим нужно то, что сдано выше, поэтому они стоят здесь, а не раньше.
+  'dfma',
+  'energy',
   'landscape',
   'interiors',
   'visualization',
   'permitting',
+  // Смета считается последней по определению: она про то, что уже решено.
+  'cost_estimation',
 ]
 
 /**
@@ -70,6 +76,18 @@ const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
       { title: 'Объёмно-планировочное решение', slaHours: 48 },
       { title: 'Черновые планировки этажей', slaHours: 48 },
     ],
+    /*
+     * Концепция — это то, что заказчик утверждает, и после утверждения она
+     * становится заданием на разрешение (п.12б). Поэтому смотрят её все, кто
+     * потом будет по ней работать: неосуществимый объём, утверждённый
+     * клиентом, — это и есть переделка, ради устранения которой всё
+     * остальное затевалось. Задачи короткие: на этой стадии от смежника
+     * нужен ответ «так строится», а не раздел.
+     */
+    structural: [{ title: 'Проверка конструктивной осуществимости объёма', slaHours: 24 }],
+    mep: [{ title: 'Место под оборудование, шахты и вводы', slaHours: 24 }],
+    landscape: [{ title: 'Схема организации участка', slaHours: 24 }],
+    interiors: [{ title: 'Функциональная схема общественной части', slaHours: 24 }],
     visualization: [
       { title: 'Визуализация экстерьера', slaHours: 48 },
       { title: 'Ключевой кадр интерьера', slaHours: 24 },
@@ -106,6 +124,10 @@ const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
       { title: 'Комплектование пакета', slaHours: 48 },
       { title: 'Подача и сопровождение', slaHours: 168 },
     ],
+    energy: [
+      { title: 'Теплотехнический расчёт ограждающих конструкций', slaHours: 48 },
+      { title: 'Элаборат энергоэффективности', slaHours: 72 },
+    ],
   },
   tender: {
     architecture: [
@@ -114,6 +136,10 @@ const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
     ],
     structural: [{ title: 'Ведомость материалов и объёмов', slaHours: 48 }],
     mep: [{ title: 'Спецификация оборудования', slaHours: 48 }],
+    cost_estimation: [
+      { title: 'Сводная ведомость объёмов работ', slaHours: 72 },
+      { title: 'Сметный расчёт по разделам', slaHours: 72 },
+    ],
   },
   construction: {
     architecture: [
@@ -125,6 +151,10 @@ const TASKS: Record<DocStage, Partial<Record<Discipline, Task[]>>> = {
       { title: 'Армирование', slaHours: 48 },
     ],
     mep: [{ title: 'Рабочие схемы сетей', slaHours: 72 }],
+    dfma: [
+      { title: 'Чертежи изготовления элементов', slaHours: 72 },
+      { title: 'Схема монтажа и узлы стыковки', slaHours: 48 },
+    ],
     interiors: [{ title: 'Рабочая документация интерьеров', slaHours: 72 }],
   },
 }

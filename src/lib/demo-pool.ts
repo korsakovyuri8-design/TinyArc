@@ -12,7 +12,7 @@
  */
 
 import type { SpecialistProfile } from '@/engine/types'
-import { DISCIPLINE_SPECIALIZATIONS, JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
+import { DISCIPLINES, DISCIPLINE_SPECIALIZATIONS, JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import type {
   ClimateZone,
   Discipline,
@@ -85,20 +85,19 @@ function pick<T>(random: () => number, items: readonly T[]): T {
 }
 
 function some<T>(random: () => number, items: readonly T[], chance: number): T[] {
+  // Пустой список — это не «выбери хоть что-нибудь»: дисциплина без
+  // специализаций существует (сметы, технология, энергоэффективность), и
+  // добор из пустого массива положил бы в профиль undefined.
+  if (items.length === 0) return []
+
   const chosen = items.filter(() => random() < chance)
   return chosen.length > 0 ? chosen : [pick(random, items)]
 }
 
-const ALL_DISCIPLINES: Discipline[] = [
-  'architecture',
-  'structural',
-  'mep',
-  'landscape',
-  'interiors',
-  'permitting',
-  'survey',
-  'visualization',
-]
+// Список берётся из таксономии: пул, перечисленный руками, отстаёт от матрицы
+// ролей на каждую новую дисциплину — и отстаёт молча. Проекты просто перестают
+// собираться, а по стенду это выглядит как нехватка людей, а не как забытая строка.
+const ALL_DISCIPLINES: Discipline[] = [...DISCIPLINES]
 const ALL_TYPOLOGIES: Typology[] = ['villa', 'townhouse', 'multi_family', 'mixed_use']
 const ALL_SCALES: ScaleBand[] = ['upto_250', '250_1000', '1000_3000', '3000_plus']
 const ALL_MATERIALS: MaterialSystem[] = ['concrete', 'masonry', 'timber', 'steel', 'hybrid']
@@ -113,7 +112,7 @@ const STAGE_MIX: DocStage[][] = [
 
 /** По три специалиста на каждую дисциплину в каждой из трёх стран. */
 export const PER_DISCIPLINE_PER_JURISDICTION = 3
-export const DEMO_POOL_SIZE = 3 * 8 * PER_DISCIPLINE_PER_JURISDICTION
+export const DEMO_POOL_SIZE = 3 * ALL_DISCIPLINES.length * PER_DISCIPLINE_PER_JURISDICTION
 
 /**
  * Пул целиком. Детерминирован: одно и то же зерно — один и тот же список.
@@ -150,11 +149,7 @@ export function demoPool(seed = 20260824): DemoSpecialist[] {
          * специализация не та.
          */
         const own = DISCIPLINE_SPECIALIZATIONS[discipline]
-        const specializations: Specialization[] = reliable
-          ? [...own]
-          : own.length > 0
-            ? some(random, own, 0.5)
-            : []
+        const specializations: Specialization[] = reliable ? [...own] : some(random, own, 0.5)
 
         const disciplines: Discipline[] = [discipline]
         // Часть людей ведёт две дисциплины: универсал должен встречаться, иначе

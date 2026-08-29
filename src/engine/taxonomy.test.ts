@@ -154,3 +154,46 @@ describe('покрытие роли специализацией', () => {
     expect(coversRole([], role)).toBe(true)
   })
 })
+
+/*
+ * Три поздние роли. Тест сторожит не наличие условия, а его узость: роль,
+ * которая требуется всегда, делает несобираемым каждый проект без такого
+ * человека в пуле, и это происходит тихо.
+ */
+describe('поздние роли', () => {
+  const has = (s: ProjectShape, d: string) => requiredRoles(s).some((r) => r.discipline === d)
+
+  it('сметчик приходит с тендерной стадией и не раньше', () => {
+    expect(has(shape({ targetStage: 'concept' }), 'cost_estimation')).toBe(false)
+    expect(has(shape({ targetStage: 'permit' }), 'cost_estimation')).toBe(false)
+    expect(has(shape({ targetStage: 'tender' }), 'cost_estimation')).toBe(true)
+    expect(has(shape({ targetStage: 'construction' }), 'cost_estimation')).toBe(true)
+  })
+
+  it('энергетик требуется дому с общими системами, а не вилле', () => {
+    expect(has(shape({ typology: 'villa' }), 'energy')).toBe(false)
+    expect(has(shape({ typology: 'townhouse' }), 'energy')).toBe(false)
+    expect(has(shape({ typology: 'multi_family' }), 'energy')).toBe(true)
+    expect(has(shape({ typology: 'mixed_use' }), 'energy')).toBe(true)
+  })
+
+  it('энергетик не приходит на концепцию: подавать ещё нечего', () => {
+    expect(has(shape({ typology: 'multi_family', targetStage: 'concept' }), 'energy')).toBe(false)
+  })
+
+  it('технолог приходит на сборные системы и только к стройке', () => {
+    const timber = { materialSystem: 'timber' } as const
+    expect(has(shape({ ...timber, targetStage: 'tender' }), 'dfma')).toBe(false)
+    expect(has(shape({ ...timber, targetStage: 'construction' }), 'dfma')).toBe(true)
+    expect(has(shape({ materialSystem: 'steel', targetStage: 'construction' }), 'dfma')).toBe(true)
+    expect(has(shape({ materialSystem: 'concrete', targetStage: 'construction' }), 'dfma')).toBe(false)
+    expect(has(shape({ materialSystem: 'masonry', targetStage: 'construction' }), 'dfma')).toBe(false)
+  })
+
+  it('вилла на монолите до разрешения не зовёт ни одну из трёх', () => {
+    const roles = requiredRoles(shape()).map((r) => r.discipline)
+    expect(roles).not.toContain('cost_estimation')
+    expect(roles).not.toContain('energy')
+    expect(roles).not.toContain('dfma')
+  })
+})

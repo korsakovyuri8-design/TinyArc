@@ -244,6 +244,7 @@ async function main() {
   }
 
   await advanceFirstProject(createdIds[0])
+  await raiseStandingConflict(createdIds[1])
 
   console.log('\nГотово.')
   console.log('  Клиент:     ключи seed-brief-tivat, seed-brief-novisad, seed-brief-athens, seed-brief-rejected')
@@ -263,7 +264,13 @@ async function main() {
  * приёмка. После этого у части специалистов появляются настоящие метрики, гейт
  * успевает открыть следующие тикеты, а на стенде видно движение эстафеты.
  *
- * Последний тикет намеренно оставляется в конфликте: панель бюро должна
+ * Концепция закрывается целиком, а не на сколько-то тикетов вперёд. Раньше
+ * здесь стоял фиксированный счёт шагов, и он молча перестал закрывать стадию,
+ * как только в концепции прибавились задачи: стенд остался без единственного
+ * места, где видно ожидание подтверждения заказчиком (п.12б). Счёт задач —
+ * не то, на что можно опираться, он меняется от матрицы ролей.
+ *
+ * Один тикет следующей стадии остаётся в конфликте: панель бюро должна
  * показывать не только счастливый путь.
  */
 async function advanceFirstProject(projectId: string): Promise<void> {
@@ -272,11 +279,13 @@ async function advanceFirstProject(projectId: string): Promise<void> {
 
   console.log('Сид: прогоняем тикеты через гейты…')
 
-  for (let step = 0; step < 5; step += 1) {
+  // Потолок — страховка от бесконечного цикла, а не план: выход обычный,
+  // по отсутствию открытых тикетов концепции.
+  for (let step = 0; step < 40; step += 1) {
     await applyGates(projectId)
 
     const open = await prisma.ticket.findFirst({
-      where: { projectId, status: 'open' },
+      where: { projectId, status: 'open', stage: 'concept' },
       orderBy: { createdAt: 'asc' },
     })
 
@@ -331,22 +340,37 @@ async function advanceFirstProject(projectId: string): Promise<void> {
     }
   }
 
-  // Один живой конфликт на стенде: арбитраж должно быть на чём показать.
+}
+
+/**
+ * Один живой конфликт на стенде: арбитраж должно быть на чём показать.
+ *
+ * Ставится на другом проекте, и это не про удобство. Стадию закрывают двое, и
+ * следующая не открывается, пока заказчик не подтвердил (п.12б) — значит на
+ * проекте с закрытой концепцией открытых тикетов нет вовсе, и конфликтовать
+ * не на чем. Два состояния стенда — «ждём подтверждения» и «идёт спор» — на
+ * одном проекте одновременно не живут.
+ */
+async function raiseStandingConflict(projectId: string): Promise<void> {
+  const project = await prisma.project.findUnique({ where: { id: projectId } })
+  if (!project || project.status === 'rejected') return
+
   await applyGates(projectId)
+
   const next = await prisma.ticket.findFirst({
     where: { projectId, status: 'open', specialistId: { not: null } },
     orderBy: { createdAt: 'asc' },
   })
 
-  if (next?.specialistId) {
-    await claim(next.id, next.specialistId)
-    await raiseConflict(
-      next.id,
-      { role: 'specialist', specialistId: next.specialistId },
-      'Вентканал по инженерному разделу проходит там, где по архитектуре стоит дверь. Нужно решение, что двигать.',
-    )
-    console.log(`  поднят конфликт: ${next.title}`)
-  }
+  if (!next?.specialistId) return
+
+  await claim(next.id, next.specialistId)
+  await raiseConflict(
+    next.id,
+    { role: 'specialist', specialistId: next.specialistId },
+    'Вентканал по инженерному разделу проходит там, где по архитектуре стоит дверь. Нужно решение, что двигать.',
+  )
+  console.log(`  поднят конфликт на соседнем проекте: ${next.title}`)
 }
 
 main()

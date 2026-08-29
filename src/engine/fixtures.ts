@@ -5,6 +5,7 @@
  * ломает ровно одно измерение и проверяет ровно один эффект.
  */
 
+import { DISCIPLINES } from './taxonomy'
 import type { Discipline, RequiredRole, Specialization } from './taxonomy'
 import type { ProjectRequirements, SpecialistProfile } from './types'
 
@@ -26,6 +27,9 @@ const DEFAULT_SPECIALIZATIONS: Record<Discipline, Specialization[]> = {
   interiors: ['interiors_residential', 'interiors_horeca'],
   permitting: ['permit_zoning', 'permit_flood'],
   survey: [],
+  cost_estimation: [],
+  dfma: [],
+  energy: [],
   visualization: ['viz_photoreal'],
 }
 
@@ -88,16 +92,10 @@ export function requirements(patch: Partial<ProjectRequirements> = {}): ProjectR
 
 /** Пул, закрывающий все роли виллы на стадии разрешения. */
 export function fullPool(): SpecialistProfile[] {
-  const disciplines: Discipline[] = [
-    'architecture',
-    'structural',
-    'mep',
-    'landscape',
-    'interiors',
-    'permitting',
-    'survey',
-    'visualization',
-  ]
+  // Список берётся из таксономии, а не переписывается здесь: перечисленный
+  // руками пул тихо устаревает на новой дисциплине, и тест начинает проверять
+  // вчерашнюю продуктовую границу вместо сегодняшней.
+  const disciplines: Discipline[] = [...DISCIPLINES]
 
   return disciplines.map((d, i) =>
     specialist({

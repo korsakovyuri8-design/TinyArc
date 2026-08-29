@@ -49,6 +49,9 @@ export const DISCIPLINE_ALIASES: Record<Discipline, string[]> = {
   permitting: ['согласован', 'permit', 'разрешительн', 'экспертиз'],
   survey: ['геодез', 'survey', 'топограф', 'изыскан'],
   visualization: ['визуализ', 'visual', 'render', 'рендер', '3d'],
+  cost_estimation: ['сметчик', 'смет', 'объемы работ', 'estimator', 'quantity surveyor', 'qs '],
+  dfma: ['dfma', 'технолог', 'префаб', 'prefab', 'модульн производств', 'сборк'],
+  energy: ['энергоэффектив', 'энергетическ', 'energy', 'теплотехн', 'kenak', 'пассивн дом'],
 }
 
 export const SPECIALIZATION_ALIASES: Record<Specialization, string[]> = {

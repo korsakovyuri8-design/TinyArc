@@ -30,6 +30,9 @@ export const DISCIPLINE_LABELS: Record<Discipline, string> = {
   permitting: 'Согласования',
   survey: 'Геодезия',
   visualization: 'Визуализация',
+  cost_estimation: 'Сметы и объёмы',
+  dfma: 'Технология изготовления и сборки',
+  energy: 'Энергоэффективность',
 }
 
 /**

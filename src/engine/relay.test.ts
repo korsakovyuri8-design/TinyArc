@@ -12,6 +12,8 @@ import {
   topologicalOrder,
   type RelayTicket,
 } from './relay'
+import { allShapes } from './readiness'
+import { requiredRoles } from './taxonomy'
 
 const TEAM = ['architecture', 'structural', 'mep', 'survey', 'permitting', 'visualization'] as const
 
@@ -273,5 +275,28 @@ describe('подтверждение стадии заказчиком', () => {
     // открывает: пропускать стадию нельзя ни с какой стороны.
     expect(openable(three, ['permit'])).toEqual([])
     expect(openable(three, ['concept'])).toEqual(['p1'])
+  })
+})
+
+/*
+ * Требуемая роль без задач — это человек в команде, которому нечего делать.
+ * Заметить это на глаз нельзя: сборка пройдёт, тикеты просто не появятся, и
+ * дыра всплывёт на проекте. Поэтому связь «роль есть в матрице → работа для
+ * неё описана» проверяется на всех формах внутри границы, а не на примере.
+ */
+describe('у каждой требуемой роли есть работа', () => {
+  it('план заводит тикеты на каждую дисциплину, которую позвала матрица', () => {
+    for (const shape of allShapes()) {
+      const disciplines = [...new Set(requiredRoles(shape).map((r) => r.discipline))]
+      const plans = planTickets(shape.targetStage, disciplines)
+      const withTickets = new Set(plans.map((p) => p.discipline))
+
+      for (const discipline of disciplines) {
+        expect(
+          withTickets.has(discipline),
+          `${discipline} требуется для ${shape.typology}/${shape.targetStage}/${shape.materialSystem}, но задач под неё нет`,
+        ).toBe(true)
+      }
+    }
   })
 })
