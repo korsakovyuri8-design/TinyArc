@@ -287,8 +287,8 @@ export async function raiseConflict(
 }
 
 /** Решение арбитра. Снимает флаг и остаётся в переписке тикета как ответ. */
-export async function resolveConflict(ticketId: string, ruling: string): Promise<void> {
-  await prisma.$transaction([
+export async function resolveConflict(ticketId: string, ruling: string): Promise<string> {
+  const [, comment] = await prisma.$transaction([
     prisma.ticket.update({
       where: { id: ticketId },
       data: { conflictRaisedAt: null, conflictBy: null, conflictNote: '' },
@@ -297,6 +297,10 @@ export async function resolveConflict(ticketId: string, ruling: string): Promise
       data: { ticketId, authorRole: 'bureau', body: `The bureau’s ruling: ${ruling}` },
     }),
   ])
+
+  // Идентификатор решения нужен письму: оно уходит один раз на решение, а не
+  // один раз на тикет — спор по одной задаче может случиться и второй.
+  return comment.id
 }
 
 /** Предъявление работы. Приёмка — отдельное действие и делает её бюро. */

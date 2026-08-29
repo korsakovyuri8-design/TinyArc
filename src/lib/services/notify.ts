@@ -34,7 +34,13 @@ import type { DocStage } from '@/engine/taxonomy'
 /** Одновременных отправок. Столько же, сколько на рассылке приглашений. */
 const MAIL_CONCURRENCY = 5
 
-type Kind = 'invoice_issued' | 'stage_awaiting' | 'ticket_open' | 'ticket_revision'
+type Kind =
+  | 'invoice_issued'
+  | 'stage_awaiting'
+  | 'ticket_open'
+  | 'ticket_revision'
+  | 'client_answer'
+  | 'conflict_resolved'
 
 /**
  * Отправить письмо не более одного раза на повод.
@@ -252,6 +258,81 @@ export async function ticketReturned(ticketId: string): Promise<void> {
       })
     },
   )
+}
+
+/**
+ * Бюро ответило заказчику.
+ *
+ * У заказчика один канал, и он с бюро (п.10б). Канал, ответ в котором виден
+ * только тому, кто сам догадался зайти, каналом не является: человек написал,
+ * ждёт и не знает, что ему уже ответили.
+ *
+ * Текста ответа в письме нет намеренно. Разговор идёт в кабинете, где к нему
+ * приложен проект целиком; письмо говорит, что ответ есть, — на письмо
+ * ответить всё равно нельзя.
+ */
+export async function clientAnswered(messageId: string): Promise<void> {
+  const message = await prisma.clientMessage.findUnique({
+    where: { id: messageId },
+    include: { project: { select: { title: true, clientEmail: true, clientName: true } } },
+  })
+
+  if (!message || message.authorRole !== 'bureau') return
+
+  await once('client_answer', message.id, message.project.clientEmail, async () => {
+    await mailer().send({
+      to: message.project.clientEmail,
+      subject: fill('The bureau has answered — {project}', { project: message.project.title }),
+      body: [
+        fill('Dear {name},', { name: message.project.clientName }),
+        '',
+        fill(
+          'There is an answer from the bureau on “{project}”. It is in the project workspace, next to the project itself — that is where the conversation lives.',
+          { project: message.project.title },
+        ),
+        '',
+        `Project workspace: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
+}
+
+/**
+ * Арбитр вынес решение, и работа по задаче пошла дальше.
+ *
+ * Пока шёл спор, работа стояла — теперь она стоять перестала, и срок идёт
+ * снова. Человек, который поднял конфликт и ждёт, узнаёт об этом из письма, а
+ * не из ежедневного захода в доску, которого не будет.
+ *
+ * Ключ отправки — комментарий с решением: он создаётся один раз на решение,
+ * и второе решение по тому же тикету письмо не погасит.
+ */
+export async function conflictResolved(ticketId: string, rulingId: string): Promise<void> {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: { specialist: { select: { email: true, displayName: true } } },
+  })
+
+  if (!ticket?.specialist) return
+
+  await once('conflict_resolved', rulingId, ticket.specialist.email, async () => {
+    await mailer().send({
+      to: ticket.specialist!.email,
+      subject: fill('The dispute is settled: {title}', { title: ticket.title }),
+      body: [
+        fill('Dear {name},', { name: ticket.specialist!.displayName }),
+        '',
+        fill(
+          'The bureau has ruled on “{title}”. The ruling is in the ticket; work on the task carries on from it, and the clock runs again.',
+          { title: ticket.title },
+        ),
+        '',
+        `Work board: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
 }
 
 /**

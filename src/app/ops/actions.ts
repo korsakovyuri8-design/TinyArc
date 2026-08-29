@@ -29,7 +29,7 @@ import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
-import { ticketReturned } from '@/lib/services/notify'
+import { clientAnswered, conflictResolved, ticketReturned } from '@/lib/services/notify'
 
 export type OpsState = { error?: string; message?: string }
 
@@ -473,10 +473,17 @@ export async function resolveTicketConflict(_prev: OpsState, formData: FormData)
   if (!ruling) return { error: 'A ruling with no text settles nothing.' }
 
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
-  await resolveConflict(ticketId, ruling)
+  const rulingId = await resolveConflict(ticketId, ruling)
+
+  // Работа стояла, пока шёл спор, и теперь пошла: срок идёт снова, значит
+  // человека надо позвать — как и на открытии задачи.
+  await conflictResolved(ticketId, rulingId).catch((error) =>
+    console.error('Письмо о решении не ушло:', error),
+  )
+
   revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: 'The ruling is written into the ticket and the conflict is cleared.' }
+  return { message: 'The ruling is written into the ticket and the conflict is cleared. The specialist has been told by email.' }
 }
 
 export async function bureauComment(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -656,12 +663,16 @@ export async function answerClient(_prev: OpsState, formData: FormData): Promise
   const projectId = String(formData.get('projectId') ?? '')
 
   try {
-    await answer(projectId, String(formData.get('body') ?? ''))
+    const answerId = await answer(projectId, String(formData.get('body') ?? ''))
+
+    await clientAnswered(answerId).catch((error) =>
+      console.error('Письмо об ответе не ушло:', error),
+    )
 
     revalidatePath('/ops')
     revalidatePath(`/ops/projects/${projectId}`)
 
-    return { message: 'The answer is sent: the client will see it in the project cabinet.' }
+    return { message: 'The answer is sent: the client has been told by email and sees it in the project cabinet.' }
   } catch (error) {
     if (error instanceof MessageRefused) return { error: error.message }
 

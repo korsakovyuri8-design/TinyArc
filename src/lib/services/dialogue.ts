@@ -36,11 +36,11 @@ export async function say(projectId: string, body: string): Promise<void> {
  * Ответ закрывает все висящие вопросы по проекту разом: заказчик задал три
  * вопроса подряд — это один разговор, а не три очереди.
  */
-export async function answer(projectId: string, body: string): Promise<void> {
+export async function answer(projectId: string, body: string): Promise<string> {
   const text = body.trim()
   if (!text) throw new MessageRefused('The answer is empty.')
 
-  await prisma.$transaction([
+  const [created] = await prisma.$transaction([
     prisma.clientMessage.create({
       data: { projectId, authorRole: 'bureau', body: text },
     }),
@@ -49,6 +49,10 @@ export async function answer(projectId: string, body: string): Promise<void> {
       data: { answeredAt: new Date() },
     }),
   ])
+
+  // Идентификатор ответа возвращается затем, что письмо о нём отправляется
+  // ровно один раз, и ключом отправки служит сам ответ.
+  return created.id
 }
 
 export async function threadOf(projectId: string) {

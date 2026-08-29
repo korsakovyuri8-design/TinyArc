@@ -8,6 +8,10 @@
  *
  * Проверяется и второй круг. Запись об отправке гасит повторы, и ключ, забывший
  * про номер круга, погасил бы второе письмо вместе с ними — молча и навсегда.
+ *
+ * Здесь же решение арбитра. Случай тот же: пока шёл спор, работа стояла, а
+ * после решения пошла — и срок вместе с ней. Человек, который спор поднял,
+ * узнаёт об этом письмом, а не ежедневным заходом в доску, которого не будет.
  */
 
 import { existsSync } from 'node:fs'
@@ -126,6 +130,42 @@ check(
   afterSecond.some((n) => n.targetId === `${ticket.id}:${second?.revisionRounds}`),
   `письмо о втором круге ушло тоже: ${afterSecond.length}`,
 )
+
+/*
+ * Решение арбитра. Конфликт на стенде поднят сидом: спор — редкое состояние,
+ * и сценарий, который сначала его создаёт, проверял бы заодно и это.
+ */
+const disputed = await prisma.ticket.findFirst({
+  where: { conflictRaisedAt: { not: null }, specialistId: { not: null } },
+  include: { specialist: { select: { email: true } } },
+})
+
+if (disputed?.specialist) {
+  await bureau.goto(`${BASE}/ops/projects/${disputed.projectId}`)
+  await bureau.waitForTimeout(800)
+
+  const ruling = bureau.locator('form:has(textarea[name="ruling"])').first()
+  await ruling.locator('textarea[name="ruling"]').fill('e2e check: the duct moves, the door stays.')
+  await ruling.locator('button[type=submit]').click()
+  await bureau.waitForTimeout(2000)
+
+  const cleared = await prisma.ticket.findUnique({
+    where: { id: disputed.id },
+    select: { conflictRaisedAt: true },
+  })
+  const told = await prisma.notification.findMany({
+    where: { kind: 'conflict_resolved' },
+    select: { email: true },
+  })
+
+  check(cleared?.conflictRaisedAt === null, 'конфликт снят решением')
+  check(
+    told.some((n) => n.email === disputed.specialist!.email),
+    `о решении написали исполнителю: писем ${told.length}`,
+  )
+} else {
+  console.log('  · споров на стенде нет — решение арбитра не проверено')
+}
 
 await browser.close()
 await prisma.$disconnect()
