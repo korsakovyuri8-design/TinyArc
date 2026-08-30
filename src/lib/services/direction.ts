@@ -108,6 +108,59 @@ export async function chosenDirection(projectId: string) {
   return prisma.designDirection.findFirst({ where: { projectId, chosen: true } })
 }
 
+/** Дольше этого направление ждёт заказчика — бюро пора спросить. */
+export const DIRECTION_NUDGE_HOURS = 72
+
+export type PendingDirection = {
+  projectId: string
+  projectTitle: string
+  /** Сколько часов направления лежат невыбранными. */
+  hours: number
+  /** Открытых задач по проекту: столько людей уже работает без ответа. */
+  working: number
+}
+
+/**
+ * Проекты, где направления готовы, а выбора нет.
+ *
+ * Это очередь, а не гейт, и разница здесь принципиальная. Гейтов три — граф,
+ * подтверждение и оплата (п.14а), — и четвёртый останавливал бы работу там,
+ * где концепт её не останавливает. Но молчание заказчика тут не бесплатно:
+ * направления готовятся сразу после сборки, потому что выбор нужен команде до
+ * первого тикета, а не когда по нему уже что-то нарисовали. Пока выбора нет,
+ * архитектор и визуализатор работают вслепую — и переделывать будем мы.
+ *
+ * У всех остальных ожиданий заказчика очередь в панели есть: счёт, стадия,
+ * вопрос. У этого не было, и увидеть простой было неоткуда.
+ */
+export async function awaitingDirection(now = new Date()): Promise<PendingDirection[]> {
+  const projects = await prisma.project.findMany({
+    where: {
+      status: { in: ['assembled', 'delivering'] },
+      // Направления готовы, но ни одно не выбрано. Проект без направлений
+      // сюда не попадает: там ждать нечего, готовить ещё не начали.
+      directions: { some: {}, none: { chosen: true } },
+    },
+    select: {
+      id: true,
+      title: true,
+      directions: { select: { createdAt: true }, orderBy: { createdAt: 'asc' }, take: 1 },
+      _count: { select: { tickets: { where: { status: { in: ['open', 'in_progress'] } } } } },
+    },
+  })
+
+  return projects
+    .map((project) => ({
+      projectId: project.id,
+      projectTitle: project.title,
+      hours: project.directions[0]
+        ? (now.getTime() - project.directions[0].createdAt.getTime()) / 3_600_000
+        : 0,
+      working: project._count.tickets,
+    }))
+    .sort((a, b) => b.hours - a.hours)
+}
+
 export class UnknownDirection extends Error {
   constructor() {
     super('This project has no such direction.')

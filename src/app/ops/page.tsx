@@ -8,6 +8,7 @@ import { alertsForBureau } from '@/lib/services/pm'
 import { lostProjects } from '@/lib/services/demand'
 import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
+import { DIRECTION_NUDGE_HOURS, awaitingDirection } from '@/lib/services/direction'
 import { INVOICE_NUDGE_HOURS, invoiceQueue } from '@/lib/services/billing'
 import { DOC_STAGE_LABELS } from '@/lib/labels'
 import type { DocStage } from '@/engine/taxonomy'
@@ -46,11 +47,12 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions, approvals, invoices] = await Promise.all([
+  const [lost, questions, approvals, invoices, directions] = await Promise.all([
     lostProjects(),
     waitingQuestions(),
     awaitingApproval(),
     invoiceQueue(),
+    awaitingDirection(),
   ])
 
   const waitingInvoices = invoices.filter((i) => i.status === 'issued').length
@@ -232,6 +234,59 @@ export default async function OpsPage() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="divider" style={{ marginTop: 48 }} />
+
+        <div id="directions">
+          <div
+            className="row"
+            style={{ justifyContent: 'space-between', alignItems: 'baseline' }}
+          >
+            <h2>Projects without a chosen direction</h2>
+            {directions.length > 0 && <span className="tag tag-wait">{directions.length}</span>}
+          </div>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
+            This does not stop the work, and that is the problem. The directions are prepared right
+            after the team is assembled because the choice is needed before the first ticket, not
+            once something has been drawn against it. While the client is silent the architect and
+            the visualiser work blind — and the rework is ours.
+          </p>
+
+          {directions.length === 0 ? (
+            <p className="dim">Every running project has a direction chosen.</p>
+          ) : (
+            <div className="table-scroll panel" style={{ padding: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Working meanwhile</th>
+                    <th>Waiting</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {directions.map((d) => (
+                    <tr key={d.projectId}>
+                      <td>
+                        <Link href={`/ops/projects/${d.projectId}`}>{d.projectTitle}</Link>
+                      </td>
+                      <td className="num dim">{d.working}</td>
+                      <td className="num">
+                        <span
+                          className={
+                            d.hours > DIRECTION_NUDGE_HOURS ? 'tag tag-fail' : 'tag tag-wait'
+                          }
+                        >
+                          {Math.round(d.hours)} h
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

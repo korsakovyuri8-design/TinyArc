@@ -53,6 +53,33 @@ const opsText = await bureau.textContent('main')
 check(opsText.includes('Stages awaiting the client'), 'у бюро есть очередь ожидания заказчика')
 
 /*
+ * Соседняя очередь: направления готовы, выбора нет. Работу это не
+ * останавливает — гейтов три, и четвёртый противоречил бы концепту, — и
+ * именно поэтому простой надо видеть. Пока заказчик молчит, архитектор и
+ * визуализатор работают вслепую, а переделывать будем мы.
+ */
+{
+  check(
+    opsText.includes('Projects without a chosen direction'),
+    'у бюро есть очередь невыбранных направлений',
+  )
+
+  const rows = bureau.locator('#directions tbody tr')
+  const count = await rows.count()
+  check(count > 0, `проектов без выбора видно: ${count}`)
+
+  // Столбец «сколько людей работает тем временем» — это и есть цена молчания;
+  // без него строка выглядит напоминанием, а не простоем.
+  // Регистр не проверяем: заголовки таблицы поднимает CSS, и innerText отдаёт
+  // их уже поднятыми. Проверка, споткнувшаяся об оформление, проверяет его.
+  const head = (await bureau.locator('#directions thead').innerText()).toLowerCase()
+  check(head.includes('working meanwhile'), 'сказано, сколько человек работает, пока выбора нет')
+
+  const first = await rows.first().locator('a[href^="/ops/projects/"]').getAttribute('href')
+  check(Boolean(first), 'из очереди направлений открывается проект')
+}
+
+/*
  * Строка берётся из очереди подтверждений, а не из первой таблицы на странице.
  *
  * Здесь стоял `tbody tr` по всей панели с отбором по букве «ч» — под него
