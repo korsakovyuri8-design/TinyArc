@@ -196,10 +196,37 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
   return result
 }
 
+/**
+ * Алфавит ключа.
+ *
+ * Без заглавных и без похожих друг на друга знаков: ключ должен диктоваться
+ * голосом и переписываться с бумаги без вопроса «это единица или l». Отсюда же
+ * следует, что регистр в ключе ничего не значит — см. readKey.
+ */
+const KEY_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'
+
 /** Ключ доступа, который можно продиктовать голосом. */
 export function accessKey(prefix: string): string {
-  const alphabet = 'abcdefghijkmnpqrstuvwxyz23456789'
   const bytes = crypto.getRandomValues(new Uint8Array(10))
 
-  return `${prefix}-${[...bytes].map((b) => alphabet[b % alphabet.length]).join('')}`
+  return `${prefix}-${[...bytes].map((b) => KEY_ALPHABET[b % KEY_ALPHABET.length]).join('')}`
 }
+
+/**
+ * Ключ, как его набрал человек, — в тот вид, в каком он лежит в базе.
+ *
+ * Сравнивался он точно, и это закрывало кабинет там, где человек ничего не
+ * перепутал: телефон поднимает первую букву в текстовом поле сам, а с бумаги
+ * ключ переписывают как придётся. Ответ при этом честный — «такого ключа
+ * нет», — и понять по нему, что дело в регистре, невозможно.
+ *
+ * Ни одного бита это не теряет: заглавных в алфавите нет вовсе, и тест это
+ * сторожит. Приведение регистра там, где алфавит смешанный, было бы ослаблением
+ * ключа, а здесь оно просто снимает различие, которого в ключе никогда не было.
+ */
+export function readKey(raw: string): string {
+  return raw.trim().toLowerCase()
+}
+
+/** Виден тесту: приведение регистра допустимо ровно потому, что он таков. */
+export const keyAlphabet = KEY_ALPHABET

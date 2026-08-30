@@ -7,6 +7,7 @@ import { mailer } from '@/lib/mail'
 import { company } from '@/lib/legal'
 import { fill } from '@/lib/fill'
 import { retryMessage } from '@/lib/rate-limit'
+import { readKey } from '@/lib/forms'
 import {
   projectByKey,
   signInClient,
@@ -30,7 +31,7 @@ export async function enterWithKey(_prev: EnterState, formData: FormData): Promi
   const verdict = await allow('enter')
   if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
 
-  const key = String(formData.get('key') ?? '').trim()
+  const key = readKey(String(formData.get('key') ?? ''))
   if (!key) return { error: 'Enter your access key.' }
 
   /*

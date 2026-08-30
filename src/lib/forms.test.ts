@@ -9,10 +9,13 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  accessKey,
   applicationSchema,
   applicationWithConsentSchema,
   briefSchema,
   everyDisciplineCovered,
+  keyAlphabet,
+  readKey,
   signaturesWithinJurisdictions,
   specializationsWithinDisciplines,
 } from './forms'
@@ -214,5 +217,39 @@ describe('адрес почты', () => {
       false,
     )
     expect(applicationSchema.safeParse(application({ email: '   ' })).success).toBe(false)
+  })
+})
+
+/*
+ * Ключ доступа.
+ *
+ * Он задуман так, чтобы его можно было продиктовать голосом: без заглавных и
+ * без знаков, которые путают на слух и на бумаге. Значит регистр в нём не
+ * несёт ничего — а сравнивался ключ точно, и телефон, поднявший первую букву
+ * сам, закрывал человеку кабинет с честным ответом «такого ключа нет».
+ */
+describe('ключ доступа', () => {
+  it('в алфавите нет заглавных: приведение регистра не теряет ни бита', () => {
+    expect(keyAlphabet).toBe(keyAlphabet.toLowerCase())
+  })
+
+  it('в алфавите нет знаков, которые путают на слух и на бумаге', () => {
+    for (const confusable of ['l', 'o', '0', '1']) {
+      expect(keyAlphabet).not.toContain(confusable)
+    }
+  })
+
+  it('набранный с заглавной приводится к тому, что лежит в базе', () => {
+    expect(readKey('Brief-Abc23')).toBe('brief-abc23')
+  })
+
+  it('пробелы по краям снимаются: ключ переписывают с бумаги и из письма', () => {
+    expect(readKey('  brief-abc23\n')).toBe('brief-abc23')
+  })
+
+  it('выданный ключ проходит приведение без изменений', () => {
+    const issued = accessKey('brief')
+
+    expect(readKey(issued)).toBe(issued)
   })
 })

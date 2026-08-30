@@ -60,7 +60,7 @@ console.log('Потерянный ключ')
   )
 }
 
-const project = await prisma.project.findFirst({ select: { clientEmail: true } })
+const project = await prisma.project.findFirst({ select: { clientEmail: true, clientKey: true } })
 
 if (!project) {
   check(false, 'на стенде нет проектов: некому забывать ключ')
@@ -120,6 +120,22 @@ await page.waitForTimeout(1000)
 
 const failure = await page.locator('form:has(input[name=key]) .hint').last().innerText()
 check(!/[А-Яа-яЁё]/.test(failure), `отказ во входе по-английски: «${failure.trim()}»`)
+
+/*
+ * Ключ, набранный не в том регистре. Он задуман так, чтобы его можно было
+ * продиктовать голосом, — значит регистр в нём не значит ничего. А телефон
+ * поднимает первую букву в текстовом поле сам, и ответ «такого ключа нет»
+ * был честным ровно настолько, чтобы человек не понял, в чём дело.
+ */
+{
+  const shouting = await (await browser.newContext()).newPage()
+  await shouting.goto(`${BASE}/enter`)
+  await shouting.fill('input[name=key]', project.clientKey.toUpperCase())
+  await shouting.click('button[type=submit]')
+  await shouting.waitForTimeout(1500)
+
+  check(shouting.url().includes('/project'), 'ключ заглавными открывает тот же кабинет')
+}
 
 await browser.close()
 await prisma.$disconnect()
