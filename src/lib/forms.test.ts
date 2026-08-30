@@ -178,3 +178,41 @@ describe('согласие с офертой', () => {
     expect(applicationWithConsentSchema.safeParse(withoutConsent).success).toBe(false)
   })
 })
+
+/*
+ * Адрес почты.
+ *
+ * Формы писали его так, как набрали, а ищут по нему приведённым к нижнему
+ * регистру: и напоминание ключа, и импорт базы. Заказчик, набравший адрес с
+ * заглавной, терял кабинет навсегда — ключ здесь заменяет пароль, и форма
+ * честно отвечала ему, что за этим адресом ничего не числится.
+ */
+describe('адрес почты', () => {
+  it('приводится к нижнему регистру: иначе ключ по нему не найдётся', () => {
+    const parsed = briefSchema.safeParse(brief({ clientEmail: 'Ivan@Example.COM' }))
+
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data.clientEmail).toBe('ivan@example.com')
+  })
+
+  it('теряет пробелы: адрес вставляют из письма вместе с ними', () => {
+    const parsed = briefSchema.safeParse(brief({ clientEmail: '  client@example.com  ' }))
+
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data.clientEmail).toBe('client@example.com')
+  })
+
+  it('так же в заявке специалиста: одна запись на человека, а не две', () => {
+    const parsed = applicationSchema.safeParse(application({ email: ' IVAN@example.com' }))
+
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data.email).toBe('ivan@example.com')
+  })
+
+  it('приведение не превращает мусор в адрес', () => {
+    expect(applicationSchema.safeParse(application({ email: '  NOT AN ADDRESS ' })).success).toBe(
+      false,
+    )
+    expect(applicationSchema.safeParse(application({ email: '   ' })).success).toBe(false)
+  })
+})

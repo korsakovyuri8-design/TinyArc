@@ -36,6 +36,30 @@ const browser = await chromium.launch(
 
 console.log('Потерянный ключ')
 
+/*
+ * Инвариант, без которого вся эта форма бесполезна: адрес в базе лежит в
+ * одном виде. Ищет она приведённым к нижнему регистру, и заказчик, набравший
+ * адрес с заглавной, до сих пор терял кабинет навсегда — ключ здесь заменяет
+ * пароль, а форма честно отвечала ему, что за адресом ничего не числится.
+ *
+ * Проверка стоит на записях, а не на схеме: схему сторожит модульный тест, а
+ * здесь ловится путь записи, который схему обошёл.
+ */
+{
+  const clients = await prisma.project.findMany({ select: { clientEmail: true } })
+  const people = await prisma.specialist.findMany({ select: { email: true } })
+  const odd = [...clients.map((c) => c.clientEmail), ...people.map((p) => p.email)].filter(
+    (address) => address !== address.trim().toLowerCase(),
+  )
+
+  check(
+    odd.length === 0,
+    odd.length === 0
+      ? `все адреса в базе в одном виде: ${clients.length + people.length}`
+      : `адрес записан как набрали: ${odd.slice(0, 3).join(', ')}`,
+  )
+}
+
 const project = await prisma.project.findFirst({ select: { clientEmail: true } })
 
 if (!project) {

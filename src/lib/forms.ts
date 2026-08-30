@@ -30,6 +30,26 @@ import {
 const trimmed = z.string().trim()
 
 /**
+ * Адрес почты — в одном виде, всегда.
+ *
+ * Формы писали адрес так, как его набрали, а ищут по нему уже приведённым к
+ * нижнему регистру: и напоминание ключа, и импорт базы. Из-за этого заказчик,
+ * набравший Ivan@Example.com, терял кабинет навсегда — ключ здесь заменяет
+ * пароль, другого пути назад нет, а форма честно отвечала ему, что за этим
+ * адресом ничего не числится. Тот же разнобой проводил одного человека мимо
+ * уникального ключа дважды: две записи, два ключа, два разбора портфолио.
+ *
+ * Домен регистра не различает по стандарту; локальная часть формально может,
+ * но так не делает ни один почтовый сервис, и нормализуют её все. Пробелы
+ * снимаются до проверки: адрес, вставленный из письма, приходит с ними.
+ */
+const emailField = (message: string) =>
+  z.preprocess(
+    (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+    z.email(message),
+  )
+
+/**
  * Согласие с офертой и политикой обработки данных.
  *
  * Проверяется схемой, а не только атрибутом required в разметке. Атрибут
@@ -45,7 +65,7 @@ const consent = z
 export const briefSchema = z.object({
   title: trimmed.min(2, 'Name the project').max(120),
   clientName: trimmed.min(2, 'How to address you').max(120),
-  clientEmail: z.email('We need a working address: the access key goes there'),
+  clientEmail: emailField('We need a working address: the access key goes there'),
 
   typology: z.enum(TYPOLOGIES),
   storeys: z.coerce.number().int().min(1, 'At least one storey').max(60),
@@ -73,7 +93,7 @@ export type BriefInput = z.infer<typeof briefSchema>
 
 export const applicationSchema = z.object({
   displayName: trimmed.min(2, 'How to show you to the client').max(120),
-  email: z.email('We need a working address: the access key goes there'),
+  email: emailField('We need a working address: the access key goes there'),
   portfolioUrl: z.url('A portfolio link is required: it is the main entrance to selection'),
 
   disciplines: z.array(z.enum(DISCIPLINES)).min(1, 'Choose at least one discipline'),
