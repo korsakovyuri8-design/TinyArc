@@ -6,14 +6,12 @@
  * усилитель, где один запрос стоит в сотни раз дороже, чем обходится
  * отправителю.
  *
- * Счётчик в памяти процесса. Для пилота этого достаточно и честно: при
- * нескольких инстансах окно считается у каждого своё. Замена — общий счётчик в
- * базе или Redis; интерфейс модуля от этого не меняется.
+ * Здесь — только политика: пороги, ключи и слова. Счёт ведёт `guard.ts`, и
+ * ведёт его в базе: в памяти процесса окно у каждого инстанса своё, предел
+ * молча умножается на их число, а перезапуск контейнера обнуляет накопленное.
  */
 
 import { fill } from './fill'
-
-export type Bucket = { count: number; resetAt: number }
 
 export type Verdict = { allowed: boolean; retryAfterSeconds: number }
 
@@ -89,37 +87,22 @@ export function completedKey(key: string): string {
   return `${key}#completed`
 }
 
-/** Чистая функция: состояние приходит аргументом, время тоже. */
-export function hit(
-  store: Map<string, Bucket>,
-  key: string,
-  { limit, windowMs }: Limit,
-  now: number,
-): Verdict {
-  const bucket = store.get(key)
-
-  if (!bucket || now >= bucket.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
-    return { allowed: true, retryAfterSeconds: 0 }
-  }
-
-  if (bucket.count >= limit) {
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
-    }
-  }
-
-  bucket.count += 1
-  return { allowed: true, retryAfterSeconds: 0 }
-}
-
-/** Убирает истёкшие окна, чтобы карта не росла бесконечно. */
-export function sweep(store: Map<string, Bucket>, now: number): void {
-  for (const [key, bucket] of store) {
-    if (now >= bucket.resetAt) store.delete(key)
+/**
+ * Что ответить тому, кто упёрся в предел.
+ *
+ * Отдельной чистой функцией, потому что считать секунды до открытия окна умеет
+ * не база: она хранит момент, а человеку нужен остаток. Ноль здесь невозможен —
+ * «попробуйте через ноль секунд» это не ответ, а насмешка.
+ */
+export function refusal(resetAt: number, now: number): Verdict {
+  return {
+    allowed: false,
+    retryAfterSeconds: Math.max(1, Math.ceil((resetAt - now) / 1000)),
   }
 }
+
+/** Пропущено. Отдельным значением, чтобы не собирать его в трёх местах. */
+export const PASSED: Verdict = { allowed: true, retryAfterSeconds: 0 }
 
 /**
  * «Слишком часто» на языке того, кто это читает.

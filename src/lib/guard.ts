@@ -1,25 +1,36 @@
 /**
  * Ограничение частоты на стороне сервера.
  *
- * Отдельно от src/lib/rate-limit.ts: там чистая логика и тесты, здесь — доступ
- * к заголовкам запроса и счётчик процесса.
+ * Отдельно от `rate-limit.ts`: там политика — пороги, ключи и слова, — здесь
+ * доступ к заголовкам запроса и сам счёт.
+ *
+ * Счёт идёт в базе, а не в памяти процесса. В памяти он жил честно и временно:
+ * при двух инстансах окно у каждого своё, и предел молча умножается на их
+ * число; перезапуск контейнера обнуляет накопленное, а на бесплатном плане
+ * контейнер перезапускается сам. Ограничитель, который забывает попытки от
+ * событий на нашей стороне, защищает ровно до первой выкладки.
+ *
+ * Счёт ведётся условным обновлением — тем же приёмом, что и переходы
+ * состояния тикета. Прочитать окно, решить и записать нельзя: между чтением и
+ * записью успевает второй запрос, и предел в этот момент перестаёт быть
+ * пределом. Условие стоит внутри самой записи, и база отвечает не «сколько
+ * там сейчас», а «удалось ли занять место».
  */
 
 import { headers } from 'next/headers'
+import { prisma } from './db'
 import {
   LIMITS,
+  PASSED,
   completedKey,
-  hit,
-  sweep,
-  type Bucket,
+  refusal,
+  type Limit,
   type LimitName,
   type Verdict,
 } from './rate-limit'
 
-const store = new Map<string, Bucket>()
-
-/** Раз в сколько обращений подчищаем истёкшие окна. */
-const SWEEP_EVERY = 200
+/** Раз в сколько обращений подметаем истёкшие окна. */
+const SWEEP_EVERY = 500
 let calls = 0
 
 /**
@@ -37,16 +48,85 @@ async function origin(): Promise<string> {
   return forwarded || jar.get('x-real-ip')?.trim() || 'unknown'
 }
 
-export async function allow(name: LimitName): Promise<Verdict> {
-  const now = Date.now()
+/**
+ * Занять место в окне.
+ *
+ * Три попытки записи, и ни одна не читает состояние заранее:
+ *
+ * 1. Окно живо и место есть — увеличить счётчик. Условие «счётчик меньше
+ *    предела» стоит в самой записи, поэтому два одновременных запроса не могут
+ *    оба занять последнее место.
+ * 2. Окно истекло — начать новое. Условие «время вышло» тоже в записи: если
+ *    его успел начать другой, здесь изменится ноль строк, и мы вернёмся к
+ *    первому случаю следующим запросом.
+ * 3. Окна нет вовсе — создать. Гонку двух созданий ловит первичный ключ.
+ *
+ * Ничего не вышло — значит место занято: читаем момент открытия и отвечаем
+ * человеку остатком.
+ */
+async function take(key: string, limit: number, windowMs: number): Promise<Verdict> {
+  const now = new Date()
 
+  const stepped = await prisma.rateWindow.updateMany({
+    where: { key, resetAt: { gt: now }, count: { lt: limit } },
+    data: { count: { increment: 1 } },
+  })
+
+  if (stepped.count === 1) return PASSED
+
+  const restarted = await prisma.rateWindow.updateMany({
+    where: { key, resetAt: { lte: now } },
+    data: { count: 1, resetAt: new Date(now.getTime() + windowMs) },
+  })
+
+  if (restarted.count === 1) return PASSED
+
+  try {
+    await prisma.rateWindow.create({
+      data: { key, count: 1, resetAt: new Date(now.getTime() + windowMs) },
+    })
+
+    return PASSED
+  } catch {
+    // Окно завёл другой запрос в этот же момент. Дальше оно общее.
+  }
+
+  const window = await prisma.rateWindow.findUnique({
+    where: { key },
+    select: { resetAt: true },
+  })
+
+  if (!window) return PASSED
+
+  return refusal(window.resetAt.getTime(), now.getTime())
+}
+
+/** Сколько дорогих отправок разрешено, если у предела есть второй счётчик. */
+function expensive(limit: Limit): number | undefined {
+  return 'completed' in limit ? (limit as { completed?: number }).completed : undefined
+}
+
+/**
+ * Подмести истёкшие окна.
+ *
+ * Строка окна живёт до следующей попытки того же отправителя, а её может не
+ * быть никогда: адреса не повторяются. Без подметания таблица растёт числом
+ * посетителей за всю жизнь продукта, ничего при этом не защищая.
+ */
+async function sweep(): Promise<void> {
+  await prisma.rateWindow
+    .deleteMany({ where: { resetAt: { lt: new Date() } } })
+    .catch(() => undefined)
+}
+
+export async function allow(name: LimitName): Promise<Verdict> {
   calls += 1
-  if (calls % SWEEP_EVERY === 0) sweep(store, now)
+  if (calls % SWEEP_EVERY === 0) await sweep()
 
   const key = `${name}:${await origin()}`
   const limit = LIMITS[name]
 
-  const attempt = hit(store, key, limit, now)
+  const attempt = await take(key, limit.limit, limit.windowMs)
   if (!attempt.allowed) return attempt
 
   /*
@@ -57,15 +137,18 @@ export async function allow(name: LimitName): Promise<Verdict> {
    * всему пулу; списывать за них одинаково значит наказывать человека за
    * опечатку в поле.
    */
-  const completed = 'completed' in limit ? (limit as { completed?: number }).completed : undefined
+  const completed = expensive(limit)
   if (completed === undefined) return attempt
 
-  const bucket = store.get(completedKey(key))
-  if (bucket && now < bucket.resetAt && bucket.count >= completed) {
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
-    }
+  const window = await prisma.rateWindow.findUnique({
+    where: { key: completedKey(key) },
+    select: { count: true, resetAt: true },
+  })
+
+  const now = Date.now()
+
+  if (window && now < window.resetAt.getTime() && window.count >= completed) {
+    return refusal(window.resetAt.getTime(), now)
   }
 
   return attempt
@@ -83,7 +166,9 @@ export async function allow(name: LimitName): Promise<Verdict> {
  * пароль, а тот, кто его подбирает, до сброса не доходит по определению.
  */
 export async function forgive(name: LimitName): Promise<void> {
-  store.delete(`${name}:${await origin()}`)
+  await prisma.rateWindow
+    .deleteMany({ where: { key: `${name}:${await origin()}` } })
+    .catch(() => undefined)
 }
 
 /**
@@ -94,8 +179,8 @@ export async function forgive(name: LimitName): Promise<void> {
  */
 export async function spend(name: LimitName): Promise<void> {
   const limit = LIMITS[name]
-  const completed = 'completed' in limit ? (limit as { completed?: number }).completed : undefined
+  const completed = expensive(limit)
   if (completed === undefined) return
 
-  hit(store, completedKey(`${name}:${await origin()}`), { ...limit, limit: completed }, Date.now())
+  await take(completedKey(`${name}:${await origin()}`), completed, limit.windowMs)
 }
