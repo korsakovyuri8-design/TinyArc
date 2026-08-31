@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { NOTIFICATION_LABELS } from '@/lib/labels'
 import { mailer } from '@/lib/mail'
 import { isOperator } from '@/lib/session'
+import { readEmail } from '@/lib/forms'
 import { OpsAction } from '../OpsForms'
 import { resendLetter } from '../actions'
 
@@ -43,7 +44,21 @@ export default async function LettersPage({
 
   const params = await searchParams
   const raw = params.q
-  const query = ((Array.isArray(raw) ? raw[0] : raw) ?? '').trim()
+
+  /*
+   * Запрос приводится к нижнему регистру, потому что адреса в базе уже
+   * приведены на записи.
+   *
+   * Без этого поиск ведёт себя на стенде и в бою по-разному: `contains` у
+   * prisma на SQLite регистр не различает, на Postgres — различает. То есть
+   * здесь всё работало бы, а оператор в бою на жалобу «мне ничего не
+   * приходило» отвечал бы «и правда ничего», набрав адрес с заглавной, —
+   * ровно в том разговоре, ради которого журнал и заведён.
+   *
+   * Приведение здесь не теряет ни одного адреса: тот же нижний регистр стоит
+   * на записи, и это сторожит `emailField` в разборе форм.
+   */
+  const query = readEmail((Array.isArray(raw) ? raw[0] : raw) ?? '')
 
   /*
    * Неушедшие идут отдельно и первыми, а не строкой в общем списке.

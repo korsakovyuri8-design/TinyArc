@@ -15,6 +15,7 @@ import {
   briefSchema,
   everyDisciplineCovered,
   keyAlphabet,
+  readEmail,
   readKey,
   signaturesWithinJurisdictions,
   specializationsWithinDisciplines,
@@ -210,6 +211,16 @@ describe('адрес почты', () => {
 
     expect(parsed.success).toBe(true)
     expect(parsed.success && parsed.data.email).toBe('ivan@example.com')
+  })
+
+  /*
+   * То же приведение на чтении. Журнал писем ищет по адресу запросом в базу, а
+   * `contains` у prisma на SQLite регистр не различает, на Postgres —
+   * различает. Без приведения поиск работал бы на стенде и молчал в бою.
+   */
+  it('приводится так же при поиске, а не только на записи', () => {
+    expect(readEmail('  Marina@Example.COM ')).toBe('marina@example.com')
+    expect(readEmail('')).toBe('')
   })
 
   it('приведение не превращает мусор в адрес', () => {

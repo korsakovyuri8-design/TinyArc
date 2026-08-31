@@ -158,6 +158,19 @@ if (passing) {
     `поиск по адресу отвечает на «мне ничего не приходило»: строк ${narrowed} из ${all}`,
   )
 
+  /*
+   * Тот же адрес заглавными. На стенде база файловая и регистр ей безразличен,
+   * в бою — Postgres, и он различает: поиск, работающий здесь и молчащий там,
+   * отвечает «ничего не приходило» ровно на ту жалобу, ради которой журнал и
+   * заведён. Приведение стоит в самой странице.
+   */
+  await page.goto(`${BASE}/ops/letters?q=${encodeURIComponent(applicant.email.toUpperCase())}`)
+  await page.waitForTimeout(600)
+  check(
+    (await rows().count()) === narrowed,
+    'адрес заглавными находит то же самое: регистр в поиске не значит ничего',
+  )
+
   await page.goto(`${BASE}/ops/letters?q=${encodeURIComponent('nobody@example.invalid')}`)
   await page.waitForTimeout(600)
   check(
