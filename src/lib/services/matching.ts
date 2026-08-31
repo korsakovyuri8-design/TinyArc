@@ -46,6 +46,27 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
   const assembly = assemble(pool, toRequirements(project), history)
 
   const runId = await prisma.$transaction(async (tx) => {
+    /*
+     * Начатую работу пересборка не трогает — и проверяется это здесь, а не
+     * по полю статуса выше.
+     *
+     * Разница не формальная. Поле статуса — это вывод, сделанный когда-то:
+     * его пересчитывают приёмка, подтверждение и оплата, а гейт открывает
+     * задачи и сам по себе. Путь, забывший пересчёт, оставляет «assembled» на
+     * проекте, где люди уже работают, — и пересборка, разрешённая по этому
+     * полю, удалила бы их задачи вместе с принятой работой и файлами.
+     * Вдобавок между чтением поля и удалением помещается чужой переход.
+     *
+     * Спрашиваем поэтому сами задачи и в той же транзакции, что и удаление:
+     * ни одна не начата — терять нечего; хоть одна начата — пересборка это
+     * уничтожение чужой работы, как бы ни было записано поле.
+     */
+    const started = await tx.ticket.count({
+      where: { projectId, status: { not: 'blocked' } },
+    })
+
+    if (started > 0) throw new AssemblyLocked('delivering')
+
     const run = await tx.matchRun.create({
       data: {
         projectId,
