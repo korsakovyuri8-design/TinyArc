@@ -236,13 +236,18 @@ export async function markPaid(invoiceId: string, note: string): Promise<DocStag
     throw new BillingRefused('The invoice is void. It does not become paid — issue a new one.')
   }
 
-  // Повторная отметка молча проходит: кнопку жмут дважды чаще, чем кажется.
-  if (invoice.status !== 'paid') {
-    await prisma.invoice.update({
-      where: { id: invoiceId },
-      data: { status: 'paid', paidAt: new Date(), paidNote: note.trim().slice(0, 400) },
-    })
-  }
+  /*
+   * Повторная отметка молча проходит: кнопку жмут дважды чаще, чем кажется.
+   *
+   * Условие стоит внутри записи, а не перед ней. Между чтением и записью
+   * успевает второй запрос, и хотя итог у обоих одинаковый — счёт оплачен, —
+   * второй переписал бы дату поступления и примечание оператора. Дата
+   * поступления это факт, а не последнее нажатие.
+   */
+  await prisma.invoice.updateMany({
+    where: { id: invoiceId, status: 'issued' },
+    data: { status: 'paid', paidAt: new Date(), paidNote: note.trim().slice(0, 400) },
+  })
 
   return invoice.stage as DocStage
 }

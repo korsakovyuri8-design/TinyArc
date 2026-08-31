@@ -79,9 +79,20 @@ export async function approveStage(
     )
   }
 
-  await prisma.stageApproval.create({
-    data: { projectId, stage, note: note.trim() },
-  })
+  /*
+   * Уникальный ключ «проект + стадия» не даёт подтвердить дважды, и это
+   * правильная защита — но её срабатывание не должно выглядеть поломкой.
+   * Заказчик, нажавший кнопку дважды, получал грубую ошибку базы вместо
+   * тишины, хотя стадия подтверждена и всё в порядке.
+   */
+  try {
+    await prisma.stageApproval.create({
+      data: { projectId, stage, note: note.trim() },
+    })
+  } catch {
+    // Уже подтверждено — вторым нажатием или вторым запросом. Это не ошибка.
+    return
+  }
 }
 
 export type PendingApproval = {

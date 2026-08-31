@@ -12,6 +12,7 @@ import {
   dueDate,
   openable,
   type RelayTicket,
+  type TicketStatus,
 } from '@/engine/relay'
 import type { Discipline } from '@/engine/taxonomy'
 import { images } from '../images'
@@ -50,6 +51,38 @@ export class NotOpen extends Error {
     super('The ticket is in a different state right now: this action is unavailable.')
     this.name = 'NotOpen'
   }
+}
+
+/**
+ * Перевести задачу из одного состояния в другое — атомарно.
+ *
+ * Все переходы здесь были устроены одинаково: прочитали статус, проверили,
+ * записали. Между чтением и записью успевает второй запрос, и это не
+ * теоретическая беда. Двое операторов, нажавшие «принять» в один момент, оба
+ * видели `submitted`, оба входили в приёмку и оба начисляли счётчики поставки:
+ * человек получал двойной зачёт по метрикам, которыми решается его доступ к
+ * следующим проектам. Проверено на стенде — счётчик рос на два.
+ *
+ * Условие стоит внутри самой записи: `updateMany` со статусом в `where`
+ * меняет строку только если она всё ещё в ожидаемом состоянии, и делает это
+ * одной операцией базы. Ноль изменённых строк означает, что переход уже
+ * сделал кто-то другой.
+ *
+ * Работает и на SQLite, и на Postgres: это обычное условное обновление, а не
+ * блокировка и не особенность драйвера.
+ */
+async function moveTicket(
+  tx: Pick<typeof prisma, 'ticket'>,
+  ticketId: string,
+  from: readonly TicketStatus[],
+  data: Parameters<typeof prisma.ticket.updateMany>[0]['data'],
+): Promise<boolean> {
+  const moved = await tx.ticket.updateMany({
+    where: { id: ticketId, status: { in: [...from] } },
+    data,
+  })
+
+  return moved.count === 1
 }
 
 async function relayTickets(projectId: string): Promise<RelayTicket[]> {
@@ -142,10 +175,14 @@ export async function claim(ticketId: string, specialistId: string): Promise<voi
   if (ticket.specialistId !== specialistId) throw new NotYours()
   if (ticket.status !== 'open') throw new NotOpen(ticket.status)
 
-  await prisma.ticket.update({
-    where: { id: ticketId },
-    data: { status: 'in_progress', claimedAt: new Date() },
+  // Двойное нажатие не должно переписывать время взятия: от него считается
+  // время реакции, и второй щелчок обнулял бы его в пользу человека.
+  const moved = await moveTicket(prisma, ticketId, ['open'], {
+    status: 'in_progress',
+    claimedAt: new Date(),
   })
+
+  if (!moved) throw new NotOpen('in_progress')
 }
 
 /** Комментарий на уровне тикета — единственный канал коммуникации в системе. */
@@ -316,15 +353,14 @@ export async function submit(ticketId: string, specialistId: string): Promise<vo
 
   const now = new Date()
 
-  await prisma.ticket.update({
-    where: { id: ticketId },
-    data: {
-      status: 'submitted',
-      submittedAt: now,
-      // Сдал, не отметив принятие в работу, — время реакции считается по сдаче.
-      claimedAt: ticket.claimedAt ?? now,
-    },
+  const moved = await moveTicket(prisma, ticketId, ['in_progress', 'revision'], {
+    status: 'submitted',
+    submittedAt: now,
+    // Сдал, не отметив принятие в работу, — время реакции считается по сдаче.
+    claimedAt: ticket.claimedAt ?? now,
   })
+
+  if (!moved) throw new NotOpen('submitted')
 }
 
 /** Возврат на круг. Питает Revision Rate и First Time Right (п.12). */
@@ -332,15 +368,21 @@ export async function requestRevision(ticketId: string, note: string): Promise<v
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
   if (ticket.status !== 'submitted') throw new NotOpen(ticket.status)
 
-  await prisma.$transaction([
-    prisma.ticket.update({
-      where: { id: ticketId },
-      data: { status: 'revision', revisionRounds: { increment: 1 } },
-    }),
-    prisma.ticketComment.create({
+  await prisma.$transaction(async (tx) => {
+    // Круг правок считается тем же условным обновлением: два возврата подряд
+    // приписали бы человеку два круга за одну работу, а круги идут в метрику
+    // «сдано с первого раза».
+    const moved = await moveTicket(tx, ticketId, ['submitted'], {
+      status: 'revision',
+      revisionRounds: { increment: 1 },
+    })
+
+    if (!moved) throw new NotOpen('revision')
+
+    await tx.ticketComment.create({
       data: { ticketId, authorRole: 'bureau', body: note },
-    }),
-  ])
+    })
+  })
 }
 
 /**
@@ -361,10 +403,14 @@ export async function accept(ticketId: string): Promise<void> {
   })
 
   await prisma.$transaction(async (tx) => {
-    await tx.ticket.update({
-      where: { id: ticketId },
-      data: { status: 'accepted', acceptedAt },
+    // Здесь условие в записи важнее всего: за переходом идут счётчики
+    // поставки, и вторая приёмка начисляла их повторно.
+    const moved = await moveTicket(tx, ticketId, ['submitted'], {
+      status: 'accepted',
+      acceptedAt,
     })
+
+    if (!moved) throw new NotOpen('accepted')
 
     if (ticket.specialistId) {
       await tx.specialist.update({
