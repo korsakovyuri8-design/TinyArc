@@ -1,8 +1,9 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Golos_Text, Playfair_Display, Space_Mono } from 'next/font/google'
 import Link from 'next/link'
 import './globals.css'
 import { siteUrl } from '@/lib/site'
+import { ServiceWorker } from '@/components/ServiceWorker'
 
 /*
  * Гарнитуры зафиксированы концептом (п.23): Playfair Display — заголовки,
@@ -75,12 +76,40 @@ export const metadata: Metadata = {
     title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
     description: DESCRIPTION,
   },
+  /*
+   * Установленное приложение. Манифест лежит в app/manifest.ts; здесь —
+   * то, что читает именно iOS: он манифест почти игнорирует и берёт своё.
+   *
+   * `capable` убирает адресную строку у ярлыка на домашнем экране,
+   * `statusBarStyle` красит полосу под тёмный фон продукта — иначе поверх
+   * тёмного экрана стоит светлая полоса с чёрным временем.
+   */
+  appleWebApp: {
+    capable: true,
+    title: 'TinyArc',
+    statusBarStyle: 'black-translucent',
+  },
+}
+
+/*
+ * Цвет полосы браузера и то, как страница ведёт себя под вырезом экрана.
+ *
+ * viewportFit: 'cover' нужен установленному приложению: без него под «чёлкой»
+ * и внизу остаются серые поля, и приложение выглядит вставленным в рамку. Сами
+ * отступы берёт на себя вёрстка через env(safe-area-inset-*).
+ */
+export const viewport: Viewport = {
+  themeColor: '#0a0e14',
+  colorScheme: 'dark',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${golos.variable} ${spaceMono.variable}`}>
       <body>
+        <ServiceWorker />
+
         <header className="site-header">
           <div className="shell">
             <Link href="/" className="brand">

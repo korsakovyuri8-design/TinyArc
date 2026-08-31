@@ -42,7 +42,28 @@ const nextConfig: NextConfig = {
     '@prisma/adapter-pg',
   ],
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }]
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      /*
+       * Сервис-воркер — особый файл, и особые заголовки у него по делу.
+       *
+       * Он живёт на устройстве до тех пор, пока браузер не увидит новую
+       * версию. Закэшированный воркер — это старая логика, которую нечем
+       * заменить: он же и решает, что отдавать. Поэтому no-store.
+       *
+       * Своя CSP здесь возможна там, где на страницах невозможна: у воркера
+       * нет встроенных скриптов, и запретить ему всё, кроме своего источника,
+       * ничего не ломает.
+       */
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" },
+        ],
+      },
+    ]
   },
 }
 

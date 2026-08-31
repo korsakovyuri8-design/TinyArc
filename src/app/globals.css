@@ -117,7 +117,15 @@ a:hover {
 .shell {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 0 clamp(20px, 5vw, 48px);
+  /*
+   * Боковые отступы учитывают вырез экрана. В браузере env(safe-area-inset-*)
+   * равен нулю и ничего не меняет; в установленном приложении, которое
+   * рисуется во весь экран, без него текст уезжает под скруглённый угол на
+   * телефоне, повёрнутом набок.
+   */
+  padding-inline: calc(clamp(20px, 5vw, 48px) + env(safe-area-inset-left))
+                  calc(clamp(20px, 5vw, 48px) + env(safe-area-inset-right));
+  padding-block: 0;
 }
 
 .site-header {
@@ -126,6 +134,9 @@ a:hover {
   top: 0;
   background: var(--bg);
   z-index: 10;
+  /* Шапка уходит под «чёлку»: у установленного приложения полосы статуса
+     своей нет, и без этого отступа заголовок оказывается под часами. */
+  padding-top: env(safe-area-inset-top);
 }
 
 .site-header .shell {
