@@ -1,5 +1,5 @@
 /**
- * Блюпринт Render.
+ * Конфигурация выкладки: блюпринт Render и стенд docker compose.
  *
  * Проверка появилась после того, как выяснилось: файл в репозитории задавал
  * два секрета, а preflight в бою требовал восемь. Выкладка по блюпринту
@@ -94,5 +94,54 @@ describe('блюпринт Render', () => {
     const command = /dockerCommand:\s*(.+)/.exec(blueprint)?.[1].trim()
 
     expect(command).toMatch(/scripts\/(demo-)?start\.sh/)
+  })
+})
+
+/**
+ * Стенд из docker compose.
+ *
+ * Та же ошибка, что и в блюпринте, жила и здесь: образ собран с
+ * NODE_ENV=production, значит стенд проходит те же боевые проверки, а compose
+ * задавал три переменных из восьми. Команда из README не поднялась бы.
+ *
+ * Значения по умолчанию в compose разбираются здесь так же, как их разберёт
+ * сам compose: `${ИМЯ:-запасное}` — запасное, `${ИМЯ:?...}` — спросит у
+ * запускающего, то есть значение будет.
+ */
+describe('стенд docker compose', () => {
+  const file = readFileSync(join(process.cwd(), 'docker-compose.yml'), 'utf8')
+
+  const env: Record<string, string> = {}
+  const app = file.slice(file.indexOf('  app:'))
+
+  for (const line of app.split('\n')) {
+    const pair = /^\s{6}([A-Z][A-Z0-9_]*):\s*(.+)$/.exec(line)
+    if (!pair) continue
+
+    const [, key, raw] = pair
+    const fallback = /\$\{[A-Z0-9_]+:-(.*?)\}/.exec(raw)
+    const asked = /\$\{[A-Z0-9_]+:\?/.test(raw)
+
+    if (fallback) env[key] = fallback[1] || 'set-by-compose'
+    else if (asked) env[key] = 'asked-of-whoever-starts-it'
+    else env[key] = raw.includes('${') ? 'set-by-compose' : raw.trim()
+  }
+
+  it('поднимается: preflight не находит ни одной причины отказать', () => {
+    expect(preflight({ ...env, NODE_ENV: 'production' })).toEqual([])
+  })
+
+  it('не кладёт файлы на диск контейнера: у стенда своё хранилище', () => {
+    expect(env.BUREAU_STORAGE).toBe('s3')
+    expect(file).toContain('minio/minio')
+  })
+
+  it('приложение ждёт готовности базы и созданного бакета', () => {
+    expect(file).toContain('service_healthy')
+    expect(file).toContain('service_completed_successfully')
+  })
+
+  it('файлы стенда переживают перезапуск: том, а не слой контейнера', () => {
+    expect(file).toContain('bureau-files:/data')
   })
 })

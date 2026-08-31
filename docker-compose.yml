@@ -1,7 +1,13 @@
-# Локальный и пилотный стенд: приложение и его база.
+# Локальный и пилотный стенд: приложение, его база и хранилище файлов.
 #
 # Здесь Postgres — та же база, что на бою. SQLite остаётся способом разработки
 # на одной машине, но проверять миграции на нём бессмысленно.
+#
+# Хранилище тоже настоящее, а не диск контейнера. Причина не в аккуратности:
+# образ собран с NODE_ENV=production, а в бою диск контейнера запрещён явно
+# (он живёт до следующей выкладки), и стенд с ним просто не стартовал бы.
+# MinIO говорит на том же протоколе, что R2 и AWS, — значит здесь работает
+# ровно тот код, который поедет в бой, а не его локальный двойник.
 services:
   db:
     image: postgres:17-alpine
@@ -18,16 +24,66 @@ services:
       retries: 20
     restart: unless-stopped
 
+  storage:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${BUREAU_S3_ACCESS_KEY_ID:-bureau-local}
+      MINIO_ROOT_PASSWORD: ${BUREAU_S3_SECRET_ACCESS_KEY:-bureau-local-secret}
+    volumes:
+      - bureau-files:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'mc ready local || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # Бакет создаётся один раз и выходит. Приложение бакеты не создаёт: в бою
+  # это чужая панель и чужие права, и уметь такое ему незачем.
+  storage-init:
+    image: minio/mc:latest
+    depends_on:
+      storage:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+      mc alias set stand http://storage:9000
+      ${BUREAU_S3_ACCESS_KEY_ID:-bureau-local}
+      ${BUREAU_S3_SECRET_ACCESS_KEY:-bureau-local-secret} &&
+      mc mb --ignore-existing stand/${BUREAU_S3_BUCKET:-bureau} &&
+      echo 'бакет готов'
+      "
+    restart: 'no'
+
   app:
     build: .
     depends_on:
       db:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://bureau:${POSTGRES_PASSWORD}@db:5432/bureau
       BUREAU_MAIL: ${BUREAU_MAIL:-stub}
+      BUREAU_IMAGES: ${BUREAU_IMAGES:-stub}
+      BUREAU_ASSIST: ${BUREAU_ASSIST:-stub}
       BUREAU_OPS_PASSWORD: ${BUREAU_OPS_PASSWORD:?задайте BUREAU_OPS_PASSWORD}
       BUREAU_SESSION_SECRET: ${BUREAU_SESSION_SECRET:?задайте BUREAU_SESSION_SECRET}
+
+      # Реквизиты юрлица. У стенда они свои и ненастоящие — но задать их
+      # приходится, потому что оферта без наименования не договор, и preflight
+      # это проверяет одинаково везде. Для боевого стенда впишите настоящие.
+      BUREAU_LEGAL_NAME: ${BUREAU_LEGAL_NAME:-TinyArc Cloud Bureau (stand)}
+      BUREAU_LEGAL_REGISTRATION: ${BUREAU_LEGAL_REGISTRATION:-not-a-real-registration}
+      BUREAU_LEGAL_ADDRESS: ${BUREAU_LEGAL_ADDRESS:-Stand, no real address}
+      BUREAU_LEGAL_EMAIL: ${BUREAU_LEGAL_EMAIL:-stand@example.invalid}
+
+      BUREAU_STORAGE: s3
+      BUREAU_S3_ENDPOINT: ${BUREAU_S3_ENDPOINT:-http://storage:9000}
+      BUREAU_S3_BUCKET: ${BUREAU_S3_BUCKET:-bureau}
+      BUREAU_S3_ACCESS_KEY_ID: ${BUREAU_S3_ACCESS_KEY_ID:-bureau-local}
+      BUREAU_S3_SECRET_ACCESS_KEY: ${BUREAU_S3_SECRET_ACCESS_KEY:-bureau-local-secret}
     ports:
       - '${PORT:-3000}:3000'
     healthcheck:
@@ -40,3 +96,4 @@ services:
 
 volumes:
   bureau-db:
+  bureau-files:
