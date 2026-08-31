@@ -18,6 +18,7 @@ import type { Discipline } from '@/engine/taxonomy'
 import { images } from '../images'
 import { MAX_FILE_BYTES, artifactKey, storage } from '../storage'
 import { prisma } from '../db'
+import { TEXT_MAX, bounded } from '../text'
 import { recordConflict, recordProjectTogether, recordRequestAnswered } from './collaboration'
 import { approvedStages, stagesAwaitingClient } from './approval'
 import { issueDueInvoices, paidStages } from './billing'
@@ -192,6 +193,7 @@ export async function comment(
   body: string,
   options: { isConflict?: boolean } = {},
 ): Promise<string> {
+  const text = bounded(body, TEXT_MAX.note)
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (author.role === 'specialist') {
@@ -204,7 +206,7 @@ export async function comment(
       ticketId,
       authorRole: author.role,
       specialistId: author.role === 'specialist' ? author.specialistId : null,
-      body,
+      body: text,
       isConflict: options.isConflict ?? false,
     },
   })
@@ -233,6 +235,9 @@ export async function requestFrom(
   title: string,
   body: string,
 ): Promise<string> {
+  const heading = bounded(title, TEXT_MAX.title)
+  const text = bounded(body, TEXT_MAX.spec)
+
   const source = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (source.specialistId !== fromSpecialistId) throw new NotYours()
@@ -254,8 +259,8 @@ export async function requestFrom(
         stage: source.stage,
         kind: 'request',
         requestedFromId: source.id,
-        title,
-        spec: body,
+        title: heading,
+        spec: text,
         specialistId: slot.specialistId,
         slaHours: REQUEST_SLA_HOURS,
         // Запрос не ждёт гейта: он и появился потому, что работа уже идёт.
@@ -272,7 +277,7 @@ export async function requestFrom(
         ticketId: source.id,
         authorRole: 'specialist',
         specialistId: fromSpecialistId,
-        body: `Request to ${toDiscipline}: ${title}`,
+        body: `Request to ${toDiscipline}: ${heading}`,
       },
     })
 
@@ -293,6 +298,7 @@ export async function raiseConflict(
   by: { role: 'bureau' | 'specialist'; specialistId?: string },
   note: string,
 ): Promise<void> {
+  const text = bounded(note, TEXT_MAX.note)
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (by.role === 'specialist' && ticket.specialistId !== by.specialistId) throw new NotYours()
@@ -312,7 +318,7 @@ export async function raiseConflict(
       data: {
         conflictRaisedAt: new Date(),
         conflictBy: by.role === 'specialist' ? (by.specialistId ?? null) : null,
-        conflictNote: note,
+        conflictNote: text,
       },
     }),
     prisma.ticketComment.create({
@@ -320,7 +326,7 @@ export async function raiseConflict(
         ticketId,
         authorRole: by.role,
         specialistId: by.role === 'specialist' ? by.specialistId : null,
-        body: note,
+        body: text,
         isConflict: true,
       },
     }),
@@ -329,13 +335,15 @@ export async function raiseConflict(
 
 /** Решение арбитра. Снимает флаг и остаётся в переписке тикета как ответ. */
 export async function resolveConflict(ticketId: string, ruling: string): Promise<string> {
+  const decision = bounded(ruling, TEXT_MAX.note)
+
   const [, comment] = await prisma.$transaction([
     prisma.ticket.update({
       where: { id: ticketId },
       data: { conflictRaisedAt: null, conflictBy: null, conflictNote: '' },
     }),
     prisma.ticketComment.create({
-      data: { ticketId, authorRole: 'bureau', body: `The bureau’s ruling: ${ruling}` },
+      data: { ticketId, authorRole: 'bureau', body: `The bureau’s ruling: ${decision}` },
     }),
   ])
 
@@ -365,6 +373,7 @@ export async function submit(ticketId: string, specialistId: string): Promise<vo
 
 /** Возврат на круг. Питает Revision Rate и First Time Right (п.12). */
 export async function requestRevision(ticketId: string, note: string): Promise<void> {
+  const text = bounded(note, TEXT_MAX.note)
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
   if (ticket.status !== 'submitted') throw new NotOpen(ticket.status)
 
@@ -380,7 +389,7 @@ export async function requestRevision(ticketId: string, note: string): Promise<v
     if (!moved) throw new NotOpen('revision')
 
     await tx.ticketComment.create({
-      data: { ticketId, authorRole: 'bureau', body: note },
+      data: { ticketId, authorRole: 'bureau', body: text },
     })
   })
 }
@@ -473,12 +482,15 @@ export async function attachArtifact(
   specialistId: string,
   artifact: { name: string; url: string; kind: string; source?: string },
 ): Promise<void> {
+  const name = bounded(artifact.name, TEXT_MAX.title)
+  const url = bounded(artifact.url, TEXT_MAX.url)
+
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (ticket.specialistId !== specialistId) throw new NotYours()
   if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
 
-  await prisma.artifact.create({ data: { ticketId, ...artifact } })
+  await prisma.artifact.create({ data: { ticketId, ...artifact, name, url } })
 }
 
 /**
@@ -497,6 +509,7 @@ export async function uploadArtifact(
   specialistId: string,
   file: { name: string; kind: string; bytes: Uint8Array; contentType: string },
 ): Promise<string> {
+  const name = bounded(file.name, TEXT_MAX.title)
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (ticket.specialistId !== specialistId) throw new NotYours()
@@ -509,7 +522,7 @@ export async function uploadArtifact(
   const artifact = await prisma.artifact.create({
     data: {
       ticketId,
-      name: file.name,
+      name,
       kind: file.kind,
       sizeBytes: file.bytes.byteLength,
       contentType: file.contentType,
@@ -546,17 +559,20 @@ export async function generateRender(
   prompt: string,
   name: string,
 ): Promise<void> {
+  const title = bounded(name, TEXT_MAX.title)
+  const ask = bounded(prompt, TEXT_MAX.note)
+
   const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
 
   if (ticket.specialistId !== specialistId) throw new NotYours()
   if (ticket.status === 'blocked') throw new NotOpen(ticket.status)
 
-  const image = await images().generate({ key: ticket.discipline, title: name, prompt })
+  const image = await images().generate({ key: ticket.discipline, title, prompt: ask })
 
   await prisma.artifact.create({
     data: {
       ticketId,
-      name,
+      name: title,
       url: image.url,
       kind: 'render',
       source: image.source === 'stub' ? 'generated' : `generated:${image.source}`,

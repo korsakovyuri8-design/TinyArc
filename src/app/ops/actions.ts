@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
+import { TEXT_MAX, TooMuchText, bounded } from '@/lib/text'
 import { allow, forgive } from '@/lib/guard'
 import { assistant } from '@/lib/assist'
 import { mailer, sendAccessKey } from '@/lib/mail'
@@ -154,7 +155,13 @@ export async function setTicketSpec(_prev: OpsState, formData: FormData): Promis
   await requireOperator()
 
   const ticketId = String(formData.get('ticketId') ?? '')
-  const spec = String(formData.get('spec') ?? '').trim()
+
+  let spec: string
+  try {
+    spec = bounded(String(formData.get('spec') ?? ''), TEXT_MAX.spec)
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
+  }
 
   await prisma.ticket.update({ where: { id: ticketId }, data: { spec } })
 
@@ -213,9 +220,12 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
       inboundArtifacts: inbound.map((a) => a.name),
     })
 
+    // Черновик приходит из слоя помощников, а не от человека, — и потолок ему
+    // нужен ровно поэтому: что вернёт модель, здесь никто не обещает.
     const spec = [draft.spec, '', 'Check on acceptance:', ...draft.checklist.map((c) => `— ${c}`)]
       .join('\n')
       .trim()
+      .slice(0, TEXT_MAX.spec)
 
     await prisma.ticket.update({ where: { id: ticketId }, data: { spec } })
     revalidatePath(`/ops/projects/${ticket.projectId}`)
@@ -505,20 +515,26 @@ export async function resolveTicketConflict(_prev: OpsState, formData: FormData)
 
   if (!ruling) return { error: 'A ruling with no text settles nothing.' }
 
-  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
-  const rulingId = await resolveConflict(ticketId, ruling)
+  try {
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+    const rulingId = await resolveConflict(ticketId, ruling)
 
-  // Работа стояла, пока шёл спор, и теперь пошла: срок идёт снова, значит
-  // человека надо позвать — как и на открытии задачи.
-  const told = await conflictResolved(ticketId, rulingId).catch((error) => {
-    console.error('Письмо о решении не ушло:', error)
-    return 'failed' as const
-  })
+    // Работа стояла, пока шёл спор, и теперь пошла: срок идёт снова, значит
+    // человека надо позвать — как и на открытии задачи.
+    const told = await conflictResolved(ticketId, rulingId).catch((error) => {
+      console.error('Письмо о решении не ушло:', error)
+      return 'failed' as const
+    })
 
-  revalidatePath(`/ops/projects/${ticket.projectId}`)
+    revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return {
-    message: `The ruling is written into the ticket and the conflict is cleared. ${deliveryNote(told, 'The specialist')}`,
+    return {
+      message: `The ruling is written into the ticket and the conflict is cleared. ${deliveryNote(told, 'The specialist')}`,
+    }
+  } catch (error) {
+    // Без этого отказ сервиса выпадал из действия наружу, и оператор получал
+    // экран ошибки вместо ответа: очередь при этом теряется посреди дня.
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
   }
 }
 
@@ -529,20 +545,24 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
   const body = String(formData.get('body') ?? '').trim()
   if (!body) return { error: 'The comment is empty.' }
 
-  const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
-  const commentId = await comment(ticketId, { role: 'bureau' }, body)
+  try {
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+    const commentId = await comment(ticketId, { role: 'bureau' }, body)
 
-  // Реплика бюро — это то, после чего от человека чего-то ждут: вопрос про
-  // срок, уточнение постановки, напоминание. Без письма он прочтёт её в тот
-  // день, когда сам зайдёт на доску, — то есть после срока.
-  const told = await ticketCommented(commentId).catch((error) => {
-    console.error('Письмо о реплике не ушло:', error)
-    return 'failed' as const
-  })
+    // Реплика бюро — это то, после чего от человека чего-то ждут: вопрос про
+    // срок, уточнение постановки, напоминание. Без письма он прочтёт её в тот
+    // день, когда сам зайдёт на доску, — то есть после срока.
+    const told = await ticketCommented(commentId).catch((error) => {
+      console.error('Письмо о реплике не ушло:', error)
+      return 'failed' as const
+    })
 
-  revalidatePath(`/ops/projects/${ticket.projectId}`)
+    revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-  return { message: `Written into the ticket. ${deliveryNote(told, 'The specialist')}` }
+    return { message: `Written into the ticket. ${deliveryNote(told, 'The specialist')}` }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'That did not work.' }
+  }
 }
 
 /**
@@ -552,10 +572,24 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
  * до того как в базе появятся записи и уйдут письма: столбец, названный не так,
  * тихо потерялся бы, и обнаружилось бы это на первом прогоне отбора.
  */
+/*
+ * Потолок на таблицу импорта.
+ *
+ * Разбор идёт в памяти целиком, и до сих пор его ограничивал только предел
+ * тела серверного действия — который поднят до пятидесяти мегабайт ради
+ * чертежей. Пятьдесят мегабайт CSV в разборе это не «медленно», это упавший
+ * процесс, унёсший с собой всех, кто в этот момент работал.
+ */
+const TOO_MUCH_CSV =
+  'That table is too large to read in one go. Split it into parts and import them one after another.'
+
 export async function previewIntake(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
   const text = String(formData.get('csv') ?? '')
+
+  if (text.length > TEXT_MAX.csv) return { error: TOO_MUCH_CSV }
+
   const intake = readIntake(text)
 
   if (intake.rows.length === 0) {
@@ -611,7 +645,11 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
 export async function runIntake(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
-  const intake = readIntake(String(formData.get('csv') ?? ''))
+  const csv = String(formData.get('csv') ?? '')
+
+  if (csv.length > TEXT_MAX.csv) return { error: TOO_MUCH_CSV }
+
+  const intake = readIntake(csv)
   const drafts = intake.rows.flatMap((r) => (r.ok ? [r.draft] : []))
 
   if (drafts.length === 0) {
@@ -687,13 +725,21 @@ export async function reinviteSpecialist(_prev: OpsState, formData: FormData): P
   await requireOperator()
 
   const id = String(formData.get('specialistId') ?? '')
-  const { sent, key } = await reinvite(id)
 
-  revalidatePath('/ops/applications')
+  try {
+    const { sent, key } = await reinvite(id)
 
-  return sent
-    ? { message: 'The invitation was sent again.' }
-    : { message: `The email did not go out. Key: ${key} — hand it over yourself.` }
+    revalidatePath('/ops/applications')
+
+    return sent
+      ? { message: 'The invitation was sent again.' }
+      : { message: `The email did not go out. Key: ${key} — hand it over yourself.` }
+  } catch (error) {
+    // Неизвестный идентификатор приходит прямым запросом, а не из списка:
+    // серверное действие достижимо и без формы.
+    console.error('Приглашение не отправлено повторно:', error)
+    return { error: 'The invitation did not go out again. The key is visible in the invited list.' }
+  }
 }
 
 /**
@@ -722,7 +768,9 @@ export async function answerClient(_prev: OpsState, formData: FormData): Promise
       message: `The answer is in the project cabinet. ${deliveryNote(told, 'The client')}`,
     }
   } catch (error) {
-    if (error instanceof MessageRefused) return { error: error.message }
+    if (error instanceof MessageRefused || error instanceof TooMuchText) {
+      return { error: error.message }
+    }
 
     console.error('The answer to the client did not go out:', error)
     return { error: 'It did not send.' }
@@ -780,7 +828,9 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
 
     return { message: `${marked} ${deliveryNote(told, 'The client')}` }
   } catch (error) {
-    if (error instanceof BillingRefused) return { error: error.message }
+    if (error instanceof BillingRefused || error instanceof TooMuchText) {
+      return { error: error.message }
+    }
 
     console.error('The payment was not marked:', error)
     return { error: 'Marking the payment failed.' }
@@ -823,7 +873,9 @@ export async function voidProjectInvoice(_prev: OpsState, formData: FormData): P
           : 'The invoice is void. No new one was issued: payment is not what is holding the stage right now.',
     }
   } catch (error) {
-    if (error instanceof BillingRefused) return { error: error.message }
+    if (error instanceof BillingRefused || error instanceof TooMuchText) {
+      return { error: error.message }
+    }
 
     console.error('The invoice was not voided:', error)
     return { error: 'Voiding the invoice failed.' }

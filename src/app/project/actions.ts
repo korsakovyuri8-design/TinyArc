@@ -8,6 +8,7 @@ import { ApprovalRefused, approveStage } from '@/lib/services/approval'
 import { MessageRefused, say } from '@/lib/services/dialogue'
 import { applyGates, refreshProjectStatus } from '@/lib/services/relay'
 import { currentProjectId } from '@/lib/session'
+import { TooMuchText } from '@/lib/text'
 
 export type ProjectState = { error?: string; message?: string }
 
@@ -35,7 +36,9 @@ export async function sendToBureau(
 
     return { message: 'Sent to the bureau. The reply will appear right here.' }
   } catch (error) {
-    if (error instanceof MessageRefused) return { error: error.message }
+    if (error instanceof MessageRefused || error instanceof TooMuchText) {
+      return { error: error.message }
+    }
 
     console.error('Сообщение бюро не отправлено:', error)
     return { error: 'It did not send. Please try again.' }
@@ -80,7 +83,9 @@ export async function approveProjectStage(
     // оплаты. Что именно мешает — видно ниже на странице.
     return { message: 'Stage confirmed.' }
   } catch (error) {
-    if (error instanceof ApprovalRefused) return { error: error.message }
+    if (error instanceof ApprovalRefused || error instanceof TooMuchText) {
+      return { error: error.message }
+    }
 
     console.error('Стадия не подтверждена:', error)
     return { error: 'That did not work. Write to the bureau and we will sort it out.' }

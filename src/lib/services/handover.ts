@@ -20,6 +20,7 @@ import { SPECIALIZATIONS, type Specialization } from '@/engine/taxonomy'
 import type { RequiredRole } from '@/engine/taxonomy'
 import { parseList, toProfile, toRequirements } from '../rows'
 import { prisma } from '../db'
+import { TEXT_MAX, bounded } from '../text'
 import { comment } from './relay'
 
 /** Статусы задач, которые ещё не закрыты и потому переходят к заменяющему. */
@@ -43,7 +44,9 @@ export async function stepOut(
   projectId: string,
   reason: string,
 ): Promise<HandoverResult> {
-  if (!reason.trim()) {
+  const why = bounded(reason, TEXT_MAX.line)
+
+  if (!why) {
     throw new HandoverRefused('Leaving is not recorded without a reason: whoever replaces you will read it.')
   }
 
@@ -106,7 +109,7 @@ export async function stepOut(
           projectId,
           specialistId,
           discipline: slot.discipline,
-          reason: reason.trim(),
+          reason: why,
         },
       }),
       prisma.teamSlot.delete({ where: { id: slot.id } }),
@@ -120,7 +123,7 @@ export async function stepOut(
       await comment(
         ticket.id,
         { role: 'bureau' },
-        `The contributor has left the project: ${reason.trim()} No replacement was found in the run — the task is waiting on the bureau.`,
+        `The contributor has left the project: ${why} No replacement was found in the run — the task is waiting on the bureau.`,
       )
     }
 
@@ -133,7 +136,7 @@ export async function stepOut(
         projectId,
         specialistId,
         discipline: slot.discipline,
-        reason: reason.trim(),
+        reason: why,
         replacedById: choice.specialistId,
       },
     }),
@@ -154,7 +157,7 @@ export async function stepOut(
     await comment(
       ticket.id,
       { role: 'bureau' },
-      `The role has been handed over: the previous contributor left the project. Reason: ${reason.trim()}`,
+      `The role has been handed over: the previous contributor left the project. Reason: ${why}`,
     )
   }
 

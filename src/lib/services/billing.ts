@@ -17,6 +17,7 @@ import type { RelayTicket } from '@/engine/relay'
 import { priceStage, type PriceBasis, type PricedProject } from '@/engine/pricing'
 import { DOC_STAGE_ORDER, type DocStage, type Jurisdiction, type Typology } from '@/engine/taxonomy'
 import { prisma } from '../db'
+import { TEXT_MAX, bounded } from '../text'
 import { approvedStages } from './approval'
 
 /**
@@ -202,7 +203,7 @@ export async function voidInvoice(invoiceId: string, reason: string): Promise<Do
 
   if (invoice.status === 'void') return invoice.stage as DocStage
 
-  const note = reason.trim()
+  const note = bounded(reason, TEXT_MAX.line)
   if (!note) {
     throw new BillingRefused('Say why you are voiding it: the client has already seen this invoice.')
   }
@@ -215,7 +216,7 @@ export async function voidInvoice(invoiceId: string, reason: string): Promise<Do
       // уникальный ключ освобождается под новый счёт. NULL в уникальном
       // индексе ни с чем не конфликтует.
       liveStage: null,
-      paidNote: note.slice(0, 400),
+      paidNote: note,
     },
   })
 
@@ -229,6 +230,7 @@ export async function voidInvoice(invoiceId: string, reason: string): Promise<Do
  * договорились иначе, и вернуть его надо явным действием, а не оплатой.
  */
 export async function markPaid(invoiceId: string, note: string): Promise<DocStage> {
+  const confirmation = bounded(note, TEXT_MAX.line)
   const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } })
   if (!invoice) throw new BillingRefused('There is no such invoice.')
 
@@ -246,7 +248,7 @@ export async function markPaid(invoiceId: string, note: string): Promise<DocStag
    */
   await prisma.invoice.updateMany({
     where: { id: invoiceId, status: 'issued' },
-    data: { status: 'paid', paidAt: new Date(), paidNote: note.trim().slice(0, 400) },
+    data: { status: 'paid', paidAt: new Date(), paidNote: confirmation },
   })
 
   return invoice.stage as DocStage

@@ -14,6 +14,7 @@
  */
 
 import { prisma } from '../db'
+import { TEXT_MAX, bounded } from '../text'
 
 /** Дольше этого вопрос без ответа — уже не задержка, а неуважение. */
 export const ANSWER_SLA_HOURS = 24
@@ -21,9 +22,11 @@ export const ANSWER_SLA_HOURS = 24
 export class MessageRefused extends Error {}
 
 export async function say(projectId: string, body: string): Promise<void> {
-  const text = body.trim()
+  // Потолок общий с остальным свободным текстом: свой здесь был первым и
+  // единственным, а держать одно правило в двух местах значит однажды поднять
+  // его в одном.
+  const text = bounded(body, TEXT_MAX.note)
   if (!text) throw new MessageRefused('The message is empty.')
-  if (text.length > 4000) throw new MessageRefused('Too long: up to four thousand characters.')
 
   await prisma.clientMessage.create({
     data: { projectId, authorRole: 'client', body: text },
@@ -37,7 +40,7 @@ export async function say(projectId: string, body: string): Promise<void> {
  * вопроса подряд — это один разговор, а не три очереди.
  */
 export async function answer(projectId: string, body: string): Promise<string> {
-  const text = body.trim()
+  const text = bounded(body, TEXT_MAX.note)
   if (!text) throw new MessageRefused('The answer is empty.')
 
   const [created] = await prisma.$transaction([

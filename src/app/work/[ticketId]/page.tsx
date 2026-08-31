@@ -159,7 +159,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                         {...(isOurs(file) ? {} : { target: '_blank', rel: 'noreferrer noopener' })}
                       >
                         {file.name}
-                      </a>
+                      </a>{' '}
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
                         {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind} ·{' '}
                         {DISCIPLINE_LABELS[file.fromDiscipline as Discipline]}
@@ -197,7 +197,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                         {...(isOurs(file) ? {} : { target: '_blank', rel: 'noreferrer noopener' })}
                       >
                         {file.name}
-                      </a>
+                      </a>{' '}
                       <span className="dim" style={{ fontSize: '0.8rem', marginLeft: 10 }}>
                         {ARTIFACT_KIND_LABELS[file.kind] ?? file.kind}
                       </span>

@@ -22,10 +22,10 @@
  * том, как задача до этого перехода дошла.
  */
 
-import { DOC_STAGES, type DocStage } from '../src/engine/taxonomy'
+import type { DocStage } from '../src/engine/taxonomy'
 import { dueDate } from '../src/engine/relay'
-import { priceStage } from '../src/engine/pricing'
 import { prisma } from '../src/lib/db'
+import { unpaidInvoice } from './stand.mts'
 import { accept, claim, requestRevision, submit } from '../src/lib/services/relay'
 import { markPaid } from '../src/lib/services/billing'
 import { approveStage } from '../src/lib/services/approval'
@@ -74,59 +74,6 @@ async function claimable(count: number) {
   }
 
   return found
-}
-
-/** Неоплаченный счёт. Если на стенде такого нет — выставляется свой. */
-async function unpaid() {
-  const issued = await prisma.invoice.findFirst({
-    where: { status: 'issued' },
-    select: { id: true },
-  })
-
-  if (issued) return issued
-
-  for (const project of await prisma.project.findMany({
-    select: {
-      id: true,
-      typology: true,
-      jurisdiction: true,
-      areaSqm: true,
-      targetStage: true,
-    },
-  })) {
-    const live = await prisma.invoice.findMany({
-      where: { projectId: project.id, status: { not: 'void' } },
-      select: { stage: true },
-    })
-
-    const taken = new Set(live.map((row) => row.stage))
-    const stage = DOC_STAGES.find((s) => !taken.has(s))
-    if (!stage) continue
-
-    const basis = priceStage(
-      {
-        typology: project.typology as never,
-        jurisdiction: project.jurisdiction as never,
-        areaSqm: project.areaSqm,
-        targetStage: project.targetStage as DocStage,
-      },
-      stage,
-    )
-
-    return prisma.invoice.create({
-      data: {
-        projectId: project.id,
-        stage,
-        liveStage: stage,
-        amount: basis.amount,
-        currency: basis.currency,
-        basisJson: JSON.stringify(basis),
-      },
-      select: { id: true },
-    })
-  }
-
-  return null
 }
 
 /**
@@ -251,7 +198,7 @@ check(spare.length >= 3, `задач для проверки гонок: ${spare
 /* --- Оплата: дата поступления ---------------------------------------------- */
 
 {
-  const invoice = await unpaid()
+  const invoice = await unpaidInvoice()
 
   if (!invoice) {
     check(false, 'не удалось выставить счёт для проверки')

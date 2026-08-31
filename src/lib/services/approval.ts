@@ -14,6 +14,7 @@ import { DOC_STAGE_ORDER, type DocStage } from '@/engine/taxonomy'
 import { awaitingClient } from '@/engine/relay'
 import type { RelayTicket } from '@/engine/relay'
 import { prisma } from '../db'
+import { TEXT_MAX, bounded } from '../text'
 
 /** Дольше этого стадия ждёт заказчика — бюро пора спросить. */
 export const APPROVAL_NUDGE_HOURS = 48
@@ -68,6 +69,7 @@ export async function approveStage(
   stage: DocStage,
   note: string,
 ): Promise<void> {
+  const said = bounded(note, TEXT_MAX.note)
   const ready = await stagesAwaitingClient(projectId)
 
   if (!ready.includes(stage)) {
@@ -87,7 +89,7 @@ export async function approveStage(
    */
   try {
     await prisma.stageApproval.create({
-      data: { projectId, stage, note: note.trim() },
+      data: { projectId, stage, note: said },
     })
   } catch {
     // Уже подтверждено — вторым нажатием или вторым запросом. Это не ошибка.
