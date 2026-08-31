@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod'
+import { clean } from './text'
 import {
   CLIMATE_ZONES,
   DISCIPLINES,
@@ -62,7 +63,7 @@ const emailField = (message: string) =>
  * сторожит его `emailField` рядом.
  */
 export function readEmail(raw: string): string {
-  return raw.trim().toLowerCase()
+  return clean(raw).trim().toLowerCase()
 }
 
 /**
@@ -190,12 +191,23 @@ export function everyDisciplineCovered(input: ApplicationInput): boolean {
 export function fromFormData(formData: FormData, multi: string[]): Record<string, unknown> {
   const raw: Record<string, unknown> = {}
 
+  /*
+   * Управляющие знаки снимаются здесь, на единственном входе всех форм.
+   *
+   * Нулевой байт Postgres не хранит: запись с ним отвечает ошибкой кодировки.
+   * На SQLite она проходит, поэтому на стенде такой брифинг сохраняется, а в
+   * бою тот же человек получает пятисотку — расхождение, которое видно только
+   * там, где чинить дороже всего.
+   */
+  const strip = (value: FormDataEntryValue) =>
+    typeof value === 'string' ? clean(value) : value
+
   for (const [key, value] of formData.entries()) {
     if (multi.includes(key)) continue
-    raw[key] = value
+    raw[key] = strip(value)
   }
 
-  for (const key of multi) raw[key] = formData.getAll(key)
+  for (const key of multi) raw[key] = formData.getAll(key).map(strip)
 
   return raw
 }
@@ -241,7 +253,7 @@ export function accessKey(prefix: string): string {
  * ключа, а здесь оно просто снимает различие, которого в ключе никогда не было.
  */
 export function readKey(raw: string): string {
-  return raw.trim().toLowerCase()
+  return clean(raw).trim().toLowerCase()
 }
 
 /** Виден тесту: приведение регистра допустимо ровно потому, что он таков. */

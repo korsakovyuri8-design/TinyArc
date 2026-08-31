@@ -12,6 +12,7 @@
  * нулевой, а порог — восемь.
  */
 
+import { clean } from '../text'
 import {
   CLIMATE_ALIASES,
   DISCIPLINE_ALIASES,
@@ -170,7 +171,10 @@ function draftFrom(row: Row): { draft: IntakeDraft; unrecognised: string[] } {
 
 /** Разбор всей выгрузки. Порядок строк сохраняется — по нему человек ищет. */
 export function readIntake(text: string): Intake {
-  const rows = parseCsv(text)
+  // Управляющие знаки снимаются до разбора: таблицу сюда вставляют из чужого
+  // файла, а нулевой байт Postgres не хранит вовсе — импорт упал бы уже на
+  // записи, разобрав всё до конца.
+  const rows = parseCsv(clean(text))
 
   if (rows.length === 0) {
     return { rows: [], recognisedColumns: [], ignoredColumns: [] }

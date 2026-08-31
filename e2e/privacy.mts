@@ -54,6 +54,25 @@ console.log('Права из политики')
  */
 const RUNNING = ['draft', 'assembled', 'delivering']
 
+const WANTED = {
+  id: true,
+  accessKey: true,
+  email: true,
+  displayName: true,
+  deliveredTickets: true,
+} as const
+
+/*
+ * Подопытный выбирается однозначно, а не «первым попавшимся».
+ *
+ * `findFirst` без порядка отдаёт то, что база сочла удобным, и это не одно и
+ * то же на SQLite и на Postgres: прогон по живому Postgres выбрал человека без
+ * единого письма, и проверка переезда журнала честно объявила, что переезжать
+ * нечему. Ошибка была в выборе подопытного, а не в обезличивании.
+ *
+ * Порядок задан по ключу — он у каждого свой и не меняется, — а к условиям
+ * добавлено то, что проверкам действительно нужно: письма в журнале.
+ */
 const specialist =
   (await prisma.specialist.findFirst({
     where: {
@@ -61,12 +80,27 @@ const specialist =
       deliveredTickets: { gt: 0 },
       slots: { some: { project: { status: { in: RUNNING } } } },
       tickets: { some: { status: { in: ['blocked', 'open', 'in_progress', 'revision'] } } },
+      // Письма нужны проверке переезда журнала: у человека без них она
+      // проходит вхолостую и ничего не доказывает.
+      email: { in: (await prisma.notification.findMany({ select: { email: true } })).map((n) => n.email) },
     },
-    select: { id: true, accessKey: true, email: true, displayName: true, deliveredTickets: true },
+    orderBy: { accessKey: 'asc' },
+    select: WANTED,
+  })) ??
+  (await prisma.specialist.findFirst({
+    where: {
+      status: 'active',
+      deliveredTickets: { gt: 0 },
+      slots: { some: { project: { status: { in: RUNNING } } } },
+      tickets: { some: { status: { in: ['blocked', 'open', 'in_progress', 'revision'] } } },
+    },
+    orderBy: { accessKey: 'asc' },
+    select: WANTED,
   })) ??
   (await prisma.specialist.findFirst({
     where: { status: 'active', deliveredTickets: { gt: 0 } },
-    select: { id: true, accessKey: true, email: true, displayName: true, deliveredTickets: true },
+    orderBy: { accessKey: 'asc' },
+    select: WANTED,
   }))
 
 if (!specialist) {

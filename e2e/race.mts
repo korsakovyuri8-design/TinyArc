@@ -203,23 +203,50 @@ check(spare.length >= 3, `задач для проверки гонок: ${spare
   if (!invoice) {
     check(false, 'не удалось выставить счёт для проверки')
   } else {
-    await Promise.allSettled([
-      markPaid(invoice.id, 'первое поступление'),
-      markPaid(invoice.id, 'второе нажатие'),
-      markPaid(invoice.id, 'третье нажатие'),
-    ])
+    const clicks = ['первое нажатие', 'второе нажатие', 'третье нажатие']
+
+    await Promise.allSettled(clicks.map((note) => markPaid(invoice.id, note)))
 
     const after = await prisma.invoice.findUniqueOrThrow({
       where: { id: invoice.id },
-      select: { status: true, paidNote: true },
+      select: { status: true, paidNote: true, paidAt: true },
     })
 
     check(after.status === 'paid', 'счёт оплачен')
-    // Дата поступления — факт, а не последнее нажатие: перезаписать её вторым
-    // щелчком значит потерять то, чем оператор её подтвердил.
+
+    /*
+     * Из трёх одновременных нажатий записалось ровно одно — какое именно, не
+     * определено, и определённым быть не может.
+     *
+     * Первая редакция проверки ждала здесь первое по порядку вызова и
+     * проходила на SQLite: там пишет один, и выигрывает тот, кто начал раньше.
+     * На живом Postgres проверка упала — соединений несколько, и блокировку
+     * строки берёт тот, кто успел, а не тот, кого позвали первым. Ошибка была
+     * в проверке, а не в коде: оператор, нажавший трижды, получает одно из
+     * своих же трёх примечаний.
+     */
     check(
-      after.paidNote === 'первое поступление',
-      `примечание не переписано вторым нажатием: «${after.paidNote}»`,
+      clicks.includes(after.paidNote),
+      `записано одно из нажатий целиком: «${after.paidNote}»`,
+    )
+
+    /*
+     * А вот это — то, ради чего проверка и стоит: отметка оплаты не
+     * переписывается позже. Дата поступления и то, чем её подтвердили, —
+     * факт, а не последнее нажатие.
+     */
+    const was = { note: after.paidNote, at: after.paidAt?.getTime() }
+
+    await markPaid(invoice.id, 'нажатие через минуту')
+
+    const later = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+      select: { paidNote: true, paidAt: true },
+    })
+
+    check(
+      later.paidNote === was.note && later.paidAt?.getTime() === was.at,
+      `повторная отметка не переписала ни примечание, ни дату: «${later.paidNote}»`,
     )
   }
 }

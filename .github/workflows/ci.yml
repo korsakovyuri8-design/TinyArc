@@ -3,10 +3,17 @@
 # Render развёртывает ветку автоматически, и без этой стены сломанное уезжает
 # на живой домен прежде, чем кто-то заметит. Здесь оно останавливается.
 #
-# Две работы вместо одной намеренно. Первая — быстрая: тесты, типы, сборка;
+# Три работы вместо одной намеренно. Первая — быстрая: тесты, типы, сборка;
 # она отвечает за минуту-две и ловит почти всё. Вторая поднимает сервер и
-# гоняет браузер: она медленнее и падать может по своим причинам, и смешивать
-# их значит не понимать по красному значку, что именно сломалось.
+# гоняет браузер. Третья делает то же самое на настоящем Postgres.
+#
+# Смешивать их значит не понимать по красному значку, что именно сломалось.
+#
+# Третья появилась после того, как прогон по живому Postgres нашёл две вещи,
+# которых на файловой базе не видно вовсе: нулевой байт в тексте она хранит, а
+# Postgres отвечает на него ошибкой кодировки, и одновременные записи она
+# сериализует, а Postgres — нет. Разработка идёт на SQLite и будет идти
+# дальше; расхождения ловятся здесь, а не на живых заказчиках.
 
 name: Проверки
 
@@ -108,3 +115,75 @@ jobs:
           # пути, как в песочнице разработки: пустое значение уводит запуск на
           # тот, который нашёл сам Playwright.
           E2E_CHROMIUM: ''
+
+  postgres:
+    name: Боевая база
+    runs-on: ubuntu-latest
+
+    # Та же версия, что у хостинга: разница в версии — это разница в поведении.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bureau
+          POSTGRES_PASSWORD: bureau
+          POSTGRES_DB: bureau
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://bureau:bureau@127.0.0.1:5432/bureau
+      BUREAU_OPS_PASSWORD: ci-only-not-a-secret
+      BUREAU_SESSION_SECRET: ci-only-not-a-secret-either
+      E2E_CHROMIUM: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Браузер
+        run: npx playwright install --with-deps chromium
+
+      - name: Клиент Prisma
+        run: npx prisma generate
+
+      # Цепочка миграций применяется целиком, с нуля. Локально этого не видно
+      # вовсе: разработка идёт через db push, без миграций.
+      - name: Миграции применяются
+        run: npx prisma migrate deploy
+
+      # И приводят ровно к объявленной схеме. Расхождение между цепочкой и
+      # схемой проходит все тесты и ломается на выкладке — там, где чинить
+      # дороже всего.
+      - name: Цепочка совпадает со схемой
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.postgres.prisma --exit-code
+
+      - name: Пул
+        run: npm run db:seed
+
+      - name: Сборка
+        run: npm run build
+
+      - name: Сервер и сквозные пути
+        run: |
+          npx next start -p 3100 &
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:3100/api/health > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:3100/api/health > /dev/null || {
+            echo 'Сервер не поднялся за минуту.'
+            exit 1
+          }
+          npm run e2e
