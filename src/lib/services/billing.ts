@@ -279,13 +279,39 @@ export type QueuedInvoice = {
  * месте и меняет статус на «оплачен». Это к тому же то, что бюро и так хочет
  * видеть — за что уже заплатили.
  */
-export async function invoiceQueue(): Promise<QueuedInvoice[]> {
-  const rows = await prisma.invoice.findMany({
-    where: { status: { not: 'void' } },
-    include: { project: { select: { title: true, status: true } } },
-    orderBy: { issuedAt: 'asc' },
-  })
+/**
+ * Сколько оплаченных счетов показывается рядом с очередью.
+ *
+ * Оплаченные нужны не как история, а как подтверждение действия (см. ниже), и
+ * для этого хватает последних. Без потолка панель тянула каждый счёт за всю
+ * историю бюро на каждое открытие — и рисовала их все.
+ */
+export const PAID_SHOWN = 20
 
+export async function invoiceQueue(): Promise<QueuedInvoice[]> {
+  /*
+   * Два запроса, а не один с потолком.
+   *
+   * Неоплаченные — это и есть работа, и обрезать их нельзя: срезанный счёт
+   * никто не отметит, потому что его никто не увидит. Их количество ограничено
+   * по построению — живыми стадиями живых проектов. А оплаченные обрезаются,
+   * потому что их число не ограничено ничем и растёт всю жизнь бюро.
+   */
+  const [issued, paid] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { status: 'issued' },
+      include: { project: { select: { title: true, status: true } } },
+      orderBy: { issuedAt: 'asc' },
+    }),
+    prisma.invoice.findMany({
+      where: { status: 'paid' },
+      include: { project: { select: { title: true, status: true } } },
+      orderBy: { paidAt: 'desc' },
+      take: PAID_SHOWN,
+    }),
+  ])
+
+  const rows = [...issued, ...paid]
   const now = Date.now()
 
   return rows

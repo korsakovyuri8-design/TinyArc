@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { amount, date, dateTime } from '@/lib/format'
+import { fill } from '@/lib/fill'
 import { ALERT_ACTIONS, ALERT_LABELS, alertAudience, projectHeat } from '@/engine/pm'
 import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
@@ -9,7 +10,7 @@ import { lostProjects } from '@/lib/services/demand'
 import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
 import { DIRECTION_NUDGE_HOURS, awaitingDirection } from '@/lib/services/direction'
-import { INVOICE_NUDGE_HOURS, invoiceQueue } from '@/lib/services/billing'
+import { INVOICE_NUDGE_HOURS, PAID_SHOWN, invoiceQueue } from '@/lib/services/billing'
 import { DOC_STAGE_LABELS } from '@/lib/labels'
 import type { DocStage } from '@/engine/taxonomy'
 import { roleName } from '@/lib/gap'
@@ -234,6 +235,19 @@ export default async function OpsPage() {
                   )}
                 </div>
               ))}
+
+              {/*
+                Список не бесконечный, и об этом сказано прямо. Неоплаченные
+                показаны все — это работа; оплаченные обрезаны последними,
+                потому что их число растёт всю жизнь бюро, а нужны они здесь
+                только как подтверждение только что нажатого.
+              */}
+              <p className="dim" style={{ fontSize: '0.85rem' }}>
+                {fill(
+                  'Every unpaid invoice is shown. Of the paid ones — the latest {count}; the rest are on the project pages.',
+                  { count: PAID_SHOWN },
+                )}
+              </p>
             </div>
           )}
         </div>

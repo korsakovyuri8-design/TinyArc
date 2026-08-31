@@ -42,6 +42,7 @@ const APPLIED: Record<string, string> = {
   '0009_consent_locale': 'fee5efc6b6049b3084f7cd68a58d1426',
   '0010_english_only': '96624dcdb91443fb14bc4f46fa2a5f4e',
   '0011_privacy_actions': '6a4087d13fc16028fadb11883202e421',
+  '0012_panel_indexes': '59f579d248326352849cd0608d3ab43f',
 }
 
 function checksum(name: string): string {
