@@ -15,6 +15,8 @@ import {
   uploadArtifact,
 } from '@/lib/services/relay'
 import { HandoverRefused, stepOut } from '@/lib/services/handover'
+import { allow } from '@/lib/guard'
+import { retryMessage } from '@/lib/rate-limit'
 import { currentSpecialistId } from '@/lib/session'
 
 export type WorkState = { error?: string; message?: string }
@@ -120,6 +122,14 @@ export async function makeRender(_prev: WorkState, formData: FormData): Promise<
   const name = String(formData.get('name') ?? '').trim()
 
   if (!prompt) return { error: 'Describe what the image should show.' }
+
+  /*
+   * Единственное действие специалиста, которое стоит денег наружу. Предел
+   * мягкий — за вечер вариантов рисуют десятками, — и стоит он ровно там, где
+   * нажатие перестало быть осмысленным.
+   */
+  const verdict = await allow('render')
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
 
   return act(
     formData,

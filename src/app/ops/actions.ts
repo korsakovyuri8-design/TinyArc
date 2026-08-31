@@ -181,6 +181,11 @@ export async function setTicketSpec(_prev: OpsState, formData: FormData): Promis
 export async function draftTicketSpec(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
+  // Помощник обращается к внешней модели: предел здесь про счёт, а не про
+  // доступ — вход в панель уже закрыт паролем.
+  const assistVerdict = await allow('assist')
+  if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
+
   const ticketId = String(formData.get('ticketId') ?? '')
 
   const ticket = await prisma.ticket.findUniqueOrThrow({
@@ -249,6 +254,11 @@ export async function summariseTicketConflict(
 ): Promise<OpsState> {
   await requireOperator()
 
+  // Помощник обращается к внешней модели: предел здесь про счёт, а не про
+  // доступ — вход в панель уже закрыт паролем.
+  const assistVerdict = await allow('assist')
+  if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
+
   const ticketId = String(formData.get('ticketId') ?? '')
 
   const ticket = await prisma.ticket.findUniqueOrThrow({
@@ -287,6 +297,11 @@ export async function summariseTicketConflict(
  */
 export async function proposeRating(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
+
+  // Помощник обращается к внешней модели: предел здесь про счёт, а не про
+  // доступ — вход в панель уже закрыт паролем.
+  const assistVerdict = await allow('assist')
+  if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
   const id = String(formData.get('specialistId') ?? '')
 
@@ -337,6 +352,11 @@ export async function checkTicketCompleteness(
 ): Promise<OpsState> {
   await requireOperator()
 
+  // Помощник обращается к внешней модели: предел здесь про счёт, а не про
+  // доступ — вход в панель уже закрыт паролем.
+  const assistVerdict = await allow('assist')
+  if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
+
   const ticketId = String(formData.get('ticketId') ?? '')
 
   const ticket = await prisma.ticket.findUniqueOrThrow({
@@ -381,6 +401,11 @@ export async function checkTicketCompleteness(
 export async function planBureauQueue(_prev: OpsState, _formData: FormData): Promise<OpsState> {
   await requireOperator()
 
+  // Помощник обращается к внешней модели: предел здесь про счёт, а не про
+  // доступ — вход в панель уже закрыт паролем.
+  const assistVerdict = await allow('assist')
+  if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
+
   const alerts = await alertsForBureau()
 
   if (alerts.length === 0) return { message: 'The queue is empty — nothing to work through.' }
@@ -420,6 +445,11 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
  */
 export async function draftTicketNudge(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
+
+  // Помощник обращается к внешней модели: предел здесь про счёт, а не про
+  // доступ — вход в панель уже закрыт паролем.
+  const assistVerdict = await allow('assist')
+  if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
   const ticketId = String(formData.get('ticketId') ?? '')
 
