@@ -12,6 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import config from '../../next.config'
+import { MAX_FILE_BYTES } from './storage/limits'
 
 const REQUIRED = [
   'X-Content-Type-Options',
@@ -84,5 +85,32 @@ describe('заголовки безопасности', () => {
     // он же и решает, что отдавать.
     expect(byKey.get('Cache-Control')).toContain('no-store')
     expect(byKey.get('Content-Type')).toContain('javascript')
+  })
+})
+
+/**
+ * Предел тела серверного действия.
+ *
+ * По умолчанию платформа режет его на мегабайте, и проверка размера в коде
+ * при этом не срабатывает вовсе: до неё не доходит. Поле обещало пятьдесят
+ * мегабайт, а файл в два отдавал пятисотку — проверено на стенде.
+ *
+ * Тест сторожит не число, а связь: обещание поля обязано помещаться в предел
+ * платформы. Разъехавшись, эти два числа дают ровно ту же пятисотку.
+ */
+describe('предел тела серверного действия', () => {
+  it('вмещает файл, который обещает поле', () => {
+    const limit = config.experimental?.serverActions?.bodySizeLimit
+
+    expect(typeof limit).toBe('number')
+    expect(limit as number).toBeGreaterThan(MAX_FILE_BYTES)
+  })
+
+  it('оставляет запас на служебные байты multipart', () => {
+    const limit = config.experimental!.serverActions!.bodySizeLimit as number
+
+    // Границы частей, заголовки и имена полей: десятки килобайт. Запас меньше
+    // сотни означал бы, что законный файл в потолок упирается в предел.
+    expect(limit - MAX_FILE_BYTES).toBeGreaterThanOrEqual(100 * 1024)
   })
 })

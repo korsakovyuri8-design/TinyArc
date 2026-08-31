@@ -19,9 +19,10 @@
  * Нужен запущенный сервер и BUREAU_OPS_PASSWORD.
  */
 
-import { existsSync } from 'node:fs'
+import { existsSync, rmSync, writeFileSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { prisma } from '../src/lib/db'
+import { MAX_FILE_BYTES } from '../src/lib/storage/limits'
 
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
@@ -141,6 +142,63 @@ check(
   (await author.page.innerText('main')).includes('The file is uploaded'),
   'файл загружен, а не отвергнут',
 )
+
+/*
+ * Файл в несколько мегабайт: тот самый случай, ради которого поле и заведено.
+ *
+ * Проверка стоит отдельно от предыдущей, потому что мелкий файл проходил и
+ * тогда, когда настоящий не проходил вовсе. Тело серверного действия
+ * ограничено платформой, по умолчанию — мегабайтом, и до нашей проверки
+ * размера файл просто не доезжал: специалист получал пятисотку и экран
+ * ошибки, а поле рядом обещало пятьдесят мегабайт. Проверено на стенде: два
+ * мегабайта падали, полмегабайта проходили.
+ */
+{
+  const big = '/tmp/e2e-big.pdf'
+  writeFileSync(big, Buffer.alloc(3 * 1024 * 1024, 0x41))
+
+  await author.page.fill('#name', 'Проверка e2e: набор листов')
+  await author.page.setInputFiles('#file', big)
+  await author.page.locator('form:has(#file) button[type=submit]').click()
+  await author.page.waitForTimeout(12000)
+
+  check(
+    (await author.page.innerText('main')).includes('The file is uploaded'),
+    'файл в три мегабайта доехал, а не упал пятисоткой',
+  )
+
+  rmSync(big, { force: true })
+}
+
+/*
+ * Файл сверх потолка останавливается в браузере.
+ *
+ * Проверка на сервере остаётся главной — форму обходят, — но она срабатывает
+ * после того, как файл целиком доехал, а сверх предела платформы он не
+ * доезжает вовсе. Человек обязан получить объяснение, а не ожидание и
+ * пятисотку в конце.
+ */
+{
+  const huge = '/tmp/e2e-huge.pdf'
+  writeFileSync(huge, Buffer.alloc(MAX_FILE_BYTES + 4 * 1024 * 1024, 0x41))
+
+  const before = await prisma.artifact.count({ where: { ticketId } })
+
+  await author.page.fill('#name', 'Проверка e2e: чужой архив')
+  await author.page.setInputFiles('#file', huge)
+  await author.page.waitForTimeout(1200)
+
+  const said = await author.page.innerText('main')
+  check(said.includes('over the'), 'поле сказало, что файл сверх потолка')
+
+  await author.page.locator('form:has(#file) button[type=submit]').click()
+  await author.page.waitForTimeout(4000)
+
+  const after = await prisma.artifact.count({ where: { ticketId } })
+  check(after === before, `сверхпотолочный файл не записан: ${before} → ${after}`)
+
+  rmSync(huge, { force: true })
+}
 
 await author.page.reload()
 await author.page.waitForTimeout(800)

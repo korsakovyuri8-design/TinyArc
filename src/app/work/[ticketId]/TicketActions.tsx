@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import type { Discipline } from '@/engine/taxonomy'
 import { ARTIFACT_KIND_LABELS, DISCIPLINE_LABELS } from '@/lib/labels'
 import { MAX_FILE_BYTES } from '@/lib/storage/limits'
@@ -171,7 +171,18 @@ export function RenderForm({ ticketId, hint }: { ticketId: string; hint: string 
   )
 }
 
+/**
+ * Слишком большой файл останавливается здесь, а не на сервере.
+ *
+ * Проверка на сервере осталась и остаётся главной — форму обходят. Но она
+ * срабатывает после того, как файл целиком доехал: на плохой связи это
+ * несколько минут ожидания ради отказа, который был известен сразу. Хуже
+ * того, тело серверного действия ограничено платформой, и файл сверх её
+ * предела не доходит до нашей проверки вовсе — человек получает пятисотку
+ * вместо объяснения.
+ */
 export function ArtifactForm({ ticketId }: { ticketId: string }) {
+  const [tooBig, setTooBig] = useState('')
 
   return (
     <Form action={addArtifact} ticketId={ticketId} label="Attach">
@@ -193,7 +204,37 @@ export function ArtifactForm({ ticketId }: { ticketId: string }) {
       </div>
       <div className="field">
         <label htmlFor="file">File</label>
-        <input id="file" name="file" type="file" />
+        <input
+          id="file"
+          name="file"
+          type="file"
+          onChange={(event) => {
+            const chosen = event.currentTarget.files?.[0]
+
+            if (chosen && chosen.size > MAX_FILE_BYTES) {
+              // Поле очищается: иначе отправка уйдёт с файлом, который заведомо
+              // не примут, и человек прождёт её впустую.
+              event.currentTarget.value = ''
+              setTooBig(
+                fill(
+                  'That file is {size} MB — over the {limit} MB limit. That is an archive, not a drawing: keep it elsewhere and give a link.',
+                  {
+                    size: Math.round(chosen.size / 1024 / 1024),
+                    limit: Math.round(MAX_FILE_BYTES / 1024 / 1024),
+                  },
+                ),
+              )
+              return
+            }
+
+            setTooBig('')
+          }}
+        />
+        {tooBig ? (
+          <div className="hint" style={{ color: 'var(--fail)' }}>
+            {tooBig}
+          </div>
+        ) : null}
         <div className="hint">
           {fill(
             'Up to {limit} MB. The file is stored by us: project materials belong to the client and are handed over in full (§13), whereas a link to someone else’s drive lives until the day they tidy it up.',
