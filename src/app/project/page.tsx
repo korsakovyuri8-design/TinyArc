@@ -325,6 +325,25 @@ export default async function ProjectPage({
             <h2>Documentation set</h2>
             <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>It builds up as stages close rather than arriving all at once at the end: you paid for a stage, you get its files when that stage closes. Generated images never form part of it at any stage — they are working material, not documentation.</p>
 
+            {/*
+              Обычная ссылка, а не кнопка: скачивание — это переход по адресу,
+              и браузер умеет его сам. Кнопка со скриптом здесь добавила бы
+              состояние, которое нечем показать, и сломала бы «открыть в новой
+              вкладке» — то самое, чем человек и пользуется.
+            */}
+            <div className="row" style={{ gap: 16, marginBottom: 24 }}>
+              <a
+                href={`/api/projects/${project.id}/package`}
+                className="btn btn-solid"
+                download
+              >
+                {fill('Download all {count} files', { count: fileCount(documents) })}
+              </a>
+              <span className="hint">
+                One archive, folders by stage, with a contents list inside.
+              </span>
+            </div>
+
             <div className="stack" style={{ gap: 28 }}>
               {documents.map((group) => (
                 <div key={group.stage}>
