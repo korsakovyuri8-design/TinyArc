@@ -166,6 +166,57 @@ if (passing) {
   )
 }
 
+/*
+ * Неушедшее письмо.
+ *
+ * Раньше запись о неудаче удалялась, и след пропадал вместе с ней: в журнале
+ * письма нет, будто повода не было, а сказанное оператору «скажите сами» жило
+ * до перерисовки страницы. Человек при этом остаётся не позванным, и узнать об
+ * этом потом было неоткуда.
+ *
+ * Неудача подставляется руками: почтовый сервис на стенде не отказывает, и
+ * ждать от него отказа значит не проверять этот случай никогда.
+ */
+{
+  const row = await prisma.notification.findFirst({ orderBy: { sentAt: 'desc' } })
+
+  if (!row) {
+    check(false, 'в журнале нет ни одного письма')
+  } else {
+    await prisma.notification.update({
+      where: { id: row.id },
+      data: { status: 'failed', attempts: 2, error: 'e2e: почтовый сервис не ответил' },
+    })
+
+    await page.goto(`${BASE}/ops/letters`)
+    await page.waitForTimeout(800)
+
+    // Регистр не сравниваем: заголовок и метку оформление поднимает в
+    // верхний, и проверка на точное совпадение ловила бы стиль, а не смысл.
+    const said = (await page.innerText('main')).toLowerCase()
+    check(said.includes('did not go out'), 'неушедшие вынесены отдельной очередью')
+    check(said.includes(row.email.toLowerCase()), 'адрес того, кого не позвали, назван')
+    check(said.includes('2 attempts'), 'сказано, сколько раз пытались')
+    check(
+      said.includes('e2e: почтовый сервис не ответил'),
+      'названа причина — чинить адрес или почту, решает оператор',
+    )
+
+    await page.locator('button:has-text("Send again")').first().click()
+    await page.waitForTimeout(2500)
+
+    const after = await prisma.notification.findUniqueOrThrow({ where: { id: row.id } })
+    check(after.status === 'sent', `повторная отправка увела письмо из очереди: ${after.status}`)
+
+    await page.goto(`${BASE}/ops/letters`)
+    await page.waitForTimeout(800)
+    check(
+      !(await page.innerText('main')).toLowerCase().includes('did not go out'),
+      'очередь неушедших пуста, когда неушедших нет',
+    )
+  }
+}
+
 await browser.close()
 await prisma.$disconnect()
 

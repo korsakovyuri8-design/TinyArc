@@ -37,6 +37,7 @@ import {
   conflictResolved,
   deliveryNote,
   invoicePaid,
+  resend,
   ticketAccepted,
   ticketCommented,
   ticketReturned,
@@ -747,6 +748,43 @@ export async function sendInvites(_prev: OpsState, _formData: FormData): Promise
   } catch (error) {
     console.error('The mailing did not run:', error)
     return { error: 'The mailing did not run. The keys are visible in the invited list.' }
+  }
+}
+
+/**
+ * Повторить отправку письма, которое не ушло.
+ *
+ * Повод собирается заново из нынешнего состояния базы: копии текста у нас нет
+ * и не должно быть — письмо содержит чужие данные, и хранить его вторым
+ * экземпляром значит завести вторую базу этих данных рядом с первой.
+ */
+export async function resendLetter(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const kind = String(formData.get('kind') ?? '')
+  const targetId = String(formData.get('targetId') ?? '')
+
+  if (!kind || !targetId) return { error: 'There is no such letter.' }
+
+  try {
+    const told = await resend(kind, targetId)
+
+    revalidatePath('/ops/letters')
+
+    switch (told) {
+      case 'sent':
+        return { message: 'The letter has gone out.' }
+      case 'stub':
+        return { error: 'Email delivery is off: nothing was sent. Write to them yourself.' }
+      case 'failed':
+        return { error: 'It did not go out this time either. The reason is in the row.' }
+      case 'skipped':
+        // Повода больше нет: человека обезличили, проект удалили, задачу сняли.
+        return { message: 'There is no one to write to any more: the occasion is gone.' }
+    }
+  } catch (error) {
+    console.error('Повторная отправка не удалась:', error)
+    return { error: 'The letter did not go out.' }
   }
 }
 

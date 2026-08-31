@@ -43,6 +43,7 @@ const APPLIED: Record<string, string> = {
   '0010_english_only': '96624dcdb91443fb14bc4f46fa2a5f4e',
   '0011_privacy_actions': '6a4087d13fc16028fadb11883202e421',
   '0012_panel_indexes': '59f579d248326352849cd0608d3ab43f',
+  '0013_delivery_outcome': 'eed39a06533597e7c2a9b2b439536860',
 }
 
 function checksum(name: string): string {

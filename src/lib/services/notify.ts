@@ -85,23 +85,67 @@ async function once(
   if (!email) return 'skipped'
 
   let claimed: string
+  let attempt = 1
 
   try {
     const row = await prisma.notification.create({ data: { kind, targetId, email } })
     claimed = row.id
   } catch {
-    // Уже отправляли. Это не ошибка: сюда заходят по нескольку раз на событие.
-    return 'skipped'
+    /*
+     * Запись по этому поводу уже есть. Дальше решает её исход.
+     *
+     * Ушедшее письмо — не повод: сюда заходят по нескольку раз на событие,
+     * и второй раз человеку писать не надо. А вот неушедшее — повод: раньше
+     * запись о неудаче удалялась, и следующий заход выглядел как первый.
+     * Теперь она остаётся, и следующий заход становится честной второй
+     * попыткой — по тому же поводу, а не по новому.
+     */
+    const existing = await prisma.notification.findUnique({
+      where: { kind_targetId: { kind, targetId } },
+      select: { id: true, status: true, attempts: true },
+    })
+
+    if (!existing || existing.status !== 'failed') return 'skipped'
+
+    claimed = existing.id
+    attempt = existing.attempts + 1
+
+    // Адрес мог смениться между попытками: пишем по нынешнему.
+    await prisma.notification.update({
+      where: { id: claimed },
+      data: { email, attempts: attempt, sentAt: new Date() },
+    })
   }
 
   try {
     await send()
+
     // Запись остаётся и при заглушке: повод отработан, и повторять его не
     // надо. Иначе включённая назавтра почта разослала бы письма о том, что
     // случилось неделю назад.
+    await prisma.notification
+      .update({ where: { id: claimed }, data: { status: 'sent', error: '' } })
+      .catch(() => {})
+
     return mailer().mode === 'stub' ? 'stub' : 'sent'
   } catch (error) {
-    await prisma.notification.delete({ where: { id: claimed } }).catch(() => {})
+    /*
+     * Запись не снимается. Снятая запись — это письмо, которого будто и не
+     * было: в журнале пусто, а сказанное оператору «скажите сами» живёт до
+     * перезагрузки страницы. Человек, которого не позвали, остаётся не
+     * позванным, и узнать об этом потом неоткуда.
+     */
+    await prisma.notification
+      .update({
+        where: { id: claimed },
+        data: {
+          status: 'failed',
+          attempts: attempt,
+          error: (error instanceof Error ? error.message : String(error)).slice(0, 400),
+        },
+      })
+      .catch(() => {})
+
     console.error(`Письмо ${kind}/${targetId} не ушло:`, error)
     return 'failed'
   }
@@ -599,4 +643,88 @@ export async function notifyProject(projectId: string, openedTicketIds: string[]
   for (let i = 0; i < jobs.length; i += MAIL_CONCURRENCY) {
     await Promise.all(jobs.slice(i, i + MAIL_CONCURRENCY).map((job) => job()))
   }
+}
+
+/**
+ * Повторить отправку по поводу.
+ *
+ * Повод, а не письмо: у нас нет очереди сообщений и нет копии текста —
+ * письмо собирается из нынешнего состояния базы каждый раз заново. Поэтому
+ * повтор зовёт ту же функцию повода, что и первая попытка, и она сама решает,
+ * есть ли ещё кому писать: обезличенный человек, удалённый проект и снятая
+ * задача отвечают «некому», а не шлют письмо в пустоту.
+ *
+ * Нужен потому, что почта отказывает временно чаще, чем окончательно. Первая
+ * попытка происходит внутри действия оператора, и второй такой попытки не
+ * возникает само: приёмка случается один раз.
+ */
+export async function resend(kind: string, targetId: string): Promise<Delivery> {
+  switch (kind) {
+    case 'invoice_issued':
+      await invoiceIssued(targetId)
+      break
+    case 'invoice_paid':
+      return invoicePaid(targetId)
+    case 'ticket_accepted':
+      return ticketAccepted(targetId)
+    case 'ticket_open':
+      await ticketOpen(targetId)
+      break
+    case 'ticket_comment':
+      return ticketCommented(targetId)
+    case 'client_answer':
+      return clientAnswered(targetId)
+    case 'application_declined':
+      return applicationDeclined(targetId)
+    case 'stage_awaiting': {
+      // Ключ повода составной: стадия у проекта не одна.
+      const [projectId, stage] = targetId.split(':')
+      if (!projectId || !stage) return 'skipped'
+
+      await stageAwaiting(projectId, stage as DocStage)
+      break
+    }
+    case 'ticket_revision': {
+      /*
+       * В ключе повода стоит номер круга: круг — это отдельное событие, и
+       * письмо о втором не гасится письмом о первом. Повтор зовёт функцию по
+       * задаче, и она соберёт ключ по нынешнему кругу. Если круг с тех пор
+       * сменился, письмо уйдёт про новый — это правда, а не подмена: про
+       * старый круг человеку писать уже поздно.
+       */
+      const [ticketId] = targetId.split(':')
+      if (!ticketId) return 'skipped'
+
+      await ticketReturned(ticketId)
+      break
+    }
+    case 'conflict_resolved': {
+      // Ключ повода — само решение: арбитраж по одной задаче бывает не раз.
+      const ruling = await prisma.ticketComment.findUnique({
+        where: { id: targetId },
+        select: { ticketId: true },
+      })
+
+      if (!ruling) return 'skipped'
+
+      return conflictResolved(ruling.ticketId, targetId)
+    }
+    default:
+      return 'skipped'
+  }
+
+  return outcome(kind, targetId)
+}
+
+/** Чем кончилась попытка, если функция повода ничего не вернула. */
+async function outcome(kind: string, targetId: string): Promise<Delivery> {
+  const row = await prisma.notification.findUnique({
+    where: { kind_targetId: { kind, targetId } },
+    select: { status: true },
+  })
+
+  if (!row) return 'skipped'
+  if (row.status === 'failed') return 'failed'
+
+  return mailer().mode === 'stub' ? 'stub' : 'sent'
 }
