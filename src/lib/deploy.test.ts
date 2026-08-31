@@ -145,3 +145,48 @@ describe('стенд docker compose', () => {
     expect(file).toContain('bureau-files:/data')
   })
 })
+
+/**
+ * Образец окружения.
+ *
+ * Он единственное место, где вся настраиваемая поверхность названа человеку.
+ * Половина её тут когда-то отсутствовала: ни хранилища, ни реквизитов — и
+ * узнать об их существовании можно было только из кода или из упавшей
+ * выкладки. Проверка сверяет образец с тем, что читает preflight, потому что
+ * расходятся они молча.
+ */
+describe('образец окружения', () => {
+  const example = readFileSync(join(process.cwd(), '.env.example'), 'utf8')
+
+  it('называет всё, что preflight требует в бою', () => {
+    // Список берётся из отказов самого preflight на пустом бою: так он не
+    // может отстать от кода, даже если требований прибавится.
+    const demanded = preflight({ NODE_ENV: 'production' })
+      .flatMap((problem) => [...problem.matchAll(/\b(BUREAU_[A-Z0-9_]+|DATABASE_URL)\b/g)])
+      .map((match) => match[1])
+
+    expect(demanded.length).toBeGreaterThan(0)
+
+    for (const name of new Set(demanded)) {
+      expect(example, `${name} не назван в .env.example`).toContain(name)
+    }
+  })
+
+  it('называет и то, что требуется по условию: хранилище и почта', () => {
+    for (const name of [
+      'BUREAU_S3_ENDPOINT',
+      'BUREAU_S3_BUCKET',
+      'BUREAU_S3_ACCESS_KEY_ID',
+      'BUREAU_S3_SECRET_ACCESS_KEY',
+      'RESEND_API_KEY',
+      'BUREAU_MAIL_FROM',
+    ]) {
+      expect(example).toContain(name)
+    }
+  })
+
+  it('не предлагает боевых значений: напечатанный пароль паролем не является', () => {
+    expect(example).toContain('BUREAU_LEGAL_NAME=""')
+    expect(example).toContain('BUREAU_S3_SECRET_ACCESS_KEY=""')
+  })
+})
