@@ -19,6 +19,7 @@ import { prisma } from '../src/lib/db'
 
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
+const PASSWORD = process.env.BUREAU_OPS_PASSWORD ?? ''
 
 function check(condition, message) {
   if (!condition) {
@@ -142,19 +143,101 @@ if (!project) {
   )
 }
 
-/* --- Без сети ------------------------------------------------------------ */
+/* --- Воркер управляет страницей ------------------------------------------- */
 
-const offline = await (await browser.newContext()).newPage()
-await offline.goto(`${BASE}/`)
-await offline.evaluate(() => navigator.serviceWorker.ready)
-await offline.context().setOffline(true)
-await offline.goto(`${BASE}/how-it-works`, { waitUntil: 'domcontentloaded' }).catch(() => undefined)
-await offline.waitForTimeout(500)
+/*
+ * Сам ответ без сети проверяется не здесь, а модульно (`src/lib/sw.test.ts`),
+ * и это исправление, а не отступление.
+ *
+ * Эмуляция отсутствия сети в браузере не распространяется на запросы самого
+ * воркера: он иногда доходил до сервера и получал обычную страницу, отчего
+ * проверка мигала примерно раз на три прогона. Мигала она на чужой эмуляции,
+ * а не на нашем коде, — а проверка, которую перезапускают не глядя, не
+ * защищает ничего.
+ *
+ * Здесь остаётся то, что браузер показывает надёжно: воркер не просто
+ * зарегистрирован, а управляет страницей. Без этого он не увидит ни одного
+ * запроса, и всё остальное про него было бы неправдой.
+ */
 
-const text = await offline.innerText('body').catch(() => '')
-check(text.includes('No connection'), 'без сети показан свой экран, а не ошибка браузера')
-check(!/[А-Яа-яЁё]/.test(text), 'экран без сети по-английски')
-await offline.context().setOffline(false)
+const controlledPage = await (await browser.newContext()).newPage()
+await controlledPage.goto(`${BASE}/`)
+
+await controlledPage.evaluate(async () => {
+  await navigator.serviceWorker.ready
+
+  if (!navigator.serviceWorker.controller) {
+    await new Promise<void>((resolve) => {
+      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+      setTimeout(resolve, 5000)
+    })
+  }
+})
+
+await controlledPage.reload({ waitUntil: 'domcontentloaded' })
+
+check(
+  await controlledPage.evaluate(() => Boolean(navigator.serviceWorker.controller)),
+  'воркер управляет страницей, а не просто зарегистрирован',
+)
+
+await controlledPage.context().close()
+
+/* --- Кабинет не оседает в кэше самого браузера ---------------------------- */
+
+/*
+ * Воркер кабинеты не кэширует намеренно — это записано в нём самом. Но у
+ * браузера есть свой кэш, до которого воркеру дела нет, и закэшированный там
+ * кабинет ведёт себя ровно так же: живёт на устройстве и переживает выход из
+ * ключа. Закрывает это заголовок ответа.
+ *
+ * Проверяется он на живом ответе и обязательно под сессией: без неё кабинет
+ * отвечает переходом на вход, а вход — обычная страница, которую кэшировать и
+ * можно, и нужно. Проверка без входа мерила бы именно её и проходила бы,
+ * ничего не проверив.
+ */
+{
+  const keys = await prisma.specialist.findFirst({
+    where: { status: 'active' },
+    select: { accessKey: true },
+  })
+
+  const doors: { path: string; key?: string; password?: boolean }[] = [
+    { path: '/project', key: project.clientKey },
+    { path: '/work', key: keys?.accessKey },
+    { path: '/ops', password: true },
+  ]
+
+  for (const door of doors) {
+    if (!door.key && !door.password) {
+      check(false, `не нашлось ключа, чтобы открыть ${door.path}`)
+      continue
+    }
+
+    const page = await (await browser.newContext()).newPage()
+
+    if (door.password) {
+      await page.goto(`${BASE}/ops`)
+      await page.fill('input[type=password]', PASSWORD)
+      await page.click('button[type=submit]')
+      await page.waitForSelector('a[href="/ops/import"]')
+    } else {
+      await page.goto(`${BASE}/enter`)
+      await page.fill('input[name=key]', door.key!)
+      await page.click('button[type=submit]')
+      await page.waitForTimeout(1500)
+    }
+
+    const response = await page.goto(`${BASE}${door.path}`, { waitUntil: 'domcontentloaded' })
+    const header = (response?.headers()['cache-control'] ?? '').toLowerCase()
+    const landed = new URL(page.url()).pathname
+
+    check(landed === door.path, `${door.path} открылся под сессией, а не увёл на вход: ${landed}`)
+    check(header.includes('no-store'), `${door.path} не кладётся в кэш браузера: «${header}»`)
+
+    await page.context().close()
+  }
+}
 
 await browser.close()
 await prisma.$disconnect()
