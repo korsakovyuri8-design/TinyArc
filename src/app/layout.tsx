@@ -1,43 +1,29 @@
 import type { Metadata, Viewport } from 'next'
-import { DM_Sans, Golos_Text, Playfair_Display, Space_Mono } from 'next/font/google'
+import { EB_Garamond, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import './globals.css'
 import { siteUrl } from '@/lib/site'
 import { ServiceWorker } from '@/components/ServiceWorker'
 
 /*
- * Гарнитуры зафиксированы концептом (п.23): Playfair Display — заголовки,
- * DM Sans — текст, Space Mono — лейблы.
+ * Гарнитуры — те же, что у Tiny Mansion и Kin: старинная антиква для чтения и
+ * моно для служебного. Bureau стоял на Playfair и DM Sans и читался как
+ * презентация; группа набирается как документ, и это её общий признак.
  *
- * Оговорка, которую нельзя спрятать: у DM Sans и Space Mono нет кириллицы — ни
- * в наборе Next, ни на самих Google Fonts. Интерфейс при этом русский. Поэтому
- * в стеке текста DM Sans стоит первым, а за ним Golos Text: браузер подставляет
- * гарнитуру поглифно, латиница остаётся в брендовой DM Sans, кириллица
- * набирается Golos Text. Space Mono так и остаётся на лейблах и числах —
- * латинице и цифрам.
+ * EB Garamond — то же семейство, что на Tiny Mansion. IBM Plex Mono — оттуда
+ * же; у обеих есть кириллица, и подпорка из третьей гарнитуры, которая раньше
+ * закрывала её отсутствие, больше не нужна.
  */
-const playfair = Playfair_Display({
+const garamond = EB_Garamond({
   subsets: ['latin', 'cyrillic'],
-  variable: '--font-playfair',
+  variable: '--font-garamond',
   display: 'swap',
 })
 
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-})
-
-const golos = Golos_Text({
+const plexMono = IBM_Plex_Mono({
   subsets: ['latin', 'cyrillic'],
-  variable: '--font-golos',
-  display: 'swap',
-})
-
-const spaceMono = Space_Mono({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-space-mono',
+  weight: ['400', '500'],
+  variable: '--font-plex-mono',
   display: 'swap',
 })
 
@@ -87,7 +73,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'TinyArc',
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
   },
 }
 
@@ -99,14 +85,14 @@ export const metadata: Metadata = {
  * отступы берёт на себя вёрстка через env(safe-area-inset-*).
  */
 export const viewport: Viewport = {
-  themeColor: '#0a0e14',
-  colorScheme: 'dark',
+  themeColor: '#f7f3ed',
+  colorScheme: 'light',
   viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${golos.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${garamond.variable} ${plexMono.variable}`}>
       <body>
         <ServiceWorker />
 

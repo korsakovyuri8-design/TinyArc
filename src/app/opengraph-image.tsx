@@ -26,14 +26,14 @@ export default function Image() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          background: '#0a0e14',
+          background: '#f7f3ed',
           padding: 80,
-          color: '#e6edf5',
+          color: '#1a1614',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 30 }}>
           <span style={{ letterSpacing: '0.04em' }}>TinyArc</span>
-          <span style={{ color: '#00c9e4' }}>/</span>
+          <span style={{ color: '#9c7a3c' }}>/</span>
           <span style={{ letterSpacing: '0.04em' }}>Bureau</span>
         </div>
 
@@ -41,7 +41,7 @@ export default function Image() {
           <div style={{ fontSize: 82, lineHeight: 1.05, maxWidth: 900 }}>
             The bureau that ends the bureau
           </div>
-          <div style={{ fontSize: 30, color: '#8b9aad', maxWidth: 860, lineHeight: 1.35 }}>
+          <div style={{ fontSize: 30, color: '#5b554c', maxWidth: 860, lineHeight: 1.35 }}>
             An algorithm selects specialists on facts, assembles a team for the project and
             runs it through to the documentation set.
           </div>
@@ -52,7 +52,7 @@ export default function Image() {
             display: 'flex',
             gap: 20,
             fontSize: 24,
-            color: '#5d6b7d',
+            color: '#7f622e',
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
           }}

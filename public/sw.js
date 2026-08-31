@@ -54,11 +54,11 @@ const OFFLINE = `<!doctype html>
 <title>No connection — TinyArc Cloud Bureau</title>
 <style>
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-       background:#0a0e14;color:#e6edf5;font:16px/1.6 system-ui,-apple-system,sans-serif;padding:24px}
+       background:#f7f3ed;color:#1a1614;font:17px/1.65 Georgia,'Times New Roman',serif;padding:24px}
   main{max-width:34rem}
   h1{font-size:1.5rem;margin:0 0 12px}
-  p{color:#8b9aad;margin:0 0 12px}
-  b{color:#00c9e4;font-weight:600}
+  p{color:#5b554c;margin:0 0 12px}
+  b{color:#7f622e;font-weight:600}
 </style></head>
 <body><main>
   <h1>No connection</h1>

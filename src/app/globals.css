@@ -1,37 +1,59 @@
 /*
- * Dark Disruptor — визуальная система Bureau (концепт, п.23).
+ * Визуальная система Bureau: документ практики.
  *
- * Четыре правила, и они не обсуждаются:
- *   фон #0A0E14 · единственный акцент cyan #00C9E4 · без градиентов · без скруглений.
+ * Пришла на смену Dark Disruptor — тёмному экрану с циановым акцентом. Причина
+ * не во вкусе: тот набор не принадлежал группе. Tiny Mansion и Kin построены
+ * на одном языке — тёплая бумага, тёмные чернила, приглушённое золото, антиква
+ * для чтения и моно для служебного, — а Bureau стоял на противоположной оси и
+ * читался как стартап-дека. Из трёх проектов выпадал он один.
  *
- * Playfair Display — заголовки, DM Sans — текст, Space Mono — лейблы и числа.
- * У DM Sans и Space Mono нет кириллицы, поэтому в стеке текста за DM Sans идёт
- * Golos Text: браузер подставляет гарнитуру поглифно (см. src/app/layout.tsx).
+ * Что взято у соседей дословно: бумага #F7F3ED и чернила #1A1614 из Tiny
+ * Mansion, приглушённое золото и мера строки из Kin.
+ *
+ * Три правила системы:
+ *
+ *   1. Читают антиквой, работают моно. Проза, заголовки и объяснения — EB
+ *      Garamond; всё, что человек не читает, а сверяет — подписи, числа,
+ *      таблицы, поля, кнопки — IBM Plex Mono. Это не украшение: так выглядит
+ *      документация, которую бюро и выпускает.
+ *   2. Линия вместо коробки. На бумаге тонкая линейка отделяет не хуже рамки
+ *      с заливкой и не превращает страницу в панель приборов.
+ *   3. Золото — редко. Оно отмечает то, на что человек должен посмотреть, и
+ *      теряет силу от каждого лишнего применения.
+ *
+ * Контраст считан, а не прикинут. Брендовое золото #9C7A3C даёт на бумаге
+ * 3,6:1 — этого хватает линейкам и крупному, но не мелкому тексту; для текста
+ * взят более тёмный оттенок того же золота, 5,2:1. Приглушённый серый когда-то
+ * стоял на 3,6:1 и не проходил норму — он затемнён до 5,3:1 по худшему из
+ * фонов, а не по лучшему.
  */
 
 :root {
-  --bg: #0a0e14;
-  --surface: #0f141c;
-  --surface-raised: #131a24;
-  --border: #1e2733;
-  --border-strong: #2b3746;
+  /* Бумага, панель на ней и карточка в панели: три ступени, не больше. */
+  --bg: #f7f3ed;
+  --surface: #fffdf9;
+  --surface-raised: #efe9df;
 
-  --text: #e6edf5;
-  --text-muted: #8b9aad;
-  --text-dim: #5d6b7d;
+  --border: #e2dbcd;
+  --border-strong: #cdc4b1;
 
-  --accent: #00c9e4;
-  --accent-dim: #0a7a8a;
-  --accent-wash: rgba(0, 201, 228, 0.08);
+  --text: #1a1614;
+  --text-muted: #5b554c;
+  --text-dim: #6b6459;
 
-  /* Состояния. Оттенки приглушены: акцент в системе один. */
-  --pass: #4ade80;
-  --fail: #f87171;
-  --wait: #a68a4a;
+  /* Читаемое золото — по умолчанию. Брендовое, светлее, — линейкам и крупному. */
+  --accent: #7f622e;
+  --accent-dim: #9c7a3c;
+  --accent-wash: #f3ede1;
 
-  --serif: var(--font-playfair), Georgia, serif;
-  --sans: var(--font-dm-sans), var(--font-golos), system-ui, -apple-system, sans-serif;
-  --mono: var(--font-space-mono), var(--font-golos), ui-monospace, "SF Mono", Menlo, monospace;
+  /* Состояния. Приглушены до тона документа: акцент в системе один. */
+  --pass: #2f5c40;
+  --fail: #8f3a33;
+  --wait: #8a5a22;
+
+  --serif: var(--font-garamond), "Iowan Old Style", Palatino, Georgia, serif;
+  --sans: var(--serif);
+  --mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   --gap: 24px;
   --measure: 68ch;
@@ -39,6 +61,7 @@
 
 * {
   box-sizing: border-box;
+  /* Скруглений нет: у документа нет скруглённых углов. */
   border-radius: 0;
 }
 
@@ -51,10 +74,12 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--sans);
-  font-size: 16px;
-  line-height: 1.6;
+  font-family: var(--serif);
+  /* Антиква мельче гротеска в том же кегле: 18px здесь — это 16px там. */
+  font-size: 18px;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -62,20 +87,22 @@ h2,
 h3,
 h4 {
   font-family: var(--serif);
-  font-weight: 500;
-  line-height: 1.15;
+  /* Светлое начертание в крупном кегле: набор, а не заголовок из презентации. */
+  font-weight: 400;
+  line-height: 1.1;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.018em;
 }
 
 h1 {
-  font-size: clamp(2.2rem, 6vw, 4rem);
+  font-size: clamp(2.4rem, 6.5vw, 4.2rem);
 }
 h2 {
-  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-size: clamp(1.7rem, 3.6vw, 2.5rem);
 }
 h3 {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
 }
 
 p {
@@ -83,22 +110,32 @@ p {
   max-width: var(--measure);
 }
 
+/*
+ * Ссылка подчёркнута, а не покрашена.
+ *
+ * Цветом здесь распоряжается золото, и раздавать его каждой ссылке значит не
+ * оставить его ничему. В тексте ссылка узнаётся подчёркиванием — как в книге,
+ * — и золотится только под курсором.
+ */
 a {
-  color: var(--accent);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 a:hover {
-  border-bottom-color: var(--accent);
+  text-decoration-color: var(--accent-dim);
+  color: var(--accent);
 }
 
-/* --- Лейблы: Space Mono, латиница и цифры ------------------------------- */
+/* --- Подписи: моно, прописные, разрядка --------------------------------- */
 
 .label {
   font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-dim);
 }
@@ -110,6 +147,7 @@ a:hover {
 .num {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
+  font-size: 0.92em;
 }
 
 /* --- Каркас -------------------------------------------------------------- */
@@ -141,40 +179,52 @@ a:hover {
 
 .site-header .shell {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--gap);
-  height: 68px;
+  min-height: 72px;
+  padding-top: 22px;
+  padding-bottom: 18px;
 }
 
+/*
+ * Марка набирается антиквой в разрядку — так ставят имя на титульном листе.
+ * Моно здесь читалось бы как ещё одна служебная подпись.
+ */
 .brand {
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.22em;
+  font-family: var(--serif);
+  font-size: 1.06rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text);
-  border-bottom: none;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .brand:hover {
-  border-bottom: none;
-  color: var(--accent);
+  color: var(--text);
+  text-decoration: none;
 }
 
 .nav {
   display: flex;
-  gap: 22px;
-  align-items: center;
+  gap: 26px;
+  align-items: baseline;
   flex-wrap: wrap;
 }
 
 .nav a {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: none;
 }
 
 .nav a:hover {
   color: var(--accent);
+  text-decoration: none;
 }
 
 .site-footer {
@@ -182,7 +232,7 @@ a:hover {
   margin-top: 96px;
   padding: 40px 0 64px;
   color: var(--text-dim);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
 }
 
 main {
@@ -237,10 +287,10 @@ section:last-of-type {
  */
 @media (max-width: 720px) {
   .site-header .shell {
-    height: auto;
+    min-height: 0;
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    gap: 8px;
     padding-top: 14px;
     padding-bottom: 10px;
   }
@@ -283,15 +333,22 @@ section:last-of-type {
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: 26px;
 }
 
 .panel-raised {
   background: var(--surface-raised);
+  border-color: var(--border-strong);
 }
 
+/*
+ * Панель, на которую надо посмотреть. Отмечена полосой слева, а не рамкой
+ * целиком: рамка кричит одинаково со всех четырёх сторон, полоса указывает.
+ */
 .panel-accent {
-  border-color: var(--accent-dim);
+  border-color: var(--border);
+  border-left: 3px solid var(--accent-dim);
+  background: var(--accent-wash);
 }
 
 .panel h3 {
@@ -307,7 +364,8 @@ section:last-of-type {
 }
 
 .lead {
-  font-size: 1.15rem;
+  font-size: 1.28rem;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 
@@ -316,21 +374,22 @@ section:last-of-type {
 .btn {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 14px 26px;
+  padding: 13px 24px;
   border: 1px solid var(--accent);
   background: transparent;
   color: var(--accent);
   cursor: pointer;
+  text-decoration: none;
   transition: background 120ms linear, color 120ms linear;
 }
 
 .btn:hover {
   background: var(--accent);
   color: var(--bg);
-  border-bottom-color: var(--accent);
+  text-decoration: none;
 }
 
 .btn-solid {
@@ -339,8 +398,9 @@ section:last-of-type {
 }
 
 .btn-solid:hover {
-  background: transparent;
-  color: var(--accent);
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
 }
 
 .btn-quiet {
@@ -355,7 +415,7 @@ section:last-of-type {
 }
 
 .btn:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -364,22 +424,29 @@ section:last-of-type {
 label {
   display: block;
   font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
   margin-bottom: 6px;
 }
 
+/*
+ * Поля набираются моно.
+ *
+ * Здесь вводят ключи доступа, числа этажей, площади и адреса — то, что
+ * сверяют посимвольно. В антикве единица и латинская «l» отличаются плохо, в
+ * моно — хорошо, и это тот случай, когда чтение важнее красоты строки.
+ */
 input,
 select,
 textarea {
   width: 100%;
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border-strong);
   color: var(--text);
-  font-family: var(--sans);
-  font-size: 0.95rem;
+  font-family: var(--mono);
+  font-size: 0.88rem;
   padding: 11px 13px;
 }
 
@@ -388,8 +455,8 @@ textarea {
  *
  * Бриф это двадцать с лишним полей, и человек, идущий по ним с клавиатуры,
  * обязан видеть, где он находится. Раньше здесь стоял `outline: none` с
- * заменой на цвет рамки: на тёмном фоне разница между рамкой обычной и рамкой
- * в фокусе почти не читается, а у ссылок, кнопок и флажков не было и этого.
+ * заменой на цвет рамки: разница между рамкой обычной и рамкой в фокусе почти
+ * не читается, а у ссылок, кнопок и флажков не было и этого.
  *
  * `:focus-visible`, а не `:focus`: браузер сам решает, показывать ли обводку
  * после щелчка мышью. Показывать её всем подряд — верный способ, чтобы её
@@ -411,7 +478,6 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
 /* Флажок и переключатель обводятся вместе со своей подписью. */
@@ -423,31 +489,39 @@ textarea:focus-visible,
 textarea {
   min-height: 120px;
   resize: vertical;
+  line-height: 1.55;
 }
 
 fieldset {
-  border: 1px solid var(--border);
-  padding: 20px;
-  margin: 0 0 var(--gap);
+  border: none;
+  border-top: 1px solid var(--border-strong);
+  padding: 22px 0 0;
+  margin: 0 0 calc(var(--gap) * 1.5);
 }
 
+/*
+ * Заголовок раздела формы стоит над линейкой, а не врезан в рамку: врезка —
+ * приём коробки, а здесь у формы рамки нет.
+ */
 legend {
   font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
-  padding: 0 8px;
+  padding: 0;
+  margin-bottom: 4px;
 }
 
 .field {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-dim);
   margin-top: 6px;
+  max-width: var(--measure);
 }
 
 /* Множественный выбор чекбоксами: значений мало и они фиксированы. */
@@ -462,13 +536,14 @@ legend {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border-strong);
+  background: var(--surface);
   padding: 8px 12px;
-  font-size: 0.85rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
   color: var(--text-muted);
   cursor: pointer;
   text-transform: none;
   letter-spacing: normal;
-  font-family: var(--sans);
   margin: 0;
 }
 
@@ -491,22 +566,28 @@ legend {
 
 /* --- Таблицы ------------------------------------------------------------- */
 
+/*
+ * Таблица — реестр, и набирается как реестр: моно, цифры в колонку, линейки
+ * вместо заливок. Полосатых строк нет намеренно: полоса помогает вести глаз
+ * там, где колонок много и они узкие, а здесь строка сама по себе высокая.
+ */
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
 th {
   text-align: left;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-dim);
   font-weight: 400;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-strong);
+  padding: 12px;
+  border-bottom: 1px solid var(--text);
   white-space: nowrap;
 }
 
@@ -529,10 +610,10 @@ tr:last-child td {
 .tag {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 4px 9px;
+  padding: 3px 8px;
   border: 1px solid var(--border-strong);
   color: var(--text-muted);
   white-space: nowrap;
@@ -561,7 +642,7 @@ tr:last-child td {
 /* --- Полоса значения ----------------------------------------------------- */
 
 .bar {
-  height: 4px;
+  height: 3px;
   background: var(--border);
   position: relative;
   overflow: hidden;
@@ -580,10 +661,10 @@ tr:last-child td {
 /* --- Заметки и предупреждения -------------------------------------------- */
 
 .note {
-  border-left: 2px solid var(--accent);
-  padding: 4px 0 4px 16px;
+  border-left: 2px solid var(--accent-dim);
+  padding: 2px 0 2px 18px;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   max-width: var(--measure);
 }
 
@@ -614,13 +695,17 @@ ul.clean {
   margin: 0;
 }
 
+/*
+ * Надзаголовок: строка над заголовком, называющая раздел. Золото здесь по
+ * делу — это единственная метка, по которой человек понимает, куда попал.
+ */
 .eyebrow {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   display: block;
 }
 
@@ -631,14 +716,14 @@ ul.clean {
  * вредит: человек должен дочитать до конца, а не сдаться на третьем абзаце.
  */
 .legal-body p {
-  margin: 0 0 14px;
-  line-height: 1.7;
+  margin: 0 0 16px;
+  line-height: 1.75;
 }
 
 .legal-body ul {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   padding-left: 20px;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .legal-body li {
@@ -648,37 +733,6 @@ ul.clean {
 .legal-body p:last-child,
 .legal-body ul:last-child {
   margin-bottom: 0;
-}
-
-/*
- * Переключатель языка.
- *
- * Тише остальной навигации: это не раздел продукта, а настройка. Текущий язык
- * подсвечен, а не спрятан, — человек должен видеть, на чём он сейчас, иначе
- * нажимает наугад.
- */
-.locale-switch {
-  display: inline-flex;
-  gap: 8px;
-  margin-left: 6px;
-  padding-left: 14px;
-  border-left: 1px solid var(--border);
-  font-family: var(--font-mono), monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-}
-
-.locale-switch a {
-  color: var(--dim);
-  text-decoration: none;
-}
-
-.locale-switch a:hover {
-  color: var(--text);
-}
-
-.locale-switch .locale-current {
-  color: var(--accent);
 }
 
 /*

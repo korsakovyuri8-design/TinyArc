@@ -13,10 +13,10 @@
 const W = 640
 const H = 400
 
-const BG = '#0A0E14'
-const LINE = '#00C9E4'
-const DIM = '#2b3746'
-const GROUND = '#1e2733'
+const BG = '#F7F3ED'
+const LINE = '#1A1614'
+const DIM = '#9C7A3C'
+const GROUND = '#CDC4B1'
 
 type Shape = (() => string) | undefined
 
