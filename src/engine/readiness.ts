@@ -134,15 +134,39 @@ export function gaps(pool: SpecialistProfile[]): Gap[] {
   const usable = eligible(pool)
   const found = new Map<string, Gap>()
 
+  /*
+   * Глубина считается один раз на подпись роли, а не на каждое её появление.
+   *
+   * Форм проекта внутри границы почти пятьсот, ролей в них — три с половиной
+   * тысячи, а различных подписей роли всего девятнадцать: одна и та же роль
+   * повторяется в сотнях форм. Прежний обход фильтровал пул на каждом
+   * появлении — десять с половиной тысяч проходов вместо пятидесяти семи, и
+   * на базе в пять тысяч человек страница пула отдавалась секунду вместо
+   * сорока миллисекунд. Ответ при этом получался тот же самый: подпись роли
+   * и страна полностью определяют глубину.
+   */
+  const depths = new Map<string, number>()
+
+  const depthFor = (role: RequiredRole, jurisdiction: Jurisdiction): number => {
+    const key = `${jurisdiction}|${roleKey(role)}`
+    const known = depths.get(key)
+    if (known !== undefined) return known
+
+    const depth = usable.filter(
+      (s) =>
+        s.jurisdictions.includes(jurisdiction) &&
+        s.disciplines.includes(role.discipline) &&
+        coversRole(s.specializations, role),
+    ).length
+
+    depths.set(key, depth)
+    return depth
+  }
+
   for (const shape of allShapes()) {
     for (const role of requiredRoles(shape)) {
       for (const jurisdiction of JURISDICTIONS) {
-        const depth = usable.filter(
-          (s) =>
-            s.jurisdictions.includes(jurisdiction) &&
-            s.disciplines.includes(role.discipline) &&
-            coversRole(s.specializations, role),
-        ).length
+        const depth = depthFor(role, jurisdiction)
 
         if (depth >= MIN_DEPTH) continue
 

@@ -26,6 +26,17 @@ export const metadata = { title: 'Pool — bureau panel' }
  */
 const LISTED_STATUSES = ['active', 'paused', 'rejected'] as const
 
+/**
+ * Сколько строк рисуется за раз.
+ *
+ * Предел не про экономию, а про то, что страница обязана открыться. База бюро
+ * растёт импортом, и на пяти тысячах человек таблица без предела отдавалась
+ * две секунды — это уже не список, а документ, который надо ждать. Условия
+ * выше сужают выборку до того, что читают глазами; всё остальное ищут ими же,
+ * а не прокруткой на тысячу строк.
+ */
+const SHOWN = 200
+
 export default async function PoolPage({
   searchParams,
 }: {
@@ -319,7 +330,7 @@ export default async function PoolPage({
               </tr>
             </thead>
             <tbody>
-              {listed.map((row) => {
+              {listed.slice(0, SHOWN).map((row) => {
                 const profile = toProfile(row)
                 const metrics = deliveryMetrics(profile.delivery)
 
@@ -361,6 +372,15 @@ export default async function PoolPage({
             </tbody>
           </table>
         </div>
+        )}
+
+        {listed.length > SHOWN && (
+          <p className="hint" style={{ marginTop: 12 }}>
+            {fill('The first {shown} of {total}. Narrow by the conditions above to see the rest.', {
+              shown: SHOWN,
+              total: listed.length,
+            })}
+          </p>
         )}
       </div>
     </section>
