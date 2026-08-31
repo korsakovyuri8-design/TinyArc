@@ -101,6 +101,45 @@ if (!hasWaiting) {
 const projectLink = await waiting.first().locator('a[href^="/ops/projects/"]').getAttribute('href')
 check(Boolean(projectLink), 'из очереди открывается проект')
 
+/*
+ * Список проектов: тот же класс, что и пул. Проектов с работой бюро становится
+ * больше каждый месяц, и предела у списка нет вовсе. Отдельно проверяется
+ * поиск по ключу заказчика: с ним оператор приходит из письма, где больше не
+ * за что зацепиться.
+ */
+{
+  await bureau.goto(`${BASE}/ops/projects`)
+  await bureau.waitForTimeout(600)
+
+  const rows = () => bureau.locator('tbody tr:has(a[href^="/ops/projects/"])')
+  const all = await rows().count()
+  check(all > 0, `проектов в списке: ${all}`)
+
+  // Статус берётся существующий: «ноль из четырёх» доказывало бы только то,
+  // что фильтр убрал всё, а не то, что он отбирает.
+  await bureau.goto(`${BASE}/ops/projects?status=delivering`)
+  await bureau.waitForTimeout(400)
+  const running = await rows().count()
+  check(running > 0 && running < all, `статус сужает список: ${running} из ${all}`)
+
+  await bureau.goto(`${BASE}/ops/projects?q=seed-brief-tivat`)
+  await bureau.waitForTimeout(400)
+  const byKey = await rows().count()
+  check(byKey === 1, `поиск по ключу заказчика находит ровно один: ${byKey}`)
+
+  await bureau.goto(`${BASE}/ops/projects?q=${encodeURIComponent('нет такого проекта')}`)
+  await bureau.waitForTimeout(400)
+  check((await rows().count()) === 0, 'под несуществующее не подставляется ничего')
+  check(
+    (await bureau.locator('text=Nothing matches').count()) > 0,
+    'пустая выборка сказана словами, а не пустой таблицей',
+  )
+
+  await bureau.goto(`${BASE}/ops/projects?status=nonsense&country=XX`)
+  await bureau.waitForTimeout(400)
+  check((await rows().count()) === all, 'мусор в адресе не фильтрует и не роняет страницу')
+}
+
 // Ключ заказчика бюро видит на карточке проекта.
 //
 // Читается из своего элемента, а не поиском по тексту: регулярное выражение
