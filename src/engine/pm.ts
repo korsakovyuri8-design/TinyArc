@@ -21,6 +21,22 @@ export type AlertKind =
   | 'unclaimed'
   | 'due_soon'
   | 'awaiting_acceptance'
+  /**
+   * Задача готова к открытию и не открыта.
+   *
+   * Единственный вид, который считает не этот модуль: чтобы понять готовность,
+   * нужны подтверждённые и оплаченные стадии, а они живут в базе. Слова и
+   * порядок разбора для него всё равно здесь — иначе вид сигнала окажется
+   * наполовину в одном месте, наполовину в другом.
+   *
+   * Возникает он от разрыва между приёмкой и гейтом: переход состояния
+   * записан транзакцией, а открытие зависимых задач идёт следующим вызовом.
+   * Перезапуск контейнера или заминка базы между ними оставляют проект
+   * стоять — всё оплачено, всё подтверждено, а работа никому не выдана, — и
+   * заметить это было неоткуда: никто ничего не ждёт, потому что никто ни о
+   * чём не знает.
+   */
+  | 'gate_stalled'
 
 export type PmTicket = {
   id: string
@@ -54,6 +70,9 @@ export const DUE_SOON_HOURS = 8
 
 /** Порядок разбора: сначала то, где уже стоит работа, потом то, что встанет. */
 const SEVERITY: Record<AlertKind, number> = {
+  // Впереди конфликта: спор останавливает одну задачу, незакрытый гейт —
+  // весь проект, и остановку эту никто не заметил.
+  gate_stalled: -1,
   conflict: 0,
   overdue: 1,
   unclaimed: 2,
@@ -67,6 +86,7 @@ export const ALERT_LABELS: Record<AlertKind, string> = {
   unclaimed: 'Open, not yet taken on',
   awaiting_acceptance: 'Awaiting acceptance by the bureau',
   due_soon: 'Deadline is near',
+  gate_stalled: 'Ready to open and not open',
 }
 
 /**
@@ -83,6 +103,7 @@ export const ALERT_ACTIONS: Record<AlertKind, string> = {
   unclaimed: 'Write in the ticket or reassemble the role',
   awaiting_acceptance: 'Accept it or send it back for revision',
   due_soon: 'Ask in the ticket whether they will make the deadline',
+  gate_stalled: 'Run the gate on the project: the stage is paid and confirmed, and the task has not gone out',
 }
 
 /** Виды, по которым бюро пишет исполнителю. Остальное решается у нас. */
@@ -189,5 +210,13 @@ export function projectHeat(alerts: Alert[]): ProjectHeat[] {
  * что люди сами заметят, что их выход.
  */
 export function alertAudience(kind: AlertKind): 'specialist' | 'bureau' {
-  return kind === 'awaiting_acceptance' || kind === 'conflict' ? 'bureau' : 'specialist'
+  /*
+   * Незакрытый гейт — целиком наше: работа ещё никому не выдана, и писать по
+   * ней некому. Список «наших» видов ведётся явно, а не остатком: новый вид,
+   * попавший в остаток по невнимательности, отправил бы напоминание человеку,
+   * который об этой задаче ничего не знает.
+   */
+  const ours: AlertKind[] = ['awaiting_acceptance', 'conflict', 'gate_stalled']
+
+  return ours.includes(kind) ? 'bureau' : 'specialist'
 }

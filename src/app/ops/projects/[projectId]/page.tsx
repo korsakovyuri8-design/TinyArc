@@ -40,6 +40,7 @@ import {
   draftTicketSpec,
   eraseProjectData,
   rerunAssembly,
+  runProjectGate,
   resolveTicketConflict,
   returnTicket,
   setTicketSpec,
@@ -158,7 +159,16 @@ export default async function OpsProjectPage({
               </p>
             )}
           </div>
-          <OpsAction action={rerunAssembly} hidden={{ projectId: project.id }} label="Reassemble" />
+          <div className="row" style={{ gap: 12 }}>
+            {/*
+              Гейт зовётся сам после каждой приёмки, подтверждения и оплаты.
+              Кнопка — на случай разрыва между переходом состояния и гейтом:
+              после него проект стоит молча, всё оплачено и подтверждено, а
+              работа никому не выдана.
+            */}
+            <OpsAction action={runProjectGate} hidden={{ projectId: project.id }} label="Run the gate" />
+            <OpsAction action={rerunAssembly} hidden={{ projectId: project.id }} label="Reassemble" />
+          </div>
         </div>
 
         {run?.notes && <p className="note note-fail" style={{ marginTop: 16 }}>{run.notes}</p>}

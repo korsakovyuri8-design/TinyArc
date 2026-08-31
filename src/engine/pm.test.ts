@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   ACCEPTANCE_SLA_HOURS,
+  ALERT_ACTIONS,
+  ALERT_LABELS,
   UNCLAIMED_AFTER_HOURS,
   alertAudience,
   isNudgeKind,
   pmAlerts,
   projectHeat,
   type Alert,
+  type AlertKind,
   type PmTicket,
 } from './pm'
 
@@ -162,5 +165,48 @@ describe('кому пишет бюро', () => {
     for (const kind of ['unclaimed', 'overdue', 'due_soon'] as const) {
       expect(alertAudience(kind)).toBe('specialist')
     }
+  })
+
+  /*
+   * Незакрытый гейт — про задачу, которую ещё никому не выдали. Напоминание по
+   * ней ушло бы человеку, который о ней не знает, а разбирать её всё равно
+   * нам: гейт зовёт бюро, а не исполнитель.
+   */
+  it('незакрытый гейт разбирает бюро и никому не пишет', () => {
+    expect(alertAudience('gate_stalled')).toBe('bureau')
+    expect(isNudgeKind('gate_stalled')).toBe(false)
+  })
+})
+
+/**
+ * У каждого вида сигнала есть слова и предписанное действие.
+ *
+ * Проверка нужна потому, что вид добавляется в одном месте, а называется в
+ * трёх, и пропуск виден только на той странице панели, куда в этот день никто
+ * не зашёл: строка выходит с ключом из базы вместо слов.
+ */
+describe('словарь сигналов', () => {
+  const KINDS: AlertKind[] = [
+    'conflict',
+    'overdue',
+    'unclaimed',
+    'due_soon',
+    'awaiting_acceptance',
+    'gate_stalled',
+  ]
+
+  it('назван каждый вид', () => {
+    for (const kind of KINDS) {
+      expect(ALERT_LABELS[kind], kind).toBeTruthy()
+      expect(ALERT_ACTIONS[kind], kind).toBeTruthy()
+    }
+  })
+
+  it('порядок разбора задан каждому виду', () => {
+    const order = KINDS.map((kind) =>
+      projectHeat([{ kind, ticketId: 't', projectId: 'p', title: 'Фасады', hours: 1 }]),
+    )
+
+    expect(order.every((rows) => rows.length === 1)).toBe(true)
   })
 })

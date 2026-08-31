@@ -788,6 +788,45 @@ export async function resendLetter(_prev: OpsState, formData: FormData): Promise
   }
 }
 
+/**
+ * Прогнать гейт по проекту руками.
+ *
+ * Гейт идемпотентен и зовётся сам после каждой приёмки, подтверждения и
+ * оплаты. Кнопка нужна на случай разрыва между переходом состояния и гейтом:
+ * приёмка записана транзакцией, а открытие зависимых задач идёт следующим
+ * вызовом, и между ними помещается перезапуск контейнера. После такого
+ * разрыва проект стоит молча — всё оплачено, всё подтверждено, а работа
+ * никому не выдана.
+ *
+ * Ничего не открыть — нормальный исход, и он назван словами: чаще всего гейт
+ * ждёт человека, а не сбоя.
+ */
+export async function runProjectGate(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const projectId = String(formData.get('projectId') ?? '')
+
+  try {
+    const opened = await applyGates(projectId)
+    await refreshProjectStatus(projectId)
+
+    revalidatePath(`/ops/projects/${projectId}`)
+    revalidatePath('/ops')
+
+    return {
+      message:
+        opened.length === 0
+          ? 'Nothing to open: the gate is waiting on a payment, a confirmation or work up the graph.'
+          : fill('The gate opened {count} task(s). The people on them have been told.', {
+              count: opened.length,
+            }),
+    }
+  } catch (error) {
+    console.error('Гейт не прогнался:', error)
+    return { error: 'The gate did not run.' }
+  }
+}
+
 /** Повторный зов тому, кто не откликнулся на приглашение. */
 export async function reinviteSpecialist(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
