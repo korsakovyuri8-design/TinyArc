@@ -121,17 +121,72 @@ const SEED_PROJECTS = [
   },
 ] as const
 
+/**
+ * Уже засеяно?
+ *
+ * Команда запуска демонстрационного стенда зовёт сид при каждом старте
+ * контейнера, а контейнер на бесплатном плане поднимается заново после каждого
+ * сна. Без этой проверки пробуждение означало бы пересборку пула из сотни
+ * человек с прогонами сборки — то есть минуту ожидания у того, кто просто
+ * открыл страницу.
+ *
+ * Признак — сами выдуманные записи, а не флаг в отдельной таблице: флаг
+ * рассинхронизируется с базой, а эти записи и есть то, ради чего сид звали.
+ *
+ * Вопрос именно «засевали ли когда-нибудь», а не «на месте ли всё до одной
+ * записи». Полный счёт был бы неверным признаком: стенд живёт — заявку
+ * отклонили, человека обезличили по его просьбе, — и счёт уходит вниз от
+ * обычной работы. Сид, срабатывающий на это, пересобирал бы базу как раз
+ * тогда, когда в ней появилось что-то настоящее.
+ */
+async function alreadySeeded(): Promise<boolean> {
+  const [people, projects] = await Promise.all([
+    prisma.specialist.count({ where: { accessKey: { startsWith: 'seed-key-' } } }),
+    prisma.project.count({ where: { clientKey: { startsWith: 'seed-brief-' } } }),
+  ])
+
+  return people > 0 || projects > 0
+}
+
 async function main() {
+  if (process.env.BUREAU_SEED_FORCE !== '1' && (await alreadySeeded())) {
+    console.log('Сид: стенд уже засеян, пересборка пропущена (BUREAU_SEED_FORCE=1 — пересобрать).')
+    return
+  }
+
   console.log('Сид: чистим прошлый прогон…')
+
+  /*
+   * Адреса выдуманных собираются до удаления, а не после: записи об
+   * отправленных письмах не привязаны внешним ключом ни к проекту, ни к
+   * человеку, и после удаления искать их будет уже не по чему.
+   *
+   * Убираются только письма о выдуманных. Журнал целиком стирать нельзя: на
+   * пилоте это список тех, кого бюро зовёт руками при выключенной почте, и он
+   * не про сид.
+   */
+  const invented = [
+    ...(
+      await prisma.specialist.findMany({
+        where: { accessKey: { startsWith: 'seed-key-' } },
+        select: { email: true },
+      })
+    ).map((row) => row.email),
+    ...(
+      await prisma.project.findMany({
+        where: { clientKey: { startsWith: 'seed-brief-' } },
+        select: { clientEmail: true },
+      })
+    ).map((row) => row.clientEmail),
+  ]
+
+  if (invented.length > 0) {
+    await prisma.notification.deleteMany({ where: { email: { in: invented } } })
+  }
 
   // Убираются только выдуманные записи. Живые заявки и брифы не трогаются.
   await prisma.project.deleteMany({ where: { clientKey: { startsWith: 'seed-brief-' } } })
   await prisma.specialist.deleteMany({ where: { accessKey: { startsWith: 'seed-key-' } } })
-
-  // Записи об отправленных письмах не привязаны внешним ключом ни к проекту,
-  // ни к человеку: они переживают удаление того, о чём были. На стенде это
-  // просто мусор, но растущий с каждой пересборкой.
-  await prisma.notification.deleteMany({})
 
   const pool = demoPool()
   console.log(`Сид: кладём ${pool.length} специалистов…`)
