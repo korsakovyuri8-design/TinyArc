@@ -45,6 +45,7 @@ const APPLIED: Record<string, string> = {
   '0012_panel_indexes': '59f579d248326352849cd0608d3ab43f',
   '0013_delivery_outcome': 'eed39a06533597e7c2a9b2b439536860',
   '0014_rate_window': '7d137d04011f1688ad7a29706f884593',
+  '0015_compliance_rules': '6faf5ed5a1469b6e94f7bd726a74df1e',
 }
 
 function checksum(name: string): string {

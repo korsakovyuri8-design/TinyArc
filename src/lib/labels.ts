@@ -246,3 +246,53 @@ export const GATE_LABELS: Record<GateName, string> = {
   availability: 'No free capacity, or cannot start in time',
   subscription: 'No active subscription for access to projects',
 }
+
+/**
+ * Как называется предмет нормы для человека.
+ *
+ * Заказчик читает «Site coverage», а не `coverage_ratio`: словарь движка — это
+ * словарь движка, и показывать его наружу значит показывать внутренности.
+ */
+export const RULE_SUBJECT_LABELS: Record<string, string> = {
+  storeys: 'Storeys',
+  height_m: 'Building height',
+  coverage_ratio: 'Site coverage',
+  floor_area_ratio: 'Floor area ratio',
+  setback_front_m: 'Front setback',
+  setback_side_m: 'Side setback',
+  setback_rear_m: 'Rear setback',
+  parking_per_unit: 'Parking per unit',
+  green_ratio: 'Green area share',
+}
+
+/** В чём измеряется предмет: доли показываются процентами, метры — метрами. */
+export const RULE_SUBJECT_UNIT: Record<string, 'ratio' | 'metres' | 'count'> = {
+  storeys: 'count',
+  height_m: 'metres',
+  coverage_ratio: 'ratio',
+  floor_area_ratio: 'ratio',
+  setback_front_m: 'metres',
+  setback_side_m: 'metres',
+  setback_rear_m: 'metres',
+  parking_per_unit: 'count',
+  green_ratio: 'ratio',
+}
+
+/**
+ * Чего не хватило, названное словами заказчика.
+ *
+ * Имя поля базы человеку ничего не говорит, а принести он должен вполне
+ * конкретную вещь. Без этого перевода «needs_input» превращается в «что-то не
+ * так», то есть в ничто.
+ */
+export const SITE_INPUT_LABELS: Record<string, string> = {
+  storeys: 'number of storeys',
+  heightM: 'building height',
+  coverageRatio: 'plot area and building footprint',
+  floorAreaRatio: 'plot area',
+  setbackFrontM: 'distance to the front boundary',
+  setbackSideM: 'distance to the side boundary',
+  setbackRearM: 'distance to the rear boundary',
+  parkingPerUnit: 'number of units and parking spaces',
+  greenRatio: 'plot area and green area',
+}

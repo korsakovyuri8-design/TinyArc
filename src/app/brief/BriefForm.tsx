@@ -93,6 +93,58 @@ function BriefFields({
             />
           </Field>
 
+          {/*
+            Участок спрашивается тремя полями и все три необязательны.
+            Владелец берёт их из своих бумаг; проектных величин — пятна, высоты,
+            отступов — он не знает, и требовать их у него значит требовать
+            проект до проекта. Без этих полей бриф принимается, а проверка на
+            нормы честно говорит, чего ей не хватило.
+          */}
+          <Field
+            label="Municipality"
+            name="municipality"
+            error={errors.municipality}
+            hint="Planning rules live at this level, not at the country's"
+          >
+            <input
+              id="municipality"
+              name="municipality"
+              type="text"
+              maxLength={120}
+              defaultValue={(values.municipality as string) ?? ''}
+            />
+          </Field>
+
+          <Field
+            label="Zone"
+            name="zone"
+            error={errors.zone}
+            hint="As written in your documents — leave empty if you do not know it"
+          >
+            <input
+              id="zone"
+              name="zone"
+              type="text"
+              maxLength={60}
+              defaultValue={(values.zone as string) ?? ''}
+            />
+          </Field>
+
+          <Field
+            label="Plot area, m²"
+            name="plotAreaSqm"
+            error={errors.plotAreaSqm}
+            hint="With it we can tell you before assembly whether the plot holds what you ordered"
+          >
+            <input
+              id="plotAreaSqm"
+              name="plotAreaSqm"
+              type="number"
+              min={0}
+              defaultValue={(values.plotAreaSqm as string | number) ?? ''}
+            />
+          </Field>
+
           <Field label="Climate zone" name="climateZone" error={errors.climateZone}>
             <Select
               name="climateZone"

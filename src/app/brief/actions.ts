@@ -54,6 +54,12 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       storeys: input.storeys,
       areaSqm: input.areaSqm,
       jurisdiction: input.jurisdiction,
+      // Пустое поле остаётся пустым, а не превращается в пустую строку и не в
+      // нулевой участок: движок отличает «не знаем» от «ноль», и эта разница
+      // и есть весь смысл проверки на нормы (п.7б).
+      municipality: input.municipality || null,
+      zone: input.zone || null,
+      plotAreaSqm: input.plotAreaSqm > 0 ? input.plotAreaSqm : null,
       climateZone: input.climateZone,
       materialSystem: input.materialSystem,
       regulatoryTrack: input.regulatoryTrack,

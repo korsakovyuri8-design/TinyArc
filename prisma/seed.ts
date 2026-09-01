@@ -36,6 +36,9 @@ const SEED_PROJECTS = [
   {
     clientKey: 'seed-brief-tivat',
     title: 'Villa in Tivat',
+    municipality: 'Tivat',
+    zone: 'S2',
+    plotAreaSqm: 1100,
     clientName: 'Marina',
     clientEmail: 'marina@example.com',
     typology: 'villa',
@@ -101,6 +104,9 @@ const SEED_PROJECTS = [
     // Намеренно вне продуктовой границы: стенд должен показывать и отказ (п.5).
     clientKey: 'seed-brief-rejected',
     title: 'Nine-storey block in Bar',
+    municipality: 'Bar',
+    zone: 'M1',
+    plotAreaSqm: 2400,
     clientName: 'Vuk',
     clientEmail: 'vuk@example.com',
     typology: 'multi_family',
@@ -148,6 +154,62 @@ async function alreadySeeded(): Promise<boolean> {
   return people > 0 || projects > 0
 }
 
+/**
+ * Источник выдуманных правил.
+ *
+ * Названо так, чтобы ни один человек, увидевший строку в панели, не принял её
+ * за норму. Настоящие правила приходят из планов муниципалитетов со ссылкой на
+ * статью и датой сверки; выдумать их — значит взять на себя ответственность за
+ * чужой отказ в органе. Стенду нужны данные, продукту нужна честность, и
+ * пометка стоит ровно между ними.
+ */
+const SYNTHETIC_SOURCE = 'Synthetic stand data — not a legal source'
+
+/**
+ * Правила для стенда.
+ *
+ * Подобраны так, чтобы на засеянных проектах были видны все четыре исхода:
+ * прошедшее, не прошедшее, непроверяемое за отсутствием данных и несверенное.
+ * Одинаково зелёный стенд ничего не проверяет.
+ */
+async function seedRules(): Promise<void> {
+  const now = Date.now()
+  const fresh = new Date(now - 30 * 86_400_000)
+  const long = new Date(now - 500 * 86_400_000)
+  const from = new Date('2020-01-01')
+
+  const rows = [
+    // Страновой уровень: действует всюду, где нет местного плана.
+    { layer: 'zoning', jurisdiction: 'ME', subject: 'storeys', operator: 'max', value: 5, article: 'country level', checkedAt: fresh },
+    // Тиват: проект стенда проходит по обоим.
+    { layer: 'zoning', jurisdiction: 'ME', municipality: 'Tivat', zone: 'S2', subject: 'floor_area_ratio', operator: 'max', value: 0.6, article: 'S2 · density', checkedAt: fresh },
+    { layer: 'zoning', jurisdiction: 'ME', municipality: 'Tivat', zone: 'S2', subject: 'coverage_ratio', operator: 'max', value: 0.3, article: 'S2 · coverage', checkedAt: fresh },
+    { layer: 'zoning', jurisdiction: 'ME', municipality: 'Tivat', zone: 'S2', subject: 'setback_front_m', operator: 'min', value: 5, article: 'S2 · setbacks', checkedAt: fresh },
+    // Несверенное: показывается с пометкой и никого не блокирует.
+    { layer: 'zoning', jurisdiction: 'ME', municipality: 'Tivat', zone: 'S2', subject: 'height_m', operator: 'max', value: 11, article: 'S2 · height', checkedAt: long },
+    // Бар: девятиэтажный проект не проходит по этажности и по плотности.
+    { layer: 'zoning', jurisdiction: 'ME', municipality: 'Bar', zone: 'M1', subject: 'floor_area_ratio', operator: 'max', value: 1.5, article: 'M1 · density', checkedAt: fresh },
+  ]
+
+  await prisma.complianceRule.createMany({
+    data: rows.map((row) => ({
+      layer: row.layer,
+      jurisdiction: row.jurisdiction,
+      municipality: row.municipality ?? null,
+      zone: row.zone ?? null,
+      subject: row.subject,
+      operator: row.operator,
+      value: row.value,
+      document: SYNTHETIC_SOURCE,
+      article: row.article,
+      effectiveFrom: from,
+      checkedAt: row.checkedAt,
+    })),
+  })
+
+  console.log(`Сид: положено ${rows.length} выдуманных правил (не норма, а данные стенда)`)
+}
+
 async function main() {
   if (process.env.BUREAU_SEED_FORCE !== '1' && (await alreadySeeded())) {
     console.log('Сид: стенд уже засеян, пересборка пропущена (BUREAU_SEED_FORCE=1 — пересобрать).')
@@ -187,6 +249,9 @@ async function main() {
   // Убираются только выдуманные записи. Живые заявки и брифы не трогаются.
   await prisma.project.deleteMany({ where: { clientKey: { startsWith: 'seed-brief-' } } })
   await prisma.specialist.deleteMany({ where: { accessKey: { startsWith: 'seed-key-' } } })
+  await prisma.complianceRule.deleteMany({ where: { document: { startsWith: SYNTHETIC_SOURCE } } })
+
+  await seedRules()
 
   const pool = demoPool()
   console.log(`Сид: кладём ${pool.length} специалистов…`)
@@ -272,6 +337,9 @@ async function main() {
         materialSystem: seed.materialSystem,
         regulatoryTrack: 'light',
         targetStage: seed.targetStage,
+        municipality: 'municipality' in seed ? seed.municipality : null,
+        zone: 'zone' in seed ? seed.zone : null,
+        plotAreaSqm: 'plotAreaSqm' in seed ? seed.plotAreaSqm : null,
         terrain: seed.terrain,
         gridConnection: seed.gridConnection,
         softwareJson: toList(seed.software),

@@ -27,7 +27,9 @@ import type { AssemblyGap } from '@/engine/types'
 import { parseList } from '@/lib/rows'
 import { BreakdownRow } from '@/components/Breakdown'
 import { ChosenDirection } from '@/components/ChosenDirection'
+import { Compliance } from '@/components/Compliance'
 import { chosenDirection } from '@/lib/services/direction'
+import { checkSite } from '@/lib/services/compliance'
 import { prisma } from '@/lib/db'
 import { latestRun } from '@/lib/services/matching'
 import { threadOf } from '@/lib/services/dialogue'
@@ -63,13 +65,14 @@ export default async function ProjectPage({
 
   if (!project) redirect('/enter')
 
-  const [run, direction, thread, pendingStages, approved, invoices] = await Promise.all([
+  const [run, direction, thread, pendingStages, approved, invoices, rules] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     threadOf(project.id),
     stagesAwaitingClient(project.id),
     approvedStages(project.id),
     invoicesOf(project.id),
+    checkSite(project),
   ])
 
   const unpaid = new Set(invoices.filter((i) => i.status === 'issued').map((i) => i.stage))
@@ -161,6 +164,8 @@ export default async function ProjectPage({
             </p>
           </div>
         )}
+
+        {project.status !== 'rejected' && <Compliance view={rules} audience="client" />}
 
         {direction ? (
           <div style={{ marginTop: 40 }}>

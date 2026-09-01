@@ -88,6 +88,22 @@ export const briefSchema = z.object({
   storeys: z.coerce.number().int().min(1, 'At least one storey').max(60),
   areaSqm: z.coerce.number().int().min(10, 'Too small').max(200_000),
   jurisdiction: z.enum(JURISDICTIONS),
+  /*
+   * Участок: то, что у владельца есть в бумагах, и не больше.
+   *
+   * Спрашивается ровно три вещи, потому что остального он не знает и знать не
+   * обязан. Пятно застройки, высота и отступы — это результат проектирования,
+   * а не данные заказчика; их проверка ждёт концепции и до неё честно говорит,
+   * что ей нечем считать. Зато плотность проверяется сразу, и это самая
+   * дорогая из пропускаемых ошибок: участок, который не вмещает заказанные
+   * метры, надо увидеть до сборки команды, а не после оплаты стадии.
+   *
+   * Всё три поля необязательны: без них бриф принимается, а проверка норм
+   * говорит, чего не хватило.
+   */
+  municipality: trimmed.max(120).default(''),
+  zone: trimmed.max(60).default(''),
+  plotAreaSqm: z.coerce.number().int().min(0).max(2_000_000).default(0),
   climateZone: z.enum(CLIMATE_ZONES),
   materialSystem: z.enum(MATERIAL_SYSTEMS),
   regulatoryTrack: z.enum(REGULATORY_TRACKS),
