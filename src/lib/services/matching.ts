@@ -11,6 +11,7 @@ import { planTickets } from '@/engine/relay'
 import type { Assembly } from '@/engine/types'
 import type { Discipline } from '@/engine/taxonomy'
 import { prisma } from '../db'
+import { forRecord } from '../run-record'
 import { toList, toProfile, toRequirements } from '../rows'
 import { historyFor } from './collaboration'
 import { applyGates } from './relay'
@@ -78,29 +79,37 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
       },
     })
 
-    // Разбор балла сохраняется целиком и навсегда: метрики специалиста
-    // изменятся, а объяснение принятого решения меняться не должно (п.9).
-    for (const candidate of assembly.candidates) {
-      await tx.candidate.create({
-        data: {
-          runId: run.id,
-          specialistId: candidate.specialist.id,
-          discipline: candidate.discipline,
-          roleSpecializationsJson: toList(candidate.role.specializations),
-          roleMode: candidate.role.mode,
-          passed: candidate.passed,
-          failedGate: candidate.failedGate ?? '',
-          portfolioRating: candidate.breakdown.portfolioRating,
-          deliveryScore: candidate.breakdown.deliveryScore,
-          historyWeight: candidate.breakdown.historyWeight,
-          relevance: candidate.breakdown.relevance,
-          quality: candidate.breakdown.quality,
-          availability: candidate.breakdown.availability,
-          score: candidate.breakdown.score,
-          rank: candidate.rank,
-        },
-      })
-    }
+    /*
+     * Разбор балла сохраняется целиком и навсегда: метрики специалиста
+     * изменятся, а объяснение принятого решения меняться не должно (п.9).
+     *
+     * Одной записью, а не строкой за раз. Строк здесь пул на роли: при сотне
+     * человек их четыре с половиной сотни, при тысяче — четыре с половиной
+     * тысячи, и каждая уходила отдельным обращением к базе внутри транзакции.
+     * Замерено на живом Postgres: сборка при пуле в тысячу занимала пять
+     * секунд и упиралась в предел транзакции, при пяти тысячах отказывала
+     * совсем — то есть бриф перестал бы приниматься ровно в тот момент, когда
+     * пул наберётся. Продукт растёт пулом; это был отложенный отказ.
+     */
+    await tx.candidate.createMany({
+      data: forRecord(assembly).map((candidate) => ({
+        runId: run.id,
+        specialistId: candidate.specialist.id,
+        discipline: candidate.discipline,
+        roleSpecializationsJson: toList(candidate.role.specializations),
+        roleMode: candidate.role.mode,
+        passed: candidate.passed,
+        failedGate: candidate.failedGate ?? '',
+        portfolioRating: candidate.breakdown.portfolioRating,
+        deliveryScore: candidate.breakdown.deliveryScore,
+        historyWeight: candidate.breakdown.historyWeight,
+        relevance: candidate.breakdown.relevance,
+        quality: candidate.breakdown.quality,
+        availability: candidate.breakdown.availability,
+        score: candidate.breakdown.score,
+        rank: candidate.rank,
+      })),
+    })
 
     // Прошлая сборка снимается целиком: половина старой команды и половина
     // новой — это не команда.
@@ -119,20 +128,21 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
       return run.id
     }
 
-    for (const member of assembly.team) {
-      await tx.teamSlot.create({
-        data: {
-          projectId,
-          runId: run.id,
-          specialistId: member.specialist.id,
-          discipline: member.discipline,
-          roleSpecializationsJson: toList(member.role.specializations),
-          roleMode: member.role.mode,
-          isSignatory: member.isSignatory,
-          score: member.score,
-        },
-      })
-    }
+    // Состав — тоже одной записью: строк немного, но обращений к базе внутри
+    // транзакции должно быть столько, сколько нужно, а не столько, сколько
+    // строк.
+    await tx.teamSlot.createMany({
+      data: assembly.team.map((member) => ({
+        projectId,
+        runId: run.id,
+        specialistId: member.specialist.id,
+        discipline: member.discipline,
+        roleSpecializationsJson: toList(member.role.specializations),
+        roleMode: member.role.mode,
+        isSignatory: member.isSignatory,
+        score: member.score,
+      })),
+    })
 
     const assignee = new Map<Discipline, string>(
       assembly.team.map((m) => [m.discipline, m.specialist.id]),
@@ -162,16 +172,19 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
       idByKey.set(plan.key, ticket.id)
     }
 
-    for (const plan of plans) {
-      for (const dependency of plan.dependsOn) {
-        const prerequisiteId = idByKey.get(dependency)
-        if (!prerequisiteId) continue
-
-        await tx.ticketDependency.create({
-          data: { dependentId: idByKey.get(plan.key)!, prerequisiteId },
-        })
-      }
-    }
+    /*
+     * Связи графа — одной записью. Сами задачи заводятся по одной намеренно:
+     * их идентификаторы нужны здесь же, а `createMany` их не возвращает.
+     * Задач два-три десятка на проект, и это число от размера пула не зависит.
+     */
+    await tx.ticketDependency.createMany({
+      data: plans.flatMap((plan) =>
+        plan.dependsOn
+          .map((dependency) => idByKey.get(dependency))
+          .filter((prerequisiteId): prerequisiteId is string => Boolean(prerequisiteId))
+          .map((prerequisiteId) => ({ dependentId: idByKey.get(plan.key)!, prerequisiteId })),
+      ),
+    })
 
     await tx.project.update({
       where: { id: projectId },
