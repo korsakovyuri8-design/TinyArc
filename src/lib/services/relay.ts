@@ -581,22 +581,52 @@ export async function generateRender(
 }
 
 /**
+ * Сколько принятых задач показывается на доске.
+ *
+ * Принятые нужны не как история, а как подтверждение: человек сдал работу и
+ * должен увидеть, что её взяли. Для этого хватает последних.
+ *
+ * Живые задачи показываются все и потолка не имеют: их число ограничено
+ * живыми проектами, и срезанная задача — это работа, которую никто не сделает,
+ * потому что её никто не увидел. Принятые же не убывают никогда, и через год
+ * работы доска превращалась в стену сданного, сквозь которую надо искать
+ * сегодняшнее.
+ */
+export const ACCEPTED_SHOWN = 20
+
+/**
  * Что специалист видит по своим тикетам.
  *
  * Постановка задачи выдаётся вместе с открытием тикета: до гейта у специалиста
  * есть название и стадия, но не содержание — входные артефакты ещё не готовы.
+ *
+ * Два запроса, а не один с потолком: живое и законченное живут по разным
+ * правилам, и общий потолок однажды срезал бы открытую задачу.
  */
 export async function ticketsOf(specialistId: string) {
-  const tickets = await prisma.ticket.findMany({
-    where: { specialistId },
-    orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+  const shape = {
     include: {
       project: { select: { id: true, title: true, jurisdiction: true, typology: true } },
       dependsOn: { include: { prerequisite: { select: { discipline: true, status: true } } } },
     },
-  })
+  } as const
 
-  return tickets.map((t) => ({
+  const [live, accepted, acceptedTotal] = await Promise.all([
+    prisma.ticket.findMany({
+      where: { specialistId, status: { not: 'accepted' } },
+      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+      ...shape,
+    }),
+    prisma.ticket.findMany({
+      where: { specialistId, status: 'accepted' },
+      orderBy: { acceptedAt: 'desc' },
+      take: ACCEPTED_SHOWN,
+      ...shape,
+    }),
+    prisma.ticket.count({ where: { specialistId, status: 'accepted' } }),
+  ])
+
+  const tickets = [...live, ...accepted].map((t) => ({
     ...t,
     spec: t.status === 'blocked' ? '' : t.spec,
     // Соседи по графу видны как дисциплины, не как люди (п.11).
@@ -604,6 +634,8 @@ export async function ticketsOf(specialistId: string) {
       .filter((d) => d.prerequisite.status !== 'accepted')
       .map((d) => d.prerequisite.discipline),
   }))
+
+  return { tickets, acceptedTotal }
 }
 
 /**

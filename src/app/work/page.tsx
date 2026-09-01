@@ -2,14 +2,15 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib/labels'
 import type { Discipline, DocStage } from '@/engine/taxonomy'
-import { ticketsOf } from '@/lib/services/relay'
+import { ACCEPTED_SHOWN, ticketsOf } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
 import { pageMetadata } from '@/lib/metadata'
+import { fill } from '@/lib/fill'
 import { dateTime } from '@/lib/format'
 
 export const metadata = pageMetadata('My tasks')
 
-type Ticket = Awaited<ReturnType<typeof ticketsOf>>[number]
+type Ticket = Awaited<ReturnType<typeof ticketsOf>>['tickets'][number]
 
 export default async function WorkPage({
   searchParams,
@@ -25,7 +26,7 @@ export default async function WorkPage({
   // нужен от него профиль. Ведём туда, а не показываем пустой экран.
   if (specialist.status === 'invited') redirect('/work/profile/complete')
 
-  const tickets = await ticketsOf(specialist.id)
+  const { tickets, acceptedTotal } = await ticketsOf(specialist.id)
 
   // Подтверждение выхода показывается здесь, а не на тикете: после выхода
   // тикет уже не его, и страница ушла бы из-под ног ошибкой доступа.
@@ -57,7 +58,16 @@ export default async function WorkPage({
     },
     {
       title: 'Submitted',
-      note: 'Handed in or accepted',
+      /*
+       * Принятые здесь — подтверждение, а не история: человек сдал работу и
+       * должен увидеть, что её взяли. Их показываются последние, и об этом
+       * сказано прямо: доска, копящая всё сданное за годы, прячет за собой
+       * сегодняшнюю работу.
+       */
+      note:
+        acceptedTotal > ACCEPTED_SHOWN
+          ? fill('Handed in, and the last {count} accepted', { count: ACCEPTED_SHOWN })
+          : 'Handed in or accepted',
       tickets: tickets.filter(
         (ticket) => ticket.status === 'submitted' || ticket.status === 'accepted',
       ),
