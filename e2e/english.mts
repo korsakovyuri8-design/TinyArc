@@ -177,6 +177,15 @@ await clean(specialist, '/work/profile')
 const client = await as(ticket.project.clientKey)
 await clean(client, '/project')
 
+/*
+ * Экран сразу после отправки брифа: на нём выдают ключ доступа.
+ *
+ * Отдельным адресом, потому что панель с ключом показывается только с этой
+ * пометкой — и ровно поэтому в ней два года прожили две русские фразы. Первый
+ * экран, который видит заказчик, проверками не накрывался вовсе.
+ */
+await clean(client, '/project/direction?issued=1')
+
 // Панель бюро: тот же язык, что и у всех остальных.
 const bureau = await (await browser.newContext()).newPage()
 await bureau.goto(`${BASE}/ops`)

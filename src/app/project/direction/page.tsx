@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { directionsOf } from '@/lib/services/direction'
 import { currentProjectId } from '@/lib/session'
+import { mailer } from '@/lib/mail'
 import { DirectionPicker } from './DirectionPicker'
 
 export const metadata = { title: 'Project direction — TinyArc Cloud Bureau' }
@@ -41,9 +42,28 @@ export default async function DirectionPage({
             <p className="num" style={{ fontSize: '1.3rem', color: 'var(--accent)', margin: '12px 0' }}>
               {project.clientKey}
             </p>
+            {/*
+              Две вещи, и обе всплыли на пустом стенде в первый же день.
+              Фраза была по-русски — на первом экране, который видит заказчик,
+              и сторожевая проверка её не поймала: вставка `{' '}` разрывала
+              кусок разметки, а проверка искала текст без вставок. И фраза
+              врала: при выключенной почте копия никуда не уходит, а человек,
+              которому обещали письмо, закрывает страницу с ключом и уходит
+              его ждать.
+            */}
             <p className="muted" style={{ marginBottom: 0, fontSize: '0.9rem' }}>
-              Сохраните: по нему вы вернётесь в кабинет с любого устройства. Копия ушла на{' '}
-              {project.clientEmail}.
+              {mailer().mode === 'stub' ? (
+                <>
+                  Save it: this key is how you come back to the workspace from any device. Email
+                  delivery is off here, so no copy has been sent — this screen is the only place it
+                  is shown.
+                </>
+              ) : (
+                <>
+                  Save it: this key is how you come back to the workspace from any device. A copy
+                  has gone to {project.clientEmail}.
+                </>
+              )}
             </p>
           </div>
         )}
