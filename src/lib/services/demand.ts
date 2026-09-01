@@ -26,30 +26,61 @@ export type LostProject = {
   since: Date
 }
 
+/** Сколько брифов без команды показывается списком. */
+export const LOST_SHOWN = 100
+
+export type LostDemand = {
+  rows: LostProject[]
+  /** Сколько их всего: список урезан, счёт — нет. */
+  total: number
+}
+
 /**
  * Проекты, у которых последний прогон не собрал команду.
  *
  * «Последний» здесь принципиально: прогон повторяют после того, как пул
  * пополнился, и проект, собравшийся со второго раза, в этом списке делать
  * нечего.
+ *
+ * Список с потолком, и это единственная очередь бюро, которой потолок нужен по
+ * природе. Остальные — счета, подтверждения, вопросы — убывают, когда бюро
+ * работает; эта не убывает никогда: бриф, под который так и не нашлось
+ * человека, остаётся черновиком навсегда, и на запуске, с тонким пулом, растёт
+ * быстрее всех. Три с половиной тысячи таких брифов давали два мегабайта
+ * разметки и секунду на главной странице панели — той, которую открывают
+ * каждый день. Показываются ждущие дольше всех: пул пополняют под них.
  */
-export async function lostProjects(): Promise<LostProject[]> {
-  const projects = await prisma.project.findMany({
-    where: { status: 'draft' },
-    select: {
-      id: true,
-      title: true,
-      jurisdiction: true,
-      createdAt: true,
-      runs: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: { outcome: true, gapJson: true, createdAt: true },
-      },
-    },
-  })
+export async function lostProjects(): Promise<LostDemand> {
+  /*
+   * Черновик с прогоном — это и есть несобравшийся: удачный прогон переводит
+   * проект в «собран», отказной — в «отказано». Поэтому счёт берётся запросом,
+   * а не длиной списка, а разбор ниже остаётся страховкой, а не фильтром.
+   */
+  const where = { status: 'draft', runs: { some: {} } }
 
-  return projects
+  const [total, projects] = await Promise.all([
+    prisma.project.count({ where }),
+    prisma.project.findMany({
+      where,
+      // Потолок снимается с начала очереди: дольше всех ждёт тот, кто пришёл
+      // раньше, и прогон идёт следом за брифом.
+      orderBy: { createdAt: 'asc' },
+      take: LOST_SHOWN,
+      select: {
+        id: true,
+        title: true,
+        jurisdiction: true,
+        createdAt: true,
+        runs: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { outcome: true, gapJson: true, createdAt: true },
+        },
+      },
+    }),
+  ])
+
+  const rows = projects
     .flatMap((project) => {
       const run = project.runs[0]
       if (!run || run.outcome === 'ok' || run.outcome === 'rejected') return []
@@ -66,4 +97,6 @@ export async function lostProjects(): Promise<LostProject[]> {
       ]
     })
     .sort((a, b) => a.since.getTime() - b.since.getTime())
+
+  return { rows, total }
 }

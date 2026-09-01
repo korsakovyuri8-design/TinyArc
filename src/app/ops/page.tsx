@@ -394,50 +394,69 @@ export default async function OpsPage() {
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
           <h2>Could not take on</h2>
-          {lost.length > 0 && <span className="tag tag-fail">{lost.length}</span>}
+          {lost.total > 0 && <span className="tag tag-fail">{lost.total}</span>}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
           Briefs for which no team came together. This is not a list of failures but a hiring list — and the most expensive one there is: not “who might we hire”, but which commission we would already have been paid for, had we had this person.
         </p>
 
-        {lost.length === 0 ? (
+        {lost.total === 0 ? (
           <p className="dim">Every brief that reached a run came together.</p>
         ) : (
-          <div className="table-scroll panel" style={{ padding: 0 }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Country</th>
-                  <th>Who was missing</th>
-                  <th>Waiting</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lost.map((row) => (
-                  <tr key={row.projectId}>
-                    <td>{row.title}</td>
-                    <td className="dim">{JURISDICTION_NAMES[row.jurisdiction] ?? row.jurisdiction}</td>
-                    <td>
-                      {row.outcome === 'no_signatory' ? (
-                        <span className="tag tag-fail">no one to sign</span>
-                      ) : row.gap ? (
-                        <span className="dim" style={{ fontSize: '0.85rem' }}>
-                          {roleName(row.gap)}
-                          {row.gap.candidates > 0 && ` · candidates ${row.gap.candidates}`}
-                        </span>
-                      ) : (
-                        <span className="dim">no team came together</span>
-                      )}
-                    </td>
-                    <td className="num dim">
-                      {Math.max(0, Math.floor((Date.now() - row.since.getTime()) / 86_400_000))} days
-                    </td>
+          <>
+            {/*
+              Потолок назван вслух. Список не убывает сам: бриф, под который не
+              нашлось человека, остаётся в нём навсегда, — и молча показанная
+              сотня из трёх тысяч читалась бы как «всего сотня».
+            */}
+            {lost.total > lost.rows.length && (
+              <p className="hint" style={{ marginBottom: 16 }}>
+                {fill('Shown {count} of {total} — the longest-waiting first.', {
+                  count: lost.rows.length,
+                  total: lost.total,
+                })}
+              </p>
+            )}
+
+            <div className="table-scroll panel" style={{ padding: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Country</th>
+                    <th>Who was missing</th>
+                    <th>Waiting</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {lost.rows.map((row) => (
+                    <tr key={row.projectId}>
+                      <td>{row.title}</td>
+                      <td className="dim">
+                        {JURISDICTION_NAMES[row.jurisdiction] ?? row.jurisdiction}
+                      </td>
+                      <td>
+                        {row.outcome === 'no_signatory' ? (
+                          <span className="tag tag-fail">no one to sign</span>
+                        ) : row.gap ? (
+                          <span className="dim" style={{ fontSize: '0.85rem' }}>
+                            {roleName(row.gap)}
+                            {row.gap.candidates > 0 && ` · candidates ${row.gap.candidates}`}
+                          </span>
+                        ) : (
+                          <span className="dim">no team came together</span>
+                        )}
+                      </td>
+                      <td className="num dim">
+                        {Math.max(0, Math.floor((Date.now() - row.since.getTime()) / 86_400_000))}{' '}
+                        days
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         <div className="divider" style={{ marginTop: 48 }} />
