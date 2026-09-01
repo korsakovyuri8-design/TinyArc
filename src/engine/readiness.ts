@@ -211,13 +211,34 @@ export function readiness(pool: SpecialistProfile[], jurisdiction: Jurisdiction)
   const hasSignatory = usable.some((s) => s.signsIn.includes(jurisdiction))
   if (!hasSignatory) return 0
 
-  const doable = shapes.filter((shape) =>
-    requiredRoles(shape).every((role) =>
-      usable.some(
-        (s) => s.disciplines.includes(role.discipline) && coversRole(s.specializations, role),
-      ),
-    ),
-  )
+  /*
+   * Ответ «закрывает ли роль хоть кто-то» считается один раз на подпись роли.
+   *
+   * Без этого он считался заново на каждом появлении роли в каждой форме:
+   * форм внутри границы сотни, ролей в форме до полудюжины, и каждый ответ —
+   * проход по всему пулу. Замерено на живом Postgres: страница пула на базе в
+   * пять тысяч человек отдавалась 1,8 секунды, и 1,7 из них уходило сюда.
+   * Подписей роли при этом всего девятнадцать.
+   *
+   * Та же память уже стоит в `gaps` по той же причине; здесь она отсутствовала,
+   * и это не было видно, пока пул измерялся сотнями.
+   */
+  const covered = new Map<string, boolean>()
+
+  const coveredBy = (role: RequiredRole): boolean => {
+    const key = roleKey(role)
+    const known = covered.get(key)
+    if (known !== undefined) return known
+
+    const answer = usable.some(
+      (s) => s.disciplines.includes(role.discipline) && coversRole(s.specializations, role),
+    )
+
+    covered.set(key, answer)
+    return answer
+  }
+
+  const doable = shapes.filter((shape) => requiredRoles(shape).every(coveredBy))
 
   return doable.length / shapes.length
 }

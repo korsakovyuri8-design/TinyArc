@@ -16,6 +16,17 @@ export const metadata = { title: 'Projects — bureau panel' }
 /** Статусы проекта, по которым имеет смысл сужать. */
 const STATUSES = ['draft', 'assembled', 'delivering', 'delivered', 'rejected'] as const
 
+/**
+ * Сколько проектов показывать разом.
+ *
+ * Список проектов бюро растёт всю его жизнь и не убывает: закрытый проект
+ * остаётся. Без потолка страница читала и рисовала каждый — замерено на живом
+ * Postgres: при двух тысячах проектов это девятьсот миллисекунд и два
+ * мегабайта разметки в браузер оператора. Нужное при этом всегда в начале:
+ * список отсортирован от новых к старым, а старое ищут условиями.
+ */
+const SHOWN = 200
+
 export default async function ProjectsPage({
   searchParams,
 }: {
@@ -26,7 +37,7 @@ export default async function ProjectsPage({
   const params = await searchParams
   const one = (key: string): string => {
     const value = params[key]
-    return (Array.isArray(value) ? value[0] : value)?.trim() ?? ''
+  return (Array.isArray(value) ? value[0] : value)?.trim() ?? ''
   }
 
   const query = one('q')
@@ -61,6 +72,9 @@ export default async function ProjectsPage({
       .toLowerCase()
       .includes(needle)
   })
+
+  /* Показывается начало списка: он от новых к старым, старое ищут условиями. */
+  const shown = projects.slice(0, SHOWN)
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -119,6 +133,14 @@ export default async function ProjectsPage({
               : fill('{shown} of {total} match.', { shown: projects.length, total: all.length })}{' '}
             The client’s key is searched too — it is what you have when they write in.
           </p>
+
+          {projects.length > SHOWN && (
+            <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
+              {fill('The newest {shown} are listed. Narrow it down to reach the rest.', {
+                shown: SHOWN,
+              })}
+            </p>
+          )}
         </form>
 
         {all.length === 0 ? (
@@ -143,7 +165,7 @@ export default async function ProjectsPage({
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
+                {shown.map((project) => (
                   <tr key={project.id}>
                     <td>
                       <Link href={`/ops/projects/${project.id}`}>{project.title}</Link>
