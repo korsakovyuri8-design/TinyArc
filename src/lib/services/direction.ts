@@ -168,6 +168,29 @@ export class UnknownDirection extends Error {
   }
 }
 
+export class DirectionClosed extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'DirectionClosed'
+  }
+}
+
+/**
+ * Открыт ли ещё выбор направления.
+ *
+ * Направление — фиксация намерения до начала работ (п.7а), и смысл у него
+ * ровно один: команде есть куда двигаться. Отсюда граница — не «работа ещё не
+ * началась», а «выбор ещё до кого-то доходит».
+ *
+ * Поэтому `delivering` остаётся открытым: пока хоть один тикет жив, невыбранное
+ * направление означает, что архитектор и визуализатор работают вслепую, и
+ * очередь бюро (`awaitingDirection`) именно этого и ждёт. Закрыто там, где
+ * ждать больше некому: проект сдан или мы за него не взялись.
+ */
+export function directionOpen(status: string): boolean {
+  return status !== 'delivered' && status !== 'rejected'
+}
+
 /**
  * Фиксирует выбор клиента.
  *
@@ -175,6 +198,29 @@ export class UnknownDirection extends Error {
  * его отсутствие, и команде оно ничего не сообщает.
  */
 export async function chooseDirection(projectId: string, key: string): Promise<void> {
+  const project = await prisma.project.findUniqueOrThrow({
+    where: { id: projectId },
+    select: { status: true },
+  })
+
+  /*
+   * Закрытый проект выбора не принимает.
+   *
+   * На сданном проекте экран предлагал сменить направление и обещал, что
+   * «выбор дойдёт до команды раньше первого тикета», — тикетов не осталось ни
+   * одного, все приняты и подтверждены. Запись менялась, комплект оставался
+   * прежним, и в кабинете появлялось направление, которому не соответствует
+   * ни один выданный документ. На отказном — тем более: направлений там нет
+   * вовсе, но форма отправляется адресом и без экрана.
+   */
+  if (!directionOpen(project.status)) {
+    throw new DirectionClosed(
+      project.status === 'rejected'
+        ? 'This project is outside the product boundary: there is no team for a direction to reach.'
+        : 'The project is closed. The direction stays as the record of what was fixed at the start; a new direction is new work — write to the bureau.',
+    )
+  }
+
   const direction = await prisma.designDirection.findUnique({
     where: { projectId_key: { projectId, key } },
   })
