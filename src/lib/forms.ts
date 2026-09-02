@@ -9,6 +9,7 @@
 
 import { z } from 'zod'
 import { clean } from './text'
+import { TRADES } from '../engine/trades'
 import {
   CLIMATE_ZONES,
   DISCIPLINES,
@@ -158,6 +159,33 @@ export const siteSchema = z.object({
   parkingSpaces: optionalNumber(10_000),
   greenSqm: optionalNumber(2_000_000),
 })
+
+/**
+ * Подрядчик в сети.
+ *
+ * Заводит бюро — своей формой, не заявкой с сайта: сеть на пилоте собирается
+ * руками, по одному, и открытая форма подрядчика раньше времени наполнила бы
+ * её теми, кто просто нашёл страницу.
+ *
+ * Срок полиса обязателен. Галочка «застрахован» без даты вечна, а полис — нет,
+ * и подрядчик без страховки на объекте, за комплект которого отвечаем мы, —
+ * это наш риск, оплаченный заказчиком.
+ */
+export const contractorSchema = z.object({
+  displayName: trimmed.min(2, 'Name the contractor').max(120),
+  email: emailField('We need a working address'),
+  trades: z.array(z.enum(TRADES)).min(1, 'Which works they carry out'),
+  jurisdictions: z.array(z.enum(JURISDICTIONS)).min(1, 'Where they are entitled to work'),
+  typologies: z.array(z.enum(TYPOLOGIES)).min(1, 'Which typologies they have built'),
+  scaleBands: z.array(z.enum(SCALE_BANDS)).min(1, 'Which scale they have led'),
+  /** Свободный список: словарь городов закрыть нельзя. */
+  municipalities: trimmed.max(400).default(''),
+  portfolioRating: z.coerce.number().min(0).max(10),
+  portfolioUrl: trimmed.max(2000).default(''),
+  insuredUntil: trimmed.max(20).default(''),
+})
+
+export type ContractorInput = z.infer<typeof contractorSchema>
 
 export type SiteFormInput = z.infer<typeof siteSchema>
 

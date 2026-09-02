@@ -26,7 +26,8 @@ import { MessageRefused, answer } from '@/lib/services/dialogue'
 import { BillingRefused, issueDueInvoices, markPaid, voidInvoice } from '@/lib/services/billing'
 import { MAX_IMPORT_ROWS, importDrafts, inviteWaiting, reinvite } from '@/lib/services/intake'
 import { readIntake } from '@/lib/intake/map'
-import { fieldErrors, fromFormData, siteSchema } from '@/lib/forms'
+import { toList } from '@/lib/rows'
+import { contractorSchema, fieldErrors, fromFormData, siteSchema } from '@/lib/forms'
 import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
@@ -163,6 +164,93 @@ export async function rerunAssembly(_prev: OpsState, formData: FormData): Promis
  * Пустое поле стирает значение. Иначе неверно введённую высоту нельзя было бы
  * убрать — только заменить другой такой же.
  */
+/** Поля формы подрядчика, приходящие списком. */
+const CONTRACTOR_MULTI = ['trades', 'jurisdictions', 'typologies', 'scaleBands']
+
+/**
+ * Заводит подрядчика в сеть.
+ *
+ * Формой бюро, а не заявкой с сайта: сеть на пилоте собирается руками, по
+ * одному. Статус сразу `active`, если портфолио прошло порог, и `rejected`,
+ * если нет, — тем же порогом и той же логикой, что у специалиста. Разбирать
+ * очередь заявок подрядчиков пока нечего: очереди нет.
+ */
+export async function addContractor(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const parsed = contractorSchema.safeParse(fromFormData(formData, CONTRACTOR_MULTI))
+
+  if (!parsed.success) {
+    const errors = fieldErrors(parsed.error)
+    return { error: Object.values(errors)[0] ?? 'Check the form.' }
+  }
+
+  const input = parsed.data
+
+  /*
+   * Срок полиса разбирается здесь, а не в схеме: пустая дата допустима — она
+   * означает «срок неизвестен», и подрядчик с ней не проходит страховой гейт.
+   * Неразобранная строка означает то же самое, и молча превращать её в
+   * «застрахован» нельзя.
+   */
+  const until = input.insuredUntil ? new Date(input.insuredUntil) : null
+  const insuredUntil = until && !Number.isNaN(until.getTime()) ? until : null
+
+  const municipalities = input.municipalities
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean)
+
+  try {
+    await prisma.contractor.create({
+      data: {
+        displayName: input.displayName,
+        email: input.email,
+        status: input.portfolioRating >= PORTFOLIO_THRESHOLD ? 'active' : 'rejected',
+        source: 'import',
+        tradesJson: toList(input.trades),
+        jurisdictionsJson: toList(input.jurisdictions),
+        municipalitiesJson: JSON.stringify(municipalities),
+        typologiesJson: toList(input.typologies),
+        scaleBandsJson: toList(input.scaleBands),
+        portfolioRating: input.portfolioRating,
+        portfolioUrl: input.portfolioUrl,
+        insured: insuredUntil !== null,
+        insuredUntil,
+      },
+    })
+  } catch {
+    // Единственная причина, по которой запись не проходит, — тот же адрес.
+    // Показывать её как «что-то пошло не так» значит заставить оператора
+    // гадать, что он сделал не так.
+    return { error: 'A contractor with this address is already in the network.' }
+  }
+
+  revalidatePath('/ops/contractors')
+
+  return {
+    message:
+      input.portfolioRating >= PORTFOLIO_THRESHOLD
+        ? 'Added to the network.'
+        : `Recorded, but below the ${PORTFOLIO_THRESHOLD}/10 threshold — not in selection.`,
+  }
+}
+
+/** Снимает подрядчика с отбора или возвращает обратно. */
+export async function setContractorStatus(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const id = String(formData.get('contractorId') ?? '')
+  const status = String(formData.get('status') ?? '')
+
+  if (!['active', 'paused'].includes(status)) return { error: 'Unknown status.' }
+
+  await prisma.contractor.update({ where: { id }, data: { status } })
+  revalidatePath('/ops/contractors')
+
+  return { message: status === 'active' ? 'Back in selection.' : 'Taken out of selection.' }
+}
+
 export async function setSiteFacts(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 

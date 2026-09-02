@@ -39,9 +39,10 @@ export default async function OpsPage() {
     )
   }
 
-  const [pending, active, projects, openTickets, submitted, alerts] = await Promise.all([
+  const [pending, active, contractors, projects, openTickets, submitted, alerts] = await Promise.all([
     prisma.specialist.count({ where: { status: 'pending' } }),
     prisma.specialist.count({ where: { status: 'active' } }),
+    prisma.contractor.count({ where: { status: 'active' } }),
     prisma.project.count(),
     prisma.ticket.count({ where: { status: 'open' } }),
     prisma.ticket.count({ where: { status: 'submitted' } }),
@@ -73,6 +74,7 @@ export default async function OpsPage() {
           <Tile value={projects} label="projects" href="/ops/projects" />
           <Tile value={submitted} label="await acceptance" href="/ops/projects" accent={submitted > 0} />
           <Tile value={openTickets} label="tickets in progress" href="/ops/projects" />
+          <Tile value={contractors} label="contractors in the network" href="/ops/contractors" />
         </div>
 
         <div className="divider" style={{ marginTop: 48 }} />

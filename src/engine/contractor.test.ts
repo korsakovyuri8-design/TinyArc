@@ -126,6 +126,19 @@ describe('короткий список', () => {
     expect(shortlist(many, need, [...needed]).ranked).toHaveLength(SHORTLIST_SIZE)
   })
 
+  /*
+   * Прошедших считается больше, чем показывается, и это число обязано быть
+   * отдельным: «двенадцать ведут работу → трое в списке» без него читается как
+   * девять отказов, и бюро идёт искать дыру, которой нет.
+   */
+  it('прошедшие считаются до потолка, а не по длине списка', () => {
+    const many = Array.from({ length: 12 }, (_, i) => contractor({ id: `c${i}` }))
+    const list = shortlist(many, need, [...needed])
+
+    expect(list.passed).toBe(12)
+    expect(list.ranked).toHaveLength(SHORTLIST_SIZE)
+  })
+
   it('лучший — первый', () => {
     const list = shortlist(
       [
@@ -154,8 +167,35 @@ describe('короткий список', () => {
     expect(list.pooled).toBe(4)
     expect(list.rejected.jurisdiction).toBe(1)
     expect(list.rejected.insurance).toBe(1)
-    expect(list.rejected.trade).toBe(1)
     expect(list.ranked).toHaveLength(1)
+  })
+
+  /*
+   * Найдено на стенде: сводка показывала «1 без страховки» на каждой из
+   * четырнадцати работ — один подрядчик с просроченным полисом попадал в
+   * причины даже там, где он такую работу не ведёт вовсе. Бюро читало это как
+   * четырнадцать дыр в сети вместо одной.
+   */
+  it('не ведущий работу — не кандидат, а не отклонённый', () => {
+    const list = shortlist(
+      [
+        contractor({ id: 'roofer', trades: ['roofing'], insured: false }),
+        contractor({ id: 'ok' }),
+      ],
+      need,
+      [...needed],
+    )
+
+    expect(list.outOfScope).toBe(1)
+    expect(list.rejected.insurance).toBe(0)
+    expect(list.rejected.trade).toBe(0)
+  })
+
+  it('причина засчитывается тому, кто мог бы эту работу сделать', () => {
+    const list = shortlist([contractor({ id: 'lapsed', insured: false })], need, [...needed])
+
+    expect(list.outOfScope).toBe(0)
+    expect(list.rejected.insurance).toBe(1)
   })
 
   it('никого не прошло — список пуст, а не заполнен кем попало', () => {

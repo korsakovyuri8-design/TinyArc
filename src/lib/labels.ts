@@ -296,3 +296,48 @@ export const SITE_INPUT_LABELS: Record<string, string> = {
   parkingPerUnit: 'number of units and parking spaces',
   greenRatio: 'plot area and green area',
 }
+
+/** Работы на стройке, названные для человека. */
+export const TRADE_LABELS: Record<string, string> = {
+  earthworks: 'Earthworks',
+  foundations: 'Foundations',
+  structure: 'Structure',
+  masonry: 'Masonry',
+  roofing: 'Roofing',
+  waterproofing: 'Waterproofing',
+  facade: 'Façade',
+  joinery: 'Windows and doors',
+  electrical: 'Electrical',
+  plumbing: 'Plumbing',
+  hvac: 'Heating and ventilation',
+  finishes: 'Finishes',
+  landscaping: 'Landscaping',
+  utility_connection: 'Utility connection',
+}
+
+/** Группы закупки. */
+export const MATERIAL_GROUP_LABELS: Record<string, string> = {
+  concrete_rebar: 'Concrete and rebar',
+  blocks_mortar: 'Blocks and mortar',
+  timber: 'Timber',
+  steel: 'Steel',
+  insulation: 'Insulation',
+  waterproofing: 'Waterproofing',
+  roofing: 'Roofing',
+  windows_doors: 'Windows and doors',
+  cladding: 'Cladding',
+  electrical: 'Electrical',
+  plumbing: 'Plumbing',
+  hvac: 'Heating and ventilation',
+  finishes: 'Finishes',
+  landscape: 'Landscape',
+}
+
+/** Почему подрядчик не прошёл гейт. Для бюро: это список дыр в сети. */
+export const CONTRACTOR_REJECTION_LABELS: Record<string, string> = {
+  jurisdiction: 'not entitled to work here',
+  insurance: 'no valid insurance',
+  trade: 'does not carry out this work',
+  portfolio: 'below the portfolio threshold',
+  availability: 'not taking work',
+}

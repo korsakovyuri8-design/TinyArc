@@ -13,6 +13,12 @@ import {
 import { prisma } from '@/lib/db'
 import { Compliance } from '@/components/Compliance'
 import { checkSite } from '@/lib/services/compliance'
+import { buildFor } from '@/lib/services/contractors'
+import {
+  CONTRACTOR_REJECTION_LABELS,
+  MATERIAL_GROUP_LABELS,
+  TRADE_LABELS,
+} from '@/lib/labels'
 import {
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
@@ -78,7 +84,7 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction, alerts, thread, withdrawals, rules] = await Promise.all([
+  const [run, direction, alerts, thread, withdrawals, rules, build] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     alertsForProject(project.id),
@@ -89,6 +95,7 @@ export default async function OpsProjectPage({
       include: { specialist: { select: { displayName: true } } },
     }),
     checkSite(project),
+    buildFor(project),
   ])
 
   const replacedBy = new Map(
@@ -207,6 +214,79 @@ export default async function OpsProjectPage({
         </div>
 
         <Compliance view={rules} audience="bureau" />
+
+        {/*
+          Подрядчики и закупка. Список считается тем же движком, что состав
+          команды, и по тем же правилам: гейты, балл, трое. Пустая сеть
+          показывается пустой — «подрядчиков нет» и «мы их не нашли» разные
+          сообщения, и второе бюро должно уметь отличить.
+        */}
+        <div className="panel" style={{ marginTop: 40 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div className="label label-accent">Build: contractors and materials</div>
+            <Link href="/ops/contractors" className="dim" style={{ fontSize: '0.82rem' }}>
+              network of {build.networkSize} →
+            </Link>
+          </div>
+
+          <p className="muted" style={{ marginTop: 12, marginBottom: 18 }}>
+            Derived from the project itself: typology, areas, material system, terrain. The client pays for access to the shortlist; a contractor never pays for a place in it.
+          </p>
+
+          {build.networkSize === 0 ? (
+            <p className="dim" style={{ marginBottom: 0 }}>
+              No contractors in this country yet, so there is nothing to shortlist. That is a gap in the network, not a verdict on the project.
+            </p>
+          ) : (
+            <div className="table-scroll" style={{ margin: '0 -22px' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Work</th>
+                    <th>Shortlist</th>
+                    <th>Carry out this work → passed</th>
+                    <th>Why the rest did not pass</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {build.lists.map((list) => (
+                    <tr key={list.trade}>
+                      <td>{TRADE_LABELS[list.trade] ?? list.trade}</td>
+                      <td className="dim" style={{ fontSize: '0.85rem' }}>
+                        {list.ranked.length === 0
+                          ? '—'
+                          : list.ranked
+                              .map((row) => `${build.names[row.contractorId] ?? row.contractorId} · ${row.score}`)
+                              .join(' / ')}
+                      </td>
+                      {/*
+                        Считается от тех, кто эту работу ведёт, а не от всей
+                        сети: кровельщик, не прошедший «фундаменты», — другой
+                        подрядчик, а не дыра. Сводка отказов читается как
+                        список дыр, и врать в ней нельзя.
+                      */}
+                      <td className="num dim">
+                        {list.pooled - list.outOfScope} → {list.passed}
+                        {list.passed > list.ranked.length && ` · ${list.ranked.length} shown`}
+                      </td>
+                      <td className="dim" style={{ fontSize: '0.8rem' }}>
+                        {Object.entries(list.rejected)
+                          .filter(([, count]) => count > 0)
+                          .map(([reason, count]) => `${count} ${CONTRACTOR_REJECTION_LABELS[reason] ?? reason}`)
+                          .join(', ') || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="hint" style={{ marginTop: 18, marginBottom: 0 }}>
+            To buy: {build.groups.map((group) => MATERIAL_GROUP_LABELS[group] ?? group).join(', ')}.
+            Quantities come with the construction documentation — an approximate bill presented as exact is a dispute at handover.
+          </p>
+        </div>
 
         {run && run.slots.length > 0 && (
           <div className="table-scroll panel" style={{ marginTop: 24, padding: 0 }}>

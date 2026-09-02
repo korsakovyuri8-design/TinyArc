@@ -824,3 +824,62 @@ model ComplianceRule {
   /// Выборка всегда идёт по области: страна обязательна, остальное сужает.
   @@index([jurisdiction, municipality, zone])
 }
+
+/// Подрядчик: тот, кто строит по нашему комплекту (п.14б).
+///
+/// Отдельная сущность, а не роль специалиста, и это не удобство. Специалист
+/// проектирует и подписывает — за его работу мы отвечаем комплектом. Подрядчик
+/// строит, договор на работы заказчик заключает с ним сам, и ответственность
+/// за стройку мы не берём. Смешать их в одной таблице значит однажды поставить
+/// каменщика в состав проектной команды.
+///
+/// Поля оплаченной позиции здесь нет и не будет: заказчик платит за доступ к
+/// отбору, подрядчик — за доступ к спросу, но не за место в списке. Как и в
+/// Blind Relay, защита структурная — тут нечего проставить.
+model Contractor {
+  id          String @id @default(cuid())
+  displayName String
+  email       String @unique
+
+  /// pending — на разборе, active — в сети, paused — снят по своей просьбе,
+  /// rejected — не прошёл порог портфолио.
+  status String @default("pending")
+  /// Откуда взялся: apply | import. Не для отбора, а чтобы видеть сеть.
+  source String @default("import")
+
+  /// Работы, которые ведёт. Словарь — src/engine/trades.ts.
+  tradesJson         String @default("[]")
+  /// Где имеет право работать: регистрация и допуски.
+  jurisdictionsJson  String @default("[]")
+  /// Муниципалитеты, где реально работал. Пусто — по всей стране.
+  municipalitiesJson String @default("[]")
+  typologiesJson     String @default("[]")
+  scaleBandsJson     String @default("[]")
+
+  /// Оценка портфолио, 0–10. Порог 8/10 — гейт до балла, как у специалиста.
+  portfolioRating Float  @default(0)
+  portfolioUrl    String @default("")
+
+  /// Действует ли страховка ответственности. Гейт, а не признак: подрядчик без
+  /// полиса на объекте, за комплект которого отвечаем мы, — это наш риск,
+  /// оплаченный заказчиком.
+  insured      Boolean   @default(false)
+  /// До какого числа действует полис. По нему страховка гаснет сама, а не
+  /// остаётся вечной галочкой, поставленной однажды.
+  insuredUntil DateTime?
+  /// Берёт ли сейчас работу.
+  available    Boolean   @default(true)
+
+  // Метрики поставки. Считаются из событий, руками не правятся, — как у
+  // специалиста. Пока сданных объектов нет, качество это портфолио.
+  deliveredTickets      Int @default(0)
+  onTimeTickets         Int @default(0)
+  firstTimeRightTickets Int @default(0)
+  responseMinutesTotal  Int @default(0)
+  revisionRoundsTotal   Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}

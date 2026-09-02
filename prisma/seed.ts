@@ -210,6 +210,80 @@ async function seedRules(): Promise<void> {
   console.log(`Сид: положено ${rows.length} выдуманных правил (не норма, а данные стенда)`)
 }
 
+/**
+ * Выдуманная сеть подрядчиков.
+ *
+ * Подобрана так, чтобы на стенде были видны все причины отказа гейта, а не
+ * только зелёные строки: у одного просрочен полис, у другого нет права
+ * работать в стране, третий слабее порога. Сеть, где проходят все, ничего не
+ * проверяет.
+ */
+async function seedContractors(): Promise<void> {
+  const year = new Date(Date.now() + 300 * 86_400_000)
+  const past = new Date(Date.now() - 30 * 86_400_000)
+
+  const rows = [
+    {
+      name: 'Primorje Gradnja',
+      trades: ['earthworks', 'foundations', 'structure', 'masonry'],
+      towns: ['Tivat', 'Kotor'],
+      rating: 9.1,
+      until: year,
+    },
+    {
+      name: 'Adriatik Krov',
+      trades: ['roofing', 'waterproofing', 'facade'],
+      towns: ['Tivat'],
+      rating: 8.7,
+      until: year,
+    },
+    {
+      name: 'Montinstal',
+      trades: ['electrical', 'plumbing', 'hvac', 'utility_connection'],
+      towns: [],
+      rating: 8.4,
+      until: year,
+    },
+    {
+      name: 'Stolar Bokelj',
+      trades: ['joinery', 'finishes'],
+      towns: ['Kotor'],
+      rating: 8.2,
+      until: year,
+    },
+    {
+      name: 'Zeleni Vrt',
+      trades: ['landscaping', 'earthworks'],
+      towns: ['Tivat'],
+      rating: 8.9,
+      until: year,
+    },
+    // Полис просрочен: гейт гасит его сам, без чьего-либо участия.
+    { name: 'Stara Gradnja', trades: ['structure', 'masonry'], towns: [], rating: 9.4, until: past },
+    // Слабое портфолио: запись есть, в отборе нет.
+    { name: 'Brzo i Jeftino', trades: ['finishes'], towns: [], rating: 6.5, until: year },
+  ]
+
+  await prisma.contractor.createMany({
+    data: rows.map((row) => ({
+      displayName: row.name,
+      email: `${row.name.toLowerCase().replace(/[^a-z]+/g, '-')}@seed-build.invalid`,
+      status: row.rating >= 8 ? 'active' : 'rejected',
+      source: 'import',
+      tradesJson: JSON.stringify(row.trades),
+      jurisdictionsJson: JSON.stringify(['ME']),
+      municipalitiesJson: JSON.stringify(row.towns),
+      typologiesJson: JSON.stringify(['villa', 'townhouse', 'multi_family']),
+      scaleBandsJson: JSON.stringify(['upto_250', '250_1000']),
+      portfolioRating: row.rating,
+      insured: true,
+      insuredUntil: row.until,
+    })),
+  })
+
+  console.log(`Сид: положено ${rows.length} выдуманных подрядчиков`)
+}
+
 async function main() {
   if (process.env.BUREAU_SEED_FORCE !== '1' && (await alreadySeeded())) {
     console.log('Сид: стенд уже засеян, пересборка пропущена (BUREAU_SEED_FORCE=1 — пересобрать).')
@@ -250,8 +324,10 @@ async function main() {
   await prisma.project.deleteMany({ where: { clientKey: { startsWith: 'seed-brief-' } } })
   await prisma.specialist.deleteMany({ where: { accessKey: { startsWith: 'seed-key-' } } })
   await prisma.complianceRule.deleteMany({ where: { document: { startsWith: SYNTHETIC_SOURCE } } })
+  await prisma.contractor.deleteMany({ where: { email: { endsWith: '@seed-build.invalid' } } })
 
   await seedRules()
+  await seedContractors()
 
   const pool = demoPool()
   console.log(`Сид: кладём ${pool.length} специалистов…`)

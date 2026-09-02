@@ -160,7 +160,24 @@ export type Shortlist = {
   ranked: ContractorScore[]
   /** Сколько было в выборке до гейтов: число, а не ощущение. */
   pooled: number
-  /** Почему остальные не прошли. Для бюро, не для заказчика. */
+  /**
+   * Сколько из них эту работу вообще не ведут.
+   *
+   * Считается отдельно от отказов, и это не педантизм. Кровельщик, не
+   * прошедший «фундаменты», — не дыра в сети, а другой подрядчик; смешать его
+   * с настоящими причинами значит показать бюро четырнадцать проблем там, где
+   * их одна. Сводка отказов читается как список дыр, и врать в ней нельзя.
+   */
+  outOfScope: number
+  /**
+   * Сколько прошло гейты — до потолка списка.
+   *
+   * Отдельно от длины `ranked`, потому что список урезан. Без этого числа
+   * «восемь ведут работу → трое в списке» читается как пять отказов, которых
+   * не было, и бюро идёт искать несуществующую дыру.
+   */
+  passed: number
+  /** Почему не прошли те, кто эту работу ведёт. Для бюро, не для заказчика. */
   rejected: Record<ContractorRejection, number>
 }
 
@@ -189,8 +206,16 @@ export function shortlist(
   }
 
   const passed: ContractorProfile[] = []
+  let outOfScope = 0
 
   for (const contractor of contractors) {
+    // Не ведёт эту работу — не кандидат, а не отклонённый. Причина отказа
+    // засчитывается только тому, кто мог бы её сделать.
+    if (!contractor.trades.includes(need.trade)) {
+      outOfScope += 1
+      continue
+    }
+
     const reason = contractorGate(contractor, need)
     if (reason) {
       rejected[reason] += 1
@@ -209,5 +234,12 @@ export function shortlist(
     )
     .slice(0, size)
 
-  return { trade: need.trade, ranked, pooled: contractors.length, rejected }
+  return {
+    trade: need.trade,
+    ranked,
+    pooled: contractors.length,
+    outOfScope,
+    passed: passed.length,
+    rejected,
+  }
 }
