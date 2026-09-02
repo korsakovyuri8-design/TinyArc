@@ -26,6 +26,7 @@ import { MessageRefused, answer } from '@/lib/services/dialogue'
 import { BillingRefused, issueDueInvoices, markPaid, voidInvoice } from '@/lib/services/billing'
 import { MAX_IMPORT_ROWS, importDrafts, inviteWaiting, reinvite } from '@/lib/services/intake'
 import { readIntake } from '@/lib/intake/map'
+import { fieldErrors, fromFormData, siteSchema } from '@/lib/forms'
 import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
@@ -150,6 +151,53 @@ export async function rerunAssembly(_prev: OpsState, formData: FormData): Promis
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'The run failed.' }
   }
+}
+
+/**
+ * Участок и объём проекта.
+ *
+ * Заполняет бюро, а не заказчик, и это не про доверие: пятна застройки, высоты
+ * и отступов до проекта не существует. Они появляются с концепцией, и до тех
+ * пор проверка на нормы честно говорит, что ей нечем считать (п.7б).
+ *
+ * Пустое поле стирает значение. Иначе неверно введённую высоту нельзя было бы
+ * убрать — только заменить другой такой же.
+ */
+export async function setSiteFacts(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const projectId = String(formData.get('projectId') ?? '')
+  const parsed = siteSchema.safeParse(fromFormData(formData, []))
+
+  if (!parsed.success) {
+    const errors = fieldErrors(parsed.error)
+    return { error: Object.values(errors)[0] ?? 'Check the numbers.' }
+  }
+
+  const input = parsed.data
+  const value = (n: number | undefined) => (n === undefined ? null : n)
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: {
+      municipality: input.municipality || null,
+      zone: input.zone || null,
+      plotAreaSqm: value(input.plotAreaSqm),
+      footprintSqm: value(input.footprintSqm),
+      heightM: value(input.heightM),
+      setbackFrontM: value(input.setbackFrontM),
+      setbackSideM: value(input.setbackSideM),
+      setbackRearM: value(input.setbackRearM),
+      units: value(input.units),
+      parkingSpaces: value(input.parkingSpaces),
+      greenSqm: value(input.greenSqm),
+    },
+  })
+
+  revalidatePath(`/ops/projects/${projectId}`)
+  revalidatePath('/project')
+
+  return { message: 'Site data saved. The rules were re-checked against it.' }
 }
 
 export async function setTicketSpec(_prev: OpsState, formData: FormData): Promise<OpsState> {

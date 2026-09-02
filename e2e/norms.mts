@@ -160,6 +160,49 @@ check(
 )
 check(!bareText.includes('within'), 'ничего не выдаётся за проверенное')
 
+/*
+ * Круг, ради которого слой и делался: заказчик даёт то, что в его бумагах, а
+ * проектные величины вносит бюро — и проверка пересчитывается. Без этой части
+ * панель просила бы высоту, которую физически некуда положить.
+ */
+{
+  const page = await (await browser.newContext()).newPage()
+  await page.goto(`${BASE}/ops`)
+  const password = page.locator('input[type=password]')
+  if (await password.count()) {
+    await password.fill(process.env.BUREAU_OPS_PASSWORD ?? 'bureau-ops')
+    await page.click('button[type=submit]')
+    await page.waitForTimeout(2500)
+  }
+
+  await page.goto(`${BASE}/ops/projects/${inZone.id}`)
+  await page.fill('#site-footprintSqm', '200')
+  await page.click('button:has-text("Save site data")')
+  await page.waitForTimeout(2500)
+
+  const after = await checkProject(inZone.id)
+  const coverage = after.findings.find((f) => f.rule.subject === 'coverage_ratio')
+
+  check(coverage?.verdict === 'pass', 'внесённое пятно застройки закрыло непроверяемое правило')
+  check(coverage?.actual === 0.2, `и посчитано по участку, а не по зданию: ${coverage?.actual}`)
+  check(
+    !after.missing.includes('coverageRatio'),
+    'из списка недостающего оно ушло',
+  )
+
+  /* Пустое поле стирает значение: иначе ошибку нельзя убрать, только заменить. */
+  await page.goto(`${BASE}/ops/projects/${inZone.id}`)
+  await page.fill('#site-footprintSqm', '')
+  await page.click('button:has-text("Save site data")')
+  await page.waitForTimeout(2500)
+
+  const cleared = await checkProject(inZone.id)
+  check(
+    cleared.missing.includes('coverageRatio'),
+    'пустое поле стёрло значение, а не оставило прежнее',
+  )
+}
+
 await browser.close()
 
 await prisma.project.deleteMany({ where: { id: { in: [inZone.id, elsewhere.id, bare.id] } } })

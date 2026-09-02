@@ -122,6 +122,45 @@ export const briefSchema = z.object({
   consent,
 })
 
+/**
+ * Пустое поле — это стёртое поле, а не пропущенное.
+ *
+ * Форма участка правится бюро по мере появления проекта, и очистить неверно
+ * введённую высоту так же нужно, как ввести верную. Поэтому пустая строка
+ * превращается в отсутствие значения, а не игнорируется: иначе ошибку нельзя
+ * убрать, её можно только заменить другой.
+ */
+const optionalNumber = (max: number) =>
+  z.preprocess(
+    (value) => (value === '' || value === null || value === undefined ? undefined : value),
+    z.coerce.number().min(0).max(max).optional(),
+  )
+
+/**
+ * Участок и объём в панели бюро.
+ *
+ * Здесь заполняется то, чего заказчик знать не может: пятно застройки, высота,
+ * отступы, парковка, озеленение. Это результат проектирования, и он появляется
+ * вместе с концепцией. Муниципалитет, зона и площадь участка тоже правятся —
+ * человек ошибается в своих же бумагах, а на этих трёх полях стоит вся выборка
+ * правил.
+ */
+export const siteSchema = z.object({
+  municipality: trimmed.max(120).default(''),
+  zone: trimmed.max(60).default(''),
+  plotAreaSqm: optionalNumber(2_000_000),
+  footprintSqm: optionalNumber(2_000_000),
+  heightM: optionalNumber(400),
+  setbackFrontM: optionalNumber(500),
+  setbackSideM: optionalNumber(500),
+  setbackRearM: optionalNumber(500),
+  units: optionalNumber(10_000),
+  parkingSpaces: optionalNumber(10_000),
+  greenSqm: optionalNumber(2_000_000),
+})
+
+export type SiteFormInput = z.infer<typeof siteSchema>
+
 export type BriefInput = z.infer<typeof briefSchema>
 
 export const applicationSchema = z.object({

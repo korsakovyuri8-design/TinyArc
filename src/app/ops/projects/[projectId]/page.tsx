@@ -11,6 +11,8 @@ import {
   type Typology,
 } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
+import { Compliance } from '@/components/Compliance'
+import { checkSite } from '@/lib/services/compliance'
 import {
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
@@ -41,6 +43,7 @@ import {
   eraseProjectData,
   rerunAssembly,
   runProjectGate,
+  setSiteFacts,
   resolveTicketConflict,
   returnTicket,
   setTicketSpec,
@@ -75,7 +78,7 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction, alerts, thread, withdrawals] = await Promise.all([
+  const [run, direction, alerts, thread, withdrawals, rules] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     alertsForProject(project.id),
@@ -85,6 +88,7 @@ export default async function OpsProjectPage({
       orderBy: { createdAt: 'asc' },
       include: { specialist: { select: { displayName: true } } },
     }),
+    checkSite(project),
   ])
 
   const replacedBy = new Map(
@@ -172,6 +176,37 @@ export default async function OpsProjectPage({
         </div>
 
         {run?.notes && <p className="note note-fail" style={{ marginTop: 16 }}>{run.notes}</p>}
+
+        {/*
+          Участок и объём. Заполняет бюро, потому что пятна застройки, высоты и
+          отступов до проекта не существует: они появляются с концепцией. До тех
+          пор проверка честно говорит, что ей нечем считать, — и именно этот
+          список полей она называет заказчику в кабинете.
+        */}
+        <div className="panel" style={{ marginTop: 24 }}>
+          <div className="label label-accent">Site and massing</div>
+          <p className="muted" style={{ marginTop: 10, marginBottom: 18 }}>
+            The client gives the first three from their documents. The rest appears with the concept and is entered here — until it is, the rules check says what it is missing. An empty field clears the value.
+          </p>
+
+          <OpsAction action={setSiteFacts} hidden={{ projectId: project.id }} label="Save site data" solid>
+            <div className="grid grid-3" style={{ marginBottom: 16 }}>
+              <SiteField id="municipality" label="Municipality" value={project.municipality} text />
+              <SiteField id="zone" label="Zone" value={project.zone} text />
+              <SiteField id="plotAreaSqm" label="Plot area, m²" value={project.plotAreaSqm} />
+              <SiteField id="footprintSqm" label="Footprint, m²" value={project.footprintSqm} />
+              <SiteField id="heightM" label="Height, m" value={project.heightM} step="0.1" />
+              <SiteField id="units" label="Units" value={project.units} />
+              <SiteField id="setbackFrontM" label="Front setback, m" value={project.setbackFrontM} step="0.1" />
+              <SiteField id="setbackSideM" label="Side setback, m" value={project.setbackSideM} step="0.1" />
+              <SiteField id="setbackRearM" label="Rear setback, m" value={project.setbackRearM} step="0.1" />
+              <SiteField id="parkingSpaces" label="Parking spaces" value={project.parkingSpaces} />
+              <SiteField id="greenSqm" label="Green area, m²" value={project.greenSqm} />
+            </div>
+          </OpsAction>
+        </div>
+
+        <Compliance view={rules} audience="bureau" />
 
         {run && run.slots.length > 0 && (
           <div className="table-scroll panel" style={{ marginTop: 24, padding: 0 }}>
@@ -574,5 +609,40 @@ export default async function OpsProjectPage({
         )}
       </div>
     </section>
+  )
+}
+
+/**
+ * Поле участка.
+ *
+ * Пустое значение показывается пустым, а не нулём: ноль здесь — это утверждение
+ * («отступ ноль метров»), а пустота — отсутствие сведений, и путать их нельзя
+ * ровно по той же причине, по которой их не путает движок.
+ */
+function SiteField({
+  id,
+  label,
+  value,
+  text,
+  step,
+}: {
+  id: string
+  label: string
+  value: string | number | null
+  text?: boolean
+  step?: string
+}) {
+  return (
+    <div className="field">
+      <label htmlFor={`site-${id}`}>{label}</label>
+      <input
+        id={`site-${id}`}
+        name={id}
+        type={text ? 'text' : 'number'}
+        min={text ? undefined : 0}
+        step={step}
+        defaultValue={value ?? ''}
+      />
+    </div>
   )
 }
