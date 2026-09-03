@@ -15,7 +15,7 @@ import {
   type Shortlist,
 } from '@/engine/contractor'
 import { TRADES, materialGroupsFor, tradesFor, type BuildShape, type MaterialGroup, type Trade } from '@/engine/trades'
-import { networkReadiness, tradeDepth, type TradeDepth } from '@/engine/network'
+import { loadBearing, networkReadiness, tradeDepth, type TradeDepth } from '@/engine/network'
 import {
   SCALE_BANDS,
   TYPOLOGIES,
@@ -289,4 +289,72 @@ export async function networkReadinessByCountry(now = new Date()): Promise<Netwo
       size: inCountry.length,
     }
   })
+}
+
+/**
+ * За сколько дней до конца полиса бюро должно узнать.
+ *
+ * Месяц — не про частоту напоминаний, а про то, за какой срок успевают
+ * продлить страховку: запросить у страховщика, дождаться, прислать. Меньше —
+ * и звонок превращается в срочность, больше — и список перестают читать.
+ */
+export const INSURANCE_HORIZON_DAYS = 30
+
+export type ExpiringInsurance = {
+  contractorId: string
+  displayName: string
+  email: string
+  /** Дней до конца полиса. Отрицательное — уже просрочен. */
+  daysLeft: number
+  /** Работы, которые просядут без него. Пусто — есть кем заменить. */
+  loadBearing: Trade[]
+}
+
+/**
+ * Полисы, которые кончаются или кончились.
+ *
+ * Класс, который в этом продукте уже дважды выводили на видное место:
+ * незакрытые гейты и несобравшиеся брифы. Общее у них то, что ничего не
+ * происходит — подрядчик не исчезает со скандалом, он просто перестаёт
+ * проходить гейт, и короткий список молча становится короче. Узнать об этом
+ * по пустому списку значит узнать в тот день, когда он понадобился.
+ *
+ * Просроченные идут первыми: там уже дыра, а не предупреждение.
+ */
+export async function expiringInsurance(
+  now = new Date(),
+  horizonDays = INSURANCE_HORIZON_DAYS,
+): Promise<ExpiringInsurance[]> {
+  const edge = new Date(now.getTime() + horizonDays * 86_400_000)
+
+  const rows = await prisma.contractor.findMany({
+    where: { status: 'active', insured: true, insuredUntil: { lte: edge } },
+    include: { trades: { select: { trade: true } } },
+    orderBy: { insuredUntil: 'asc' },
+  })
+
+  if (rows.length === 0) return []
+
+  /*
+   * Сеть читается один раз на всю очередь, а не на каждого: вопрос «что
+   * просядет без него» задаётся к одной и той же сети, и перечитывать её на
+   * каждой строке значило бы платить за один ответ столько раз, сколько в
+   * очереди имён.
+   */
+  const network = (
+    await prisma.contractor.findMany({
+      where: { status: 'active' },
+      include: { trades: { select: { trade: true } } },
+    })
+  ).map((row) => toContractor(row, now))
+
+  return rows.map((row) => ({
+    contractorId: row.id,
+    displayName: row.displayName,
+    email: row.email,
+    daysLeft: row.insuredUntil
+      ? Math.floor((row.insuredUntil.getTime() - now.getTime()) / 86_400_000)
+      : 0,
+    loadBearing: loadBearing(network, row.id),
+  }))
 }

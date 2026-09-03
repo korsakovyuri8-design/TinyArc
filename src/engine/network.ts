@@ -117,3 +117,34 @@ export function networkReadiness(network: ContractorProfile[]): number {
 
   return rows.length === 0 ? 0 : score / rows.length
 }
+
+/**
+ * Работы, которые держатся на этом подрядчике.
+ *
+ * Отвечает на вопрос, ради которого очередь истекающих полисов вообще нужна:
+ * что будет, если он выпадет. Список имён без этого — просто список имён, и
+ * бюро одинаково реагирует на фирму, без которой работа встанет, и на ту,
+ * которую есть кем заменить.
+ *
+ * Считается вычитанием: глубина с ним и без него. Работа попадает в ответ,
+ * если без него она опускается ниже порога, — то есть если его уход меняет
+ * способность бюро брать проекты, а не только длину списка.
+ */
+export function loadBearing(network: ContractorProfile[], contractorId: string): Trade[] {
+  const without = network.filter((row) => row.id !== contractorId)
+
+  if (without.length === network.length) return []
+
+  const before = new Map(tradeDepth(network).map((row) => [row.trade, row.severity]))
+
+  return tradeDepth(without)
+    .filter((row) => {
+      const was = before.get(row.trade)
+      // Была закрыта, стала нет — или была тонкой, стала пустой. Оба перехода
+      // означают, что уход меняет способность, а не только запас.
+      if (was === 'ok') return row.severity !== 'ok'
+      if (was === 'thin') return row.severity === 'none'
+      return false
+    })
+    .map((row) => row.trade)
+}

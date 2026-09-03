@@ -3,7 +3,7 @@ import {
   CONTRACTOR_THRESHOLD,
   type ContractorProfile,
 } from './contractor'
-import { MIN_TRADE_DEPTH, networkReadiness, tradeDepth } from './network'
+import { MIN_TRADE_DEPTH, loadBearing, networkReadiness, tradeDepth } from './network'
 import { TRADES, type Trade } from './trades'
 
 const NO_HISTORY = {
@@ -157,5 +157,51 @@ describe('готовность сети одним числом', () => {
     ])
 
     expect(after).toBeGreaterThan(before)
+  })
+})
+
+describe('на ком держится работа', () => {
+  it('незнакомый подрядчик ничего не держит', () => {
+    expect(loadBearing(full(), 'nobody')).toEqual([])
+  })
+
+  it('единственный на работе держит её', () => {
+    const only = contractor(['roofing'])
+    const other = contractor(['foundations'])
+
+    expect(loadBearing([only, other], only.id)).toContain('roofing')
+  })
+
+  it('один из двоих держит: без него работа перестаёт быть закрытой', () => {
+    const a = contractor(['roofing'])
+    const b = contractor(['roofing'])
+
+    expect(loadBearing([a, b], a.id)).toEqual(['roofing'])
+  })
+
+  /*
+   * Главное: очередь нужна затем, чтобы отличать фирму, без которой работа
+   * встанет, от той, которую есть кем заменить. Третий подрядчик делает уход
+   * первого безболезненным, и в ответе его быть не должно.
+   */
+  it('третий делает уход безболезненным', () => {
+    const a = contractor(['roofing'])
+    const b = contractor(['roofing'])
+    const c = contractor(['roofing'])
+
+    expect(loadBearing([a, b, c], a.id)).toEqual([])
+  })
+
+  it('уже незакрытую работу уход не ухудшает: она и так пуста', () => {
+    const weak = contractor(['roofing'], { insured: false })
+
+    expect(loadBearing([weak], weak.id)).toEqual([])
+  })
+
+  it('держащий несколько работ назван по всем', () => {
+    const wide = contractor(['roofing', 'foundations'])
+    const narrow = contractor(['roofing'])
+
+    expect(loadBearing([wide, narrow], wide.id).sort()).toEqual(['foundations', 'roofing'])
   })
 })

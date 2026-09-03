@@ -21,7 +21,7 @@
 import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { prisma } from '../src/lib/db'
-import { CANDIDATES_PER_TRADE, buildFor } from '../src/lib/services/contractors'
+import { CANDIDATES_PER_TRADE, buildFor, expiringInsurance } from '../src/lib/services/contractors'
 
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
@@ -237,8 +237,13 @@ check(
 }
 
 /* Сеть в панели. */
-await page.goto(`${BASE}/ops/contractors`)
-const network = (await page.locator('body').innerText()).toLowerCase()
+async function cabinetless(url: string): Promise<string> {
+  await page.goto(url)
+  await page.waitForTimeout(600)
+  return (await page.locator('body').innerText()).toLowerCase()
+}
+
+const network = await cabinetless(`${BASE}/ops/contractors`)
 
 check(network.includes('contractor network'), 'страница сети открывается')
 check(network.includes('expired'), 'просроченный полис виден бюро состоянием, а не галочкой')
@@ -265,6 +270,46 @@ check(
   'просроченный полис назван звонком, а не наймом: он лечится сегодня',
 )
 check(network.includes('serbia'), 'страна без сети показана нулём, а не пропущена')
+
+/*
+ * Истекающие полисы на главной странице панели.
+ *
+ * Тот же класс, что незакрытые гейты и несобравшиеся брифы: ничего не
+ * происходит. Подрядчик не исчезает со скандалом — он перестаёт проходить
+ * гейт, и короткий список молча становится короче. Страницу сети открывают не
+ * каждый день, а главную — каждый.
+ */
+{
+  const soon = await contractor('soon', {
+    insuredUntil: new Date(Date.now() + 5 * 86_400_000),
+    trades: { create: [{ trade: 'landscaping' }] },
+  })
+  made.push(soon)
+
+  const queue = await expiringInsurance()
+  const mineInQueue = queue.filter((row) => row.contractorId === soon.id)
+
+  check(mineInQueue.length === 1, 'полис, кончающийся через пять дней, попал в очередь')
+  check(mineInQueue[0]?.daysLeft === 4 || mineInQueue[0]?.daysLeft === 5, `дней до конца названо: ${mineInQueue[0]?.daysLeft}`)
+
+  /* Просроченный тоже в очереди, и отличим от истекающего знаком. */
+  const lapsedRow = queue.find((row) => row.contractorId === made[2].id)
+  check(Boolean(lapsedRow), 'просроченный полис из очереди не выпал')
+  check((lapsedRow?.daysLeft ?? 0) < 0, `просрочка показана отрицательным числом: ${lapsedRow?.daysLeft}`)
+
+  /* Ради чего очередь и нужна: что просядет без него. */
+  check(
+    mineInQueue[0]?.loadBearing.includes('landscaping'),
+    'названо, какая работа просядет без него',
+  )
+
+  const home = await cabinetless(`${BASE}/ops`)
+  check(home.includes('insurance running out'), 'очередь показана на главной панели')
+  check(
+    home.includes('there is someone to replace them'),
+    'заменимый подрядчик назван заменимым, а не тревогой',
+  )
+}
 
 await browser.close()
 

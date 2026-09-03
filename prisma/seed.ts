@@ -262,6 +262,15 @@ async function seedContractors(): Promise<void> {
     { name: 'Stara Gradnja', trades: ['structure', 'masonry'], towns: [], rating: 9.4, until: past },
     // Слабое портфолио: запись есть, в отборе нет.
     { name: 'Brzo i Jeftino', trades: ['finishes'], towns: [], rating: 6.5, until: year },
+    // Полис кончается на днях: очередь бюро обязана показать это заранее, а
+    // не после того, как короткий список станет короче.
+    {
+      name: 'Kamen Majstor',
+      trades: ['masonry', 'facade'],
+      towns: ['Tivat'],
+      rating: 8.8,
+      until: new Date(Date.now() + 9 * 86_400_000),
+    },
   ]
 
   // По одному, а не createMany: работы кладутся связанными строками, и

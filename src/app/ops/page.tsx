@@ -10,6 +10,8 @@ import { lostProjects } from '@/lib/services/demand'
 import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
 import { DIRECTION_NUDGE_HOURS, awaitingDirection } from '@/lib/services/direction'
+import { INSURANCE_HORIZON_DAYS, expiringInsurance } from '@/lib/services/contractors'
+import { TRADE_LABELS } from '@/lib/labels'
 import { INVOICE_NUDGE_HOURS, PAID_SHOWN, invoiceQueue } from '@/lib/services/billing'
 import { DOC_STAGE_LABELS } from '@/lib/labels'
 import type { DocStage } from '@/engine/taxonomy'
@@ -49,12 +51,13 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions, approvals, invoices, directions] = await Promise.all([
+  const [lost, questions, approvals, invoices, directions, policies] = await Promise.all([
     lostProjects(),
     waitingQuestions(),
     awaitingApproval(),
     invoiceQueue(),
     awaitingDirection(),
+    expiringInsurance(),
   ])
 
   const waitingInvoices = invoices.filter((i) => i.status === 'issued').length
@@ -390,6 +393,74 @@ export default async function OpsPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/*
+          Полисы. Тот же класс, что незакрытые гейты и несобравшиеся брифы:
+          ничего не происходит. Подрядчик не исчезает со скандалом — он просто
+          перестаёт проходить гейт, и короткий список молча становится короче.
+          Узнать об этом по пустому списку значит узнать в тот день, когда он
+          понадобился.
+        */}
+        {policies.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <h2>Insurance running out</h2>
+              <span className="tag tag-wait">{policies.length}</span>
+            </div>
+
+            <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
+              {fill(
+                'A policy does not end with a scandal — the contractor simply stops passing the gate, and the shortlist quietly gets shorter. Shown {days} days ahead, so a call is a call and not an emergency.',
+                { days: INSURANCE_HORIZON_DAYS },
+              )}
+            </p>
+
+            <div className="table-scroll panel" style={{ padding: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Contractor</th>
+                    <th>Policy</th>
+                    <th>What drops without them</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policies.map((row) => (
+                    <tr key={row.contractorId}>
+                      <td>
+                        {row.displayName}
+                        <div className="dim" style={{ fontSize: '0.78rem' }}>{row.email}</div>
+                      </td>
+                      <td>
+                        {row.daysLeft < 0 ? (
+                          <span className="tag tag-fail">
+                            {fill('expired {days} day(s) ago', { days: -row.daysLeft })}
+                          </span>
+                        ) : (
+                          <span className="tag tag-wait">
+                            {fill('{days} day(s) left', { days: row.daysLeft })}
+                          </span>
+                        )}
+                      </td>
+                      {/*
+                        Ради этой колонки очередь и существует. Без неё бюро
+                        одинаково реагирует на фирму, без которой работа
+                        встанет, и на ту, которую есть кем заменить.
+                      */}
+                      <td className="dim" style={{ fontSize: '0.85rem' }}>
+                        {row.loadBearing.length === 0
+                          ? 'nothing — there is someone to replace them'
+                          : row.loadBearing.map((trade) => TRADE_LABELS[trade] ?? trade).join(', ')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         <div className="divider" style={{ marginTop: 48 }} />
