@@ -42,6 +42,7 @@ export const TABLES = [
   // корпусом норм: без неё короткий список после восстановления пуст, а пустой
   // список читается как «подрядчиков нет», а не как «мы их потеряли».
   'Contractor',
+  'ContractorTrade',
   'Specialist',
   'Project',
   'MatchRun',

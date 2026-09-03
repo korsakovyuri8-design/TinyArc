@@ -26,7 +26,11 @@ export default async function ContractorsPage() {
   const now = new Date()
 
   const [rows, total] = await Promise.all([
-    prisma.contractor.findMany({ orderBy: [{ status: 'asc' }, { displayName: 'asc' }], take: SHOWN }),
+    prisma.contractor.findMany({
+      orderBy: [{ status: 'asc' }, { displayName: 'asc' }],
+      take: SHOWN,
+      include: { trades: { select: { trade: true } } },
+    }),
     prisma.contractor.count(),
   ])
 
@@ -139,9 +143,7 @@ export default async function ContractorsPage() {
                       <tr key={row.id}>
                         <td>{row.displayName}</td>
                         <td className="dim" style={{ fontSize: '0.82rem' }}>
-                          {(JSON.parse(row.tradesJson) as string[])
-                            .map((trade) => TRADE_LABELS[trade] ?? trade)
-                            .join(', ')}
+                          {row.trades.map(({ trade }) => TRADE_LABELS[trade] ?? trade).join(', ')}
                         </td>
                         <td className="dim" style={{ fontSize: '0.82rem' }}>
                           {(JSON.parse(row.municipalitiesJson) as string[]).join(', ') ||

@@ -847,14 +847,22 @@ model Contractor {
   /// Откуда взялся: apply | import. Не для отбора, а чтобы видеть сеть.
   source String @default("import")
 
-  /// Работы, которые ведёт. Словарь — src/engine/trades.ts.
-  tradesJson         String @default("[]")
+  /**
+   * Работы, которые ведёт.
+   * Отдельной таблицей, а не строкой JSON, и это не стиль. Работа — главный
+   * путь доступа: короткий список собирается по одной работе, и выборка по
+   * подстроке в JSON означает полный проход по сети страны. Замерено: тридцать
+   * тысяч подрядчиков в одной юрисдикции давали 1163 мс на карточке проекта
+   * против 13 мс на пустой сети. С индексом по работе выборка перестаёт
+   * зависеть от размера сети.
+   */
+  trades             ContractorTrade[]
   /// Где имеет право работать: регистрация и допуски.
-  jurisdictionsJson  String @default("[]")
+  jurisdictionsJson  String            @default("[]")
   /// Муниципалитеты, где реально работал. Пусто — по всей стране.
-  municipalitiesJson String @default("[]")
-  typologiesJson     String @default("[]")
-  scaleBandsJson     String @default("[]")
+  municipalitiesJson String            @default("[]")
+  typologiesJson     String            @default("[]")
+  scaleBandsJson     String            @default("[]")
 
   /// Оценка портфолио, 0–10. Порог 8/10 — гейт до балла, как у специалиста.
   portfolioRating Float  @default(0)
@@ -882,4 +890,19 @@ model Contractor {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+}
+
+/// Одна работа одного подрядчика. Существует ради индекса по работе.
+model ContractorTrade {
+  id           String     @id @default(cuid())
+  contractorId String
+  contractor   Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  /// Значение из закрытого словаря src/engine/trades.ts.
+  trade        String
+
+  /// Одна работа записывается один раз: две строки означали бы, что подрядчик
+  /// считается дважды в сводке отказов.
+  @@unique([contractorId, trade])
+  /// Главный путь доступа: «кто в этой стране делает фундаменты».
+  @@index([trade])
 }

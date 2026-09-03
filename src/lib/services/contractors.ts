@@ -7,6 +7,7 @@
  */
 
 import {
+  CONTRACTOR_THRESHOLD,
   shortlist,
   type ContractorProfile,
   type Shortlist,
@@ -26,7 +27,7 @@ import { parseList } from '../rows'
 type ContractorRow = {
   id: string
   displayName: string
-  tradesJson: string
+  trades: { trade: string }[]
   jurisdictionsJson: string
   municipalitiesJson: string
   typologiesJson: string
@@ -77,7 +78,7 @@ export function toContractor(row: ContractorRow, now: Date): ContractorProfile {
   return {
     id: row.id,
     displayName: row.displayName,
-    trades: parseList<Trade>(row.tradesJson, TRADES),
+    trades: row.trades.map((row) => row.trade).filter((trade): trade is Trade => (TRADES as readonly string[]).includes(trade)),
     jurisdictions: parseList<Jurisdiction>(row.jurisdictionsJson, JURISDICTIONS),
     municipalities: parseFree(row.municipalitiesJson),
     typologies: parseList<Typology>(row.typologiesJson, TYPOLOGIES),
@@ -95,15 +96,27 @@ export function toContractor(row: ContractorRow, now: Date): ContractorProfile {
   }
 }
 
+/** Сколько подрядчиков читается на одну работу до расчёта балла. */
+export const CANDIDATES_PER_TRADE = 60
+
+export type TradeShortlist = Shortlist & {
+  /** Сколько подрядчиков страны вообще ведут эту работу — счётом по базе. */
+  inScope: number
+  /**
+   * Сколько из них проходят все жёсткие гейты — тоже счётом по базе, а не по
+   * прочитанному. Иначе потолок выборки читался бы как размер сети.
+   */
+  eligible: number
+  names: Record<string, string>
+}
+
 export type ProjectBuild = {
   /** Что понадобится строить. */
   trades: Trade[]
   /** Что понадобится закупать. Группами, без объёмов: их даёт рабочая документация. */
   groups: MaterialGroup[]
   /** По списку на каждую работу. */
-  lists: Shortlist[]
-  /** Сколько подрядчиков в сети всего: пустой список и пустая сеть — разное. */
-  networkSize: number
+  lists: TradeShortlist[]
   /**
    * Имена по идентификатору.
    *
@@ -145,30 +158,80 @@ export async function buildFor(
 
   const trades = tradesFor(shape)
 
-  const rows = await prisma.contractor.findMany({
-    where: { status: 'active', jurisdictionsJson: { contains: project.jurisdiction } },
-  })
+  /*
+   * Что уходит в запрос, а что остаётся движку, решается одним вопросом:
+   * говорит ли отказ о дыре в сети.
+   *
+   * Работа, страна и снятие с отбора — не говорят. Кровельщик не дыра на
+   * фундаментах, сербская фирма не дыра в Черногории, снятый по своей просьбе
+   * — решение бюро, а не нехватка. Их отбирает запрос по индексу, и они до
+   * движка не доходят вовсе.
+   *
+   * Страховка, занятость и портфолио — говорят, и ещё как. «У одного из трёх
+   * просрочен полис» лечится звонком, а не наймом, и это самая полезная строка
+   * сводки. Перенос этих гейтов в запрос делал выборку быстрой и слепой:
+   * подрядчик исчезал молча, а бюро видело пустой список без причины. Поэтому
+   * они считаются движком, по прочитанным кандидатам.
+   *
+   * Потолок нужен потому, что одну работу в большой стране ведут тысячи. Он
+   * снимается по портфолио — осознанное упрощение: балл это качество ×
+   * соответствие, и соответствие может перевесить рейтинг. Потолок щедрый, на
+   * пилоте до него не доходит, а оба честных числа — сколько ведут работу и
+   * сколько из них годны — берутся счётом по базе.
+   */
+  const lists = await Promise.all(
+    trades.map(async (trade) => {
+      const scope = {
+        status: 'active',
+        jurisdictionsJson: { contains: project.jurisdiction },
+        trades: { some: { trade } },
+      } as const
 
-  const network = rows.map((row) => toContractor(row, now))
+      const [inScope, eligible, rows] = await Promise.all([
+        prisma.contractor.count({ where: scope }),
+        prisma.contractor.count({
+          where: {
+            ...scope,
+            available: true,
+            insured: true,
+            insuredUntil: { gte: now },
+            portfolioRating: { gte: CONTRACTOR_THRESHOLD },
+          },
+        }),
+        prisma.contractor.findMany({
+          where: scope,
+          orderBy: { portfolioRating: 'desc' },
+          take: CANDIDATES_PER_TRADE,
+          include: { trades: { select: { trade: true } } },
+        }),
+      ])
 
-  const lists = trades.map((trade) =>
-    shortlist(
-      network,
-      {
-        trade,
-        jurisdiction: project.jurisdiction as Jurisdiction,
-        municipality: project.municipality ?? undefined,
-        shape,
-      },
-      trades,
-    ),
+      const candidates = rows.map((row) => toContractor(row, now))
+
+      const list = shortlist(
+        candidates,
+        {
+          trade,
+          jurisdiction: project.jurisdiction as Jurisdiction,
+          municipality: project.municipality ?? undefined,
+          shape,
+        },
+        trades,
+      )
+
+      return {
+        ...list,
+        inScope,
+        eligible,
+        names: Object.fromEntries(candidates.map((row) => [row.id, row.displayName])),
+      }
+    }),
   )
 
   return {
     trades,
     groups: materialGroupsFor(shape),
     lists,
-    networkSize: network.length,
-    names: Object.fromEntries(network.map((row) => [row.id, row.displayName])),
+    names: Object.assign({}, ...lists.map((list) => list.names)) as Record<string, string>,
   }
 }

@@ -47,6 +47,7 @@ const APPLIED: Record<string, string> = {
   '0014_rate_window': '7d137d04011f1688ad7a29706f884593',
   '0015_compliance_rules': '6faf5ed5a1469b6e94f7bd726a74df1e',
   '0016_contractors': 'ab668eae18c8f5366388a09603effe89',
+  '0017_contractor_trades': 'c6d884695c2d086f49e8eb566fdacc29',
 }
 
 function checksum(name: string): string {

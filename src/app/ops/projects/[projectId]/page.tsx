@@ -225,7 +225,7 @@ export default async function OpsProjectPage({
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
             <div className="label label-accent">Build: contractors and materials</div>
             <Link href="/ops/contractors" className="dim" style={{ fontSize: '0.82rem' }}>
-              network of {build.networkSize} →
+              the network →
             </Link>
           </div>
 
@@ -233,9 +233,9 @@ export default async function OpsProjectPage({
             Derived from the project itself: typology, areas, material system, terrain. The client pays for access to the shortlist; a contractor never pays for a place in it.
           </p>
 
-          {build.networkSize === 0 ? (
+          {build.lists.every((list) => list.eligible === 0) ? (
             <p className="dim" style={{ marginBottom: 0 }}>
-              No contractors in this country yet, so there is nothing to shortlist. That is a gap in the network, not a verdict on the project.
+              Nobody in this country is eligible for any of these works yet, so there is nothing to shortlist. That is a gap in the network, not a verdict on the project.
             </p>
           ) : (
             <div className="table-scroll" style={{ margin: '0 -22px' }}>
@@ -244,7 +244,7 @@ export default async function OpsProjectPage({
                   <tr>
                     <th>Work</th>
                     <th>Shortlist</th>
-                    <th>Carry out this work → passed</th>
+                    <th>Carry out this work → eligible</th>
                     <th>Why the rest did not pass</th>
                   </tr>
                 </thead>
@@ -265,9 +265,14 @@ export default async function OpsProjectPage({
                         подрядчик, а не дыра. Сводка отказов читается как
                         список дыр, и врать в ней нельзя.
                       */}
+                      {/*
+                        Годных считает база, а прошедших — движок по прочитанным
+                        кандидатам. Числа разные намеренно: потолок выборки не
+                        должен читаться как размер сети.
+                      */}
                       <td className="num dim">
-                        {list.pooled - list.outOfScope} → {list.passed}
-                        {list.passed > list.ranked.length && ` · ${list.ranked.length} shown`}
+                        {list.inScope} → {list.eligible}
+                        {list.inScope > list.pooled && ` · ${list.pooled} read`}
                       </td>
                       <td className="dim" style={{ fontSize: '0.8rem' }}>
                         {Object.entries(list.rejected)

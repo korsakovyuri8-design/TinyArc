@@ -21,7 +21,7 @@
 import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { prisma } from '../src/lib/db'
-import { buildFor } from '../src/lib/services/contractors'
+import { CANDIDATES_PER_TRADE, buildFor } from '../src/lib/services/contractors'
 
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
@@ -39,8 +39,21 @@ function check(condition, message) {
 console.log('Подрядчики и закупка')
 
 const stamp = Date.now()
-const domain = `build-${stamp}.invalid`
+
+/**
+ * Домен постоянный, а не с меткой времени, и это про уборку.
+ *
+ * Упавший прогон не доходит до конца и оставляет свои записи в базе. С
+ * меняющимся доменом их потом не найти: следующий прогон считает чужие
+ * фикстуры своей сетью и падает на числах, которые сам не заводил. Поэтому
+ * домен один, и сценарий подметает за прошлым собой в начале, а не только за
+ * собой в конце.
+ */
+const domain = 'e2e-build.invalid'
 const town = `e2e-town-${stamp}`
+
+await prisma.contractor.deleteMany({ where: { email: { endsWith: domain } } })
+await prisma.project.deleteMany({ where: { clientEmail: { endsWith: domain } } })
 
 const valid = new Date(Date.now() + 200 * 86_400_000)
 const lapsed = new Date(Date.now() - 5 * 86_400_000)
@@ -49,9 +62,9 @@ async function contractor(name: string, over: Record<string, unknown>) {
   return prisma.contractor.create({
     data: {
       displayName: name,
-      email: `${name}@${domain}`,
+      email: `${name}-${stamp}@${domain}`,
       status: 'active',
-      tradesJson: JSON.stringify(['foundations']),
+      trades: { create: [{ trade: 'foundations' }] },
       jurisdictionsJson: JSON.stringify(['ME']),
       municipalitiesJson: JSON.stringify([]),
       typologiesJson: JSON.stringify(['villa']),
@@ -71,7 +84,7 @@ const made = [
   // Просроченный полис: настоящая дыра там, где он мог бы работать.
   await contractor('lapsed', { insuredUntil: lapsed }),
   // Кровельщик: на фундаментах он не дыра, а другой подрядчик.
-  await contractor('roofer', { tradesJson: JSON.stringify(['roofing']), insuredUntil: lapsed }),
+  await contractor('roofer', { trades: { create: [{ trade: 'roofing' }] }, insuredUntil: lapsed }),
   await contractor('paused', { status: 'paused' }),
 ]
 
@@ -104,10 +117,7 @@ check(
 )
 
 /* Снятый с отбора в выборку не попадает вовсе. */
-check(
-  !build.names.paused,
-  `снятый подрядчик не в сети: ${Object.keys(build.names).length} против ${made.length} заведённых`,
-)
+check(!build.names[made[4].id], 'снятый с отбора подрядчик в выборку не попал')
 
 /*
  * Считается по своим записям, а не по абсолютным числам: стенд не пуст, и
@@ -123,13 +133,29 @@ const localAt = minePassed.findIndex((row) => row.contractorId === made[0].id)
 const strangerAt = minePassed.findIndex((row) => row.contractorId === made[1].id)
 check(localAt >= 0 && localAt < strangerAt, 'местный подрядчик впереди чужого')
 
-/* Главное: сводка отказов не приписывает кровельщика к фундаментам. */
+/*
+ * Главное: не ведущий работу до движка не доходит вовсе.
+ *
+ * Раньше он читался вместе со всей сетью и попадал в сводку отказов — сначала
+ * как «нет страховки», потом отдельной корзиной. Теперь работа отбирается
+ * запросом по индексу, и кровельщик на фундаментах просто не существует: это
+ * и быстрее, и честнее, потому что сводка отказов читается бюро как список
+ * дыр в сети.
+ */
 check(foundations?.rejected.insurance === 1, 'просроченный полис назван причиной один раз')
+check(foundations?.rejected.trade === 0, 'не ведущий работу в причины не попал')
+check(foundations?.outOfScope === 0, 'и до разбора в памяти не дошёл')
 check(
-  foundations?.rejected.trade === 0,
-  'не ведущий работу в причины не попал',
+  !(foundations?.ranked ?? []).some((row) => row.contractorId === made[3].id),
+  'кровельщика нет в списке по фундаментам',
 )
-check((foundations?.outOfScope ?? 0) >= 1, 'он посчитан отдельно как «другая работа»')
+
+/* Годных считает база, а не длина прочитанного. */
+check((foundations?.eligible ?? 0) >= 2, `годных по фундаментам: ${foundations?.eligible}`)
+check(
+  (foundations?.eligible ?? 0) >= (foundations?.passed ?? 0),
+  'годных не меньше, чем прошедших разбор',
+)
 
 /*
  * Инвариант, не зависящий от наполнения стенда: каждый подрядчик сети попал
@@ -144,7 +170,7 @@ check(
         Object.values(list.rejected).reduce((sum, n) => sum + n, 0) ===
       list.pooled,
   ),
-  'каждый подрядчик сети попал ровно в одну корзину',
+  'каждый прочитанный подрядчик попал ровно в одну корзину',
 )
 check(
   build.lists.every((list) => list.ranked.length <= list.passed),
@@ -192,6 +218,87 @@ check(
 )
 
 await browser.close()
+
+/*
+ * Форма роста, а не скорость машины.
+ *
+ * Работа подрядчика лежала в строке JSON, и выборка по ней была полным проходом
+ * по сети страны: тридцать тысяч подрядчиков давали 1163 мс на карточке против
+ * 13 мс на пустой сети. После переноса работы в свою таблицу с индексом — 24 мс
+ * на тех же тридцати тысячах.
+ *
+ * Проверяется отношение, а не миллисекунды: на медленной машине абсолютный
+ * порог ловит день сборочного сервера, а не возврат к полному проходу. При
+ * линейном чтении две тысячи лишних подрядчиков умножили бы время в десятки
+ * раз; при выборке по индексу оно почти не меняется.
+ */
+{
+  const LOAD = 2000
+  const trades = ['foundations', 'roofing', 'electrical', 'finishes'] as const
+
+  async function measure(): Promise<number> {
+    // Два прогона: первый греет соединение и план запроса, и мерить его значит
+    // мерить не то.
+    await buildFor(project)
+    const started = Date.now()
+    await buildFor(project)
+    return Math.max(1, Date.now() - started)
+  }
+
+  const before = await measure()
+
+  const load = `load-${stamp}`
+  for (let batch = 0; batch < LOAD; batch += 500) {
+    const size = Math.min(500, LOAD - batch)
+    await prisma.contractor.createMany({
+      data: Array.from({ length: size }, (_, i) => ({
+        displayName: `Load ${batch + i}`,
+        email: `${load}-${batch + i}@${domain}`,
+        status: 'active',
+        jurisdictionsJson: JSON.stringify(['ME']),
+        municipalitiesJson: JSON.stringify([town]),
+        typologiesJson: JSON.stringify(['villa']),
+        scaleBandsJson: JSON.stringify(['250_1000']),
+        portfolioRating: 8.5,
+        insured: true,
+        insuredUntil: valid,
+      })),
+    })
+
+    const added = await prisma.contractor.findMany({
+      where: { email: { startsWith: `${load}-${batch}` } },
+      select: { id: true },
+    })
+    await prisma.contractorTrade.createMany({
+      data: added.map((row, i) => ({ contractorId: row.id, trade: trades[(batch + i) % trades.length] })),
+    })
+  }
+
+  const after = await measure()
+  const ratio = after / before
+
+  check(
+    ratio < 4,
+    `${LOAD} лишних подрядчиков не меняют форму роста: ${before} → ${after} мс, ×${ratio.toFixed(1)}`,
+  )
+
+  /* И числа остались честными: годных стало больше, показанных — нет. */
+  const loaded = await buildFor(project)
+  const foundationsNow = loaded.lists.find((list) => list.trade === 'foundations')
+
+  check(
+    (foundationsNow?.eligible ?? 0) > (foundations?.eligible ?? 0),
+    `годных по фундаментам стало больше: ${foundationsNow?.eligible}`,
+  )
+  check(
+    (foundationsNow?.ranked.length ?? 0) <= 3,
+    'показанных по-прежнему трое, сколько бы ни было в сети',
+  )
+  check(
+    (foundationsNow?.pooled ?? 0) <= CANDIDATES_PER_TRADE,
+    `прочитано не больше потолка: ${foundationsNow?.pooled} при потолке ${CANDIDATES_PER_TRADE}`,
+  )
+}
 
 await prisma.project.delete({ where: { id: project.id } })
 await prisma.contractor.deleteMany({ where: { email: { endsWith: domain } } })

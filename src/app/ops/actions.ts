@@ -208,7 +208,7 @@ export async function addContractor(_prev: OpsState, formData: FormData): Promis
         email: input.email,
         status: input.portfolioRating >= PORTFOLIO_THRESHOLD ? 'active' : 'rejected',
         source: 'import',
-        tradesJson: toList(input.trades),
+        trades: { create: input.trades.map((trade) => ({ trade })) },
         jurisdictionsJson: toList(input.jurisdictions),
         municipalitiesJson: JSON.stringify(municipalities),
         typologiesJson: toList(input.typologies),

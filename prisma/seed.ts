@@ -264,22 +264,26 @@ async function seedContractors(): Promise<void> {
     { name: 'Brzo i Jeftino', trades: ['finishes'], towns: [], rating: 6.5, until: year },
   ]
 
-  await prisma.contractor.createMany({
-    data: rows.map((row) => ({
-      displayName: row.name,
-      email: `${row.name.toLowerCase().replace(/[^a-z]+/g, '-')}@seed-build.invalid`,
-      status: row.rating >= 8 ? 'active' : 'rejected',
-      source: 'import',
-      tradesJson: JSON.stringify(row.trades),
-      jurisdictionsJson: JSON.stringify(['ME']),
-      municipalitiesJson: JSON.stringify(row.towns),
-      typologiesJson: JSON.stringify(['villa', 'townhouse', 'multi_family']),
-      scaleBandsJson: JSON.stringify(['upto_250', '250_1000']),
-      portfolioRating: row.rating,
-      insured: true,
-      insuredUntil: row.until,
-    })),
-  })
+  // По одному, а не createMany: работы кладутся связанными строками, и
+  // createMany вложенных записей не создаёт.
+  for (const row of rows) {
+    await prisma.contractor.create({
+      data: {
+        displayName: row.name,
+        email: `${row.name.toLowerCase().replace(/[^a-z]+/g, '-')}@seed-build.invalid`,
+        status: row.rating >= 8 ? 'active' : 'rejected',
+        source: 'import',
+        trades: { create: row.trades.map((trade) => ({ trade })) },
+        jurisdictionsJson: JSON.stringify(['ME']),
+        municipalitiesJson: JSON.stringify(row.towns),
+        typologiesJson: JSON.stringify(['villa', 'townhouse', 'multi_family']),
+        scaleBandsJson: JSON.stringify(['upto_250', '250_1000']),
+        portfolioRating: row.rating,
+        insured: true,
+        insuredUntil: row.until,
+      },
+    })
+  }
 
   console.log(`Сид: положено ${rows.length} выдуманных подрядчиков`)
 }
