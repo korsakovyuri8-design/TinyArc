@@ -217,6 +217,25 @@ check(
   'правило про оплаченную позицию названо на самой странице',
 )
 
+/*
+ * Глубина сети: дыра обязана быть видна до того, как в неё упрётся проект.
+ *
+ * Проверяется не процент, а то, ради чего он считается: работа, которую в
+ * стране не ведёт никто, названа строкой; работа на одном подрядчике названа
+ * недостаточной, хотя отбор по ней формально работает; и причина названа
+ * действием — звонить или искать.
+ */
+check(network.includes('where the network is thin'), 'глубина сети показана в панели')
+check(
+  network.includes('nobody in the network'),
+  'работа, которую не ведёт никто, названа отдельно от «мало»',
+)
+check(
+  network.includes('a call, not a hire'),
+  'просроченный полис назван звонком, а не наймом: он лечится сегодня',
+)
+check(network.includes('serbia'), 'страна без сети показана нулём, а не пропущена')
+
 await browser.close()
 
 /*
@@ -236,50 +255,93 @@ await browser.close()
   const LOAD = 2000
   const trades = ['foundations', 'roofing', 'electrical', 'finishes'] as const
 
+  /**
+   * Минимум из трёх прогонов, а не один замер.
+   *
+   * Контейнер общий, и один прогон ловит чужую нагрузку так же охотно, как
+   * свою. Минимум отвечает на вопрос «насколько быстро это может быть», и
+   * именно он меняется, когда выборка возвращается к полному проходу. С одним
+   * замером сторож мигал: 17 против 42 мс на одних и тех же данных.
+   */
   async function measure(): Promise<number> {
-    // Два прогона: первый греет соединение и план запроса, и мерить его значит
-    // мерить не то.
     await buildFor(project)
-    const started = Date.now()
-    await buildFor(project)
-    return Math.max(1, Date.now() - started)
-  }
 
-  const before = await measure()
+    const runs: number[] = []
+    for (let i = 0; i < 3; i += 1) {
+      const started = Date.now()
+      await buildFor(project)
+      runs.push(Date.now() - started)
+    }
+
+    return Math.max(1, Math.min(...runs))
+  }
 
   const load = `load-${stamp}`
-  for (let batch = 0; batch < LOAD; batch += 500) {
-    const size = Math.min(500, LOAD - batch)
-    await prisma.contractor.createMany({
-      data: Array.from({ length: size }, (_, i) => ({
-        displayName: `Load ${batch + i}`,
-        email: `${load}-${batch + i}@${domain}`,
-        status: 'active',
-        jurisdictionsJson: JSON.stringify(['ME']),
-        municipalitiesJson: JSON.stringify([town]),
-        typologiesJson: JSON.stringify(['villa']),
-        scaleBandsJson: JSON.stringify(['250_1000']),
-        portfolioRating: 8.5,
-        insured: true,
-        insuredUntil: valid,
-      })),
-    })
+  let made = 0
 
-    const added = await prisma.contractor.findMany({
-      where: { email: { startsWith: `${load}-${batch}` } },
-      select: { id: true },
-    })
-    await prisma.contractorTrade.createMany({
-      data: added.map((row, i) => ({ contractorId: row.id, trade: trades[(batch + i) % trades.length] })),
-    })
+  async function loadMore(count: number) {
+    for (let batch = 0; batch < count; batch += 500) {
+      const size = Math.min(500, count - batch)
+      const start = made + batch
+
+      await prisma.contractor.createMany({
+        data: Array.from({ length: size }, (_, i) => ({
+          displayName: `Load ${start + i}`,
+          email: `${load}-${start + i}@${domain}`,
+          status: 'active',
+          jurisdictionsJson: JSON.stringify(['ME']),
+          municipalitiesJson: JSON.stringify([town]),
+          typologiesJson: JSON.stringify(['villa']),
+          scaleBandsJson: JSON.stringify(['250_1000']),
+          portfolioRating: 8.5,
+          insured: true,
+          insuredUntil: valid,
+        })),
+      })
+
+      const added = await prisma.contractor.findMany({
+        where: { email: { startsWith: `${load}-${start}` } },
+        select: { id: true },
+      })
+      await prisma.contractorTrade.createMany({
+        data: added.map((row, i) => ({ contractorId: row.id, trade: trades[(start + i) % trades.length] })),
+      })
+    }
+
+    made += count
   }
 
-  const after = await measure()
-  const ratio = after / before
+  /*
+   * Сравниваются два нагруженных состояния, а не пустое с нагруженным.
+   *
+   * Первая редакция мерила «до вставки» против «после» и показывала ×2.5 на
+   * ровной форме роста: массовая вставка оставляет статистику планировщика
+   * устаревшей, и разница была не в склоне, а в том, что база ещё не пришла в
+   * себя. Замер на 500 и на 2500 записях этим страдает одинаково — значит
+   * отношение говорит о склоне, а не о свежести вставки.
+   *
+   * Проверено отдельно: 15 мс на пяти тысячах, 19 на тридцати, 18 на
+   * шестидесяти. Форма ровная, и сторож обязан ловить именно её изменение.
+   */
+  await loadMore(500)
+  const small = await measure()
 
+  await loadMore(LOAD - 500)
+  const big = await measure()
+
+  const ratio = big / small
+  const grew = LOAD / 500
+
+  /*
+   * Утверждение — «время растёт медленнее данных», и порог взят из него, а не
+   * из красивого числа. Данных вчетверо больше; полный проход по сети дал бы
+   * вчетверо больше времени или хуже. Замерено: на Postgres ×0.8–1.0, на
+   * SQLite ×1.7–2.0 — движки разные, форма у обоих подлинейная. Порог втрое
+   * лежит между наблюдаемым и тем, что означало бы возврат к проходу.
+   */
   check(
-    ratio < 4,
-    `${LOAD} лишних подрядчиков не меняют форму роста: ${before} → ${after} мс, ×${ratio.toFixed(1)}`,
+    ratio < grew * 0.75,
+    `время растёт медленнее данных: данных ×${grew}, времени ×${ratio.toFixed(1)} (${small} → ${big} мс)`,
   )
 
   /* И числа остались честными: годных стало больше, показанных — нет. */

@@ -2,11 +2,18 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { JURISDICTIONS, JURISDICTION_NAMES, PORTFOLIO_THRESHOLD, SCALE_BANDS, TYPOLOGIES } from '@/engine/taxonomy'
 import { TRADES } from '@/engine/trades'
+import { MIN_TRADE_DEPTH } from '@/engine/network'
 import { Choices, Field } from '@/components/Fields'
-import { CONTRACTOR_REJECTION_LABELS, SCALE_BAND_LABELS, TRADE_LABELS, TYPOLOGY_LABELS } from '@/lib/labels'
+import {
+  CONTRACTOR_REJECTION_LABELS,
+  NETWORK_REASON_LABELS,
+  SCALE_BAND_LABELS,
+  TRADE_LABELS,
+  TYPOLOGY_LABELS,
+} from '@/lib/labels'
 import { prisma } from '@/lib/db'
 import { fill } from '@/lib/fill'
-import { insuredOn } from '@/lib/services/contractors'
+import { insuredOn, networkReadinessByCountry } from '@/lib/services/contractors'
 import { isOperator } from '@/lib/session'
 import { OpsAction } from '../OpsForms'
 import { addContractor, setContractorStatus } from '../actions'
@@ -20,18 +27,28 @@ export const metadata = { title: 'Contractors — bureau panel' }
  */
 const SHOWN = 200
 
+/**
+ * Сколько незакрытых работ показывается по стране.
+ *
+ * На пустой сети незакрыты все четырнадцать, и полный список превращает панель
+ * в стену. Показываются первые, а сколько всего — сказано числом: список тут
+ * читают, чтобы начать действовать, а не чтобы прочитать целиком.
+ */
+const HOLES_SHOWN = 5
+
 export default async function ContractorsPage() {
   if (!(await isOperator())) redirect('/ops')
 
   const now = new Date()
 
-  const [rows, total] = await Promise.all([
+  const [rows, total, readiness] = await Promise.all([
     prisma.contractor.findMany({
       orderBy: [{ status: 'asc' }, { displayName: 'asc' }],
       take: SHOWN,
       include: { trades: { select: { trade: true } } },
     }),
     prisma.contractor.count(),
+    networkReadinessByCountry(now),
   ])
 
   return (
@@ -50,6 +67,79 @@ export default async function ContractorsPage() {
         </p>
 
         <div className="divider" style={{ marginTop: 40 }} />
+
+        {/*
+          Глубина сети стоит выше формы добавления намеренно: это ответ на
+          вопрос «кого заводить», и читать его надо до того, как заводишь.
+          Работа с одним подрядчиком не дыра по отбору — список из одного он
+          соберёт, — но она держится на его занятости и полисе, и узнать об
+          этом надо не в тот день, когда в неё упёрся заказчик.
+        */}
+        <h2>Where the network is thin</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '64ch' }}>
+          {fill(
+            'Capability, not workload. A work is covered when at least {depth} contractors pass every gate; one is not coverage — it holds on that one firm being free.',
+            { depth: MIN_TRADE_DEPTH },
+          )}
+        </p>
+
+        <div className="grid grid-3">
+          {readiness.map((country) => {
+            const holes = country.depth.filter((row) => row.severity !== 'ok')
+
+            return (
+              <div key={country.jurisdiction} className="panel">
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className="label label-accent">
+                    {JURISDICTION_NAMES[country.jurisdiction]}
+                  </span>
+                  <span className="num" style={{ color: 'var(--accent)' }}>
+                    {Math.round(country.score * 100)}%
+                  </span>
+                </div>
+
+                <div className="bar" style={{ marginTop: 12 }}>
+                  <span style={{ width: `${country.score * 100}%` }} />
+                </div>
+
+                <p className="dim" style={{ marginTop: 10, fontSize: '0.82rem', marginBottom: 0 }}>
+                  {fill('{size} contractor(s) · {holes} of {total} works not covered', {
+                    size: country.size,
+                    holes: holes.length,
+                    total: country.depth.length,
+                  })}
+                </p>
+
+                {holes.length > 0 && (
+                  <ul className="plain" style={{ marginTop: 14 }}>
+                    {holes.slice(0, HOLES_SHOWN).map((row) => (
+                      <li key={row.trade} style={{ fontSize: '0.85rem' }}>
+                        <strong>{TRADE_LABELS[row.trade] ?? row.trade}</strong>
+                        {' — '}
+                        {/*
+                          Причина показывается, только если добавляет что-то к
+                          числам. «Никого: нужен найм» — это одно и то же
+                          сказанное дважды, а вот «один из двух: просрочен
+                          полис» говорит, что делать сегодня.
+                        */}
+                        {row.claimed === 0
+                          ? 'nobody in the network — a hire'
+                          : `${row.eligible} of ${row.claimed}: ${NETWORK_REASON_LABELS[row.reason ?? 'nobody'] ?? row.reason}`}
+                      </li>
+                    ))}
+                    {holes.length > HOLES_SHOWN && (
+                      <li className="dim" style={{ fontSize: '0.82rem' }}>
+                        {fill('and {count} more', { count: holes.length - HOLES_SHOWN })}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="divider" style={{ marginTop: 48 }} />
 
         <h2>Add a contractor</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '64ch' }}>

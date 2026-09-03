@@ -13,6 +13,7 @@ import {
   type Shortlist,
 } from '@/engine/contractor'
 import { TRADES, materialGroupsFor, tradesFor, type BuildShape, type MaterialGroup, type Trade } from '@/engine/trades'
+import { networkReadiness, tradeDepth, type TradeDepth } from '@/engine/network'
 import {
   SCALE_BANDS,
   TYPOLOGIES,
@@ -234,4 +235,48 @@ export async function buildFor(
     lists,
     names: Object.assign({}, ...lists.map((list) => list.names)) as Record<string, string>,
   }
+}
+
+/** Готовность сети по стране: строка на работу плюс одно число. */
+export type NetworkReadiness = {
+  jurisdiction: Jurisdiction
+  depth: TradeDepth[]
+  /** Доля закрытых работ, 0…1. */
+  score: number
+  /** Сколько подрядчиков в сети этой страны. */
+  size: number
+}
+
+/**
+ * Готовность сети по каждой стране запуска.
+ *
+ * Читается вся сеть страны, и это тот случай, когда так и надо: вопрос «чего
+ * нам не хватает вообще» по определению про всю сеть, а не про кандидатов под
+ * один проект. Растёт это медленно — числом стран, а не числом проектов, — и
+ * страница открывается одна, а не на каждый проект.
+ *
+ * Считается по заявленным работам, а не по строкам таблицы работ: подрядчик,
+ * заявивший кровлю и фундаменты, — один человек в обеих строках, и глубину он
+ * даёт обеим.
+ */
+export async function networkReadinessByCountry(now = new Date()): Promise<NetworkReadiness[]> {
+  const rows = await prisma.contractor.findMany({
+    where: { status: 'active' },
+    include: { trades: { select: { trade: true } } },
+  })
+
+  const all = rows.map((row) => ({ row, profile: toContractor(row, now) }))
+
+  return JURISDICTIONS.map((jurisdiction) => {
+    const inCountry = all
+      .filter(({ profile }) => profile.jurisdictions.includes(jurisdiction))
+      .map(({ profile }) => profile)
+
+    return {
+      jurisdiction,
+      depth: tradeDepth(inCountry),
+      score: networkReadiness(inCountry),
+      size: inCountry.length,
+    }
+  })
 }

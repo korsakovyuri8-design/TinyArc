@@ -341,3 +341,17 @@ export const CONTRACTOR_REJECTION_LABELS: Record<string, string> = {
   portfolio: 'below the portfolio threshold',
   availability: 'not taking work',
 }
+
+/**
+ * Что мешает закрыть работу — и что с этим делать.
+ *
+ * Причина названа действием, а не состоянием: бюро читает эту строку затем,
+ * чтобы понять, звонить или искать. «Нет страховки» — это состояние, «полис
+ * просрочен, нужен звонок» — действие.
+ */
+export const NETWORK_REASON_LABELS: Record<string, string> = {
+  insurance: 'insurance lapsed — a call, not a hire',
+  availability: 'everyone taking a break — ask when they are free',
+  portfolio: 'nobody above the portfolio bar — a hire',
+  nobody: 'not enough people — a hire',
+}
