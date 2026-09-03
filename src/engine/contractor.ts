@@ -243,3 +243,62 @@ export function shortlist(
     rejected,
   }
 }
+
+export type Bundle = {
+  contractorId: string
+  /** Работы, где он попал в короткий список. */
+  trades: Trade[]
+  /** Лучшее место, которое он занимает: первое — это крепкий вариант. */
+  bestPlace: number
+  /** Сумма баллов по этим работам. Нужна только для порядка вывода. */
+  score: number
+}
+
+/** Меньше двух работ — не связка, а обычная строка списка. */
+export const MIN_BUNDLE = 2
+
+/**
+ * Кто из отобранных закрывает сразу несколько работ.
+ *
+ * Стык между подрядчиками — то место, где размывается ответственность: каждый
+ * из двоих считает соседа виноватым, а заказчик остаётся с обоими. Бюро
+ * продаёт ровно обратное, поэтому знать, что одна фирма берёт фундаменты,
+ * несущие и кладку, важно.
+ *
+ * **Балл при этом не трогается, и это решение, а не осторожность.** Поправить
+ * ранжирование за связку значило бы дать заказчику подрядчика послабее на одной
+ * работе в обмен на меньшее число договоров — размен, которого он не просил и
+ * которого не видно. Пока нет корпуса завершённых строек, утверждение «связка
+ * лучше трёх фирм» остаётся гипотезой (п.21: двенадцать измерений создают
+ * ощущение науки, а веса — гипотезы, пока их не подтвердили данные). Поэтому
+ * связка показывается фактом рядом со списком, а не прячется внутрь балла.
+ *
+ * Когда стройки накопятся, у связок появятся свои метрики поставки — и вот
+ * тогда это станет слагаемым, с числом, а не с ощущением.
+ */
+export function bundles(lists: Shortlist[], min = MIN_BUNDLE): Bundle[] {
+  const found = new Map<string, { trades: Trade[]; bestPlace: number; score: number }>()
+
+  for (const list of lists) {
+    list.ranked.forEach((row, index) => {
+      const current = found.get(row.contractorId) ?? { trades: [], bestPlace: Infinity, score: 0 }
+
+      current.trades.push(list.trade)
+      current.bestPlace = Math.min(current.bestPlace, index + 1)
+      current.score += row.score
+
+      found.set(row.contractorId, current)
+    })
+  }
+
+  return [...found.entries()]
+    .filter(([, row]) => row.trades.length >= min)
+    .map(([contractorId, row]) => ({ contractorId, ...row }))
+    .sort(
+      (a, b) =>
+        b.trades.length - a.trades.length ||
+        a.bestPlace - b.bestPlace ||
+        b.score - a.score ||
+        a.contractorId.localeCompare(b.contractorId),
+    )
+}

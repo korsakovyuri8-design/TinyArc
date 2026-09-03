@@ -59,6 +59,9 @@ import { OpsAction } from '../../OpsForms'
 
 export const metadata = { title: 'Project — bureau panel' }
 
+/** Сколько связок показывается: список читают, чтобы предложить, а не целиком. */
+const BUNDLES_SHOWN = 4
+
 export default async function OpsProjectPage({
   params,
 }: {
@@ -284,6 +287,32 @@ export default async function OpsProjectPage({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/*
+            Связки показываются фактом, а не поправкой к списку выше. Стык
+            между подрядчиками — то место, где размывается ответственность, и
+            «одна фирма берёт три работы» стоит знать. Но менять ради этого
+            порядок значило бы дать заказчику подрядчика послабее в обмен на
+            меньшее число договоров — размен, которого он не просил.
+          */}
+          {build.bundles.length > 0 && (
+            <div style={{ marginTop: 22 }}>
+              <div className="label">One contractor, several works</div>
+              <ul className="plain" style={{ marginTop: 10 }}>
+                {build.bundles.slice(0, BUNDLES_SHOWN).map((bundle) => (
+                  <li key={bundle.contractorId} style={{ fontSize: '0.85rem' }}>
+                    <strong>{build.names[bundle.contractorId] ?? bundle.contractorId}</strong>
+                    {' — '}
+                    {bundle.trades.map((trade) => TRADE_LABELS[trade] ?? trade).join(', ')}
+                    {bundle.bestPlace > 1 && ` · best place ${bundle.bestPlace}`}
+                  </li>
+                ))}
+              </ul>
+              <p className="hint" style={{ marginTop: 8, marginBottom: 0 }}>
+                Fewer seams, fewer contracts. The ranking above is not adjusted for this — the trade-off is the client&rsquo;s to make, not ours.
+              </p>
             </div>
           )}
 

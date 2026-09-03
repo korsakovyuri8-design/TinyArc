@@ -206,6 +206,36 @@ check(
   'сказано, что объёмов пока нет и откуда они возьмутся',
 )
 
+/*
+ * Связки: одна фирма на несколько работ. Стык между подрядчиками — место, где
+ * размывается ответственность, и знать это стоит. Но порядок в списках от
+ * связок не меняется: размен «подрядчик послабее в обмен на меньше договоров»
+ * заказчик не просил, и делать его за него нельзя.
+ */
+{
+  const wide = build.lists.find((list) => list.trade === 'foundations')
+  const named = build.bundles.map((row) => row.contractorId)
+
+  check(build.bundles.length > 0, `связки посчитаны: ${build.bundles.length}`)
+  check(
+    build.bundles.every((row) => row.trades.length >= 2),
+    'в связке не меньше двух работ',
+  )
+  check(
+    named.every((id) => Boolean(build.names[id])),
+    'у связки есть имя, а не только идентификатор',
+  )
+  check(
+    wide?.ranked[0]?.contractorId === (await buildFor(project)).lists.find((l) => l.trade === 'foundations')?.ranked[0]?.contractorId,
+    'порядок в списке от связок не поехал',
+  )
+  check(card.includes('one contractor, several works'), 'связки показаны в карточке')
+  check(
+    card.includes('the ranking above is not adjusted'),
+    'сказано, что балл ради связки не трогали',
+  )
+}
+
 /* Сеть в панели. */
 await page.goto(`${BASE}/ops/contractors`)
 const network = (await page.locator('body').innerText()).toLowerCase()

@@ -8,7 +8,9 @@
 
 import {
   CONTRACTOR_THRESHOLD,
+  bundles,
   shortlist,
+  type Bundle,
   type ContractorProfile,
   type Shortlist,
 } from '@/engine/contractor'
@@ -118,6 +120,13 @@ export type ProjectBuild = {
   groups: MaterialGroup[]
   /** По списку на каждую работу. */
   lists: TradeShortlist[]
+  /**
+   * Кто закрывает сразу несколько работ.
+   *
+   * Факт рядом со списком, а не поправка к нему: балл не трогается. См. п.14б
+   * и комментарий у `bundles` в движке.
+   */
+  bundles: Bundle[]
   /**
    * Имена по идентификатору.
    *
@@ -233,6 +242,7 @@ export async function buildFor(
     trades,
     groups: materialGroupsFor(shape),
     lists,
+    bundles: bundles(lists),
     names: Object.assign({}, ...lists.map((list) => list.names)) as Record<string, string>,
   }
 }

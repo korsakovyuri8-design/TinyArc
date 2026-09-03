@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   CONTRACTOR_THRESHOLD,
   SHORTLIST_SIZE,
+  bundles,
   contractorGate,
   scoreContractor,
   shortlist,
   type ContractorNeed,
   type ContractorProfile,
 } from './contractor'
-import type { BuildShape } from './trades'
+import type { BuildShape, Trade } from './trades'
 
 const shape: BuildShape = {
   typology: 'villa',
@@ -216,5 +217,69 @@ describe('короткий список', () => {
     expect(keys).not.toContain('sponsored')
     expect(keys).not.toContain('promoted')
     expect(keys.some((key) => /paid|sponsor|promot|boost|featur/i.test(key))).toBe(false)
+  })
+})
+
+describe('связки: одна фирма на несколько работ', () => {
+  const shortlistFor = (trade: Trade, ranked: ContractorProfile[]) =>
+    shortlist(ranked, { ...need, trade }, [trade])
+
+  it('фирма в двух списках названа связкой', () => {
+    const wide = contractor({ id: 'wide', trades: ['foundations', 'roofing'] })
+    const narrow = contractor({ id: 'narrow', trades: ['roofing'] })
+
+    const found = bundles([
+      shortlistFor('foundations', [wide]),
+      shortlistFor('roofing', [wide, narrow]),
+    ])
+
+    expect(found).toHaveLength(1)
+    expect(found[0].contractorId).toBe('wide')
+    expect(found[0].trades).toEqual(['foundations', 'roofing'])
+  })
+
+  it('фирма в одном списке связкой не считается', () => {
+    const one = contractor({ id: 'one', trades: ['roofing'] })
+
+    expect(bundles([shortlistFor('roofing', [one])])).toEqual([])
+  })
+
+  it('шире — выше: три работы важнее двух', () => {
+    const three = contractor({ id: 'three', trades: ['foundations', 'structure', 'masonry'] })
+    const two = contractor({ id: 'two', trades: ['foundations', 'structure'] })
+
+    const found = bundles([
+      shortlistFor('foundations', [three, two]),
+      shortlistFor('structure', [three, two]),
+      shortlistFor('masonry', [three]),
+    ])
+
+    expect(found.map((row) => row.contractorId)).toEqual(['three', 'two'])
+  })
+
+  it('лучшее место запоминается: первое — крепкий вариант, третье — запасной', () => {
+    const strong = contractor({ id: 'strong', trades: ['foundations', 'roofing'], portfolioRating: 9.9 })
+    const weak = contractor({ id: 'weak', trades: ['foundations', 'roofing'], portfolioRating: 8.1 })
+    const lists = [shortlistFor('foundations', [strong, weak]), shortlistFor('roofing', [strong, weak])]
+
+    const found = bundles(lists)
+
+    expect(found.find((row) => row.contractorId === 'strong')?.bestPlace).toBe(1)
+    expect(found.find((row) => row.contractorId === 'weak')?.bestPlace).toBe(2)
+  })
+
+  /*
+   * Главное свойство: связка — это факт рядом со списком, а не поправка к
+   * баллу. Иначе заказчик получил бы подрядчика послабее на одной работе в
+   * обмен на меньшее число договоров — размен, которого он не просил.
+   */
+  it('порядок в самих списках от связок не меняется', () => {
+    const wide = contractor({ id: 'wide', trades: ['foundations', 'roofing'], portfolioRating: 8.2 })
+    const best = contractor({ id: 'best', trades: ['foundations'], portfolioRating: 9.8 })
+
+    const foundations = shortlistFor('foundations', [wide, best])
+    bundles([foundations, shortlistFor('roofing', [wide])])
+
+    expect(foundations.ranked[0].contractorId).toBe('best')
   })
 })
