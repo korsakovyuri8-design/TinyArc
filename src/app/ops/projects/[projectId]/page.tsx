@@ -24,7 +24,6 @@ import {
   DOC_STAGE_LABELS,
   GRID_LABELS,
   OUTCOME_LABELS,
-  PROJECT_STATUS_LABELS,
   SPECIALIZATION_LABELS,
   TERRAIN_LABELS,
   TICKET_STATUS_LABELS,
@@ -35,6 +34,7 @@ import { SPECIALIZATIONS } from '@/engine/taxonomy'
 import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { latestRun } from '@/lib/services/matching'
+import { standingClass, standingOf } from '@/lib/standing'
 import { alertsForProject } from '@/lib/services/pm'
 import { threadOf } from '@/lib/services/dialogue'
 import { ALERT_LABELS, isNudgeKind } from '@/engine/pm'
@@ -110,6 +110,8 @@ export default async function OpsProjectPage({
     ).map((s) => [s.id, s.displayName]),
   )
 
+  const standing = standingOf(project.status, run?.outcome ?? null)
+
   // Сигналы, по которым бюро пишет исполнителю. Кнопка напоминания появляется
   // только там, где менеджер уже сказал, что работа встала.
   const nudgeable = new Map(
@@ -125,9 +127,12 @@ export default async function OpsProjectPage({
 
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 18 }}>
           <h1>{project.title}</h1>
-          <span className="tag tag-accent">
-            {PROJECT_STATUS_LABELS[project.status] ?? project.status}
-          </span>
+          {/*
+            То же положение, что видит заказчик. Оператор и заказчик, читающие
+            на одном проекте разные новости, — это разговор, в котором один из
+            них неправ, и неправ обычно оператор.
+          */}
+          <span className={standingClass(standing)}>{standing.label}</span>
         </div>
 
         <p className="dim" style={{ marginTop: 10 }}>

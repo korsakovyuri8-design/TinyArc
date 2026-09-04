@@ -9,12 +9,27 @@ import {
 import { fill } from '@/lib/fill'
 import { prisma } from '@/lib/db'
 import { PROJECT_STATUS_LABELS, TYPOLOGY_LABELS } from '@/lib/labels'
+import { outcomesFor } from '@/lib/services/matching'
+import { standingClass, standingOf } from '@/lib/standing'
 import { isOperator } from '@/lib/session'
 
 export const metadata = { title: 'Projects — bureau panel' }
 
 /** Статусы проекта, по которым имеет смысл сужать. */
 const STATUSES = ['draft', 'assembled', 'delivering', 'delivered', 'rejected'] as const
+
+/*
+ * Подписи фильтра — не подписи строк.
+ *
+ * Фильтр сужает по столбцу статуса в базе, и «бриф принят» на нём означало бы
+ * не то, что показано в строках: в черновиках лежат и только что принятые
+ * брифы, и те, под которые команда не собралась. Столбец называет положение,
+ * фильтр называет отбор — и путать их значит обещать оператору выборку,
+ * которой он не получит.
+ */
+const FILTER_LABELS: Record<string, string> = {
+  draft: 'Draft — accepted or not assembled',
+}
 
 /**
  * Сколько проектов показывать разом.
@@ -76,6 +91,14 @@ export default async function ProjectsPage({
   /* Показывается начало списка: он от новых к старым, старое ищут условиями. */
   const shown = projects.slice(0, SHOWN)
 
+  /*
+   * Исходы читаются одним запросом и только для показанных строк. Положение
+   * проекта не совпадает со статусом: черновик, под который команду собрать не
+   * удалось, остаётся черновиком, и в столбце статуса он неотличим от только
+   * что принятого брифа — а это два разных дела для оператора.
+   */
+  const outcomes = await outcomesFor(shown.map((project) => project.id))
+
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
@@ -97,7 +120,7 @@ export default async function ProjectsPage({
                 <option value="">Any</option>
                 {STATUSES.map((value) => (
                   <option key={value} value={value}>
-                    {PROJECT_STATUS_LABELS[value] ?? value}
+                    {FILTER_LABELS[value] ?? PROJECT_STATUS_LABELS[value] ?? value}
                   </option>
                 ))}
               </select>
@@ -181,9 +204,10 @@ export default async function ProjectsPage({
                       {project.tickets.length}
                     </td>
                     <td>
-                      <span className="tag">
-                        {PROJECT_STATUS_LABELS[project.status] ?? project.status}
-                      </span>
+                      {(() => {
+                        const standing = standingOf(project.status, outcomes.get(project.id) ?? null)
+                        return <span className={standingClass(standing)}>{standing.label}</span>
+                      })()}
                     </td>
                   </tr>
                 ))}

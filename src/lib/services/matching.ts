@@ -212,13 +212,46 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
 const VISIBLE_SPECIALIST = { select: { id: true, displayName: true } } as const
 
 /** Последний прогон проекта со всем разбором — это и есть «почему эта команда». */
+/**
+ * Порядок прогонов от свежего к старому.
+ *
+ * Дополнительный ключ по id — не украшение. Пересборка на одном запросе
+ * укладывается в одну миллисекунду, и два прогона получают одинаковый
+ * `createdAt`; порядок между ними база выбирает сама и в разных запросах
+ * по-разному. Кабинет заказчика тогда читает один прогон, список бюро —
+ * другой, и они расходятся в том, собралась ли команда.
+ */
+const RUN_ORDER = [{ createdAt: 'desc' as const }, { id: 'desc' as const }]
+
 export async function latestRun(projectId: string) {
   return prisma.matchRun.findFirst({
     where: { projectId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: RUN_ORDER,
     include: {
       candidates: { include: { specialist: VISIBLE_SPECIALIST } },
       slots: { include: { specialist: VISIBLE_SPECIALIST } },
     },
   })
+}
+
+/**
+ * Исход последнего прогона сразу для многих проектов.
+ *
+ * Нужно там, где положение показывается списком: без этого страница делала бы
+ * запрос на строку. Читается только исход — состав и кандидаты в списке не
+ * нужны и весили бы больше самого списка.
+ */
+export async function outcomesFor(projectIds: string[]): Promise<Map<string, string>> {
+  if (projectIds.length === 0) return new Map()
+
+  const rows = await prisma.matchRun.findMany({
+    where: { projectId: { in: projectIds } },
+    orderBy: RUN_ORDER,
+    select: { projectId: true, outcome: true },
+  })
+
+  // Первый встреченный и есть последний: строки уже отсортированы.
+  const latest = new Map<string, string>()
+  for (const row of rows) if (!latest.has(row.projectId)) latest.set(row.projectId, row.outcome)
+  return latest
 }

@@ -6,7 +6,6 @@ import {
   ARTIFACT_KIND_LABELS,
   DISCIPLINE_LABELS,
   DOC_STAGE_LABELS,
-  PROJECT_STATUS_LABELS,
   SPECIALIZATION_LABELS,
   TICKET_STATUS_LABELS,
   TYPOLOGY_LABELS,
@@ -41,6 +40,7 @@ import { fileCount, packageOf } from '@/lib/services/package'
 import { ClientDialogue, StageApproval } from './ClientDialogue'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
+import { standingClass, standingOf } from '@/lib/standing'
 
 export const metadata = pageMetadata('Project workspace')
 
@@ -90,6 +90,7 @@ export default async function ProjectPage({
     (s) => DOC_STAGE_ORDER[s] === DOC_STAGE_ORDER[project.targetStage as DocStage] + 1,
   )
   const team = run?.slots ?? []
+  const standing = standingOf(project.status, run?.outcome ?? null)
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -97,7 +98,14 @@ export default async function ProjectPage({
         <span className="eyebrow">Project workspace</span>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h1 style={{ maxWidth: '18ch' }}>{project.title}</h1>
-          <span className="tag tag-accent">{PROJECT_STATUS_LABELS[project.status] ?? project.status}</span>
+          {/*
+            Метка считается из статуса и исхода прогона вместе, а не из одного
+            статуса. Проект, чей прогон не собрал команду, остаётся черновиком:
+            «бриф принят» здесь — правда для базы и успокоительное для того,
+            кому команду укомплектовать не удалось, а тремя строками ниже
+            панель говорит обратное.
+          */}
+          <span className={standingClass(standing)}>{standing.label}</span>
         </div>
 
         {issued === '1' && (
