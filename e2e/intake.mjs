@@ -146,7 +146,49 @@ await person.check('#consent')
 
 await person.click('button[type=submit]')
 await person.waitForTimeout(2500)
-check((await person.textContent('body')).includes('Profile submitted'), 'профиль ушёл на разбор')
+const submitted = await person.textContent('body')
+check(submitted.includes('Profile submitted'), 'профиль ушёл на разбор')
+
+/*
+ * Что человек читает сразу после отправки. На запуске пул набирается импортом,
+ * значит этим путём проходит почти каждый первый специалист, и его дальше
+ * никто не вёл.
+ *
+ * Про ключ было сказано половину: «ключ у вас уже есть» верно ровно пока
+ * держится эта сессия, а у двери ключ на разборе не работает — вернувшийся
+ * завтра читал отказ, о котором его не предупредили.
+ */
+check(
+  submitted.includes('it starts working once the review passes'),
+  'сказано, что ключ у двери заработает после разбора, а не «он у вас уже есть»',
+)
+
+await person.goto(`${BASE}/work`)
+await person.waitForTimeout(800)
+const board = (await person.textContent('body')).toLowerCase()
+
+check(
+  !board.includes('tickets appear when the engine puts you on a project team'),
+  'доска не обещает задач тому, кого ещё не смотрели: движок не может поставить его никуда',
+)
+check(
+  board.includes('your application is with the bureau'),
+  'доска называет разбор заявки своим именем',
+)
+check(board.includes('the move is the bureau’s'), 'сказано, чей ход')
+
+await person.goto(`${BASE}/work/profile`)
+await person.waitForTimeout(800)
+const profile = (await person.textContent('body')).toLowerCase()
+
+check(
+  !profile.includes('you take part in selection on the usual terms'),
+  'открытый доступ не выдаётся за участие в отборе: деньги открыты, а в пуле человека нет',
+)
+check(
+  profile.includes('money is not what is holding this up'),
+  'сказано, что дело не в деньгах — иначе он пойдёт платить',
+)
 
 await person.goto(`${BASE}/work/profile/complete`)
 await person.waitForTimeout(800)

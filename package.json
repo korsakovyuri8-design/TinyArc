@@ -21,7 +21,7 @@
     "preflight": "tsx scripts/preflight.ts",
     "backup": "tsx scripts/backup.ts",
     "restore": "tsx scripts/restore.ts",
-    "e2e": "node e2e/brief.mjs && node e2e/intake.mjs && node e2e/mobile.mjs && tsx e2e/app.mts && tsx e2e/english.mts && tsx e2e/recover.mts && node e2e/ops-edit.mjs && node e2e/dialogue.mjs && node e2e/approval.mjs && node e2e/money.mjs && tsx e2e/files.mts && tsx e2e/package.mts && tsx e2e/revision.mts && tsx e2e/applications.mts && tsx e2e/hostile.mts && tsx e2e/race.mts && tsx e2e/gate.mts && tsx e2e/limits.mts && tsx e2e/assembly.mts && tsx e2e/backup.mts && tsx e2e/board.mts && tsx e2e/demand.mts && tsx e2e/closed.mts && tsx e2e/standing.mts && tsx e2e/norms.mts && tsx e2e/build.mts && tsx e2e/notify.mts && tsx e2e/privacy.mts"
+    "e2e": "node e2e/brief.mjs && node e2e/intake.mjs && node e2e/mobile.mjs && tsx e2e/app.mts && tsx e2e/english.mts && tsx e2e/recover.mts && node e2e/ops-edit.mjs && node e2e/dialogue.mjs && node e2e/approval.mjs && node e2e/money.mjs && tsx e2e/files.mts && tsx e2e/package.mts && tsx e2e/revision.mts && tsx e2e/applications.mts && tsx e2e/hostile.mts && tsx e2e/race.mts && tsx e2e/gate.mts && tsx e2e/limits.mts && tsx e2e/assembly.mts && tsx e2e/backup.mts && tsx e2e/board.mts && tsx e2e/demand.mts && tsx e2e/closed.mts && tsx e2e/standing.mts && tsx e2e/seat.mts && tsx e2e/norms.mts && tsx e2e/build.mts && tsx e2e/notify.mts && tsx e2e/privacy.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

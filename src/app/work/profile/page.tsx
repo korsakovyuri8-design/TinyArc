@@ -19,6 +19,7 @@ import { AvailabilityForm } from './AvailabilityForm'
 import { toProfile } from '@/lib/rows'
 import { company } from '@/lib/legal'
 import { currentSpecialist } from '@/lib/session'
+import { seatOf } from '@/lib/seat'
 import { pageMetadata } from '@/lib/metadata'
 import { fill } from '@/lib/fill'
 
@@ -33,6 +34,7 @@ export default async function ProfilePage() {
   if (row.status === 'invited') redirect('/work/profile/complete')
 
   const profile = toProfile(row)
+  const seat = seatOf(row)
   const metrics = deliveryMetrics(profile.delivery)
   const delivery = deliveryScore(metrics)
   const weight = historyWeight(profile.delivery)
@@ -112,8 +114,20 @@ export default async function ProfilePage() {
                 { email: bureauEmail },
               )}
             </p>
-          ) : (
+          ) : seat.inSelection ? (
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Access is open: you take part in selection on the usual terms. The supply side pays for access to demand — the bureau takes no commission from your fee.</p>
+          ) : (
+            /*
+              Открытый доступ и участие в отборе — не одно и то же, и пока это
+              была одна фраза, ушедшему на разбор она обещала участие «на общих
+              условиях». Деньги ему и правда не мешают; мешает то, что в пуле
+              его нет. Поэтому здесь сначала правда про участие, а потом уже
+              про деньги.
+            */
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              {seat.body} Money is not what is holding this up: access is open, and the supply side
+              pays for access to demand — the bureau takes no commission from your fee.
+            </p>
           )}
         </div>
 

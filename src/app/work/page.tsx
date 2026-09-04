@@ -4,6 +4,7 @@ import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib
 import type { Discipline, DocStage } from '@/engine/taxonomy'
 import { ACCEPTED_SHOWN, ticketsOf } from '@/lib/services/relay'
 import { currentSpecialist } from '@/lib/session'
+import { seatOf } from '@/lib/seat'
 import { pageMetadata } from '@/lib/metadata'
 import { fill } from '@/lib/fill'
 import { dateTime } from '@/lib/format'
@@ -27,6 +28,7 @@ export default async function WorkPage({
   if (specialist.status === 'invited') redirect('/work/profile/complete')
 
   const { tickets, acceptedTotal } = await ticketsOf(specialist.id)
+  const seat = seatOf(specialist)
 
   // Подтверждение выхода показывается здесь, а не на тикете: после выхода
   // тикет уже не его, и страница ушла бы из-под ног ошибкой доступа.
@@ -102,19 +104,27 @@ export default async function WorkPage({
         )}
 
         {tickets.length === 0 ? (
-          <div className="panel" style={{ marginTop: 40 }}>
-            <div className="label">No tasks yet</div>
+          <div
+            className="panel"
+            style={{ marginTop: 40, borderColor: seat.tone === 'fail' ? 'var(--fail)' : undefined }}
+          >
             {/*
               Причина названа там, где человек её ищет. Пустая доска без
               объяснения читается как «меня не выбирают», то есть как приговор
               профессии; если дело в доступе, надо сказать про доступ — иначе
               человек будет переделывать портфолио, а мешает не оно.
+
+              Причин таких больше одной, и считает их `seatOf`: доступ был
+              назван, а разбор заявки — нет, и ушедший на разбор читал здесь
+              «тикеты появятся, когда движок поставит вас в команду». Движок не
+              может: в пуле его ещё нет. На запуске пул набирается импортом, то
+              есть этим путём проходит почти каждый первый специалист.
             */}
-            {specialist.subscription === 'none' ? (
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>There will be no tasks while access to projects is closed: without it the engine does not consider you. This is about access, not about the quality of your work — neither portfolio nor metrics come into it. What to do is written in your profile.</p>
-            ) : (
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Tickets appear when the engine puts you on a project team. There is nothing to apply to — selection runs without your involvement.</p>
-            )}
+            <div className="label">{seat.inSelection ? 'No tasks yet' : seat.headline}</div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              {seat.body}
+              {seat.turn === 'bureau' && !seat.inSelection && ' The move is the bureau’s, not yours.'}
+            </p>
           </div>
         ) : (
           <div

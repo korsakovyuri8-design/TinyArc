@@ -69,8 +69,14 @@ export default async function CompleteProfilePage() {
               <div className="label label-accent">Profile submitted</div>
               <h3 style={{ marginTop: 12 }}>Next — the portfolio review</h3>
               <p className="muted" style={{ marginTop: 12, marginBottom: 16 }}>
+                {/*
+                  Про ключ сказано полностью. «Ключ у вас уже есть» правда
+                  ровно пока держится эта сессия: у двери ключ на разборе не
+                  работает, и человек, вернувшийся завтра, читал там отказ,
+                  которого его не предупреждали.
+                */}
                 {fill(
-                  'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10. You already have the access key — the one you signed in with.',
+                  'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10. The access key is the one you signed in with — keep it: at the door it starts working once the review passes.',
                   { threshold: PORTFOLIO_THRESHOLD },
                 )}
               </p>
