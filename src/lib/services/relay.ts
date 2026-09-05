@@ -23,6 +23,7 @@ import { recordConflict, recordProjectTogether, recordRequestAnswered } from './
 import { approvedStages, stagesAwaitingClient } from './approval'
 import { issueDueInvoices, paidStages } from './billing'
 import { notifyProject } from './notify'
+import { accrueFor } from './payouts'
 
 export class NotYours extends Error {
   constructor() {
@@ -444,6 +445,19 @@ export async function accept(ticketId: string): Promise<void> {
 
   await applyGates(ticket.projectId)
   await refreshProjectStatus(ticket.projectId)
+
+  /*
+   * Обязательство перед человеком заводится здесь, а не при подтверждении
+   * стадии заказчиком: приёмка бюро означает «сделано как заказано», и с этой
+   * секунды бюро должно. Заказчик, молчащий неделю, работу несделанной не
+   * делает.
+   *
+   * Вне транзакции и следом за гейтом, по той же причине: начисление читает
+   * ставки и обходит проект целиком. Разрыв между приёмкой и начислением
+   * лечится повторным вызовом — обязательство заводится с уникальностью в
+   * схеме, и второй раз оно не начислится.
+   */
+  await accrueFor(ticket.projectId)
 }
 
 /** Статус проекта выводится из тикетов, а не ставится руками. */

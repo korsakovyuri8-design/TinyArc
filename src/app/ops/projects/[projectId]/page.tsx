@@ -35,6 +35,9 @@ import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { latestRun } from '@/lib/services/matching'
 import { standingClass, standingOf } from '@/lib/standing'
+import { economicsOf } from '@/lib/services/payouts'
+import { fill } from '@/lib/fill'
+import { amount as money } from '@/lib/format'
 import { alertsForProject } from '@/lib/services/pm'
 import { threadOf } from '@/lib/services/dialogue'
 import { ALERT_LABELS, isNudgeKind } from '@/engine/pm'
@@ -87,7 +90,7 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction, alerts, thread, withdrawals, rules, build] = await Promise.all([
+  const [run, direction, alerts, thread, withdrawals, rules, build, economics] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     alertsForProject(project.id),
@@ -99,6 +102,7 @@ export default async function OpsProjectPage({
     }),
     checkSite(project),
     buildFor(project),
+    economicsOf(project.id),
   ])
 
   const replacedBy = new Map(
@@ -222,6 +226,93 @@ export default async function OpsProjectPage({
         </div>
 
         <Compliance view={rules} audience="bureau" />
+
+        {/*
+          Экономика проекта. Выручкой считается оплаченное, а не выставленное:
+          выставленный счёт — это намерение заказчика, и маржа по нему считалась
+          бы по деньгам, которых нет.
+
+          Маржа не показывается, пока хоть одно обязательство без ставки.
+          Посчитанная по части расхода, она всегда завышена — недостающее
+          всегда со стороны расхода, — а число, ошибающееся всегда в одну
+          сторону, хуже отсутствия числа: по нему принимают решения.
+        */}
+        <div className="panel" style={{ marginTop: 40 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div className="label">Money on this project</div>
+            <Link href="/ops/payouts" className="label">
+              rates and payouts →
+            </Link>
+          </div>
+
+          <div className="grid grid-3" style={{ marginTop: 20 }}>
+            <div>
+              <div className="num" style={{ fontSize: '1.5rem' }}>
+                {money(economics.charged)} {economics.currency}
+              </div>
+              <div className="label" style={{ marginTop: 6 }}>received from the client</div>
+              <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>paid invoices, not issued ones</div>
+            </div>
+
+            <div>
+              <div className="num" style={{ fontSize: '1.5rem' }}>
+                {money(economics.owedKnown)} {economics.currency}
+              </div>
+              <div className="label" style={{ marginTop: 6 }}>owed to the team</div>
+              <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                {economics.owedUnknown === 0
+                  ? 'every obligation has a rate'
+                  : fill('{count} without a rate — this total is short by them', {
+                      count: economics.owedUnknown,
+                    })}
+              </div>
+            </div>
+
+            <div>
+              {economics.margin.known ? (
+                <>
+                  <div
+                    className="num"
+                    style={{
+                      fontSize: '1.5rem',
+                      color: economics.margin.amount < 0 ? 'var(--fail)' : undefined,
+                    }}
+                  >
+                    {money(economics.margin.amount)} {economics.currency}
+                  </div>
+                  <div className="label" style={{ marginTop: 6 }}>gross margin</div>
+                  <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                    {economics.margin.share === null
+                      ? 'nothing received yet'
+                      : fill('{percent}% of what came in', {
+                          percent: Math.round(economics.margin.share * 100),
+                        })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="num" style={{ fontSize: '1.5rem', color: 'var(--fail)' }}>—</div>
+                  <div className="label" style={{ marginTop: 6 }}>gross margin</div>
+                  <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                    {fill('not computable: {count} rate(s) are not set', {
+                      count: economics.margin.missing,
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {economics.missingRates.length > 0 && (
+            <p className="hint" style={{ marginTop: 18, marginBottom: 0 }}>
+              Rates missing for{' '}
+              {economics.missingRates
+                .map((r) => `${DISCIPLINE_LABELS[r.discipline]} · ${DOC_STAGE_LABELS[r.stage]}`)
+                .join(', ')}
+              .
+            </p>
+          )}
+        </div>
 
         {/*
           Подрядчики и закупка. Список считается тем же движком, что состав

@@ -1,8 +1,15 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { PayoutRefused, markPayoutPaid, setRate } from '@/lib/services/payouts'
 import { redirect } from 'next/navigation'
-import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
+import {
+  DISCIPLINES,
+  DOC_STAGES,
+  PORTFOLIO_THRESHOLD,
+  type Discipline,
+  type DocStage,
+} from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { TEXT_MAX, TooMuchText, bounded } from '@/lib/text'
 import { allow, forgive } from '@/lib/guard'
@@ -1209,4 +1216,64 @@ export async function eraseProjectData(_prev: OpsState, formData: FormData): Pro
     message:
       'The data is erased: contacts, brief, correspondence and files are gone. Invoices remain — keeping them is an obligation of the country of registration.',
   }
+}
+
+/**
+ * Ставка гонорара за дисциплину на стадии.
+ *
+ * Ставки не зашиты в код намеренно: выдуманная ставка означает выдуманную
+ * маржу, а маржа это то, по чему решают, жив ли бизнес. Здесь бюро называет
+ * её само, и названная подставляется в уже начисленные обязательства без
+ * суммы — работа была той же самой, и первый месяц не должен навсегда
+ * выпасть из расчёта.
+ */
+export async function setPayoutRate(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const discipline = String(formData.get('discipline') ?? '')
+  const stage = String(formData.get('stage') ?? '')
+  const amount = Number(formData.get('amount'))
+
+  if (!DISCIPLINES.includes(discipline as Discipline)) return { error: 'Unknown discipline.' }
+  if (!DOC_STAGES.includes(stage as DocStage)) return { error: 'Unknown stage.' }
+
+  try {
+    const filled = await setRate(discipline as Discipline, stage as DocStage, amount)
+
+    revalidatePath('/ops/payouts')
+    revalidatePath('/ops')
+
+    return {
+      message:
+        filled === 0
+          ? 'Rate saved.'
+          : `Rate saved, and ${filled} obligation${filled === 1 ? '' : 's'} already accrued without an amount now carry it.`,
+    }
+  } catch (error) {
+    if (error instanceof PayoutRefused) return { error: error.message }
+
+    console.error('Ставка гонорара не записана:', error)
+    return { error: 'Saving the rate failed.' }
+  }
+}
+
+/** Отметка о выплате. Платёжного провайдера нет: это отметка бюро. */
+export async function markObligationPaid(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const payoutId = String(formData.get('payoutId') ?? '')
+
+  try {
+    await markPayoutPaid(payoutId, String(formData.get('note') ?? ''))
+  } catch (error) {
+    if (error instanceof PayoutRefused) return { error: error.message }
+
+    console.error('Отметка о выплате не прошла:', error)
+    return { error: 'Marking the payout failed.' }
+  }
+
+  revalidatePath('/ops/payouts')
+  revalidatePath('/ops')
+
+  return { message: 'Marked as paid.' }
 }

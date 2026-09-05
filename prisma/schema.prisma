@@ -139,6 +139,7 @@ model Specialist {
   collaborationsA Collaboration[] @relation("collaborationA")
   collaborationsB Collaboration[] @relation("collaborationB")
   withdrawals     Withdrawal[]
+  payouts         Payout[]
 
   @@index([status])
 }
@@ -237,6 +238,7 @@ model Project {
   withdrawals Withdrawal[]
   messages    ClientMessage[]
   approvals   StageApproval[]
+  payouts     Payout[]
 
   @@index([status])
 }
@@ -901,4 +903,73 @@ model ContractorTrade {
   @@unique([contractorId, trade])
   /// Главный путь доступа: «кто в этой стране делает фундаменты».
   @@index([trade])
+}
+
+/// Ставка гонорара: сколько бюро платит за дисциплину на стадии.
+///
+/// Пустая таблица — рабочее состояние, а не недоделка. Ставки не выдуманы и не
+/// зашиты в код: в `pricing.ts` начальные цифры стоят намеренно, потому что
+/// цену заказчику надо назвать до всякой статистики, а здесь выдуманное число
+/// означало бы выдуманную маржу — то самое, по чему решают, жив ли бизнес.
+///
+/// Плата назначается за дисциплину на стадии, а не за тикет: тикеты внутри
+/// стадии — это то, как реле разложило работу, и платить по их числу значило
+/// бы платить за разбиение. При другом плане тикетов та же работа стоила бы
+/// другое.
+model PayoutRate {
+  id         String @id @default(cuid())
+  /// Значение из закрытого словаря src/engine/taxonomy.ts.
+  discipline String
+  stage      String
+  /// Целые единицы валюты: копейки в гонораре — тот же шум, что и в счёте.
+  amount     Int
+  currency   String @default("EUR")
+
+  updatedAt DateTime @updatedAt
+
+  /// Одна ставка на пару. Две строки означали бы, что сумма зависит от того,
+  /// какую из них прочитали первой.
+  @@unique([discipline, stage])
+}
+
+/// Обязательство бюро перед человеком за дисциплину на стадии.
+///
+/// Начисляется в момент приёмки бюро, а не подтверждения заказчиком: приёмка
+/// означает «сделано как заказано», и с этой секунды бюро должно. Заказчик
+/// может не подтвердить стадию неделю — работа от этого не становится
+/// несделанной.
+model Payout {
+  id           String     @id @default(cuid())
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  /// Значения из закрытых словарей src/engine/taxonomy.ts.
+  discipline String
+  stage      String
+
+  /// Сумма на момент начисления; null — ставки не было.
+  ///
+  /// Нулём это записать нельзя: ноль означает бесплатную работу, то есть
+  /// маржу, равную всей цене стадии. Ошибка эта всегда в одну сторону —
+  /// бизнес выглядит прибыльнее, чем он есть.
+  amount   Int?
+  currency String @default("EUR")
+
+  /// accrued — начислено, paid — выплачено, void — снято бюро с причиной.
+  status String @default("accrued")
+
+  accruedAt DateTime  @default(now())
+  paidAt    DateTime?
+  /// Чем подтверждена выплата. Платёжного провайдера нет: это отметка бюро.
+  paidNote  String    @default("")
+
+  /// Одно обязательство на пару «человек + дисциплина на стадии». Приёмка
+  /// последнего тикета зовётся не один раз, и без этого условия повторный
+  /// вызов начислил бы второй гонорар за ту же работу.
+  @@unique([projectId, specialistId, discipline, stage])
+  /// Очередь выплат спрашивает обязательства по состоянию, а не по проекту:
+  /// без индекса это перебор всех выплат за всю историю на каждое открытие.
+  @@index([status, accruedAt])
 }

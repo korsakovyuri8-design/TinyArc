@@ -11,6 +11,7 @@ import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
 import { DIRECTION_NUDGE_HOURS, awaitingDirection } from '@/lib/services/direction'
 import { INSURANCE_HORIZON_DAYS, expiringInsurance } from '@/lib/services/contractors'
+import { unratedObligations } from '@/lib/services/payouts'
 import { TRADE_LABELS } from '@/lib/labels'
 import { INVOICE_NUDGE_HOURS, PAID_SHOWN, invoiceQueue } from '@/lib/services/billing'
 import { DOC_STAGE_LABELS } from '@/lib/labels'
@@ -51,14 +52,17 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions, approvals, invoices, directions, policies] = await Promise.all([
-    lostProjects(),
-    waitingQuestions(),
-    awaitingApproval(),
-    invoiceQueue(),
-    awaitingDirection(),
-    expiringInsurance(),
-  ])
+  const [lost, questions, approvals, invoices, directions, policies, unrated, owedOpen] =
+    await Promise.all([
+      lostProjects(),
+      waitingQuestions(),
+      awaitingApproval(),
+      invoiceQueue(),
+      awaitingDirection(),
+      expiringInsurance(),
+      unratedObligations(),
+      prisma.payout.count({ where: { status: 'accrued' } }),
+    ])
 
   const waitingInvoices = invoices.filter((i) => i.status === 'issued').length
   const conflicts = alerts.filter((a) => a.kind === 'conflict')
@@ -78,7 +82,37 @@ export default async function OpsPage() {
           <Tile value={submitted} label="await acceptance" href="/ops/projects" accent={submitted > 0} />
           <Tile value={openTickets} label="tickets in progress" href="/ops/projects" />
           <Tile value={contractors} label="contractors in the network" href="/ops/contractors" />
+          {/*
+            Вторая сторона денег стоит рядом с первой. Обязательство перед
+            человеком, которое видно только на отдельной странице, — это долг,
+            про который вспоминают, когда о нём напомнят.
+          */}
+          <Tile
+            value={owedOpen}
+            label="obligations to pay"
+            href="/ops/payouts"
+            accent={owedOpen > 0}
+          />
         </div>
+
+        {/*
+          Незаданные ставки — не украшение очереди, а причина, по которой
+          продукт не может назвать маржу. Пока они есть, «сколько мы
+          заработали» остаётся без ответа, и знать об этом надо на главной, а
+          не найдя случайно.
+        */}
+        {unrated.length > 0 && (
+          <div className="panel" style={{ marginTop: 32, borderColor: 'var(--fail)' }}>
+            <div className="label" style={{ color: 'var(--fail)' }}>Gross margin cannot be computed yet</div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 12, maxWidth: '62ch' }}>
+              {fill(
+                'Work has been accepted on {count} discipline/stage pair(s) with no fee rate, so the bureau owes an amount it has not named. A margin computed over part of the cost is always too high, never too low — so it is not shown at all until every rate is set.',
+                { count: unrated.length },
+              )}
+            </p>
+            <Link href="/ops/payouts">Set the rates →</Link>
+          </div>
+        )}
 
         <div className="divider" style={{ marginTop: 48 }} />
 
@@ -540,6 +574,7 @@ export default async function OpsPage() {
           <Link href="/ops/pool">Pool and metrics →</Link>
           <Link href="/ops/projects">Projects and runs →</Link>
           <Link href="/ops/letters">Letters sent →</Link>
+          <Link href="/ops/payouts">Rates and payouts →</Link>
         </div>
       </div>
     </section>
