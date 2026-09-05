@@ -202,6 +202,7 @@ for (const path of [
   '/ops/letters',
   '/ops/payouts',
   '/ops/contractors',
+  '/ops/norms',
 ]) {
   await clean(bureau, path)
 }

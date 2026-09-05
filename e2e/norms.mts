@@ -203,6 +203,81 @@ check(!bareText.includes('within'), 'ничего не выдаётся за п�
   )
 }
 
+/*
+ * Заведение корпуса. До сих пор правила попадали в базу только сидом — то есть
+ * продукт проверял посадку по корпусу и сам же не давал этот корпус завести.
+ * Дорогое здесь не «строка добавилась», а то, что не добавилось: разбор
+ * нарочно строгий, потому что норма из не того столбца уезжает в комплект под
+ * нашей подписью.
+ */
+{
+  const page = await (await browser.newContext()).newPage()
+  await page.goto(`${BASE}/ops`)
+  const password = page.locator('input[type=password]')
+  if (await password.count()) {
+    await password.fill(process.env.BUREAU_OPS_PASSWORD ?? 'bureau-ops')
+    await page.click('button[type=submit]')
+    await page.waitForTimeout(2500)
+  }
+
+  const entryDoc = `Entry probe ${stamp}`
+  const table = [
+    'layer,jurisdiction,municipality,zone,subject,operator,value,document,article,effective_from,checked_at,url',
+    `zoning,ME,${town},,height_m,max,12,${entryDoc},cl. 1,2024-01-01,2026-09-05,https://example.invalid`,
+    `zoning,ME,,,setback_front_m,min,3,${entryDoc},cl. 2,2024-01-01,2026-09-05,`,
+    `energy,ME,,,height_m,max,9,${entryDoc},cl. 3,2024-01-01,not-a-date,`,
+  ].join('\n')
+
+  await page.goto(`${BASE}/ops/norms`)
+  await page.fill('#norm-preview', table)
+  await page.click('form:has(#norm-preview) button[type=submit]')
+  await page.waitForTimeout(1800)
+  const preview = await page.locator('form:has(#norm-preview)').innerText()
+
+  check(preview.includes('Ready to add: 1'), 'предпросмотр отделяет годные строки от битых')
+  check(
+    preview.includes('zoning does not exist at country level'),
+    'зонирование без муниципалитета не берётся, и сказано почему',
+  )
+
+  const before = await prisma.complianceRule.count()
+  await page.fill('#norm-run', table)
+  await page.click('form:has(#norm-run) button[type=submit]')
+  await page.waitForTimeout(2500)
+
+  const added = await prisma.complianceRule.findMany({ where: { document: entryDoc } })
+  check(added.length === 1, `заведена только годная строка: ${added.length}`)
+  check(
+    (await prisma.complianceRule.count()) === before + 1,
+    'битые строки в базу не попали',
+  )
+  check(added[0]?.municipality === town, 'область действия записана как названа')
+
+  /*
+   * Сверка двигает дату сверки и ничего больше. Если норма изменилась, это не
+   * сверка, а новая редакция, и заводится она новой записью со своей датой.
+   */
+  const stale = await prisma.complianceRule.update({
+    where: { id: added[0]!.id },
+    data: { checkedAt: new Date('2020-01-01T00:00:00.000Z') },
+  })
+
+  await page.goto(`${BASE}/ops/norms?country=ME&stale=1`)
+  await page.waitForTimeout(800)
+  const unverified = (await page.locator('body').innerText()).toLowerCase()
+  check(unverified.includes('unverified'), 'несверённое правило помечено несверённым')
+
+  await page.click(`form:has(input[value="${stale.id}"]) button:has-text("Checked against the source today")`)
+  await page.waitForTimeout(2500)
+
+  const rechecked = await prisma.complianceRule.findUniqueOrThrow({ where: { id: stale.id } })
+  check(rechecked.checkedAt.getTime() > stale.checkedAt.getTime(), 'сверка подвинула дату')
+  check(rechecked.value === stale.value, 'сверка не тронула значение нормы')
+
+  await prisma.complianceRule.deleteMany({ where: { document: entryDoc } })
+  await page.context().close()
+}
+
 await browser.close()
 
 await prisma.project.deleteMany({ where: { id: { in: [inZone.id, elsewhere.id, bare.id] } } })

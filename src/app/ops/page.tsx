@@ -575,6 +575,8 @@ export default async function OpsPage() {
           <Link href="/ops/projects">Projects and runs →</Link>
           <Link href="/ops/letters">Letters sent →</Link>
           <Link href="/ops/payouts">Rates and payouts →</Link>
+          <Link href="/ops/norms">Norms corpus →</Link>
+          <Link href="/ops/contractors">Contractor network →</Link>
         </div>
       </div>
     </section>

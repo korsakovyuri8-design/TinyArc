@@ -265,6 +265,21 @@ export const RULE_SUBJECT_LABELS: Record<string, string> = {
   green_ratio: 'Green area share',
 }
 
+/**
+ * Как называется слой нормы.
+ *
+ * Слой решает не оформление, а то, где правило живёт и сколько стоит открыть
+ * следующую страну: зонирование набирается заново в каждом муниципалитете,
+ * инженерные слои переиспользуются с национальным приложением.
+ */
+export const RULE_LAYER_LABELS: Record<string, string> = {
+  zoning: 'Zoning',
+  structural: 'Structural',
+  energy: 'Energy',
+  fire: 'Fire safety',
+  accessibility: 'Accessibility',
+}
+
 /** В чём измеряется предмет: доли показываются процентами, метры — метрами. */
 export const RULE_SUBJECT_UNIT: Record<string, 'ratio' | 'metres' | 'count'> = {
   storeys: 'count',

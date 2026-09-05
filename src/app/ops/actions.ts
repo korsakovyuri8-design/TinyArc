@@ -2,6 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { PayoutRefused, markPayoutPaid, setRate } from '@/lib/services/payouts'
+import {
+  NormRefused,
+  addRule,
+  deleteRule,
+  importRules,
+  markChecked,
+} from '@/lib/services/norms'
+import { HEADER as NORM_HEADER, parseRules } from '@/lib/norms/parse'
 import { redirect } from 'next/navigation'
 import {
   DISCIPLINES,
@@ -1276,4 +1284,130 @@ export async function markObligationPaid(_prev: OpsState, formData: FormData): P
   revalidatePath('/ops')
 
   return { message: 'Marked as paid.' }
+}
+
+/**
+ * Пополнение корпуса норм таблицей: предпросмотр.
+ *
+ * Отдельным действием от прогона, как у импорта базы. Набор из сотни строк,
+ * отвергнутый целиком из-за одной, — это потерянный вечер; прогон без
+ * предпросмотра означает, что ошибку видно уже в базе.
+ */
+export async function previewNorms(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const text = String(formData.get('table') ?? '')
+  if (!text.trim()) return { error: 'Paste the table first.' }
+
+  try {
+    const result = await importRules(text, true)
+    const bad = result.rejected
+      .slice(0, 5)
+      .map((r) => `line ${r.line}: ${r.reason}`)
+      .join('; ')
+
+    return {
+      message: `Ready to add: ${result.ready}. Not taken: ${result.rejected.length}.${bad ? ` ${bad}` : ''}`,
+    }
+  } catch (error) {
+    console.error('Предпросмотр корпуса норм не прошёл:', error)
+    return { error: 'Reading the table failed.' }
+  }
+}
+
+/** Пополнение корпуса норм таблицей: прогон. */
+export async function runNorms(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const text = String(formData.get('table') ?? '')
+  if (!text.trim()) return { error: 'Paste the table first.' }
+
+  try {
+    const result = await importRules(text, false)
+    revalidatePath('/ops/norms')
+
+    return {
+      message: `Added: ${result.created}.${result.rejected.length > 0 ? ` Not taken: ${result.rejected.length} — run the preview to see why.` : ''}`,
+    }
+  } catch (error) {
+    console.error('Пополнение корпуса норм не прошло:', error)
+    return { error: 'Adding the rules failed.' }
+  }
+}
+
+/** Одно правило руками. Тот же разбор, что и у таблицы: одна строка. */
+export async function addNorm(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const field = (name: string) => String(formData.get(name) ?? '').replaceAll('"', '')
+  const row = [
+    field('layer'),
+    field('jurisdiction'),
+    field('municipality'),
+    field('zone'),
+    field('subject'),
+    field('operator'),
+    field('value'),
+    field('document'),
+    field('article'),
+    field('effectiveFrom'),
+    field('checkedAt'),
+    field('url'),
+  ]
+    .map((value) => `"${value}"`)
+    .join(',')
+
+  const { drafts, rejected } = parseRules(`${NORM_HEADER}\n${row}`)
+
+  if (drafts.length === 0) {
+    return { error: rejected[0]?.reason ?? 'The rule was not taken.' }
+  }
+
+  try {
+    await addRule(drafts[0]!)
+    revalidatePath('/ops/norms')
+
+    return { message: 'Rule added. It applies from its effective date, not from today.' }
+  } catch (error) {
+    console.error('Правило нормы не заведено:', error)
+    return { error: 'Adding the rule failed.' }
+  }
+}
+
+/** Отметка о сверке с первоисточником. Значение не трогает. */
+export async function checkNorm(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  try {
+    await markChecked(String(formData.get('ruleId') ?? ''), new Date())
+    revalidatePath('/ops/norms')
+
+    return { message: 'Checked against the source today. The value is unchanged.' }
+  } catch (error) {
+    if (error instanceof NormRefused) return { error: error.message }
+
+    console.error('Отметка о сверке не прошла:', error)
+    return { error: 'Recording the check failed.' }
+  }
+}
+
+/**
+ * Удаление правила.
+ *
+ * Нужно ровно для одного: убрать запись, которой не должно было быть. Норма,
+ * переставшая действовать, удалением не оформляется — у неё есть преемница с
+ * более поздней датой, и движок выберет её сам.
+ */
+export async function removeNorm(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  try {
+    await deleteRule(String(formData.get('ruleId') ?? ''))
+    revalidatePath('/ops/norms')
+
+    return { message: 'Removed.' }
+  } catch (error) {
+    console.error('Правило нормы не удалено:', error)
+    return { error: 'Removing the rule failed.' }
+  }
 }
