@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import { z } from 'zod'
+import { AssistantFailed } from './types'
 import type {
   Assistant,
   BriefInput,
@@ -22,6 +23,21 @@ import type {
 } from './types'
 
 const MODEL = 'claude-opus-5'
+
+/**
+ * Нижняя граница потолка ответа.
+ *
+ * Рассуждение модели тратит те же токены, что и ответ, и упирается в тот же
+ * потолок. Полторы тысячи, стоявшие у напоминания, — это потолок на «подумать
+ * и написать», а не на «написать»: на трудном входе рассуждение съедало
+ * бюджет, ответ обрывался на середине, и разбор по схеме падал. Причина при
+ * этом называлась неверно — «модель вернула не по схеме», — и искать её пошли
+ * бы в схеме.
+ *
+ * Потолок денег не стоит: платится произведённое, а не разрешённое. Поэтому
+ * он ставится с запасом, а не впритык.
+ */
+const MIN_TOKENS = 8000
 
 /**
  * Общая рамка для обоих помощников.
@@ -142,23 +158,70 @@ export class AnthropicAssistant implements Assistant {
         facts,
       ].join('\n'),
       SpecSchema,
-      4000,
+      12000,
     )
   }
 
-  /** Общая обёртка: одна форма запроса на все помощники. */
-  private async ask<T>(prompt: string, schema: Parameters<typeof zodOutputFormat>[0], maxTokens = 3000): Promise<T> {
-    const response = await this.client.messages.parse({
-      model: MODEL,
-      max_tokens: maxTokens,
-      thinking: { type: 'adaptive' },
-      system: SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
-      output_config: { format: zodOutputFormat(schema) },
-    })
+  /**
+   * Общая обёртка: одна форма запроса на все помощники.
+   *
+   * Отказ здесь называется своим именем, и это не педантизм. Причин, по
+   * которым помощник не ответил, четыре, и лечатся они по-разному: предел
+   * частоты у провайдера — подождать; обрыв по потолку — поднять потолок;
+   * отказ модели — написать руками; сеть — повторить. Раньше все четыре
+   * приходили одной фразой «модель вернула не по схеме», то есть указывали на
+   * схему — единственное место, где проблемы как раз не было.
+   */
+  private async ask<T>(prompt: string, schema: Parameters<typeof zodOutputFormat>[0], maxTokens = MIN_TOKENS): Promise<T> {
+    let response
+
+    try {
+      response = await this.client.messages.parse({
+        model: MODEL,
+        max_tokens: Math.max(maxTokens, MIN_TOKENS),
+        thinking: { type: 'adaptive' },
+        system: SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+        output_config: { format: zodOutputFormat(schema) },
+      })
+    } catch (error) {
+      // Разбор от частного к общему: широкий `catch` теряет разницу между
+      // «подождать» и «чинить».
+      if (error instanceof Anthropic.RateLimitError) {
+        throw new AssistantFailed('rate_limit', 'The assistant is over its provider rate limit right now.')
+      }
+
+      if (error instanceof Anthropic.AuthenticationError) {
+        throw new AssistantFailed('auth', 'The assistant key is missing or rejected.')
+      }
+
+      if (error instanceof Anthropic.APIConnectionError) {
+        throw new AssistantFailed('network', 'The assistant could not be reached.')
+      }
+
+      if (error instanceof Anthropic.APIError) {
+        throw new AssistantFailed('provider', `The assistant provider answered ${error.status}.`)
+      }
+
+      throw error
+    }
+
+    /*
+     * Отказ модели приходит с кодом 200 и пустым разбором. Прочитать его как
+     * поломку схемы значит послать человека чинить схему.
+     */
+    if (response.stop_reason === 'refusal') {
+      throw new AssistantFailed('refusal', 'The model declined this request.')
+    }
+
+    if (response.stop_reason === 'max_tokens') {
+      throw new AssistantFailed('truncated', 'The answer hit the token ceiling and came back unfinished.')
+    }
 
     const parsed = response.parsed_output
-    if (!parsed) throw new Error('The model returned an answer that did not parse into the schema.')
+    if (!parsed) {
+      throw new AssistantFailed('schema', 'The model answered, but not in the shape the bureau asked for.')
+    }
 
     return parsed as T
   }
@@ -223,7 +286,6 @@ export class AnthropicAssistant implements Assistant {
           : '(nothing)',
       ].join('\n'),
       CompletenessSchema,
-      2000,
     )
   }
 
@@ -241,7 +303,6 @@ export class AnthropicAssistant implements Assistant {
         input.rough,
       ].join('\n'),
       RequestSchema,
-      2000,
     )
   }
 
@@ -266,7 +327,6 @@ export class AnthropicAssistant implements Assistant {
         input.spec || '(no brief written)',
       ].join('\n'),
       NudgeSchema,
-      1500,
     )
   }
 
@@ -289,7 +349,6 @@ export class AnthropicAssistant implements Assistant {
           : '(empty)',
       ].join('\n'),
       QueueSchema,
-      2000,
     )
   }
 
@@ -310,7 +369,6 @@ export class AnthropicAssistant implements Assistant {
         thread || '(empty)',
       ].join('\n'),
       ConflictSchema,
-      2000,
     )
   }
 }

@@ -16,10 +16,18 @@ import {
 } from '@/lib/services/relay'
 import { HandoverRefused, stepOut } from '@/lib/services/handover'
 import { allow } from '@/lib/guard'
+import { assistant, assistantNote } from '@/lib/assist'
+import { prisma } from '@/lib/db'
+import { TEXT_MAX, bounded } from '@/lib/text'
 import { retryMessage } from '@/lib/rate-limit'
 import { currentSpecialistId } from '@/lib/session'
 
-export type WorkState = { error?: string; message?: string }
+export type WorkState = {
+  error?: string
+  message?: string
+  /** Черновик запроса смежнику. Отправляет его человек, прочитав. */
+  draft?: { title: string; body: string }
+}
 
 /**
  * Действия специалиста по тикету.
@@ -47,6 +55,14 @@ async function act(
   revalidatePath('/work')
 
   return message ? { message } : {}
+}
+
+/** Тикет вошедшего. `null` — чужой или несуществующий. */
+async function ownTicket(ticketId: string, specialistId: string) {
+  return prisma.ticket.findFirst({
+    where: { id: ticketId, specialistId },
+    select: { title: true, discipline: true },
+  })
 }
 
 export async function claimTicket(_prev: WorkState, formData: FormData): Promise<WorkState> {
@@ -109,6 +125,60 @@ export async function askDiscipline(_prev: WorkState, formData: FormData): Promi
       requestFrom(ticketId, specialistId, discipline, title, body).then(() => undefined),
     'The request is now a ticket for the adjacent discipline.',
   )
+}
+
+/**
+ * Черновик запроса смежнику.
+ *
+ * Помощник специалиста (п.12а), и до сих пор он был написан, но никем не
+ * вызывался. Задача у него узкая и настоящая: адресат запроса не видит ни
+ * задачи автора, ни его модели — прямых каналов нет, — и написанное «подвинь
+ * дверь» доходит до него без единого признака того, какую дверь и куда.
+ *
+ * Ничего не отправляется: черновик возвращается в форму, человек его читает,
+ * правит и жмёт «отправить» сам. Отправить за него значило бы завести чужому
+ * специалисту задачу, которой автор не видел.
+ */
+export async function draftDisciplineRequest(
+  _prev: WorkState,
+  formData: FormData,
+): Promise<WorkState> {
+  const specialistId = await currentSpecialistId()
+  if (!specialistId) return { error: 'Sign in with your key first.' }
+
+  const discipline = String(formData.get('discipline') ?? '') as Discipline
+  const rough = String(formData.get('rough') ?? '').trim()
+
+  if (!discipline) return { error: 'Choose a discipline.' }
+  if (!rough) return { error: 'Write the problem in your own words first.' }
+
+  // Расход наружу: тот же предел, что у остальных обращений к модели.
+  const verdict = await allow('assist')
+  if (!verdict.allowed) return { error: retryMessage(verdict.retryAfterSeconds) }
+
+  const ticketId = String(formData.get('ticketId') ?? '')
+  const ticket = await ownTicket(ticketId, specialistId)
+  if (!ticket) return { error: 'That ticket is not yours.' }
+
+  try {
+    const draft = await assistant().draftRequest({
+      fromDiscipline: ticket.discipline,
+      toDiscipline: discipline,
+      ticketTitle: ticket.title,
+      rough: bounded(rough, TEXT_MAX.note),
+    })
+
+    return {
+      draft: {
+        title: bounded(draft.title, TEXT_MAX.line),
+        body: bounded(draft.body, TEXT_MAX.note),
+      },
+      message: 'A draft — read it and correct it. It is sent only when you press send.',
+    }
+  } catch (error) {
+    console.error('Черновик запроса не собрался:', error)
+    return { error: assistantNote(error, 'Write the request yourself — the fields are below.') }
+  }
 }
 
 /**

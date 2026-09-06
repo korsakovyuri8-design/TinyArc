@@ -29,15 +29,82 @@ import {
 } from '@/lib/labels'
 import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
-import { submitBrief, type BriefState } from './actions'
+import { readDescription, submitBrief, type BriefState } from './actions'
 
 export function BriefForm() {
   const [state, action, pending] = useActionState<BriefState, FormData>(submitBrief, {})
-  const errors = state.errors ?? {}
+  const [read, readAction, reading] = useActionState<BriefState, FormData>(readDescription, {})
+
+  /*
+   * Что показывать — последнее, что случилось. Разбор описания и отправка
+   * формы наполняют одно и то же состояние, и брать значения из отправки,
+   * когда человек только что нажал «прочитать», значит стереть у него на
+   * глазах то, ради чего он и нажимал.
+   */
+  const latest = read.values || read.errors ? read : state
+  const errors = latest.errors ?? {}
+  const values = (latest.values ?? {}) as Record<string, string>
+
+  return (
+    <>
+      <Description action={readAction} pending={reading} state={read} />
+      <BriefFields action={action} pending={pending} errors={errors} values={values} />
+    </>
+  )
+}
+
+/**
+ * Свободное описание проекта.
+ *
+ * Стоит над формой, а не вместо неё: человек, у которого проект в голове, а
+ * не в таблице, пишет пару абзацев, и заполненными оказываются те поля,
+ * которые он назвал. Остальные он видит пустыми — и это правда: угаданное
+ * поле он не заметит, а пустое заполнит.
+ */
+function Description({
+  action,
+  pending,
+  state,
+}: {
+  action: (formData: FormData) => void
+  pending: boolean
+  state: BriefState
+}) {
   const values = (state.values ?? {}) as Record<string, string>
 
   return (
-          <BriefFields action={action} pending={pending} errors={errors} values={values} />
+    <form action={action} className="panel" style={{ marginBottom: 32 }}>
+      <div className="label label-accent">Describe it in your own words</div>
+      <p className="muted" style={{ marginTop: 10, marginBottom: 14, maxWidth: '58ch' }}>Optional, and it fills the form in below rather than replacing it. Only what you state outright is filled in — nothing is inferred, because a guessed field is one you will not notice, and an empty one you will.</p>
+
+      <textarea
+        id="description"
+        name="description"
+        defaultValue={values.description ?? ''}
+        placeholder="A two-storey villa on a slope near Tivat, about 240 m². We want to go as far as the building permit."
+        style={{ minHeight: 96 }}
+      />
+
+      {state.errors?.description && (
+        <div className="hint" style={{ color: 'var(--fail)', marginTop: 8 }}>
+          {state.errors.description}
+        </div>
+      )}
+
+      {state.read && (
+        <div className="hint" style={{ marginTop: 10 }}>
+          {state.read.missing.length > 0
+            ? fill('Filled in what the text states. Still to say: {missing}.', {
+                missing: state.read.missing.join(', '),
+              })
+            : 'Filled in what the text states. Check the fields below before sending.'}
+        </div>
+      )}
+
+      <button type="submit" className="btn btn-quiet" style={{ marginTop: 14 }} disabled={pending}>
+        {pending ? 'Reading…' : 'Read my description'}
+      </button>
+    </form>
   )
 }
 

@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
 import { allow, spend } from '@/lib/guard'
+import { assistant, assistantNote } from '@/lib/assist'
+import { TEXT_MAX, bounded } from '@/lib/text'
 import { retryMessage } from '@/lib/rate-limit'
 import { accessKey, briefSchema, fieldErrors, fromFormData } from '@/lib/forms'
 import { LEGAL_VERSION } from '@/lib/legal'
@@ -16,6 +18,8 @@ import { signInClient } from '@/lib/session'
 export type BriefState = {
   errors?: Record<string, string>
   values?: Record<string, unknown>
+  /** Что помощник разобрал и чего не нашёл. Показывается над формой. */
+  read?: { missing: string[]; notes: string }
 }
 
 const MULTI = ['software', 'languages']
@@ -102,4 +106,62 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   // Сначала направление, потом кабинет: выбор нужен команде до того, как
   // откроется первый тикет, а не когда по нему уже что-то нарисовали.
   redirect('/project/direction?issued=1')
+}
+
+/**
+ * Разбор свободного описания в поля формы.
+ *
+ * Помощник заказчика (п.12а), и до сих пор он был написан, но никем не
+ * вызывался: восьмая часть слоя, которую нельзя было отличить от работающей —
+ * она есть в интерфейсе, покрыта заглушкой и проходит типы.
+ *
+ * Заполняются только те поля, которые в тексте названы прямо. Ненайденное
+ * остаётся пустым и называется словами: пустое поле человек заполнит сам, а
+ * угаданное — не заметит. Ничего не отправляется: разбор возвращает форму с
+ * подставленными значениями, и отправляет её человек.
+ */
+export async function readDescription(_prev: BriefState, formData: FormData): Promise<BriefState> {
+  const raw = fromFormData(formData, MULTI)
+  const text = String(formData.get('description') ?? '').trim()
+
+  if (!text) {
+    return { errors: { description: 'Write a few lines about the project first.' }, values: raw }
+  }
+
+  /*
+   * Расход наружу: форма публичная, и нажатие здесь стоит денег. Предел общий
+   * с остальными обращениями к модели.
+   */
+  const verdict = await allow('assist')
+  if (!verdict.allowed) {
+    return { errors: { description: retryMessage(verdict.retryAfterSeconds) }, values: raw }
+  }
+
+  try {
+    const parse = await assistant().parseBrief({ text: bounded(text, TEXT_MAX.spec) })
+
+    /*
+     * Разобранное ложится поверх набранного, а не наоборот: человек нажал
+     * «прочитать», и результат чтения — это то, что он хотел увидеть. Но
+     * ничего не стирается: поле, которого в тексте не было, остаётся таким,
+     * каким он его оставил.
+     */
+    const filled: Record<string, unknown> = { ...raw, description: text }
+    for (const [key, value] of Object.entries(parse.fields)) {
+      if (value !== undefined && value !== null && value !== '') filled[key] = String(value)
+    }
+
+    if (parse.notes) filled.briefNotes = bounded(parse.notes, TEXT_MAX.line)
+
+    return { values: filled, read: { missing: parse.missing, notes: parse.notes } }
+  } catch (error) {
+    console.error('Описание не разобрано:', error)
+
+    return {
+      values: { ...raw, description: text },
+      errors: {
+        description: assistantNote(error, 'Fill the fields in below — nothing has been lost.'),
+      },
+    }
+  }
 }

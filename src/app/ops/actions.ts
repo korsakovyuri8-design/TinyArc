@@ -21,7 +21,7 @@ import {
 import { prisma } from '@/lib/db'
 import { TEXT_MAX, TooMuchText, bounded } from '@/lib/text'
 import { allow, forgive } from '@/lib/guard'
-import { assistant } from '@/lib/assist'
+import { assistant, assistantNote } from '@/lib/assist'
 import { mailer, sendAccessKey } from '@/lib/mail'
 import { chosenDirection } from '@/lib/services/direction'
 import { inboundArtifacts } from '@/lib/services/relay'
@@ -391,7 +391,7 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
     return { message: 'The draft is saved. Read it and correct it — it is not a finished brief.' }
   } catch (error) {
     console.error('No brief draft came back:', error)
-    return { error: 'The assistant did not answer. The brief can be written by hand — the field is below.' }
+    return { error: assistantNote(error, 'The brief can be written by hand — the field is below.') }
   }
 }
 
@@ -437,7 +437,7 @@ export async function summariseTicketConflict(
     }
   } catch (error) {
     console.error('No summary of the dispute came back:', error)
-    return { error: 'The assistant did not answer. The ticket thread is above.' }
+    return { error: assistantNote(error, 'The ticket thread is above.') }
   }
 }
 
@@ -488,7 +488,7 @@ export async function proposeRating(_prev: OpsState, formData: FormData): Promis
     }
   } catch (error) {
     console.error('No rating suggestion came back:', error)
-    return { error: 'The assistant did not answer. Look at the portfolio yourself — the link is above.' }
+    return { error: assistantNote(error, 'Look at the portfolio yourself — the link is above.') }
   }
 }
 
@@ -540,7 +540,7 @@ export async function checkTicketCompleteness(
     }
   } catch (error) {
     console.error('The completeness check did not run:', error)
-    return { error: 'The assistant did not answer. What was attached is in the list above.' }
+    return { error: assistantNote(error, 'What was attached is in the list above.') }
   }
 }
 
@@ -585,7 +585,7 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
     }
   } catch (error) {
     console.error('The queue was not worked through:', error)
-    return { error: 'The assistant did not answer. The queue is below — sorted by the engine.' }
+    return { error: assistantNote(error, 'The queue is below — sorted by the engine.') }
   }
 }
 
@@ -628,7 +628,7 @@ export async function draftTicketNudge(_prev: OpsState, formData: FormData): Pro
     }
   } catch (error) {
     console.error('No nudge draft came back:', error)
-    return { error: 'The assistant did not answer. Write in the ticket yourself — the form is below.' }
+    return { error: assistantNote(error, 'Write in the ticket yourself — the form is below.') }
   }
 }
 

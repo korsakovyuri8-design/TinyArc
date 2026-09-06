@@ -62,7 +62,16 @@ await page.check('input[name="languages"][value="en"]')
 await page.evaluate(() => {
   document.querySelector('#consent')?.removeAttribute('required')
 })
-await page.click('button[type="submit"]')
+/*
+ * Кнопка называется своей формой, а не «первой на странице». Над брифом стоит
+ * помощник со своей кнопкой отправки, и проверка, кликавшая первую попавшуюся,
+ * нажимала его: бриф при этом не уходил, страница оставалась на месте, и
+ * проверка «без согласия не принимается» проходила по неверной причине —
+ * не потому, что форму отвергли, а потому, что её не отправляли.
+ */
+const send = 'form:has(#consent) button[type="submit"]'
+
+await page.click(send)
 await page.waitForTimeout(2000)
 check(
   page.url().includes('/brief'),
@@ -71,10 +80,7 @@ check(
 
 await page.check('#consent')
 
-await Promise.all([
-  page.waitForURL('**/project/direction**'),
-  page.click('button[type="submit"]'),
-])
+await Promise.all([page.waitForURL('**/project/direction**'), page.click(send)])
 
 check(page.url().includes('issued=1'), 'после брифа ведёт к выбору направления')
 

@@ -9,6 +9,7 @@ import {
   addArtifact,
   askDiscipline,
   claimTicket,
+  draftDisciplineRequest,
   leaveProject,
   makeRender,
   postComment,
@@ -121,13 +122,28 @@ export function RequestForm({
   ticketId: string
   disciplines: Discipline[]
 }) {
+  const [draft, draftAction, drafting] = useActionState<WorkState, FormData>(
+    draftDisciplineRequest,
+    {},
+  )
 
   return (
-    <Form action={askDiscipline} ticketId={ticketId} label="Send the request">
-      <div className="grid grid-2" style={{ gap: 12 }}>
+    <>
+      {/*
+        Черновик отдельной формой перед самим запросом. Адресат не видит ни
+        задачи автора, ни его модели — прямых каналов нет, — и «подвиньте
+        дверь» доходит до него без единого признака того, какую дверь и куда.
+        Помощник разворачивает заметку в запрос, который стоит сам по себе;
+        отправляет его человек, прочитав.
+      */}
+      <form action={draftAction} className="panel" style={{ marginBottom: 20 }}>
+        <input type="hidden" name="ticketId" value={ticketId} />
+        <div className="label label-accent">Draft it from a note</div>
+        <p className="muted" style={{ marginTop: 10, marginBottom: 12, maxWidth: '58ch' }}>Optional. Write the problem the way you would say it out loud; the draft appears in the fields below, and nothing is sent until you press send.</p>
+
         <div className="field">
-          <label htmlFor="discipline">To whom</label>
-          <select id="discipline" name="discipline" defaultValue={disciplines[0]}>
+          <label htmlFor="draft-discipline">To whom</label>
+          <select id="draft-discipline" name="discipline" defaultValue={disciplines[0]}>
             {disciplines.map((d) => (
               <option key={d} value={d}>
                 {DISCIPLINE_LABELS[d]}
@@ -135,22 +151,60 @@ export function RequestForm({
             ))}
           </select>
         </div>
+
         <div className="field">
-          <label htmlFor="title">What you need</label>
-          <input id="title" name="title" placeholder="Move the door on gridlines 3–4" />
+          <label htmlFor="rough">In your own words</label>
+          <textarea
+            id="rough"
+            name="rough"
+            placeholder="The duct won’t fit past the door here, something has to move."
+            style={{ minHeight: 70 }}
+          />
         </div>
-      </div>
-      <div className="field">
-        <label htmlFor="body">In detail</label>
-        <textarea
-          id="body"
-          name="body"
-          placeholder="A 200×400 duct runs along the wall on gridlines 3–4 and hits the door opening. The opening needs to move 200 mm towards gridline 4."
-          style={{ minHeight: 90 }}
-        />
-        <div className="hint">It becomes a ticket for that discipline with a one-day deadline. There will be no exchange: the recipient has to understand the request without you.</div>
-      </div>
-    </Form>
+
+        <button type="submit" className="btn btn-quiet" disabled={drafting}>
+          {drafting ? 'Drafting…' : 'Draft the request'}
+        </button>
+        <Status state={draft} />
+      </form>
+
+      <Form action={askDiscipline} ticketId={ticketId} label="Send the request">
+        <div className="grid grid-2" style={{ gap: 12 }}>
+          <div className="field">
+            <label htmlFor="discipline">To whom</label>
+            <select id="discipline" name="discipline" defaultValue={disciplines[0]}>
+              {disciplines.map((d) => (
+                <option key={d} value={d}>
+                  {DISCIPLINE_LABELS[d]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="title">What you need</label>
+            <input
+              key={draft.draft?.title ?? 'title'}
+              id="title"
+              name="title"
+              defaultValue={draft.draft?.title ?? ''}
+              placeholder="Move the door on gridlines 3–4"
+            />
+          </div>
+        </div>
+        <div className="field">
+          <label htmlFor="body">In detail</label>
+          <textarea
+            key={draft.draft?.body ?? 'body'}
+            id="body"
+            name="body"
+            defaultValue={draft.draft?.body ?? ''}
+            placeholder="A 200×400 duct runs along the wall on gridlines 3–4 and hits the door opening. The opening needs to move 200 mm towards gridline 4."
+            style={{ minHeight: 90 }}
+          />
+          <div className="hint">It becomes a ticket for that discipline with a one-day deadline. There will be no exchange: the recipient has to understand the request without you.</div>
+        </div>
+      </Form>
+    </>
   )
 }
 

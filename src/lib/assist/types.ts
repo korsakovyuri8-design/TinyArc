@@ -187,3 +187,41 @@ export interface Assistant {
   /** Разбор очереди сигналов в план на сегодня. Порядок сигналов считает движок. */
   planQueue(input: QueueInput): Promise<QueuePlan>
 }
+
+/**
+ * Почему помощник не ответил.
+ *
+ * Причин четыре, и лечатся они по-разному: предел частоты — подождать; обрыв
+ * по потолку — поднять потолок; отказ модели — написать руками; сеть —
+ * повторить. Одна фраза на все четыре посылает чинить не то.
+ */
+export type AssistantFailure =
+  | 'rate_limit'
+  | 'auth'
+  | 'network'
+  | 'provider'
+  | 'refusal'
+  | 'truncated'
+  | 'schema'
+
+export class AssistantFailed extends Error {
+  constructor(
+    readonly reason: AssistantFailure,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'AssistantFailed'
+  }
+}
+
+/**
+ * Что сказать оператору, когда помощник не ответил.
+ *
+ * Всегда заканчивается тем, что делать: у бюро есть руки, и любая из этих
+ * бед — повод написать самому, а не ждать. Молча предложенное «попробуйте
+ * позже» на просроченной задаче стоит дня.
+ */
+export function assistantNote(error: unknown, fallback: string): string {
+  if (error instanceof AssistantFailed) return `${error.message} ${fallback}`
+  return `The assistant did not answer. ${fallback}`
+}
