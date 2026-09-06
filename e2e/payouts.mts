@@ -19,6 +19,7 @@
 import { existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { prisma } from '../src/lib/db'
+import { payoutPaid } from '../src/lib/services/notify'
 import {
   PayoutRefused,
   accrueFor,
@@ -50,6 +51,7 @@ function check(condition: unknown, message: string) {
 console.log('Гонорар и обязательства')
 
 const stamp = Date.now()
+const key = `payout-${stamp}`
 
 /* Уборка за прошлым собой: упавший прогон до своей уборки не доходит. */
 await prisma.payoutRate.deleteMany({ where: { discipline: DISCIPLINE, stage: STAGE } })
@@ -59,7 +61,7 @@ await prisma.specialist.deleteMany({ where: { email: { contains: '@payouts.inval
 const person = await prisma.specialist.create({
   data: {
     displayName: 'Payout probe',
-    accessKey: `payout-${stamp}`,
+    accessKey: key,
     email: `payout-${stamp}@payouts.invalid`,
     status: 'active',
     portfolioRating: 9,
@@ -214,6 +216,36 @@ await prisma.invoice.create({
     'маржа на карточке не показывается числом, пока расход известен не весь',
   )
 
+  /*
+   * Тот же вопрос со стороны человека. Ему ноль читался бы как «бесплатно», а
+   * пустое место — как «мне ничего не начислено». Ни то ни другое не правда:
+   * начислено, но бюро ещё не назвало цену.
+   */
+  const own = await (await browser.newContext()).newPage()
+  await own.goto(`${BASE}/enter`)
+  await own.fill('input[name=key]', key)
+  await own.click('button[type=submit]')
+  await own.waitForURL(`${BASE}/work**`, { timeout: 15_000 })
+  await own.goto(`${BASE}/work/profile`)
+  await own.waitForTimeout(800)
+  const before = (await own.locator('body').innerText()).toLowerCase()
+
+  check(before.includes('your fees'), 'начисление видно человеку до всякой выплаты')
+  check(
+    before.includes('the bureau has not set a rate for this yet'),
+    'без ставки человеку сказано, что цены ещё нет, а не показан ноль',
+  )
+  /*
+   * Ноль под словами «owed to you» — это «мне ничего не должны». Правда при
+   * этом стоит мелким шрифтом ниже, и читают её не раньше, чем крупное число
+   * сверху. Тот же обман, что «бриф принят» над панелью о несобравшейся
+   * команде. «Paid to you so far: 0» при этом честный ноль: не платили.
+   */
+  check(
+    !before.includes('0 eur\nowed to you'),
+    'ноль вместо неоценённого долга не показывается',
+  )
+
   await browser.close()
 }
 
@@ -245,6 +277,53 @@ await prisma.invoice.create({
   )
 }
 
+/** Человек видит свои деньги, и письмо о выплате до него доходит. */
+{
+  const letters = await prisma.notification.findMany({
+    where: { kind: 'payout_paid' },
+    orderBy: { sentAt: 'desc' },
+    take: 1,
+  })
+
+  check(letters.length === 1, 'об отметке о выплате человеку написали')
+  check(letters[0]?.email.endsWith('@payouts.invalid'), 'письмо ушло тому, кто работал')
+
+  /*
+   * Повод отрабатывается один раз. Вторая отметка проходит молча — и второго
+   * письма о тех же деньгах быть не должно.
+   */
+  const payout = await prisma.payout.findFirstOrThrow({ where: { specialistId: person.id } })
+  const twice = await payoutPaid(payout.id)
+  check(twice === 'skipped', 'второе письмо о тех же деньгах не уходит')
+
+  const shown = await chromium.launch(
+    existsSync(EXECUTABLE) ? { executablePath: EXECUTABLE } : {},
+  )
+  const page = await (await shown.newContext()).newPage()
+  await page.goto(`${BASE}/enter`)
+  await page.fill('input[name=key]', key)
+  await page.click('button[type=submit]')
+  await page.waitForURL(`${BASE}/work**`, { timeout: 15_000 })
+
+  await page.goto(`${BASE}/work/profile`)
+  await page.waitForTimeout(800)
+  // Регистр приводится намеренно: метки набираются прописными стилями.
+  const cabinet = (await page.locator('body').innerText()).toLowerCase()
+
+  check(cabinet.includes('your fees'), 'в кабинете есть раздел про деньги за работу')
+  check(cabinet.includes('paid to you so far'), 'сказано, сколько уже выплачено')
+  check(
+    cabinet.includes(String(RATE)),
+    `сумма показана числом, а не «есть начисления»: ${RATE}`,
+  )
+  check(
+    cabinet.includes('the bureau marks a payout once it has sent the money'),
+    'сказано, что приёма платежей нет и отметку ставит бюро',
+  )
+
+  await shown.close()
+}
+
 /*
  * Уборка. Ставка удаляется вместе с суммами, которые она подставила: стенд
  * должен остаться в том же состоянии, в каком был, — иначе следующий прогон
@@ -252,6 +331,14 @@ await prisma.invoice.create({
  */
 await prisma.project.delete({ where: { id: project.id } })
 await prisma.specialist.delete({ where: { id: person.id } })
+/*
+ * Записи о письмах тоже свои. Они переживают удаление адресата намеренно —
+ * журнал отвечает на «мне ничего не приходило» и после обезличивания, — но
+ * сценарий, убравший своего человека, обязан убрать и след: иначе проверка
+ * границы сторон видит письмо специалисту, которого больше нет, и считает его
+ * ушедшим не туда.
+ */
+await prisma.notification.deleteMany({ where: { email: { contains: '@payouts.invalid' } } })
 await prisma.payoutRate.deleteMany({ where: { discipline: DISCIPLINE, stage: STAGE } })
 await prisma.payout.updateMany({
   where: { discipline: DISCIPLINE, stage: STAGE, status: 'accrued' },

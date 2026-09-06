@@ -190,6 +190,7 @@ export const NOTIFICATION_LABELS: Record<string, string> = {
   client_answer: 'The bureau answered',
   conflict_resolved: 'The arbiter ruled',
   application_declined: 'Application declined',
+  payout_paid: 'Payment sent for your work',
 }
 
 export const SPECIALIST_STATUS_LABELS: Record<string, string> = {

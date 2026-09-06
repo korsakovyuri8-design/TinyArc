@@ -11,6 +11,7 @@ import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import {
   AVAILABILITY_LABELS,
   DISCIPLINE_LABELS,
+  DOC_STAGE_LABELS,
   SPECIALIST_STATUS_LABELS,
   SPECIALIZATION_LABELS,
   SUBSCRIPTION_LABELS,
@@ -20,6 +21,8 @@ import { toProfile } from '@/lib/rows'
 import { company } from '@/lib/legal'
 import { currentSpecialist } from '@/lib/session'
 import { seatOf } from '@/lib/seat'
+import { payoutsOf } from '@/lib/services/payouts'
+import { amount } from '@/lib/format'
 import { pageMetadata } from '@/lib/metadata'
 import { fill } from '@/lib/fill'
 
@@ -35,6 +38,7 @@ export default async function ProfilePage() {
 
   const profile = toProfile(row)
   const seat = seatOf(row)
+  const money = await payoutsOf(row.id)
   const metrics = deliveryMetrics(profile.delivery)
   const delivery = deliveryScore(metrics)
   const weight = historyWeight(profile.delivery)
@@ -130,6 +134,91 @@ export default async function ProfilePage() {
             </p>
           )}
         </div>
+
+        {/*
+          Деньги за работу. Реестр обязательств был построен только со стороны
+          бюро: человек, сделавший работу, не мог узнать, сколько ему
+          причитается, даже зайдя. Это единственное ожидание, о котором продукт
+          молчал вовсе.
+        */}
+        {(money.accrued.length > 0 || money.paid.length > 0) && (
+          <>
+            <div className="divider" style={{ marginTop: 44 }} />
+
+            <h2>Your fees</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>A fee is accrued the moment the bureau accepts your work — not when the client confirms the stage. Acceptance means “done as specified”, and a client taking a week to confirm does not make your work undone. There is no payment processing here: the bureau marks a payout once it has sent the money, and you get a letter when it does.</p>
+
+            <div className="grid grid-3">
+              {/*
+                Ноль здесь показывать нельзя. Человек, которому начислено, но
+                чью работу ещё не оценили, читает крупное «0» и понимает его
+                как «мне ничего не должны»; правда при этом стоит мелким
+                шрифтом ниже. Это тот же обман, что «бриф принят» над панелью
+                о несобравшейся команде, — успокаивающее число выше правды.
+              */}
+              <Stat
+                value={
+                  money.owedKnown === 0 && money.owedUnknown > 0
+                    ? '—'
+                    : `${amount(money.owedKnown)} ${money.currency}`
+                }
+                label="owed to you"
+                note={
+                  money.owedUnknown === 0
+                    ? 'every accrual has a rate'
+                    : fill('{count} accrual(s) have no rate yet — the bureau has not priced them', {
+                        count: money.owedUnknown,
+                      })
+                }
+              />
+              <Stat
+                value={String(money.accrued.length)}
+                label="accruals waiting"
+                note={money.accrued.length === 0 ? 'nothing outstanding' : 'shown in full below'}
+              />
+              <Stat
+                value={`${amount(money.paidTotal)} ${money.currency}`}
+                label="paid to you so far"
+                note="across every project"
+              />
+            </div>
+
+            <div className="stack" style={{ gap: 12, marginTop: 28 }}>
+              {[...money.accrued, ...money.paid].map((entry) => (
+                <div
+                  key={entry.id}
+                  className={entry.status === 'accrued' ? 'panel panel-accent' : 'panel'}
+                >
+                  <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <div>
+                      <span className="label label-accent">{entry.projectTitle}</span>
+                      <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                        {DISCIPLINE_LABELS[entry.discipline]} · {DOC_STAGE_LABELS[entry.stage]}
+                      </div>
+                    </div>
+                    <span className={entry.status === 'paid' ? 'tag tag-pass' : 'tag tag-wait'}>
+                      {entry.status === 'paid' ? 'Paid' : 'Owed'}
+                    </span>
+                  </div>
+
+                  <div className="num" style={{ fontSize: '1.4rem', marginTop: 10 }}>
+                    {/*
+                      Ставки может ещё не быть: бюро называет её само, и до тех
+                      пор сумма неизвестна. Ноль здесь читался бы как «бесплатно».
+                    */}
+                    {entry.amount === null ? (
+                      <span className="dim" style={{ fontSize: '0.9rem' }}>
+                        the bureau has not set a rate for this yet
+                      </span>
+                    ) : (
+                      `${amount(entry.amount)} ${entry.currency}`
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="divider" style={{ marginTop: 44 }} />
 

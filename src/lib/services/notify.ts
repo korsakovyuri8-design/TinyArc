@@ -22,14 +22,14 @@
  * по-английски, получает по-английски и счёт.
  */
 
-import { DOC_STAGE_LABELS } from '../labels'
+import { DISCIPLINE_LABELS, DOC_STAGE_LABELS } from '../labels'
 import { fill } from '../fill'
 import { dateTime } from '../format'
 import { absolute, siteUrl } from '../site'
 import { mailer } from '../mail'
 import { prisma } from '../db'
 import { company } from '../legal'
-import type { DocStage } from '@/engine/taxonomy'
+import type { Discipline, DocStage } from '@/engine/taxonomy'
 
 /** Одновременных отправок. Столько же, сколько на рассылке приглашений. */
 const MAIL_CONCURRENCY = 5
@@ -45,6 +45,7 @@ type Kind =
   | 'application_declined'
   | 'invoice_paid'
   | 'ticket_accepted'
+  | 'payout_paid'
 
 /**
  * Что случилось с письмом.
@@ -313,6 +314,58 @@ export async function ticketAccepted(ticketId: string): Promise<Delivery> {
         ),
         '',
         'Tasks that were waiting on this one open as soon as the rest of their conditions are met. If one of them is yours, it will arrive as a separate notice.',
+        '',
+        `Work board: ${absolute('/enter')}`,
+        ...SIGNATURE,
+      ].join('\n'),
+    })
+  })
+}
+
+/**
+ * Деньги за работу дошли до человека.
+ *
+ * Повод из того же правила, что и остальные: если человек чего-то ждёт, а
+ * узнаёт об этом, только зайдя, — повода не хватает. Здесь он ждёт денег, и
+ * это единственное ожидание, о котором продукт до сих пор молчал вовсе.
+ *
+ * Ключ повода — само обязательство: у человека их много, по одному на
+ * дисциплину на стадии, и письмо о втором не гасится письмом о первом.
+ */
+export async function payoutPaid(payoutId: string): Promise<Delivery> {
+  const payout = await prisma.payout.findUnique({
+    where: { id: payoutId },
+    include: {
+      project: { select: { title: true } },
+      specialist: { select: { email: true, displayName: true } },
+    },
+  })
+
+  if (!payout || payout.status !== 'paid' || payout.amount === null) return 'skipped'
+
+  const person = payout.specialist
+  /* Сумма уже проверена выше; отдельной константой — чтобы это было видно. */
+  const amount = payout.amount
+
+  return once('payout_paid', payout.id, person.email, async () => {
+    await mailer().send({
+      to: person.email,
+      subject: fill('Paid: {project}', { project: payout.project.title }),
+      body: [
+        fill('Dear {name},', { name: person.displayName }),
+        '',
+        fill(
+          'The bureau has sent {amount} {currency} for your {discipline} work at the {stage} stage on “{project}”.',
+          {
+            amount,
+            currency: payout.currency,
+            discipline: DISCIPLINE_LABELS[payout.discipline as Discipline] ?? payout.discipline,
+            stage: DOC_STAGE_LABELS[payout.stage as DocStage] ?? payout.stage,
+            project: payout.project.title,
+          },
+        ),
+        '',
+        'There is no payment processing on our side: the bureau marks a payout once it has sent the money. If it has not reached you, write back — the mark is ours, the transfer is the bank’s.',
         '',
         `Work board: ${absolute('/enter')}`,
         ...SIGNATURE,
@@ -667,6 +720,8 @@ export async function resend(kind: string, targetId: string): Promise<Delivery> 
       return invoicePaid(targetId)
     case 'ticket_accepted':
       return ticketAccepted(targetId)
+    case 'payout_paid':
+      return payoutPaid(targetId)
     case 'ticket_open':
       await ticketOpen(targetId)
       break

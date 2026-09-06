@@ -48,6 +48,7 @@ import { runAssembly } from '@/lib/services/matching'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
 import { fill } from '@/lib/fill'
+import type { Delivery } from '@/lib/services/notify'
 import {
   applicationDeclined,
   clientAnswered,
@@ -1271,8 +1272,12 @@ export async function markObligationPaid(_prev: OpsState, formData: FormData): P
 
   const payoutId = String(formData.get('payoutId') ?? '')
 
+  // Письмо человеку шлёт сама служба: повод обязан возникать там, где
+  // происходит событие, а не у того, кто его позвал.
+  let told: Delivery
+
   try {
-    await markPayoutPaid(payoutId, String(formData.get('note') ?? ''))
+    told = await markPayoutPaid(payoutId, String(formData.get('note') ?? ''))
   } catch (error) {
     if (error instanceof PayoutRefused) return { error: error.message }
 
@@ -1283,7 +1288,7 @@ export async function markObligationPaid(_prev: OpsState, formData: FormData): P
   revalidatePath('/ops/payouts')
   revalidatePath('/ops')
 
-  return { message: 'Marked as paid.' }
+  return { message: `Marked as paid. ${deliveryNote(told, 'The specialist')}` }
 }
 
 /**

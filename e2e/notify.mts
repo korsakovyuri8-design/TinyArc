@@ -68,6 +68,10 @@ const specialistEmails = new Set(
   (await prisma.specialist.findMany({ select: { email: true } })).map((s) => s.email),
 )
 
+/*
+ * Поводы заказчика. Всё остальное — специалиста, включая письмо о выплате:
+ * деньги за работу это разговор бюро с исполнителем, и заказчик его не видит.
+ */
 const clientKinds = ['invoice_issued', 'stage_awaiting', 'client_answer', 'invoice_paid']
 const misdirected = sent.filter((n) =>
   clientKinds.includes(n.kind) ? !clientEmails.has(n.email) : !specialistEmails.has(n.email),

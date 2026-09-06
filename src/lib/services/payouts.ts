@@ -15,6 +15,7 @@ import { DOC_STAGE_ORDER, type Discipline, type DocStage } from '@/engine/taxono
 import { CURRENCY, margin, owed, rateFor, type Margin, type PayoutRate } from '@/engine/payout'
 import { prisma } from '../db'
 import { bounded, TEXT_MAX } from '../text'
+import { payoutPaid, type Delivery } from './notify'
 
 /** Ставки целиком: их десятки, а не тысячи — читаются одним запросом. */
 export async function rates(): Promise<PayoutRate[]> {
@@ -189,7 +190,7 @@ export async function payoutQueue(): Promise<PayoutView[]> {
  * Обязательство без суммы отметить нельзя. Отметка «выплачено» на пустой
  * сумме означала бы, что бюро закрыло долг, размера которого не знает.
  */
-export async function markPayoutPaid(payoutId: string, note: string): Promise<void> {
+export async function markPayoutPaid(payoutId: string, note: string): Promise<Delivery> {
   const payout = await prisma.payout.findUnique({ where: { id: payoutId } })
   if (!payout) throw new PayoutRefused('There is no such obligation.')
 
@@ -199,10 +200,26 @@ export async function markPayoutPaid(payoutId: string, note: string): Promise<vo
     )
   }
 
-  await prisma.payout.updateMany({
+  const moved = await prisma.payout.updateMany({
     where: { id: payoutId, status: 'accrued' },
     data: { status: 'paid', paidAt: new Date(), paidNote: bounded(note, TEXT_MAX.line) },
   })
+
+  /*
+   * Письмо зовётся здесь, а не в действии панели.
+   *
+   * Правило то же, что у гейта: повод обязан возникать внутри идемпотентной
+   * функции, а не у вызывающего. Второй путь к этой записи — а он появится:
+   * пакетная выплата, сверка с банком, восстановление после разрыва — отметил
+   * бы выплату и никому не сказал, и заметить это было бы неоткуда. Дубликаты
+   * гасит запись повода в базе, а не аккуратность вызывающего.
+   *
+   * Ноль изменённых строк означает, что выплату отметил кто-то другой: тогда
+   * и письмо уже его, и повторять нечего.
+   */
+  if (moved.count === 0) return 'skipped'
+
+  return payoutPaid(payoutId)
 }
 
 export type Economics = {
@@ -326,4 +343,79 @@ export async function setRate(
   })
 
   return filled.count
+}
+
+/**
+ * Что бюро должно этому человеку и что уже выплатило.
+ *
+ * Реестр был построен только со стороны бюро: человек, сделавший работу, не мог
+ * узнать, сколько ему причитается, даже зайдя. Начисленные показываются все —
+ * срезанное обязательство это его деньги, о которых он не узнает; выплаченные
+ * последними, как подтверждение, а не как архив.
+ */
+export const OWN_PAID_SHOWN = 20
+
+export type OwnPayout = {
+  id: string
+  projectTitle: string
+  discipline: Discipline
+  stage: DocStage
+  amount: number | null
+  currency: string
+  status: string
+  accruedAt: Date
+  paidAt: Date | null
+}
+
+export async function payoutsOf(specialistId: string): Promise<{
+  accrued: OwnPayout[]
+  paid: OwnPayout[]
+  /** Сумма начисленного и невыплаченного, по известным ставкам. */
+  owedKnown: number
+  /** Сколько начислений ещё без ставки: бюро их не назвало. */
+  owedUnknown: number
+  /** Сумма всего, что уже выплачено. */
+  paidTotal: number
+  currency: string
+}> {
+  const [accruedRows, paidRows, paidSum] = await Promise.all([
+    prisma.payout.findMany({
+      where: { specialistId, status: 'accrued' },
+      orderBy: { accruedAt: 'desc' },
+      include: { project: { select: { title: true } } },
+    }),
+    prisma.payout.findMany({
+      where: { specialistId, status: 'paid' },
+      orderBy: { paidAt: 'desc' },
+      take: OWN_PAID_SHOWN,
+      include: { project: { select: { title: true } } },
+    }),
+    prisma.payout.aggregate({
+      where: { specialistId, status: 'paid' },
+      _sum: { amount: true },
+    }),
+  ])
+
+  const view = (row: (typeof accruedRows)[number]): OwnPayout => ({
+    id: row.id,
+    projectTitle: row.project.title,
+    discipline: row.discipline as Discipline,
+    stage: row.stage as DocStage,
+    amount: row.amount,
+    currency: row.currency,
+    status: row.status,
+    accruedAt: row.accruedAt,
+    paidAt: row.paidAt,
+  })
+
+  const obligations = owed(accruedRows.map((row) => row.amount))
+
+  return {
+    accrued: accruedRows.map(view),
+    paid: paidRows.map(view),
+    owedKnown: obligations.known,
+    owedUnknown: obligations.unknown,
+    paidTotal: paidSum._sum.amount ?? 0,
+    currency: CURRENCY,
+  }
 }

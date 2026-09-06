@@ -31,8 +31,8 @@ function kinds(): string[] {
 const resend = source.slice(source.indexOf('export async function resend'))
 
 describe('повторная отправка', () => {
-  it('знает все десять поводов', () => {
-    expect(kinds()).toHaveLength(10)
+  it('знает все одиннадцать поводов', () => {
+    expect(kinds()).toHaveLength(11)
   })
 
   for (const kind of kinds()) {
