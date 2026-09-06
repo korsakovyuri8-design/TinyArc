@@ -133,3 +133,54 @@ export function priceProject(project: PricedProject): PriceBasis[] {
 export function totalPrice(project: PricedProject): number {
   return priceProject(project).reduce((sum, basis) => sum + basis.amount, 0)
 }
+
+/**
+ * Цена доступа к подрядчикам (концепт, п.14б).
+ *
+ * Отдельная платная услуга поверх комплекта, и продолжение работы над тем же
+ * проектом: к моменту выдачи мы знаем о стройке больше, чем кто-либо, и
+ * отбор подрядчика считается тем же движком и по тем же правилам, что состав
+ * команды.
+ *
+ * Считается из числа работ, а не из площади, и это не мелочь. Площадь уже
+ * оплачена комплектом; здесь бюро делает другое — прогоняет отбор, проверяет
+ * полисы и собирает короткий список по каждой работе. Работ на вилле восемь,
+ * на доме с общими системами четырнадцать, и разница между ними — это ровно
+ * разница в сделанном.
+ *
+ * Основание при этом остаётся: без него это число, которое можно только
+ * принять на веру, то есть тот же порядок, который мы заменяем.
+ *
+ * Цифры начальные, как и у стадий: цену надо назвать раньше, чем накопится
+ * статистика. Правятся здесь вместе с тестом, а не скидкой в переписке.
+ */
+const BUILD_ACCESS_BASE = 400
+const BUILD_ACCESS_PER_TRADE = 60
+
+export type BuildAccessBasis = {
+  currency: string
+  amount: number
+  base: number
+  perTrade: number
+  trades: number
+  jurisdictionFactor: number
+}
+
+export function priceBuildAccess(
+  jurisdiction: Jurisdiction,
+  trades: number,
+): BuildAccessBasis {
+  const jurisdictionFactor = JURISDICTION_FACTOR[jurisdiction]
+  const amount = Math.round(
+    (BUILD_ACCESS_BASE + BUILD_ACCESS_PER_TRADE * trades) * jurisdictionFactor,
+  )
+
+  return {
+    currency: CURRENCY,
+    amount,
+    base: BUILD_ACCESS_BASE,
+    perTrade: BUILD_ACCESS_PER_TRADE,
+    trades,
+    jurisdictionFactor,
+  }
+}

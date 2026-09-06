@@ -14,9 +14,10 @@ import {
 import { prisma } from '@/lib/db'
 import { fill } from '@/lib/fill'
 import { insuredOn, networkReadinessByCountry } from '@/lib/services/contractors'
+import { accessQueue } from '@/lib/services/build-access'
 import { isOperator } from '@/lib/session'
 import { OpsAction } from '../OpsForms'
-import { addContractor, setContractorStatus } from '../actions'
+import { addContractor, markBuildAccessPaid, setContractorStatus } from '../actions'
 
 export const metadata = { title: 'Contractors — bureau panel' }
 
@@ -41,7 +42,7 @@ export default async function ContractorsPage() {
 
   const now = new Date()
 
-  const [rows, total, readiness] = await Promise.all([
+  const [rows, total, readiness, access] = await Promise.all([
     prisma.contractor.findMany({
       orderBy: [{ status: 'asc' }, { displayName: 'asc' }],
       take: SHOWN,
@@ -49,6 +50,7 @@ export default async function ContractorsPage() {
     }),
     prisma.contractor.count(),
     networkReadinessByCountry(now),
+    accessQueue(),
   ])
 
   return (
@@ -194,6 +196,68 @@ export default async function ContractorsPage() {
             </Field>
           </OpsAction>
         </div>
+
+        {/*
+          Очередь на доступ к подрядчикам. Заказчик попросил и ждёт: пока
+          оплата не отмечена, короткий список ему закрыт — и это единственное,
+          что закрыто, работа идёт своим ходом.
+
+          Неоплаченные показываются все и потолка не имеют: срезанная строка —
+          это просьба, на которую никто не ответит.
+        */}
+        {access.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 44 }} />
+
+            <h2>Contractor access asked for</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>The client pays for access to the selection; the contractor never pays for a place in it. There is no payment processing here — mark it once the money has arrived, and the shortlist opens in their workspace.</p>
+
+            <div className="stack" style={{ gap: 14 }}>
+              {access.map((row) => (
+                <div key={row.id} className={row.status === 'paid' ? 'panel' : 'panel panel-accent'}>
+                  <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <Link href={`/ops/projects/${row.projectId}`}>{row.projectTitle}</Link>
+                    <span className={row.status === 'paid' ? 'tag tag-pass' : 'tag tag-wait'}>
+                      {row.status === 'paid' ? 'Paid' : 'Awaiting payment'}
+                    </span>
+                  </div>
+
+                  <div className="num" style={{ fontSize: '1.5rem', marginTop: 10 }}>
+                    {row.amount.toLocaleString('ru-RU')} {row.currency}
+                  </div>
+
+                  {row.basis && (
+                    <div className="dim" style={{ fontSize: '0.82rem', marginTop: 6 }}>
+                      {fill('{base} + {perTrade} x {trades} trades', {
+                        base: row.basis.base,
+                        perTrade: row.basis.perTrade,
+                        trades: row.basis.trades,
+                      })}
+                    </div>
+                  )}
+
+                  {row.status === 'issued' && (
+                    <div style={{ marginTop: 14 }}>
+                      <OpsAction
+                        action={markBuildAccessPaid}
+                        hidden={{ projectId: row.projectId }}
+                        label="Mark as paid"
+                        solid
+                      >
+                        <input
+                          type="text"
+                          name="note"
+                          placeholder="What confirms the payment"
+                          style={{ marginBottom: 10 }}
+                        />
+                      </OpsAction>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="divider" style={{ marginTop: 48 }} />
 

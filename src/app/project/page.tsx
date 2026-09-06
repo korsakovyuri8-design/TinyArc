@@ -37,7 +37,10 @@ import { artifactHref, isOurs } from '@/lib/artifacts'
 import { invoicesOf } from '@/lib/services/billing'
 import { company } from '@/lib/legal'
 import { fileCount, packageOf } from '@/lib/services/package'
-import { ClientDialogue, StageApproval } from './ClientDialogue'
+import { BuildAccessRequest, ClientDialogue, StageApproval } from './ClientDialogue'
+import { accessFor, quote } from '@/lib/services/build-access'
+import { buildFor } from '@/lib/services/contractors'
+import { MATERIAL_GROUP_LABELS, TRADE_LABELS } from '@/lib/labels'
 import { clientExplanation, parseGap } from '@/lib/gap'
 import { currentProjectId } from '@/lib/session'
 import { standingClass, standingOf } from '@/lib/standing'
@@ -65,7 +68,7 @@ export default async function ProjectPage({
 
   if (!project) redirect('/enter')
 
-  const [run, direction, thread, pendingStages, approved, invoices, rules] = await Promise.all([
+  const [run, direction, thread, pendingStages, approved, invoices, rules, access] = await Promise.all([
     latestRun(project.id),
     chosenDirection(project.id),
     threadOf(project.id),
@@ -73,6 +76,7 @@ export default async function ProjectPage({
     approvedStages(project.id),
     invoicesOf(project.id),
     checkSite(project),
+    accessFor(project.id),
   ])
 
   const unpaid = new Set(invoices.filter((i) => i.status === 'issued').map((i) => i.stage))
@@ -82,6 +86,14 @@ export default async function ProjectPage({
   const payTo = [details.name, details.bank].filter(Boolean).join('\n')
 
   const documents = await packageOf(project.id)
+
+  /*
+   * Короткий список читается только когда он оплачен: это чтение всей сети
+   * страны по каждой работе, и делать его ради экрана с предложением значило
+   * бы платить процессорным временем за каждое открытие кабинета.
+   */
+  const build = access?.status === 'paid' ? await buildFor(project) : null
+  const offer = quote(project)
 
   // Следующая стадия за той, до которой проект вёлся. Нужна только на
   // закрытии: предлагать её раньше — торопить человека, который ещё не увидел
@@ -286,6 +298,143 @@ export default async function ProjectPage({
                 )
               })}
             </div>
+          </>
+        )}
+
+        {/*
+          Подрядчики и материалы (п.14б). Отдельная платная услуга поверх
+          комплекта и продолжение работы над тем же проектом: к этому моменту
+          бюро знает о стройке больше, чем кто-либо.
+
+          Предлагается только когда комплект уже делается: короткий список
+          строится из типологии, площадей, материальной системы и инженерных
+          решений — то есть из комплекта, а не из брифа. Проданный на черновике,
+          он считался бы по одному, а стройка пошла бы по другому.
+
+          Неоплаченный доступ ничего не останавливает: гейт стоит на показе
+          списка, а не на работе.
+        */}
+        {(project.status === 'delivering' || project.status === 'delivered') && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            <h2>Who will build it</h2>
+
+            {build && access?.status === 'paid' ? (
+              <>
+                <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>Selected the same way your design team was: gates first, then a score, then the top three. The arithmetic is below each name. You sign the works contract with them yourself — the bureau answers for the documentation set and for the selection being computed honestly, not for the construction.</p>
+
+                <div className="stack" style={{ gap: 20 }}>
+                  {build.lists.map((list) => (
+                    <div key={list.trade} className="panel">
+                      <div className="row" style={{ justifyContent: 'space-between' }}>
+                        <span className="label label-accent">{TRADE_LABELS[list.trade]}</span>
+                        <span className="num dim">
+                          {fill('{eligible} passed the gates', { eligible: list.eligible })}
+                        </span>
+                      </div>
+
+                      {list.ranked.length === 0 ? (
+                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Nobody in the network passes the gates for this trade yet. The bureau is looking — this is ours to fix, not yours.</p>
+                      ) : (
+                        <div className="stack" style={{ gap: 8, marginTop: 14 }}>
+                          {list.ranked.map((row) => (
+                            <div key={row.contractorId} className="row" style={{ gap: 12, alignItems: 'baseline' }}>
+                              <span>{build.names[row.contractorId] ?? row.contractorId}</span>
+                              <span className="num dim" style={{ fontSize: '0.82rem' }}>
+                                {row.score}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {build.groups.length > 0 && (
+                  <>
+                    <h3 style={{ marginTop: 36 }}>What gets bought</h3>
+                    <p className="muted" style={{ marginTop: 10, marginBottom: 14, maxWidth: '62ch' }}>Groups, without quantities. Quantities come with the construction documentation: an approximate bill of materials called exact is an argument on site, and we would rather not have it with you.</p>
+
+                    <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                      {build.groups.map((group) => (
+                        <span key={group} className="tag">
+                          {MATERIAL_GROUP_LABELS[group] ?? group}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="panel panel-accent" style={{ marginTop: 20 }}>
+                <p className="muted" style={{ marginTop: 0, marginBottom: 16, maxWidth: '62ch' }}>By the time your set is issued the bureau knows more about this build than anyone: the typology, the areas, the material system, the engineering. From that follows both who should build it and what gets bought — and until now the two were never connected, because the designer and the buyer are not connected in the usual order of things.</p>
+
+                {access ? (
+                  <>
+                    <div className="label label-accent">Charged</div>
+                    <div className="num" style={{ fontSize: '2rem', marginTop: 10 }}>
+                      {access.amount.toLocaleString('ru-RU')} {access.currency}
+                    </div>
+
+                    {access.basis && (
+                      <p className="dim" style={{ marginTop: 10, fontSize: '0.85rem' }}>
+                        {fill(
+                          '{base} {currency} plus {perTrade} {currency} for each of the {trades} trades this build needs',
+                          {
+                            base: access.basis.base,
+                            perTrade: access.basis.perTrade,
+                            trades: access.basis.trades,
+                            currency: access.currency,
+                          },
+                        )}
+                        {access.basis.jurisdictionFactor !== 1 &&
+                          fill(', × {factor} for the country’s price level', {
+                            factor: access.basis.jurisdictionFactor,
+                          })}
+                        .
+                      </p>
+                    )}
+
+                    {payTo ? (
+                      <div style={{ marginTop: 16 }}>
+                        <div className="label">Where to pay</div>
+                        <p
+                          className="dim"
+                          style={{ marginTop: 8, marginBottom: 0, fontSize: '0.85rem', whiteSpace: 'pre-line' }}
+                        >
+                          {payTo}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Payment details have not been published yet — the bureau will send them by email.</p>
+                    )}
+
+                    <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>The list opens once the bureau sees the money arrive. There is no payment processing on this site, and pretending otherwise would promise a reconciliation that does not exist.</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="num" style={{ fontSize: '2rem', marginBottom: 6 }}>
+                      {offer.amount.toLocaleString('ru-RU')} {offer.currency}
+                    </div>
+                    <p className="dim" style={{ marginTop: 0, marginBottom: 16, fontSize: '0.85rem' }}>
+                      {fill(
+                        '{base} {currency} plus {perTrade} {currency} for each of the {trades} trades this build needs. Not by area — the area is already paid for in the set; this is the selection run, the insurance checked and a shortlist assembled per trade.',
+                        {
+                          base: offer.base,
+                          perTrade: offer.perTrade,
+                          trades: offer.trades,
+                          currency: offer.currency,
+                        },
+                      )}
+                    </p>
+
+                    <BuildAccessRequest />
+                  </>
+                )}
+              </div>
+            )}
           </>
         )}
 

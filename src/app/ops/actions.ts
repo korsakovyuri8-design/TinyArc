@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { PayoutRefused, markPayoutPaid, setRate } from '@/lib/services/payouts'
+import { AccessRefused, markAccessPaid } from '@/lib/services/build-access'
 import {
   NormRefused,
   addRule,
@@ -1415,4 +1416,32 @@ export async function removeNorm(_prev: OpsState, formData: FormData): Promise<O
     console.error('Правило нормы не удалено:', error)
     return { error: 'Removing the rule failed.' }
   }
+}
+
+/**
+ * Отметка об оплате доступа к подрядчикам.
+ *
+ * Отдельным действием от счёта за стадию, как и таблица: доступ ничего не
+ * открывает в работе, и попав в расчёт «за какую стадию заплачено», он открыл
+ * бы или закрыл чужую.
+ */
+export async function markBuildAccessPaid(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const projectId = String(formData.get('projectId') ?? '')
+
+  try {
+    await markAccessPaid(projectId, String(formData.get('note') ?? ''))
+  } catch (error) {
+    if (error instanceof AccessRefused) return { error: error.message }
+
+    console.error('Отметка об оплате доступа не прошла:', error)
+    return { error: 'Marking the charge failed.' }
+  }
+
+  revalidatePath('/ops/contractors')
+  revalidatePath(`/ops/projects/${projectId}`)
+  revalidatePath('/project')
+
+  return { message: 'Marked as paid. The shortlist is now open to the client.' }
 }

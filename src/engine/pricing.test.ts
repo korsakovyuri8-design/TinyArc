@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CURRENCY, priceProject, priceStage, totalPrice, type PricedProject } from './pricing'
+import { CURRENCY, priceProject, priceStage, totalPrice, type PricedProject , priceBuildAccess } from './pricing'
 
 const project = (patch: Partial<PricedProject> = {}): PricedProject => ({
   typology: 'villa',
@@ -98,5 +98,44 @@ describe('цена проекта', () => {
 
   it('одинаковый проект стоит одинаково: цена не зависит от прогона', () => {
     expect(totalPrice(project())).toBe(totalPrice(project()))
+  })
+})
+
+describe('цена доступа к подрядчикам', () => {
+  it('складывается из базы и работ, а не из площади', () => {
+    const basis = priceBuildAccess('ME', 8)
+
+    expect(basis.amount).toBe(400 + 60 * 8)
+    expect(basis.trades).toBe(8)
+  })
+
+  /*
+   * Разница между виллой и домом с общими системами — это разница в числе
+   * коротких списков, которые бюро собрало и проверило. Она обязана быть
+   * видна в цене, иначе за большее платят столько же, сколько за меньшее.
+   */
+  it('больше работ — дороже', () => {
+    expect(priceBuildAccess('ME', 14).amount).toBeGreaterThan(priceBuildAccess('ME', 8).amount)
+  })
+
+  it('уровень цен страны учитывается тем же множителем, что и у стадий', () => {
+    expect(priceBuildAccess('RS', 8).amount).toBeLessThan(priceBuildAccess('ME', 8).amount)
+    expect(priceBuildAccess('GR', 8).amount).toBeGreaterThan(priceBuildAccess('ME', 8).amount)
+  })
+
+  /*
+   * Разбор обязателен по той же причине, что и у стадии: число без основания
+   * можно только принять на веру, а это тот порядок, который мы заменяем.
+   */
+  it('основание возвращается вместе с суммой', () => {
+    const basis = priceBuildAccess('ME', 10)
+
+    expect(basis.base).toBeGreaterThan(0)
+    expect(basis.perTrade).toBeGreaterThan(0)
+    expect(basis.jurisdictionFactor).toBe(1)
+  })
+
+  it('на пустом наборе работ цена не проваливается в ноль', () => {
+    expect(priceBuildAccess('ME', 0).amount).toBe(400)
   })
 })

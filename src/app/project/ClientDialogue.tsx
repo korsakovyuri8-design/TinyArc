@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { fill } from '@/lib/fill'
-import { approveProjectStage, sendToBureau, type ProjectState } from './actions'
+import { approveProjectStage, askForBuildAccess, sendToBureau, type ProjectState } from './actions'
 
 /**
  * Форма разговора с бюро.
@@ -107,6 +107,38 @@ function ApprovalForm({ stage, title }: { stage: string; title: string }) {
       <p className="hint" style={{ marginTop: 12 }}>
         Confirming opens the next stage for the team. Until you do, no work on it begins — that is not a delay but a safeguard: documentation built on an unconfirmed concept gets redone in full. If you have comments, do not confirm — write to the bureau below and it will turn them into a round of revisions.
       </p>
+    </form>
+  )
+}
+
+/**
+ * Просьба открыть доступ к подрядчикам.
+ *
+ * Кнопка не покупает: она просит бюро выставить счёт. Приёма платежей на сайте
+ * нет, и обещать оплату в один клик значило бы обещать то, чего не произойдёт.
+ */
+export function BuildAccessRequest() {
+  const [state, action, pending] = useActionState<ProjectState, FormData>(
+    () => askForBuildAccess({}),
+    {},
+  )
+
+  return (
+    <form action={action}>
+      <button type="submit" className="btn btn-solid" disabled={pending}>
+        {pending ? '…' : 'Ask the bureau to open it'}
+      </button>
+
+      {state.error && (
+        <div className="hint" style={{ color: 'var(--fail)', marginTop: 10 }}>
+          {state.error}
+        </div>
+      )}
+      {state.message && (
+        <div className="hint" style={{ color: 'var(--accent)', marginTop: 10 }}>
+          {state.message}
+        </div>
+      )}
     </form>
   )
 }

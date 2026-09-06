@@ -8,6 +8,8 @@ import { ApprovalRefused, approveStage } from '@/lib/services/approval'
 import { MessageRefused, say } from '@/lib/services/dialogue'
 import { applyGates, refreshProjectStatus } from '@/lib/services/relay'
 import { currentProjectId } from '@/lib/session'
+import { prisma } from '@/lib/db'
+import { AccessRefused, requestAccess } from '@/lib/services/build-access'
 import { TooMuchText } from '@/lib/text'
 
 export type ProjectState = { error?: string; message?: string }
@@ -89,5 +91,66 @@ export async function approveProjectStage(
 
     console.error('Стадия не подтверждена:', error)
     return { error: 'That did not work. Write to the bureau and we will sort it out.' }
+  }
+}
+
+/**
+ * Заказчик просит доступ к подрядчикам (п.14б).
+ *
+ * Просьба, а не покупка в один клик: приёма платежей на сайте нет, и здесь
+ * выставляется счёт, который заказчик оплачивает переводом, а бюро отмечает,
+ * увидев поступление. Тот же порядок, что у стадий, и по той же причине —
+ * автоматический «приём платежа» без сверки с банком означал бы, что
+ * непроведённый платёж что-то открывает.
+ *
+ * Ничего не открывает и сама просьба: комплект выдаётся своим чередом, стадии
+ * идут своим. Неоплаченный доступ закрывает ровно один экран — короткий
+ * список, — а не работу.
+ */
+export async function askForBuildAccess(_prev: ProjectState): Promise<ProjectState> {
+  const projectId = await currentProjectId()
+  if (!projectId) return { error: 'Sign in with your key first.' }
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: {
+      id: true,
+      status: true,
+      typology: true,
+      storeys: true,
+      areaSqm: true,
+      materialSystem: true,
+      terrain: true,
+      gridConnection: true,
+      jurisdiction: true,
+    },
+  })
+
+  if (!project) return { error: 'Sign in with your key first.' }
+
+  /*
+   * Не раньше выпуска. Короткий список строится из типологии, площадей,
+   * материальной системы и инженерных решений — то есть из того, что
+   * существует, когда комплект уже делается. Проданный на черновике, он
+   * считался бы по брифу, а стройка пойдёт по комплекту.
+   */
+  if (project.status !== 'delivering' && project.status !== 'delivered') {
+    return {
+      error: 'This becomes available once your documentation is in production: the shortlist is built from the set, not from the brief.',
+    }
+  }
+
+  try {
+    await requestAccess(project)
+    revalidatePath('/project')
+
+    return {
+      message: 'The bureau has issued the charge. It is below, with what it is made of.',
+    }
+  } catch (error) {
+    if (error instanceof AccessRefused) return { error: error.message }
+
+    console.error('Доступ к подрядчикам не выставлен:', error)
+    return { error: 'Issuing the charge failed.' }
   }
 }
