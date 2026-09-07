@@ -419,3 +419,115 @@ export async function payoutsOf(specialistId: string): Promise<{
     currency: CURRENCY,
   }
 }
+
+/**
+ * Ставки одного человека. Его собственная цена, а не политика бюро.
+ */
+export async function ratesOf(specialistId: string): Promise<PayoutRate[]> {
+  const rows = await prisma.specialistRate.findMany({
+    where: { specialistId },
+    select: { discipline: true, stage: true, amount: true },
+  })
+
+  return rows.map((r) => ({
+    discipline: r.discipline as Discipline,
+    stage: r.stage as DocStage,
+    amount: r.amount,
+  }))
+}
+
+export async function setOwnRate(
+  specialistId: string,
+  discipline: Discipline,
+  stage: DocStage,
+  amount: number,
+): Promise<void> {
+  if (!Number.isInteger(amount) || amount < 0) {
+    throw new PayoutRefused('A fee is a whole number of euro, zero or more.')
+  }
+
+  await prisma.specialistRate.upsert({
+    where: { specialistId_discipline_stage: { specialistId, discipline, stage } },
+    create: { specialistId, discipline, stage, amount, currency: CURRENCY },
+    update: { amount },
+  })
+}
+
+/** Снять свою ставку: цену снова определяет умолчание бюро, если оно есть. */
+export async function clearOwnRate(
+  specialistId: string,
+  discipline: Discipline,
+  stage: DocStage,
+): Promise<void> {
+  await prisma.specialistRate.deleteMany({ where: { specialistId, discipline, stage } })
+}
+
+/**
+ * Что стоит каждый человек пула на каждой своей дисциплине для этого проекта.
+ *
+ * Своя ставка человека сильнее умолчания бюро: гонорар — его деньги. Стадии
+ * складываются все до целевой: команда собирается один раз на весь комплект,
+ * и платить ей придётся за каждую стадию, а не за последнюю.
+ *
+ * Если хоть одна стадия не оценена ни им, ни бюро, цена человека **неизвестна**
+ * и в таблицу не попадает вовсе. Записать её как сумму известных стадий значило
+ * бы занизить: потолок бы соблюли, а денег бы не хватило.
+ */
+export async function costTable(
+  specialistIds: string[],
+  targetStage: DocStage,
+): Promise<Map<string, number>> {
+  const stages = (Object.keys(DOC_STAGE_ORDER) as DocStage[]).filter(
+    (stage) => DOC_STAGE_ORDER[stage] <= DOC_STAGE_ORDER[targetStage],
+  )
+
+  const [own, bureau] = await Promise.all([
+    specialistIds.length === 0
+      ? []
+      : prisma.specialistRate.findMany({
+          where: { specialistId: { in: specialistIds }, stage: { in: stages } },
+          select: { specialistId: true, discipline: true, stage: true, amount: true },
+        }),
+    prisma.payoutRate.findMany({
+      where: { stage: { in: stages } },
+      select: { discipline: true, stage: true, amount: true },
+    }),
+  ])
+
+  const byBureau = new Map(bureau.map((r) => [`${r.discipline}:${r.stage}`, r.amount]))
+  const byPerson = new Map(
+    own.map((r) => [`${r.specialistId}:${r.discipline}:${r.stage}`, r.amount]),
+  )
+
+  /* Дисциплины, по которым у человека вообще есть цена — своя или бюро. */
+  const disciplines = new Set<string>([
+    ...own.map((r) => r.discipline),
+    ...bureau.map((r) => r.discipline),
+  ])
+
+  const table = new Map<string, number>()
+
+  for (const specialistId of specialistIds) {
+    for (const discipline of disciplines) {
+      let sum = 0
+      let complete = true
+
+      for (const stage of stages) {
+        const price =
+          byPerson.get(`${specialistId}:${discipline}:${stage}`) ??
+          byBureau.get(`${discipline}:${stage}`)
+
+        if (price === undefined) {
+          complete = false
+          break
+        }
+
+        sum += price
+      }
+
+      if (complete) table.set(`${specialistId}:${discipline}`, sum)
+    }
+  }
+
+  return table
+}

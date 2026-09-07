@@ -45,6 +45,8 @@ function assembly(candidates: ScoredCandidate[], team: string[] = []): Assembly 
     survivedCount: candidates.filter((c) => c.passed).length,
     requiredRoles: [],
     candidates,
+    teamCost: null,
+    unpricedMembers: 0,
     team: team.map((id) => {
       const found = candidates.find((c: ScoredCandidate) => c.specialist.id === id)!
       return {

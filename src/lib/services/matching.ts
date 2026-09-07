@@ -7,6 +7,11 @@
  */
 
 import { assemble } from '@/engine/assemble'
+import { totalPrice } from '@/engine/pricing'
+import type { TeamBudget } from '@/engine/types'
+import type { DocStage, Jurisdiction, Typology } from '@/engine/taxonomy'
+import { costTable } from './payouts'
+import { teamShare } from './settings'
 import { planTickets } from '@/engine/relay'
 import type { Assembly } from '@/engine/types'
 import type { Discipline } from '@/engine/taxonomy'
@@ -44,7 +49,8 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
   // Сработанность читается один раз на прогон и влияет только на порядок
   // вариантов: кто проходит гейты, от неё не зависит.
   const history = await historyFor(pool.map((s) => s.id))
-  const assembly = assemble(pool, toRequirements(project), history)
+  const budget = await budgetFor(project, pool.map((s) => s.id))
+  const assembly = assemble(pool, toRequirements(project), history, budget)
 
   const runId = await prisma.$transaction(async (tx) => {
     /*
@@ -254,4 +260,34 @@ export async function outcomesFor(projectIds: string[]): Promise<Map<string, str
   const latest = new Map<string, string>()
   for (const row of rows) if (!latest.has(row.projectId)) latest.set(row.projectId, row.outcome)
   return latest
+}
+
+/**
+ * Потолок на гонорары этого проекта.
+ *
+ * `null` — потолка нет, и цена ни на кого не влияет. Это рабочее состояние,
+ * а не недоделка: пока бюро не назвало долю, идущую команде, отсеивать людей
+ * по цене значило бы применять политику, которой никто не принимал.
+ *
+ * Считается от цены комплекта, а не от одной стадии: команда собирается один
+ * раз на весь путь до целевой стадии, и платить ей придётся за каждую.
+ */
+async function budgetFor(
+  project: { typology: string; jurisdiction: string; areaSqm: number; targetStage: string },
+  specialistIds: string[],
+): Promise<TeamBudget | null> {
+  const share = await teamShare()
+  if (share === null) return null
+
+  const price = totalPrice({
+    typology: project.typology as Typology,
+    jurisdiction: project.jurisdiction as Jurisdiction,
+    areaSqm: project.areaSqm,
+    targetStage: project.targetStage as DocStage,
+  })
+
+  return {
+    total: Math.round(price * share),
+    costOf: await costTable(specialistIds, project.targetStage as DocStage),
+  }
 }

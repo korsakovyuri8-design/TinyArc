@@ -20,6 +20,7 @@ import type {
   ProjectRequirements,
   ScoredCandidate,
   SpecialistProfile,
+  TeamBudget,
   TeamMember,
 } from './types'
 
@@ -111,6 +112,8 @@ function search(
   requirements: ProjectRequirements,
   requireSignatory: boolean,
   history: Map<string, PairHistory>,
+  /** Потолок на команду. `null` — потолка нет, и цена ни на что не влияет. */
+  budget: TeamBudget | null,
 ): Assignment[] | null {
   const order = [...roles].sort((a, b) => {
     if (a.discipline === LEAD_DISCIPLINE) return -1
@@ -125,7 +128,12 @@ function search(
   const taken = new Map<string, number>()
   const chosen: Assignment[] = []
 
-  function step(depth: number, total: number, stack: readonly Software[] | null): void {
+  function step(
+    depth: number,
+    total: number,
+    cost: number,
+    stack: readonly Software[] | null,
+  ): void {
     if (visited >= SEARCH_LIMIT) return
 
     if (depth === order.length) {
@@ -167,19 +175,30 @@ function search(
       // прошли бы каждый по своему, не имея общего между собой.
       if (stack && !sharesPackage(specialist, stack)) continue
 
+      /*
+       * Цена — гейт, а не слагаемое. Не поместившийся в остаток бюджета
+       * вариант не рассматривается вовсе; порядок среди поместившихся тот же,
+       * что был. Дешёвый не обходит сильного — он становится по карману.
+       *
+       * Цена неназвавшего считается нулём: он из отбора не исключается, а его
+       * отсутствие в сумме возвращается наверх отдельным числом.
+       */
+      const own = budget?.costOf.get(`${specialist.id}:${role.discipline}`) ?? 0
+      if (budget && cost + own > budget.total) continue
+
       const score = scoreFor(specialist, requirements, busy).score
 
       chosen.push({ role, candidate, score })
       taken.set(specialist.id, busy + requirements.requiredHoursPerWeek)
 
-      step(depth + 1, total + score, narrowPackages(specialist, stack))
+      step(depth + 1, total + score, cost + own, narrowPackages(specialist, stack))
 
       taken.set(specialist.id, busy)
       chosen.pop()
     }
   }
 
-  step(0, 0, null)
+  step(0, 0, 0, null)
 
   return best
 }
@@ -193,6 +212,14 @@ export function assemble(
    * нового пула, и результат тогда полностью определяется баллами.
    */
   history: Map<string, PairHistory> = new Map(),
+  /**
+   * Потолок на команду и цены участников. `null` — потолка нет.
+   *
+   * Ноль в `total` — это не «бесплатно», а «денег нет»: такой потолок не
+   * пропустит никого, у кого названа цена. Отсутствие потолка выражается
+   * значением `null`, и различать их обязательно.
+   */
+  budget: TeamBudget | null = null,
 ): Assembly {
   const validation = validateProject(requirements)
   const roles = requiredRoles(shapeOf(requirements))
@@ -207,6 +234,8 @@ export function assemble(
       requiredRoles: roles,
       candidates: [],
       team: [],
+      teamCost: null,
+      unpricedMembers: 0,
     }
   }
 
@@ -220,6 +249,22 @@ export function assemble(
     candidates,
   }
 
+  /** Что стоит собранный состав и скольких в нём не оценили. */
+  function priced(team: TeamMember[]): { teamCost: number | null; unpricedMembers: number } {
+    if (!budget) return { teamCost: null, unpricedMembers: 0 }
+
+    let teamCost = 0
+    let unpricedMembers = 0
+
+    for (const member of team) {
+      const own = budget.costOf.get(`${member.specialist.id}:${member.discipline}`)
+      if (own === undefined) unpricedMembers += 1
+      else teamCost += own
+    }
+
+    return { teamCost, unpricedMembers }
+  }
+
   const byRole = new Map<RequiredRole, ScoredCandidate[]>(
     roles.map((role) => [
       role,
@@ -230,36 +275,70 @@ export function assemble(
     ]),
   )
 
-  const withSignatory = search(roles, byRole, requirements, true, history)
+  const withSignatory = search(roles, byRole, requirements, true, history, budget)
 
   if (withSignatory) {
-    return {
-      ...base,
-      outcome: 'ok',
-      notes: '',
-      gap: null,
-      team: toTeam(withSignatory, requirements),
-    }
+    const team = toTeam(withSignatory, requirements)
+
+    return { ...base, outcome: 'ok', notes: '', gap: null, team, ...priced(team) }
   }
 
   // Состав не собрался. Различаем две причины: людей нет вовсе или они есть,
   // но подписать пакет некому. Для клиента это разные ответы.
-  const withoutSignatory = search(roles, byRole, requirements, false, history)
+  const withoutSignatory = search(roles, byRole, requirements, false, history, budget)
 
   if (withoutSignatory) {
+    const team = toTeam(withoutSignatory, requirements)
+
     return {
       ...base,
       outcome: 'no_signatory',
       gap: null,
       notes:
         'A team does come together, but no variant includes a specialist with signing rights in the project’s jurisdiction. A documentation set without a local signature has no force, so the project is not taken on (§10, §21).',
-      team: toTeam(withoutSignatory, requirements),
+      team,
+      ...priced(team),
+    }
+  }
+
+  /*
+   * Деньги отделяются от людей. Состав, который собирается без потолка и не
+   * собирается с ним, — это не «людей нет»: люди есть, и дело в цене. Разница
+   * не косметическая: первое лечится наймом и месяцами, второе — сегодня,
+   * деньгами заказчика или ставкой бюро. Сказать второму первое значит
+   * отправить человека ждать того, что уже случилось.
+   */
+  if (budget) {
+    const unbounded = search(roles, byRole, requirements, true, history, null)
+
+    if (unbounded) {
+      const team = toTeam(unbounded, requirements)
+      const { teamCost, unpricedMembers } = priced(team)
+
+      return {
+        ...base,
+        outcome: 'over_budget',
+        gap: null,
+        notes:
+          'A team does come together, but no variant fits the fee budget for this project. This is about money, not about people: the fees are named by the specialists themselves.',
+        team: [],
+        teamCost,
+        unpricedMembers,
+      }
     }
   }
 
   const gap = scarcestRole(roles, byRole)
 
-  return { ...base, outcome: 'incomplete', notes: describeGap(gap), gap, team: [] }
+  return {
+    ...base,
+    outcome: 'incomplete',
+    notes: describeGap(gap),
+    gap,
+    team: [],
+    teamCost: null,
+    unpricedMembers: 0,
+  }
 }
 
 function toTeam(assignments: Assignment[], requirements: ProjectRequirements): TeamMember[] {

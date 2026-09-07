@@ -13,6 +13,7 @@ import {
   TABLES,
   dateFields,
   decode,
+  idFields,
   encode,
   revive,
   schemaText,
@@ -54,6 +55,7 @@ function tableOf(prisma: Client, table: Table): Table_ {
  */
 export async function* dump(prisma: Client): AsyncGenerator<string> {
   const counts: Record<string, number> = {}
+  const keys = idFields(schemaText())
 
   for (const table of TABLES) counts[table] = await tableOf(prisma, table).count()
 
@@ -68,9 +70,22 @@ export async function* dump(prisma: Client): AsyncGenerator<string> {
   for (const table of TABLES) {
     let skip = 0
 
+    /*
+     * Порядок страницы — по первичному ключу этой таблицы, а не по «id»:
+     * у настроек бюро ключ называется `key`, и запрос с чужим полем не
+     * пропускает таблицу, а роняет всю выгрузку.
+     */
+    const key = keys.get(table)
+
+    if (!key) {
+      throw new Error(
+        `Таблица ${table}: в схеме не объявлен одиночный @id, и порядок страницы брать неоткуда. Составной ключ требует своего порядка — назовите его здесь.`,
+      )
+    }
+
     for (;;) {
       const rows = await tableOf(prisma, table).findMany({
-        orderBy: { id: 'asc' },
+        orderBy: { [key]: 'asc' },
         skip,
         take: PAGE,
       })

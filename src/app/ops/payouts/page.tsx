@@ -7,15 +7,21 @@ import { amount as money } from '@/lib/format'
 import { fill } from '@/lib/fill'
 import { isOperator } from '@/lib/session'
 import { payoutQueue, rates, unratedObligations } from '@/lib/services/payouts'
+import { teamShare } from '@/lib/services/settings'
 import { OpsAction } from '../OpsForms'
-import { markObligationPaid, setPayoutRate } from '../actions'
+import { markObligationPaid, setPayoutRate, setTeamBudgetShare } from '../actions'
 
 export const metadata = { title: 'Payouts — bureau panel' }
 
 export default async function PayoutsPage() {
   if (!(await isOperator())) redirect('/ops')
 
-  const [table, queue, unrated] = await Promise.all([rates(), payoutQueue(), unratedObligations()])
+  const [table, queue, unrated, share] = await Promise.all([
+    rates(),
+    payoutQueue(),
+    unratedObligations(),
+    teamShare(),
+  ])
 
   const open = queue.filter((row) => row.status === 'accrued')
   const paid = queue.filter((row) => row.status === 'paid')
@@ -73,6 +79,47 @@ export default async function PayoutsPage() {
             </div>
           </div>
         )}
+
+        <div className="divider" style={{ marginTop: 44 }} />
+
+        {/*
+          Доля, уходящая команде. Из неё считается потолок на гонорары при
+          сборке: цена комплекта × доля. Пока не задана, бюджетного гейта не
+          существует — состав собирается как собирался, и это сказано словами,
+          а не оставлено пустым полем.
+        */}
+        <h2>What the team may cost</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>Specialists name their own fees. This share turns the price of a set into a ceiling on those fees: a team whose fees exceed it is not assembled, and the client is told plainly that it is about money rather than about people. Price never enters the score — a cheaper specialist does not move up the ranking, only into reach.</p>
+
+        <div className="panel" style={{ maxWidth: 460 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div className="label">Share of a set that may go to fees</div>
+            <span className={share === null ? 'tag tag-wait' : 'tag tag-pass'}>
+              {share === null ? 'not set' : `${Math.round(share * 100)}%`}
+            </span>
+          </div>
+
+          <p className="hint" style={{ marginTop: 12, marginBottom: 14 }}>
+            {share === null
+              ? 'Not set, so nobody is filtered on price — assembly behaves exactly as it did before. That is deliberate: a share nobody named would start turning people away at a number nobody chose.'
+              : 'Set. Assembly now refuses teams whose fees exceed this share of the set’s price.'}
+          </p>
+
+          <OpsAction action={setTeamBudgetShare} label="Save the share" solid>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label htmlFor="share">Percent of the set (empty removes it)</label>
+              <input
+                id="share"
+                name="share"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                defaultValue={share === null ? '' : Math.round(share * 100)}
+              />
+            </div>
+          </OpsAction>
+        </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
 

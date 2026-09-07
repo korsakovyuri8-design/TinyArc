@@ -140,6 +140,7 @@ model Specialist {
   collaborationsB Collaboration[] @relation("collaborationB")
   withdrawals     Withdrawal[]
   payouts         Payout[]
+  rates           SpecialistRate[]
 
   @@index([status])
 }
@@ -1006,4 +1007,51 @@ model BuildAccess {
 
   /// Очередь бюро спрашивает по состоянию, а не по проекту.
   @@index([status, issuedAt])
+}
+
+/// Ставка, которую специалист назначил себе сам (п.14).
+///
+/// Отдельно от `PayoutRate`, и это не дубль. Ставка бюро — умолчание для того,
+/// кто своей не назвал; ставка человека — его собственная цена, и переписывать
+/// её бюро не вправе: гонорар это его деньги, а не наша политика.
+///
+/// В балл она не входит и входить не может. Цена решает, кто по карману, и
+/// никогда — кто выше: назвавший меньше не должен подниматься в выдаче, иначе
+/// место в ней покупается скидкой. Это то же самое, что проданная позиция у
+/// подрядчиков, только с другой стороны.
+model SpecialistRate {
+  id           String     @id @default(cuid())
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  /// Значения из закрытых словарей src/engine/taxonomy.ts.
+  discipline String
+  stage      String
+
+  /// Целые единицы валюты: копейки в гонораре — тот же шум, что и в счёте.
+  amount   Int
+  currency String @default("EUR")
+
+  updatedAt DateTime @updatedAt
+
+  /// Одна ставка на пару: две строки означали бы, что цена зависит от того,
+  /// какую из них прочитали первой.
+  @@unique([specialistId, discipline, stage])
+  /// Главный путь доступа: цены всего пула на одну сборку.
+  @@index([discipline, stage])
+}
+
+/// Настройка бюро: число, которое задаёт политику, а не описывает факт.
+///
+/// Ключ-значение, потому что таких чисел мало и каждое живёт само по себе.
+/// Заводить колонку в таблице, которой нет, хуже: политику пришлось бы
+/// хранить в переменной окружения, а меняют её не при выкладке.
+///
+/// Каждый ключ объявлен в коде (`src/lib/services/settings.ts`) с причиной
+/// своего существования. Ключ без объявления — это место, куда дописывают то,
+/// что не продумали.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

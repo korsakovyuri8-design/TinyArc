@@ -411,3 +411,105 @@ describe('единый пакет внутри команды', () => {
     expect(result.team).toHaveLength(4)
   })
 })
+
+/**
+ * Цена — гейт, а не слагаемое.
+ *
+ * Ради этого разделения всё и сделано. Если цена войдёт в балл, специалист,
+ * назвавший меньше, поднимется в выдаче — то есть купит место скидкой. Это то
+ * же самое, что проданная позиция, только с другой стороны, и убивает оно то
+ * же самое: доверие к тому, что отбор считается по фактам.
+ */
+describe('бюджет на команду', () => {
+  const need = requirements()
+
+  /** Пул, где заведомо есть и сильный дорогой, и слабый дешёвый. */
+  function priced(total: number, costs: Record<string, number>) {
+    return {
+      total,
+      costOf: new Map(Object.entries(costs)),
+    }
+  }
+
+  it('без потолка цена ни на что не влияет', () => {
+    const withoutBudget = assemble(fullPool(), need)
+    const withNullBudget = assemble(fullPool(), need, new Map(), null)
+
+    expect(withoutBudget.outcome).toBe(withNullBudget.outcome)
+    expect(withoutBudget.team.map((m) => m.specialist.id)).toEqual(
+      withNullBudget.team.map((m) => m.specialist.id),
+    )
+    expect(withoutBudget.teamCost).toBe(null)
+  })
+
+  it('щедрый потолок состав не меняет', () => {
+    const free = assemble(fullPool(), need)
+    const generous = assemble(fullPool(), need, new Map(), priced(1_000_000, {}))
+
+    expect(generous.outcome).toBe(free.outcome)
+    expect(generous.team.map((m) => m.specialist.id)).toEqual(
+      free.team.map((m) => m.specialist.id),
+    )
+  })
+
+  /*
+   * Ноль — это «денег нет», а не «бесплатно». Отсутствие потолка выражается
+   * значением null, и путать их нельзя: на нуле не проходит никто, у кого
+   * названа цена.
+   */
+  it('нулевой потолок не пропускает никого с названной ценой', () => {
+    const pool = fullPool()
+    const costs = Object.fromEntries(
+      pool.flatMap((s) => s.disciplines.map((d) => [`${s.id}:${d}`, 1])),
+    )
+
+    const result = assemble(pool, need, new Map(), priced(0, costs))
+
+    expect(result.outcome).toBe('over_budget')
+    expect(result.team).toEqual([])
+  })
+
+  /*
+   * «Дорого» и «людей нет» — разные новости и разные действия. Первое лечится
+   * сегодня, второе наймом за месяцы.
+   */
+  it('дороговизна отделена от нехватки людей', () => {
+    const pool = fullPool()
+    const costs = Object.fromEntries(
+      pool.flatMap((s) => s.disciplines.map((d) => [`${s.id}:${d}`, 10_000])),
+    )
+
+    const tight = assemble(pool, need, new Map(), priced(1, costs))
+    expect(tight.outcome).toBe('over_budget')
+
+    const empty = assemble([], need, new Map(), priced(1, costs))
+    expect(empty.outcome, 'на пустом пуле дело не в деньгах').toBe('incomplete')
+  })
+
+  /*
+   * Неназвавший цену из отбора не выпадает: на запуске ставок нет почти ни у
+   * кого, и молчаливое исключение опустошило бы пул. Но его отсутствие в
+   * сумме обязано быть названо — потолок, соблюдённый по части команды, это
+   * не соблюдённый потолок.
+   */
+  it('человек без названной цены не исключается, но считается отдельно', () => {
+    const result = assemble(fullPool(), need, new Map(), priced(10, {}))
+
+    expect(result.outcome).toBe('ok')
+    expect(result.teamCost).toBe(0)
+    expect(result.unpricedMembers).toBe(result.team.length)
+  })
+
+  it('стоимость собранного состава возвращается числом', () => {
+    const pool = fullPool()
+    const costs = Object.fromEntries(
+      pool.flatMap((s) => s.disciplines.map((d) => [`${s.id}:${d}`, 100])),
+    )
+
+    const result = assemble(pool, need, new Map(), priced(100_000, costs))
+
+    expect(result.outcome).toBe('ok')
+    expect(result.teamCost).toBe(result.team.length * 100)
+    expect(result.unpricedMembers).toBe(0)
+  })
+})

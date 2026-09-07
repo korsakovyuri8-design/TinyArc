@@ -23,6 +23,18 @@ describe('положение проекта', () => {
     expect(standingOf('draft', 'no_signatory').label).toBe('No one to sign yet')
   })
 
+  /*
+   * Дороговизна — тоже отдельная новость. «Людей не нашлось» отправляет
+   * человека ждать найма, которого не требуется: люди есть, дело в цене.
+   */
+  it('дороговизна названа деньгами, а не нехваткой людей', () => {
+    const seen = standingOf('draft', 'over_budget')
+
+    expect(seen.label.toLowerCase()).toContain('budget')
+    expect(seen.label.toLowerCase()).not.toContain('assembled')
+    expect(seen.tone).toBe('wait')
+  })
+
   it('успокаивающий тон снят там, где успокаивать нечем', () => {
     expect(standingOf('draft', 'incomplete').tone).toBe('wait')
     expect(standingOf('draft', 'no_signatory').tone).toBe('wait')

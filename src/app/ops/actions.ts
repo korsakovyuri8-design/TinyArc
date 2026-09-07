@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { PayoutRefused, markPayoutPaid, setRate } from '@/lib/services/payouts'
 import { AccessRefused, markAccessPaid } from '@/lib/services/build-access'
+import { SettingRefused, clearTeamShare, setTeamShare } from '@/lib/services/settings'
 import {
   NormRefused,
   addRule,
@@ -1444,4 +1445,41 @@ export async function markBuildAccessPaid(_prev: OpsState, formData: FormData): 
   revalidatePath('/project')
 
   return { message: 'Marked as paid. The shortlist is now open to the client.' }
+}
+
+/**
+ * Доля цены стадии, уходящая команде.
+ *
+ * Из неё считается потолок на гонорары. Пока не задана, бюджетного гейта не
+ * существует вовсе — и это честнее умолчания: доля, взявшаяся из воздуха,
+ * начала бы отсеивать людей по цене, которую бюро не называло.
+ */
+export async function setTeamBudgetShare(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const raw = String(formData.get('share') ?? '').trim()
+
+  try {
+    if (raw === '') {
+      await clearTeamShare()
+      revalidatePath('/ops/payouts')
+
+      return {
+        message: 'Share removed. Assembly no longer filters anyone on price — as it did before.',
+      }
+    }
+
+    const share = Number(raw) / 100
+    await setTeamShare(share)
+    revalidatePath('/ops/payouts')
+
+    return {
+      message: `Saved. From now on a team whose fees exceed ${raw}% of the set’s price will not be assembled — and the client is told it is about money, not about people.`,
+    }
+  } catch (error) {
+    if (error instanceof SettingRefused) return { error: error.message }
+
+    console.error('Доля команды не записана:', error)
+    return { error: 'Saving the share failed.' }
+  }
 }

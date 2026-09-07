@@ -770,6 +770,21 @@ function IncompleteRun({
     )
   }
 
+  /*
+   * Дороговизна — не нехватка людей, и говорить о ней надо иначе. «Под ваш
+   * проект не нашлось специалистов» отправляет человека ждать найма, который
+   * не требуется: состав существует, и упёрлось всё в деньги. Это лечится
+   * сегодня, и заказчик — одна из двух сторон, которые могут это сделать.
+   */
+  if (outcome === 'over_budget') {
+    return (
+      <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
+        <div className="label" style={{ color: 'var(--fail)' }}>The team is not assembled yet</div>
+        <p style={{ marginTop: 12, marginBottom: 0 }}>A team for your project does exist, but their fees come to more than the budget this project leaves for them. Specialists name their own fees, and the bureau does not talk them down. This is about money rather than about people, and it is solvable: write to the bureau — the options are a different scope, a different stage to stop at, or a different budget.</p>
+      </div>
+    )
+  }
+
   if (!gap) {
     return (
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>

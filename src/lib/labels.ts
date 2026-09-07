@@ -206,6 +206,7 @@ export const OUTCOME_LABELS: Record<string, string> = {
   ok: 'Team assembled',
   incomplete: 'A discipline is uncovered',
   no_signatory: 'No signing rights in this jurisdiction',
+  over_budget: 'A team exists, but not within the fee budget',
   rejected: 'Project is outside the product boundary',
 }
 

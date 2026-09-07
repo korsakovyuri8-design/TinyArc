@@ -43,6 +43,12 @@ export function standingOf(status: string, outcome: string | null): Standing {
     if (outcome === null) return { label: 'Brief accepted', tone: 'accent' }
     if (outcome === 'ok') return { label: 'Team assembled', tone: 'accent' }
     if (outcome === 'no_signatory') return { label: 'No one to sign yet', tone: 'wait' }
+    /*
+     * Дороговизна — не «людей не нашлось». Люди есть, и лечится это сегодня:
+     * деньгами заказчика или ставкой бюро. Смешать её с нехваткой значит
+     * отправить человека ждать найма, которого не требуется.
+     */
+    if (outcome === 'over_budget') return { label: 'Over the fee budget', tone: 'wait' }
     if (outcome === 'rejected') return { label: 'Outside the product boundary', tone: 'fail' }
     return { label: 'Team not assembled yet', tone: 'wait' }
   }

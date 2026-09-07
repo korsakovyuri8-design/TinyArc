@@ -16,7 +16,9 @@ import {
   SPECIALIZATION_LABELS,
   SUBSCRIPTION_LABELS,
 } from '@/lib/labels'
-import { AvailabilityForm } from './AvailabilityForm'
+import { AvailabilityForm, FeeForm } from './AvailabilityForm'
+import { CURRENCY } from '@/engine/pricing'
+import { ratesOf } from '@/lib/services/payouts'
 import { toProfile } from '@/lib/rows'
 import { company } from '@/lib/legal'
 import { currentSpecialist } from '@/lib/session'
@@ -39,6 +41,7 @@ export default async function ProfilePage() {
   const profile = toProfile(row)
   const seat = seatOf(row)
   const money = await payoutsOf(row.id)
+  const rates = await ratesOf(row.id)
   const metrics = deliveryMetrics(profile.delivery)
   const delivery = deliveryScore(metrics)
   const weight = historyWeight(profile.delivery)
@@ -230,6 +233,21 @@ export default async function ProfilePage() {
             hours={profile.weeklyCapacityHours}
 
           />
+        </div>
+
+        <div className="divider" style={{ marginTop: 44 }} />
+
+        {/*
+          Второе, чем человек управляет сам, — после времени. Цену называет он:
+          гонорар это его деньги, и бюро её не переписывает. В балл она не
+          входит, и сказано это прямо — иначе первым делом её начнут занижать,
+          чтобы «подняться в выдаче», а подниматься от этого нечему.
+        */}
+        <h2>Your fee</h2>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>You name it yourself, per discipline per stage, and the bureau does not talk it down. It never enters your score: a lower fee does not move you up the ranking, it only makes you affordable on projects whose budget is tighter. Naming nothing is allowed — then the bureau’s own default applies, if it has one for your discipline.</p>
+
+        <div className="panel" style={{ maxWidth: 560 }}>
+          <FeeForm disciplines={profile.disciplines} rates={rates} currency={CURRENCY} />
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />

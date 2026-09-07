@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { SKIPPED, TABLES, dateFields, decode, encode, modelsIn, revive, schemaText } from './backup'
+import { SKIPPED, TABLES, dateFields, decode, encode, idFields, modelsIn, revive, schemaText } from './backup'
 
 const schema = schemaText()
 
@@ -55,6 +55,27 @@ describe('копия знает все таблицы', () => {
     expect(at('Ticket')).toBeLessThan(at('TicketComment'))
     expect(at('Ticket')).toBeLessThan(at('Artifact'))
     expect(at('Project')).toBeLessThan(at('Invoice'))
+  })
+})
+
+describe('у страницы есть порядок', () => {
+  const keys = idFields(schema)
+
+  /*
+   * Выгрузка идёт страницами и упорядочивает их по первичному ключу. Пока все
+   * ключи назывались `id`, порядок стоял в коде числом — и первая же таблица с
+   * другим именем ключа уронила выгрузку целиком, а не потеряла одну строку.
+   * Копии в этот день не стало вовсе.
+   */
+  it('у каждой таблицы копии объявлен одиночный первичный ключ', () => {
+    for (const table of TABLES) {
+      expect(keys.get(table), `у ${table} не найден @id — порядок страницы брать неоткуда`).toBeTruthy()
+    }
+  })
+
+  it('ключ читается из схемы, а не подразумевается', () => {
+    expect(keys.get('Specialist')).toBe('id')
+    expect(keys.get('Setting')).toBe('key')
   })
 })
 
