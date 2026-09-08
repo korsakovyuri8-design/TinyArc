@@ -104,17 +104,23 @@ export default async function ProfilePage() {
           className="panel"
           style={{
             marginTop: 36,
-            borderColor: profile.subscription === 'none' ? 'var(--fail)' : undefined,
+            /*
+              Тревожным блок становится, только когда деньги и правда мешают.
+              Приглашённому с незаполненным профилем доступ тоже закрыт, но
+              останавливает его не это, и красная рамка над словом «оплата»
+              отправляет его платить вместо того, чтобы дозаполнить профиль.
+            */
+            borderColor: seat.gate === 'subscription' ? 'var(--fail)' : undefined,
           }}
         >
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <div className="label">Access to projects</div>
-            <span className={profile.subscription === 'none' ? 'tag tag-fail' : 'tag'}>
+            <span className={seat.gate === 'subscription' ? 'tag tag-fail' : 'tag'}>
               {SUBSCRIPTION_LABELS[profile.subscription]}
             </span>
           </div>
 
-          {profile.subscription === 'none' ? (
+          {seat.gate === 'subscription' ? (
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
               {fill(
                 'While access is closed the engine does not consider you — whatever your portfolio and metrics. This is about paying for access, not about the quality of your work: being turned away over money and being turned away over qualification are different things, and we do not mix them. To open it, write to {email}.',
@@ -132,8 +138,10 @@ export default async function ProfilePage() {
               про деньги.
             */
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              {seat.body} Money is not what is holding this up: access is open, and the supply side
-              pays for access to demand — the bureau takes no commission from your fee.
+              {seat.body}{' '}
+              {profile.subscription === 'none'
+                ? 'Access to projects is closed as well, and there is nothing to do about that yet: it is opened later, once the step above is behind you. The supply side pays for access to demand — the bureau takes no commission from your fee.'
+                : 'Money is not what is holding this up: access is open, and the supply side pays for access to demand — the bureau takes no commission from your fee.'}
             </p>
           )}
         </div>

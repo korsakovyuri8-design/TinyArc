@@ -94,3 +94,36 @@ describe('место в отборе', () => {
     }
   })
 })
+
+/*
+ * Причина называется не только словами, но и ключом: страница профиля держит
+ * свой блок про доступ и решает по нему, тревожить ли человека деньгами.
+ * Пока она решала это по полю подписки, приглашённый с закрытым доступом
+ * читал там «дело в оплате», а `seatOf` в это же время говорил ему про
+ * незаполненный профиль.
+ */
+describe('какая проверка остановила', () => {
+  it('приглашённого — статус, даже когда доступ закрыт', () => {
+    expect(seatOf({ ...good, status: 'invited', subscription: 'none' }).gate).toBe('status')
+  })
+
+  it('заявку на разборе — статус', () => {
+    expect(seatOf({ ...good, status: 'pending', subscription: 'none' }).gate).toBe('status')
+  })
+
+  it('подтверждённого без доступа — деньги', () => {
+    expect(seatOf({ ...good, subscription: 'none' }).gate).toBe('subscription')
+  })
+
+  it('слабое портфолио — порог', () => {
+    expect(seatOf({ ...good, portfolioRating: 1 }).gate).toBe('portfolio')
+  })
+
+  it('нулевые часы — ёмкость', () => {
+    expect(seatOf({ ...good, weeklyCapacityHours: 0 }).gate).toBe('capacity')
+  })
+
+  it('у того, кто в отборе, остановки нет', () => {
+    expect(seatOf(good).gate).toBeNull()
+  })
+})

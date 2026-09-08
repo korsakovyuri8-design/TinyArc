@@ -20,6 +20,7 @@ import { accessKey } from '@/lib/forms'
 import { toList } from '@/lib/rows'
 import { sendInvitation } from '@/lib/mail'
 import { prisma } from '../db'
+import { newcomerAccess } from './settings'
 import type { IntakeDraft } from '../intake/map'
 
 /**
@@ -77,6 +78,13 @@ export async function importDrafts(drafts: IntakeDraft[]): Promise<ImportOutcome
 
   const fresh = batch.filter((d) => !known.has(d.email))
 
+  /*
+   * Доступ спрашивается один раз на всю пачку, а не на строку: политика одна,
+   * и запрос за ней внутри map означал бы обращение в базу на каждого
+   * импортируемого.
+   */
+  const subscription = await newcomerAccess()
+
   if (fresh.length > 0) {
     await prisma.specialist.createMany({
       data: fresh.map((draft) => ({
@@ -84,6 +92,7 @@ export async function importDrafts(drafts: IntakeDraft[]): Promise<ImportOutcome
         email: draft.email,
         accessKey: accessKey('pool'),
         status: 'invited',
+        subscription,
         source: 'import',
         // Пусто до рассылки: по этому полю рассылка и находит, кого ещё не звали.
         invitedAt: null,

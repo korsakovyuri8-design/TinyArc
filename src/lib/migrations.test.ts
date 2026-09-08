@@ -51,6 +51,7 @@ const APPLIED: Record<string, string> = {
   '0018_payouts': '7a2d88cffb2030e49a6a794d85661b66',
   '0019_build_access': '7ed5292d25ae27365a0313b5ef5d1235',
   '0020_specialist_rates': '6149254b322c0582ee39959f39a447ba',
+  '0021_closed_access_default': '78061b73d1b16a3ae65a1b1a42c4d63f',
 }
 
 function checksum(name: string): string {

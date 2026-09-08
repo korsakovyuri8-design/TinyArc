@@ -14,6 +14,7 @@ import {
   specializationsWithinDisciplines,
 } from '@/lib/forms'
 import { toList } from '@/lib/rows'
+import { newcomerAccess } from '@/lib/services/settings'
 
 export type ApplicationState = {
   errors?: Record<string, string>
@@ -98,6 +99,10 @@ export async function submitApplication(
       consentVersion: LEGAL_VERSION,
       // Рейтинг портфолио ставит бюро при разборе, а не заявитель о себе (п.9).
       portfolioRating: 0,
+      // Доступ спрашивается у настройки пилота, а не берётся умолчанием
+      // схемы: бесплатный доступ — решение с датой, и оно принимается в
+      // панели, а не в строке схемы, которую меняют выкладкой.
+      subscription: await newcomerAccess(),
       status: 'pending',
       portfolioUrl: input.portfolioUrl,
 

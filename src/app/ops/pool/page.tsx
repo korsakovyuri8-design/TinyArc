@@ -16,6 +16,9 @@ import { toProfile } from '@/lib/rows'
 import { fill } from '@/lib/fill'
 import { isNarrowed, matches, readCriteria } from '@/lib/pool-filter'
 import { isOperator } from '@/lib/session'
+import { pilotUntil } from '@/lib/services/settings'
+import { setPilotAccess } from '../actions'
+import { OpsAction } from '../OpsForms'
 
 export const metadata = { title: 'Pool — bureau panel' }
 
@@ -96,6 +99,20 @@ export default async function PoolPage({
   const holes = gaps(pool)
   const disciplines = [...new Set(depth.map((d) => d.discipline))]
 
+  /*
+   * Состояние пилота и его следствие. Настройка без числа рядом — это форма,
+   * по которой не видно, что она уже сделала: сколько человек пришло
+   * бесплатно, столько бюро и раздало доступа, и знать это надо до того, как
+   * решать, продлевать ли.
+   */
+  const [pilot, freeAccess, closedAccess] = await Promise.all([
+    pilotUntil(),
+    prisma.specialist.count({ where: { subscription: { not: 'none' } } }),
+    prisma.specialist.count({ where: { subscription: 'none' } }),
+  ])
+
+  const pilotOn = pilot !== null && pilot.getTime() > Date.now()
+
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
       <div className="shell">
@@ -119,6 +136,37 @@ export default async function PoolPage({
           <p className="hint" style={{ marginTop: 14 }}>
             A zero in a discipline means any project that needs it will assemble incomplete.
           </p>
+        </div>
+
+        <div className="panel" style={{ marginTop: 20, maxWidth: 620 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+            <div className="label label-accent">How new specialists arrive</div>
+            <span className={pilotOn ? 'tag tag-pass' : 'tag tag-wait'}>
+              {pilotOn ? `free until ${pilot!.toISOString().slice(0, 10)}` : 'not free'}
+            </span>
+          </div>
+          <p className="hint" style={{ marginTop: 14 }}>
+            {pilotOn
+              ? 'While the pilot runs, a specialist who applies or is imported arrives with access already open. After the date they arrive without it, and the bureau opens access by hand — there is no card processing yet.'
+              : 'A specialist who applies or is imported arrives without access, and the bureau opens it by hand on their card in the pool. Set a date below to make access free until then.'}
+          </p>
+          <p className="hint" style={{ marginTop: 10 }}>
+            Ending the pilot changes nothing for anybody already in the pool: {freeAccess} have access
+            today and keep it, {closedAccess} do not. Access is closed one person at a time, on their
+            card — one setting must not take whole teams off live projects.
+          </p>
+
+          <OpsAction action={setPilotAccess} label="Save the date" solid>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label htmlFor="until">Free access until (empty ends the pilot)</label>
+              <input
+                id="until"
+                name="until"
+                type="date"
+                defaultValue={pilotOn ? pilot!.toISOString().slice(0, 10) : ''}
+              />
+            </div>
+          </OpsAction>
         </div>
 
         <div className="divider" style={{ marginTop: 48 }} />

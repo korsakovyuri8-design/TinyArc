@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { PayoutRefused, markPayoutPaid, setRate } from '@/lib/services/payouts'
 import { AccessRefused, markAccessPaid } from '@/lib/services/build-access'
-import { SettingRefused, clearTeamShare, setTeamShare } from '@/lib/services/settings'
+import { SettingRefused, clearPilotUntil, clearTeamShare, setPilotUntil, setTeamShare } from '@/lib/services/settings'
 import {
   NormRefused,
   addRule,
@@ -1481,5 +1481,48 @@ export async function setTeamBudgetShare(_prev: OpsState, formData: FormData): P
 
     console.error('Доля команды не записана:', error)
     return { error: 'Saving the share failed.' }
+  }
+}
+
+/**
+ * Конец бесплатного доступа специалистов.
+ *
+ * Пустое поле кончает пилот: новые приходят с закрытым доступом, а уже
+ * пришедшие остаются как есть. Об этом сказано в самом ответе — иначе
+ * оператор, снявший дату, вправе ожидать, что пул тут же опустеет, и станет
+ * искать несуществующую поломку. Или, что хуже, не станет: решит, что
+ * настройка не сработала, и откроет пилот заново.
+ */
+export async function setPilotAccess(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  await requireOperator()
+
+  const raw = String(formData.get('until') ?? '').trim()
+
+  try {
+    if (raw === '') {
+      await clearPilotUntil()
+      revalidatePath('/ops/pool')
+
+      return {
+        message:
+          'Pilot ended. New specialists now arrive without access, and the bureau opens it by hand. Everyone who already has access keeps it — ending the pilot does not take anybody off a live project.',
+      }
+    }
+
+    // Конец названного дня, а не его начало: «до 31 декабря» человек читает
+    // как включительно, и пилот, кончившийся в полночь на этой дате, отрезал
+    // бы весь последний день.
+    const until = new Date(`${raw}T23:59:59.999Z`)
+    await setPilotUntil(until)
+    revalidatePath('/ops/pool')
+
+    return {
+      message: `Saved. Specialists arriving on or before ${raw} get access for free; after that they arrive without it.`,
+    }
+  } catch (error) {
+    if (error instanceof SettingRefused) return { error: error.message }
+
+    console.error('Срок пилота не записан:', error)
+    return { error: 'Saving the pilot date failed.' }
   }
 }

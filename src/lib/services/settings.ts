@@ -61,3 +61,85 @@ export async function setTeamShare(value: number): Promise<void> {
 export async function clearTeamShare(): Promise<void> {
   await prisma.setting.deleteMany({ where: { key: TEAM_SHARE } })
 }
+
+/**
+ * До какой даты доступ специалиста бесплатный.
+ *
+ * Пилот — состояние временное по определению: бесплатный доступ без конца
+ * это не пилот, а цена. Поэтому здесь дата, а не переключатель. Переключатель
+ * выключают, вспомнив о нём, — а о бесплатном никто не вспоминает: жалоб на
+ * него не бывает, и он тихо переживает и пилот, и год после него.
+ *
+ * До этого дня новый специалист заводится с открытым доступом, после —
+ * закрытым, и открывает его бюро руками (приём платежей ещё не подключён).
+ * Дата на уже заведённых не отражается: истёкший пилот никого не выкидывает
+ * из отбора — иначе одна настройка сняла бы с проектов живые команды, а
+ * замена выпавшему не нашлась бы по тому же гейту. Кто пришёл бесплатно, тот
+ * бесплатным и остаётся, пока бюро не решит иначе по каждому.
+ */
+export const PILOT_UNTIL = 'pilot_free_access_until'
+
+/** Конец бесплатного доступа. `null` — бесплатного доступа нет вовсе. */
+export async function pilotUntil(): Promise<Date | null> {
+  const row = await prisma.setting.findUnique({ where: { key: PILOT_UNTIL } })
+  if (!row) return null
+
+  const date = new Date(row.value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+export async function setPilotUntil(value: Date): Promise<void> {
+  /*
+   * Дата в прошлом отвергается: она означала бы «пилот кончился вчера», и
+   * записать её можно только по ошибке — тот, кто хочет закончить пилот
+   * сегодня, снимает настройку, а не датирует её задним числом. Разница
+   * важна: снятая настройка видна в панели словами, а прошедшая дата
+   * выглядит настроенным пилотом и читается как работающий.
+   */
+  if (Number.isNaN(value.getTime())) {
+    throw new SettingRefused('The date is not a date.')
+  }
+
+  if (value.getTime() <= Date.now()) {
+    throw new SettingRefused('A pilot that ended is not a pilot: remove the date instead of dating it into the past.')
+  }
+
+  await prisma.setting.upsert({
+    where: { key: PILOT_UNTIL },
+    create: { key: PILOT_UNTIL, value: value.toISOString() },
+    update: { value: value.toISOString() },
+  })
+}
+
+/** Закончить пилот: новые приходят без доступа. Уже пришедших это не трогает. */
+export async function clearPilotUntil(): Promise<void> {
+  await prisma.setting.deleteMany({ where: { key: PILOT_UNTIL } })
+}
+
+/**
+ * Какой доступ получает вновь заведённый специалист.
+ *
+ * Спрашивается на каждом пути, которым появляется человек: заявка и импорт
+ * базы. Раньше это стояло умолчанием в схеме — то есть решение о цене
+ * продукта принимала строка `@default("founding")`, которую не видно ни из
+ * панели, ни из кода, который заводит человека. Умолчание в схеме кончается
+ * только выкладкой, а вопрос «кому мы раздаём бесплатно» задаётся раньше, чем
+ * бюро успевает собрать релиз.
+ */
+export async function newcomerAccess(): Promise<'founding' | 'none'> {
+  return accessOnPilot(await pilotUntil(), new Date())
+}
+
+/**
+ * Само решение, без базы: до какого дня бесплатно и какое сегодня число.
+ *
+ * Вынесено отдельно ради границы. Момент истечения проверить прогоном нельзя —
+ * пилот, кончающийся ровно сейчас, на стенде не воспроизводится, — а ошибка
+ * на границе стоит либо раздачи доступа лишний день, либо отказа человеку,
+ * пришедшему в последний день пилота.
+ */
+export function accessOnPilot(until: Date | null, now: Date): 'founding' | 'none' {
+  // Строго больше: день, названный концом, ещё бесплатный целиком — граница
+  // хранится моментом времени, и «до 31 декабря» записывается концом суток.
+  return until !== null && until.getTime() > now.getTime() ? 'founding' : 'none'
+}

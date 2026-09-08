@@ -183,11 +183,22 @@ const profile = (await person.textContent('body')).toLowerCase()
 
 check(
   !profile.includes('you take part in selection on the usual terms'),
-  'открытый доступ не выдаётся за участие в отборе: деньги открыты, а в пуле человека нет',
+  'участие в отборе не обещается тому, кого в пуле нет',
+)
+/*
+ * Профиль уже отправлен, значит человек стоит на разборе — и останавливает
+ * его разбор, а не деньги. Верно это независимо от того, идёт пилот или нет:
+ * вне пилота доступ у него тоже закрыт, но красная панель про оплату
+ * отправила бы его платить вместо того, чтобы дождаться разбора. Два экрана,
+ * называющие разные причины, — это разговор, в котором один из них неправ.
+ */
+check(
+  profile.includes('you are not in it until the portfolio is reviewed'),
+  'названа настоящая причина — разбор заявки, а не деньги',
 )
 check(
-  profile.includes('money is not what is holding this up'),
-  'сказано, что дело не в деньгах — иначе он пойдёт платить',
+  !profile.includes('this is about paying for access'),
+  'тревога про оплату ему не показывается — иначе он пойдёт платить',
 )
 
 await person.goto(`${BASE}/work/profile/complete`)
