@@ -8,6 +8,7 @@ import { DISCIPLINE_LABELS } from '@/lib/labels'
 import { alertsForBureau } from '@/lib/services/pm'
 import { lostProjects } from '@/lib/services/demand'
 import { ANSWER_SLA_HOURS, waitingQuestions } from '@/lib/services/dialogue'
+import { awaitingAccess } from '@/lib/services/access-queue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
 import { DIRECTION_NUDGE_HOURS, awaitingDirection } from '@/lib/services/direction'
 import { INSURANCE_HORIZON_DAYS, expiringInsurance } from '@/lib/services/contractors'
@@ -52,7 +53,7 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions, approvals, invoices, directions, policies, unrated, owedOpen] =
+  const [lost, questions, approvals, invoices, directions, policies, unrated, owedOpen, access] =
     await Promise.all([
       lostProjects(),
       waitingQuestions(),
@@ -62,6 +63,7 @@ export default async function OpsPage() {
       expiringInsurance(),
       unratedObligations(),
       prisma.payout.count({ where: { status: 'accrued' } }),
+      awaitingAccess(),
     ])
 
   const waitingInvoices = invoices.filter((i) => i.status === 'issued').length
@@ -427,6 +429,69 @@ export default async function OpsPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/*
+          Кто ждёт открытия доступа. Человек прошёл разбор, стоит в базе
+          подтверждённым и читает у себя «ход бюро» — а бюро об этом нигде не
+          говорили. Он считается в пуле и при этом не рассматривается движком
+          вовсе: ожидание молчаливое с обеих сторон.
+        */}
+        {access.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <h2>Waiting for access to be opened</h2>
+              <span className="tag tag-wait">{access.length}</span>
+            </div>
+
+            <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
+              These people passed the review and are counted in the pool, yet the engine does not
+              consider them at all: access is a gate, and it is closed. They are told the move is
+              the bureau’s, so this is that move — opened one at a time, on the person’s card.
+            </p>
+
+            <div className="table-scroll panel" style={{ padding: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Specialist</th>
+                    <th>Waiting</th>
+                    {/*
+                      Ради этой колонки очередь и существует. Открытый доступ
+                      человеку с нулём свободных часов не даёт бюро ничего —
+                      это другой звонок, и путать их значит открывать доступ
+                      наугад.
+                    */}
+                    <th>After it is opened</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {access.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <Link href={`/ops/pool/${row.id}`}>{row.displayName}</Link>
+                        <div className="dim" style={{ fontSize: '0.78rem' }}>{row.email}</div>
+                      </td>
+                      <td className="dim" style={{ fontSize: '0.85rem' }}>
+                        {fill('{days} day(s)', {
+                          days: Math.max(0, Math.floor((Date.now() - row.since.getTime()) / 86_400_000)),
+                        })}
+                      </td>
+                      <td style={{ fontSize: '0.85rem' }}>
+                        {row.readyToWork ? (
+                          <span className="tag tag-pass">in selection</span>
+                        ) : (
+                          <span className="dim">{row.nextGate}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/*
