@@ -56,6 +56,18 @@ export type SeatInput = {
   weeklyCapacityHours: number
 }
 
+/**
+ * Тон места — в класс метки.
+ *
+ * Отдельной функцией по той же причине, что и у положения проекта: имена
+ * тонов сверяются тестом с объявленными в `globals.css`, а разъехавшееся имя
+ * ничего не ломает — метка просто теряет цвет на экране, где цвет и есть
+ * сообщение.
+ */
+export function seatClass(tone: SeatTone): string {
+  return `tag tag-${tone}`
+}
+
 export function seatOf(person: SeatInput): Seat {
   /*
    * Статус впереди денег и портфолио. Приглашённый с незаполненным профилем

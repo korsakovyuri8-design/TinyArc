@@ -139,6 +139,29 @@ await page.waitForLoadState('networkidle')
 const after = await prisma.specialist.findUnique({ where: { id: ready.id }, select: { subscription: true } })
 check(after?.subscription === 'founding', `бюро открыло доступ с карточки: ${after?.subscription}`)
 
+/*
+ * «Доступ открыт» и «человек в отборе» — разные утверждения, и ответ обязан
+ * их различать: оператор, прочитавший одно «открыто» над человеком с нулём
+ * часов, уходит уверенным, что сделал дело.
+ */
+const said = (await page.innerText('body')).toLowerCase()
+check(said.includes('take part in selection from the next run'), 'ответ говорит, что человек вошёл в отбор')
+check(said.includes('what the engine does with them'), 'карточка сама говорит, что движок делает с человеком')
+check(said.includes('you are in the pool'), 'и говорит это уже про открытый доступ')
+
+await page.goto(`${BASE}/ops/pool/${idle.id}`)
+await page.click('button:has-text("Free during the pilot")')
+await page.waitForLoadState('networkidle')
+
+const saidIdle = (await page.innerText('body')).toLowerCase()
+check(
+  saidIdle.includes('still will not appear in runs'),
+  'про человека с нулём часов сказано, что открытие доступа его не выпустило',
+)
+
+// Возвращаем как было: очередь ниже считается по тем, кому не открывали.
+await prisma.specialist.update({ where: { id: idle.id }, data: { subscription: 'none' } })
+
 const left = (await awaitingAccess()).filter((row) => row.email.endsWith(`@${DOMAIN}`))
 check(left.length === 1, `открытый доступ убрал человека из очереди: осталось ${left.length}`)
 check(left[0]?.id === idle.id, 'остался тот, кому ещё не открывали')

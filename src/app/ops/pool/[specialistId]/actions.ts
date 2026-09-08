@@ -11,6 +11,7 @@ import {
 } from '@/lib/forms'
 import type { ApplicationState } from '@/app/specialists/apply/actions'
 import { prisma } from '@/lib/db'
+import { seatOf } from '@/lib/seat'
 import { toList } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
 import { SUBSCRIPTIONS, type Subscription } from '@/engine/taxonomy'
@@ -142,18 +143,33 @@ export async function setSubscription(
     return { error: 'Unknown subscription state.' }
   }
 
-  await prisma.specialist.update({
+  const person = await prisma.specialist.update({
     where: { id: specialistId },
     data: { subscription: value },
   })
 
   revalidatePath(`/ops/pool/${specialistId}`)
   revalidatePath('/ops/pool')
+  // И панель: человек уходит из очереди ожидающих открытия доступа или
+  // встаёт в неё, а очередь, отставшая на одно нажатие, зовёт нажать ещё раз.
+  revalidatePath('/ops')
+
+  if (value === 'none') {
+    return { message: 'Access closed: this person will not appear in the next selection runs.' }
+  }
+
+  /*
+   * «Доступ открыт» и «человек в отборе» — разные утверждения. Открытый доступ
+   * ничего не даёт тому, у кого ноль свободных часов или портфолио ниже порога:
+   * оператор нажал, прочитал «открыто» и ушёл, а человек как не появлялся в
+   * прогонах, так и не появляется. Что осталось в пути, считает та же функция,
+   * что говорит причину ему самому.
+   */
+  const seat = seatOf(person)
 
   return {
-    message:
-      value === 'none'
-        ? 'Access closed: this person will not appear in the next selection runs.'
-        : 'Access open. This does not reassemble teams already put together.',
+    message: seat.inSelection
+      ? 'Access open: they take part in selection from the next run. This does not reassemble teams already put together.'
+      : `Access open, but they still will not appear in runs: ${seat.headline.toLowerCase()}. This does not reassemble teams already put together.`,
   }
 }

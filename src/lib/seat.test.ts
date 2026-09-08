@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
-import { SEAT_TONES, seatOf } from './seat'
+import { SEAT_TONES, seatClass, seatOf } from './seat'
 
 /** Человек, у которого всё в порядке. Каждый случай портит ровно одно поле. */
 const good = {
@@ -125,5 +127,25 @@ describe('какая проверка остановила', () => {
 
   it('у того, кто в отборе, остановки нет', () => {
     expect(seatOf(good).gate).toBeNull()
+  })
+})
+
+/*
+ * Имя тона сверяется с объявленным в globals.css. Разъехавшееся имя ничего не
+ * ломает — метка просто теряет цвет на экране, где цвет и есть сообщение, —
+ * и заметить это можно только глазами и только зайдя.
+ */
+describe('тон места превращается в класс', () => {
+  const css = readFileSync(join(import.meta.dirname, '..', 'app', 'globals.css'), 'utf8')
+
+  it('каждый тон объявлен в стилях', () => {
+    for (const tone of SEAT_TONES) {
+      expect(css.includes(`.tag-${tone}`), `в globals.css нет .tag-${tone}`).toBe(true)
+    }
+  })
+
+  it('класс собирается из тона, а не пишется рядом', () => {
+    expect(seatClass('fail')).toBe('tag tag-fail')
+    expect(seatClass(seatOf(good).tone)).toBe('tag tag-pass')
   })
 })

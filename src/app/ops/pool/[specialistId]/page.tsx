@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db'
 import { AVAILABILITY_LABELS, SPECIALIST_STATUS_LABELS, SUBSCRIPTION_LABELS } from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
+import { seatClass, seatOf } from '@/lib/seat'
 import { OpsAction } from '@/app/ops/OpsForms'
 import { editSpecialist, setSubscription } from './actions'
 import { anonymiseProfile } from '@/app/ops/actions'
@@ -36,6 +37,7 @@ export default async function SpecialistPage({
   })
 
   const profile = toProfile(row)
+  const seat = seatOf(row)
   const metrics = deliveryMetrics(profile.delivery)
 
   return (
@@ -90,7 +92,27 @@ export default async function SpecialistPage({
           </div>
         )}
 
+        {/*
+          Что движок делает с этим человеком прямо сейчас — одной строкой и
+          той же функцией, которая говорит причину ему самому. Раньше карточка
+          показывала поля, а вывод из них оператор делал в уме: подписка,
+          рейтинг и часы лежали в разных блоках, и «почему он не появляется в
+          прогонах» приходилось складывать глазами.
+        */}
         <div className="panel" style={{ marginTop: 32 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+            <div className="label label-accent">What the engine does with them</div>
+            <span className={seatClass(seat.tone)}>{seat.headline}</span>
+          </div>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>{seat.body}</p>
+          {seat.turn !== null && (
+            <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
+              {seat.turn === 'bureau' ? 'The move is the bureau’s.' : 'The move is theirs.'}
+            </p>
+          )}
+        </div>
+
+        <div className="panel" style={{ marginTop: 20 }}>
           <div className="label label-accent">Access to projects</div>
           <p className="muted" style={{ marginTop: 12, marginBottom: 16 }}>
             The subscription is a gate, not a score: without it the person is not in selection at all, and it is checked before the portfolio. Being turned away over money must not look like being turned away over qualification (§14a). Currently:{' '}
@@ -100,13 +122,25 @@ export default async function SpecialistPage({
             .
           </p>
 
+          {/*
+            Набор кнопок постоянный, текущая — просто нажатая быть не может.
+            Пока кнопка текущего значения убиралась из набора, форма, только
+            что отработавшая, исчезала вместе со своим ответом: оператор
+            переключал доступ и не читал ни строки — ни «сделано», ни того,
+            что человек всё равно не появится в прогонах.
+          */}
           <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
-            {SUBSCRIPTIONS.filter((value) => value !== profile.subscription).map((value) => (
+            {SUBSCRIPTIONS.map((value) => (
               <OpsAction
                 key={value}
                 action={setSubscription}
                 hidden={{ specialistId: row.id, subscription: value }}
-                label={`Switch to “${SUBSCRIPTION_LABELS[value]}”`}
+                disabled={value === profile.subscription}
+                label={
+                  value === profile.subscription
+                    ? `Now: ${SUBSCRIPTION_LABELS[value]}`
+                    : `Switch to “${SUBSCRIPTION_LABELS[value]}”`
+                }
               />
             ))}
           </div>

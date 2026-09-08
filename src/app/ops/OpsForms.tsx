@@ -12,6 +12,7 @@ export function OpsAction({
   hidden = {},
   label,
   solid,
+  disabled,
   children,
 }: {
   action: Action
@@ -19,6 +20,15 @@ export function OpsAction({
   hidden?: Record<string, string>
   label: string
   solid?: boolean
+  /**
+   * Кнопка нажата быть не может, но форма остаётся на месте.
+   *
+   * Нужно там, где набор кнопок зависит от нынешнего состояния. Пока кнопка
+   * текущего значения из набора убиралась, форма, только что отработавшая,
+   * размонтировалась вместе со своим ответом: оператор нажимал и не получал
+   * ни строки — ни «сделано», ни того, что осталось в пути.
+   */
+  disabled?: boolean
   children?: React.ReactNode
 }) {
   const [state, formAction, pending] = useActionState<OpsState, FormData>(action, {})
@@ -29,7 +39,11 @@ export function OpsAction({
         <input key={name} type="hidden" name={name} value={value} />
       ))}
       {children}
-      <button type="submit" className={solid ? 'btn btn-solid' : 'btn btn-quiet'} disabled={pending}>
+      <button
+        type="submit"
+        className={solid ? 'btn btn-solid' : 'btn btn-quiet'}
+        disabled={pending || disabled}
+      >
         {pending ? '…' : label}
       </button>
       {state.error && (

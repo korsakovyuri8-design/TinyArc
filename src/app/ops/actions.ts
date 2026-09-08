@@ -47,6 +47,7 @@ import { toList } from '@/lib/rows'
 import { contractorSchema, fieldErrors, fromFormData, siteSchema } from '@/lib/forms'
 import { isNudgeKind } from '@/engine/pm'
 import { runAssembly } from '@/lib/services/matching'
+import { seatOf } from '@/lib/seat'
 import { isOperator, signInOperator, signOutOperator } from '@/lib/session'
 import { NotErasable, anonymiseSpecialist, eraseProject } from '@/lib/services/privacy'
 import { fill } from '@/lib/fill'
@@ -116,6 +117,10 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
 
   revalidatePath('/ops/applications')
   revalidatePath('/ops/pool')
+  // Панель тоже: подтверждённый с закрытым доступом появляется в очереди
+  // ожидающих открытия, и очередь, отставшая на один разбор, — это человек,
+  // о котором никто не вспомнит.
+  revalidatePath('/ops')
 
   if (!passed) {
     // Отказ доходит до человека. Он подал заявку и ждёт ответа; молчание —
@@ -131,6 +136,19 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
     }
   }
 
+  /*
+   * «В пуле» — это про статус, а не про отбор. Пока доступ закрыт, движок не
+   * рассматривает человека вовсе, и оператор, прочитавший одно «the specialist
+   * is in the pool», закрывает карточку и уходит; человек при этом читает у
+   * себя «ход бюро». Остаток хода называется здесь, той же функцией, что
+   * говорит причину ему.
+   */
+  const seat = seatOf(specialist)
+  const move =
+    seat.gate === 'subscription'
+      ? ' The engine will not consider them yet: access is closed. Open it on their card.'
+      : ''
+
   // Ключ выдаётся тем же каналом, которым с человеком разговаривали, и только
   // после подтверждения: до него ключ существует, но не работает.
   //
@@ -139,7 +157,7 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   // случае показывается прямо здесь — передать его есть чем.
   if (mailer().mode === 'stub') {
     return {
-      message: `The specialist is in the pool. Email delivery is off: the key is ${specialist.accessKey} — hand it over yourself.`,
+      message: `The specialist is in the pool. Email delivery is off: the key is ${specialist.accessKey} — hand it over yourself.${move}`,
     }
   }
 
@@ -149,11 +167,11 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
       'specialist',
       specialist.accessKey,
     )
-    return { message: 'The specialist is in the pool; the access key has gone to their address.' }
+    return { message: `The specialist is in the pool; the access key has gone to their address.${move}` }
   } catch (error) {
     console.error('The email with the key did not go out:', error)
     return {
-      message: `The specialist is in the pool, but the email did not go out. Key: ${specialist.accessKey} — hand it over yourself.`,
+      message: `The specialist is in the pool, but the email did not go out. Key: ${specialist.accessKey} — hand it over yourself.${move}`,
     }
   }
 }
