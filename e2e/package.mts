@@ -19,14 +19,14 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { chromium } from 'playwright'
+import { chromium, type Page } from 'playwright'
 import { prisma } from '../src/lib/db'
 
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
 const PASSWORD = process.env.BUREAU_OPS_PASSWORD
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -60,16 +60,20 @@ if (!uploaded) {
   process.exit(1)
 }
 
-const project = await prisma.project.findUnique({
+const found = await prisma.project.findUnique({
   where: { id: uploaded.ticket.projectId },
   select: { id: true, clientKey: true, title: true },
 })
 
-if (!project) {
+if (!found) {
   check(false, 'проект загруженного файла не найден')
   await prisma.$disconnect()
   process.exit(1)
 }
+
+// Отдельной константой: внутри функций, объявленных ниже, сужение по охране
+// выше не действует, и проект там снова читается как «возможно, его нет».
+const project = found
 
 const browser = await chromium.launch(existsSync(EXECUTABLE) ? { executablePath: EXECUTABLE } : {})
 
@@ -135,8 +139,8 @@ const stored = await prisma.artifact.count({
 const work = mkdtempSync(join(tmpdir(), 'e2e-package-'))
 
 /** Скачивает архив в контексте страницы и возвращает статус и байты. */
-async function fetchArchive(page) {
-  return page.evaluate(async (url) => {
+async function fetchArchive(page: Page) {
+  return page.evaluate(async (url: string) => {
     const response = await fetch(url)
     const buffer = await response.arrayBuffer()
 
@@ -145,7 +149,7 @@ async function fetchArchive(page) {
 }
 
 /** Заходит по ключу и возвращает страницу. */
-async function signIn(key) {
+async function signIn(key: string) {
   const page = await (await browser.newContext()).newPage()
   await page.goto(`${BASE}/enter`)
   await page.fill('input[name=key]', key)
@@ -183,7 +187,7 @@ try {
   const out = join(work, 'out')
   execFileSync('python3', ['-m', 'zipfile', '-e', archive, out])
 
-  const walk = (dir, prefix) => {
+  const walk = (dir: string, prefix: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name)
       if (entry.isDirectory()) walk(full, `${prefix}${entry.name}/`)

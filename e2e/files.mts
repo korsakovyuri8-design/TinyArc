@@ -20,7 +20,7 @@
  */
 
 import { existsSync, rmSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium, type Page } from 'playwright'
 import { prisma } from '../src/lib/db'
 import { MAX_FILE_BYTES } from '../src/lib/storage/limits'
 
@@ -33,7 +33,10 @@ if (!PASSWORD) {
   process.exit(1)
 }
 
-function check(condition, message) {
+// Отдельной константой: внутри функций сужение по охране выше не действует.
+const password: string = PASSWORD
+
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -50,12 +53,12 @@ const browser = await chromium.launch(
 console.log('Файлы проекта')
 
 /** Открывает чистую сессию нужной стороной. */
-async function as(who) {
+async function as(who: { ops?: boolean; key?: string }) {
   const page = await (await browser.newContext()).newPage()
 
   if (who.ops) {
     await page.goto(`${BASE}/ops`)
-    await page.fill('input[type=password]', PASSWORD)
+    await page.fill('input[type=password]', password)
     await page.click('button[type=submit]')
     await page.waitForSelector('a[href="/ops/import"]')
   } else if (who.key) {
@@ -71,8 +74,8 @@ async function as(who) {
 }
 
 /** Статус запроса файла из этой сессии. */
-async function fetchFile(page, artifactId) {
-  return page.evaluate(async (url) => {
+async function fetchFile(page: Page, artifactId: string) {
+  return page.evaluate(async (url: string) => {
     const response = await fetch(url)
     return { status: response.status, size: response.ok ? (await response.arrayBuffer()).byteLength : 0 }
   }, `${BASE}/api/files/${artifactId}`)
@@ -209,7 +212,9 @@ const fileHref = await author.page
   .getAttribute('href')
   .catch(() => null)
 
-if (!check(Boolean(fileHref), `файл виден ссылкой на наш обработчик: ${fileHref}`)) {
+check(Boolean(fileHref), `файл виден ссылкой на наш обработчик: ${fileHref}`)
+
+if (!fileHref) {
   await browser.close()
   process.exit(1)
 }

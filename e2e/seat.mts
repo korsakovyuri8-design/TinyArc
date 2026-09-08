@@ -43,6 +43,9 @@ const person = await prisma.specialist.create({
     accessKey: key,
     email: `${key}@example.invalid`,
     status: 'active',
+    // Доступ называется явно: умолчание схемы закрытое, и подопытный,
+    // молчаливо получавший его от базы, проверял бы не тот случай.
+    subscription: 'founding',
     portfolioRating: 9,
     weeklyCapacityHours: 20,
     disciplinesJson: JSON.stringify(['architecture']),

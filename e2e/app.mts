@@ -21,7 +21,7 @@ const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
 const PASSWORD = process.env.BUREAU_OPS_PASSWORD ?? ''
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -55,10 +55,12 @@ check(Boolean(manifest.body.start_url), `есть точка входа: ${manif
 
 // Установка требует иконки не меньше 192 и отдельной маскируемой: без второй
 // Android обрезает рисунок по своей форме и срезает ему края.
-const sizes = (manifest.body.icons ?? []).map((icon) => icon.sizes)
+type Icon = { sizes?: string; purpose?: string }
+const icons = (manifest.body.icons ?? []) as Icon[]
+const sizes = icons.map((icon) => icon.sizes)
 check(sizes.includes('192x192') && sizes.includes('512x512'), `иконки: ${sizes.join(', ')}`)
 check(
-  (manifest.body.icons ?? []).some((icon) => (icon.purpose ?? '').includes('maskable')),
+  icons.some((icon) => (icon.purpose ?? '').includes('maskable')),
   'есть маскируемая иконка',
 )
 
@@ -203,7 +205,9 @@ await controlledPage.context().close()
   })
 
   const doors: { path: string; key?: string; password?: boolean }[] = [
-    { path: '/project', key: project.clientKey },
+    // Через `?.`: проект мог не найтись, и на пустом стенде это было падение
+    // сценария вместо отчёта. Ветку «ключа нет» цикл ниже уже разбирает.
+    { path: '/project', key: project?.clientKey },
     { path: '/work', key: keys?.accessKey },
     { path: '/ops', password: true },
   ]

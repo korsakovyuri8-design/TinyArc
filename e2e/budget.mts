@@ -53,7 +53,16 @@ const free = assemble(pool, requirements)
 check(free.outcome === 'ok', `без потолка состав собирается: ${free.outcome}`)
 check(free.teamCost === null, 'без потолка стоимость не считается вовсе')
 
-const budget = (total: number, costs: Map<string, number>): TeamBudget => ({ total, costOf: costs })
+/*
+ * Объявлением, а не стрелкой со скобочным телом. Стрелка, чьё тело — `({...})`,
+ * стоящая перед блоком `{ ... }`, разбирается двумя парсерами по-разному: tsx
+ * читает её как выражение, tsc — как список параметров следующей стрелки и
+ * требует `=>`. Двусмысленность настоящая, и держаться на том, чей парсер
+ * сегодня главнее, здесь нечему.
+ */
+function budget(total: number, costs: Map<string, number>): TeamBudget {
+  return { total, costOf: costs }
+}
 
 /** Щедрый потолок ничего не меняет — ни состава, ни порядка. */
 {

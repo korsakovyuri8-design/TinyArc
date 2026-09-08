@@ -27,7 +27,7 @@ if (!PASSWORD) {
   process.exit(1)
 }
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -43,21 +43,26 @@ const browser = await chromium.launch(
 
 console.log('Возврат на круг')
 
-const ticket = await prisma.ticket.findFirst({
+const found = await prisma.ticket.findFirst({
   where: { status: { in: ['open', 'in_progress'] }, specialistId: { not: null } },
   include: { specialist: { select: { accessKey: true, email: true } } },
 })
 
-if (!ticket?.specialist) {
+if (!found?.specialist) {
   check(false, 'на стенде нет взятой задачи')
   await browser.close()
   await prisma.$disconnect()
   process.exit(1)
 }
 
+// Отдельной константой по той же причине, что и в `package.mts`; исполнитель
+// тоже: сужение по охране не переживает ни присваивание, ни границу функции.
+const ticket = found
+const worker = found.specialist
+
 const person = await (await browser.newContext()).newPage()
 await person.goto(`${BASE}/enter`)
-await person.fill('input[name=key]', ticket.specialist.accessKey)
+await person.fill('input[name=key]', worker.accessKey)
 await person.click('button[type=submit]')
 await person.waitForTimeout(1500)
 
@@ -83,7 +88,7 @@ async function submit() {
 }
 
 /** Бюро возвращает её с причиной. */
-async function sendBack(note) {
+async function sendBack(note: string) {
   await bureau.goto(`${BASE}/ops/projects/${ticket.projectId}`)
   await bureau.waitForTimeout(800)
 
@@ -111,7 +116,7 @@ check(
   `письмо о первом круге ушло: ${afterFirst.length}`,
 )
 check(
-  afterFirst.every((n) => n.email === ticket.specialist!.email),
+  afterFirst.every((n) => n.email === worker.email),
   'письмо ушло исполнителю, а не кому-то ещё',
 )
 
@@ -154,7 +159,7 @@ check(
 
   check(told.length > 0, `о реплике бюро написали: писем ${told.length}`)
   check(
-    told.some((n) => n.email === ticket.specialist?.email),
+    told.some((n) => n.email === worker.email),
     'письмо ушло исполнителю этой задачи',
   )
 }
@@ -188,7 +193,7 @@ check(
   })
   check(told.length === 1, `о приёмке написали: писем ${told.length}`)
   check(
-    told.every((n) => n.email === ticket.specialist?.email),
+    told.every((n) => n.email === worker.email),
     'письмо о приёмке ушло тому, кто работу сдавал',
   )
 }

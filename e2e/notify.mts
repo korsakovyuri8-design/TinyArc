@@ -16,7 +16,7 @@
 
 import { prisma } from '../src/lib/db'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -29,7 +29,7 @@ function check(condition, message) {
 console.log('Уведомления')
 
 const sent = await prisma.notification.findMany()
-const byKind = (kind) => sent.filter((n) => n.kind === kind)
+const byKind = (kind: string) => sent.filter((n) => n.kind === kind)
 
 check(sent.length > 0, `отправлено писем: ${sent.length}`)
 

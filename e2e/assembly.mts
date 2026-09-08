@@ -22,7 +22,7 @@
 import { prisma } from '../src/lib/db'
 import { AssemblyLocked, runAssembly } from '../src/lib/services/matching'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1

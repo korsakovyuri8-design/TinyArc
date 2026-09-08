@@ -23,7 +23,7 @@ import { LIMITS } from '../src/lib/rate-limit'
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -43,7 +43,7 @@ const browser = await chromium.launch(existsSync(EXECUTABLE) ? { executablePath:
 const page = await (await browser.newContext()).newPage()
 
 /** Отправляет форму напоминания и возвращает то, что показано в ответ. */
-async function ask(email) {
+async function ask(email: string) {
   await page.goto(`${BASE}/enter`)
   await page.click('summary')
   await page.fill('input[name=email]', email)

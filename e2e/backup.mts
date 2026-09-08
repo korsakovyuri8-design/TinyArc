@@ -22,7 +22,7 @@ import { prisma } from '../src/lib/db'
 import { TABLES } from '../src/lib/backup'
 import { dump, restore } from '../src/lib/services/backup'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1

@@ -20,7 +20,7 @@
 import { prisma } from '../src/lib/db'
 import { LOST_SHOWN, lostProjects } from '../src/lib/services/demand'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1

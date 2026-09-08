@@ -30,7 +30,7 @@ import { accept, claim, requestRevision, submit } from '../src/lib/services/rela
 import { markPaid } from '../src/lib/services/billing'
 import { approveStage } from '../src/lib/services/approval'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1

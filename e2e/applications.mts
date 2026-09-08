@@ -27,7 +27,7 @@ if (!PASSWORD) {
   process.exit(1)
 }
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1

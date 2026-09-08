@@ -20,7 +20,7 @@ import { prisma } from '../src/lib/db'
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
 const EXECUTABLE = process.env.E2E_CHROMIUM ?? '/opt/pw-browsers/chromium'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -70,7 +70,7 @@ if (!project) {
 }
 
 /** Отправляет форму напоминания и возвращает то, что показано в ответ. */
-async function ask(path, email) {
+async function ask(path: string, email: string) {
   const page = await (await browser.newContext()).newPage()
 
   await page.goto(`${BASE}${path}`)

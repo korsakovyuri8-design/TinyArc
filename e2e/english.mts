@@ -18,7 +18,7 @@
  */
 
 import { existsSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium, type Page } from 'playwright'
 import { prisma } from '../src/lib/db'
 
 const BASE = process.env.E2E_BASE ?? 'http://127.0.0.1:3100'
@@ -45,7 +45,7 @@ const PUBLIC = [
   '/no-such-page-at-all',
 ]
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
@@ -87,11 +87,11 @@ const written = [
   // Длинные вперёд: короткий кусок, вычтенный первым, разрежет длинный.
   .sort((a, b) => b.length - a.length)
 
-async function clean(page, path) {
+async function clean(page: Page, path: string) {
   await page.goto(`${BASE}${path}`)
   await page.waitForTimeout(400)
 
-  const left = await page.evaluate((content) => {
+  const left = await page.evaluate((content: string[]) => {
     /*
      * Образцы данных из проверки выпадают. На странице импорта перечислено,
      * как может называться столбец в чужой таблице, — там кириллица стоит
@@ -139,11 +139,13 @@ check(
  * Проверка держит это явно — иначе старая приставка тихо начнёт отдавать 404
  * там, где на неё ещё ссылаются письма.
  */
+// `goto` отдаёт `null` на переходе внутри документа: статус спрашивается через
+// `?.`, иначе сценарий падает там, где обязан отчитаться.
 const gone = await guest.goto(`${BASE}/en/brief`)
-check(gone.status() === 404, `приставки /en больше нет: ${gone.status()}`)
+check(gone?.status() === 404, `приставки /en больше нет: ${gone?.status()}`)
 
 /** Открывает чистую сессию нужной стороной. */
-async function as(key) {
+async function as(key: string) {
   const page = await (await browser.newContext()).newPage()
 
   await page.goto(`${BASE}/enter`)

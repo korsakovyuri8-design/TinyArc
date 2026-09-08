@@ -15,7 +15,7 @@
 import { prisma } from '../src/lib/db'
 import { ACCEPTED_SHOWN, ticketsOf } from '../src/lib/services/relay'
 
-function check(condition, message) {
+function check(condition: unknown, message: string) {
   if (!condition) {
     console.error(`  ✗ ${message}`)
     process.exitCode = 1
