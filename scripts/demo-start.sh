@@ -8,6 +8,9 @@ set -e
 npx tsx scripts/preflight.ts
 npx prisma migrate deploy
 
-npx tsx prisma/seed.ts || echo 'Сид не отработал, смотрите строки выше.'
+# Разрешение на синтетический пул спрашивается сидом и даётся здесь — то есть
+# ровно в том файле, который отличает витрину от боевого бюро. Боевой запуск
+# (scripts/start.sh) сида не зовёт вовсе и этой переменной не ставит.
+BUREAU_DEMO=1 npx tsx prisma/seed.ts || echo 'Сид не отработал, смотрите строки выше.'
 
 exec npx next start

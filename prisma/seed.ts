@@ -13,6 +13,7 @@
 import { PrismaClient } from '../src/generated/prisma/client'
 import { adapterFor } from '../src/lib/db-adapter'
 import { databaseUrl } from '../src/lib/db-provider'
+import { isProduction } from '../src/lib/env'
 import { DEMO_POOL_SIZE, demoPool } from '../src/lib/demo-pool'
 import { toList } from '../src/lib/rows'
 import { chooseDirection, prepareDirections } from '../src/lib/services/direction'
@@ -297,7 +298,71 @@ async function seedContractors(): Promise<void> {
   console.log(`Сид: положено ${rows.length} выдуманных подрядчиков`)
 }
 
+/**
+ * Живые записи: всё, чего сид не делал.
+ *
+ * Заявка человека, бриф заказчика, счёт. Их наличие означает, что база — не
+ * стенд, кем бы её ни считала команда запуска.
+ */
+async function liveRecords(): Promise<number> {
+  const [people, projects, invoices] = await Promise.all([
+    prisma.specialist.count({ where: { accessKey: { not: { startsWith: 'seed-key-' } } } }),
+    prisma.project.count({ where: { clientKey: { not: { startsWith: 'seed-brief-' } } } }),
+    // Счета — только чужие: свои сид выставляет сам, и посчитанные наравне
+    // они заставили бы витрину отказаться на второй же выкладке.
+    prisma.invoice.count({ where: { project: { clientKey: { not: { startsWith: 'seed-brief-' } } } } }),
+  ])
+
+  return people + projects + invoices
+}
+
+/**
+ * Кому этот сид разрешён.
+ *
+ * Блюпринт разворачивает демонстрационную команду, а переход на боевую —
+ * комментарий в файле, исполняемый по памяти. Забыли — и живое бюро
+ * поднимается с восемью десятками выдуманных специалистов и шестью правилами,
+ * помеченными «not a legal source»: алгоритм собирает команды из людей,
+ * которых нет, и комплект считается по нормам, которых нет, — под нашей
+ * подписью.
+ *
+ * Поэтому разрешение спрашивается, а не подразумевается, и направление ошибки
+ * перевёрнуто: забыли переменную — витрина поднялась пустой, это видно сразу
+ * и лечится одной строкой в панели хостинга; забыли команду — раньше
+ * наполнялось живое бюро, молча и необратимо.
+ *
+ * Второй порог — живые записи. Флаг, оставшийся включённым на базе, которую
+ * повысили из витрины в боевую, — ровно та ошибка, которую флаг сам по себе
+ * не ловит.
+ *
+ * В разработке ни то, ни другое не спрашивается: там сид — рабочий инструмент,
+ * и стенд пересобирается по многу раз в день.
+ */
+async function refuseInProduction(): Promise<string | null> {
+  if (!isProduction()) return null
+
+  if (process.env.BUREAU_DEMO !== '1') {
+    return 'Сид не выполнен: это синтетический пул, и в бою он не запускается. Витрине поставьте BUREAU_DEMO=1; боевому бюро — команду `sh ./scripts/start.sh`, которая сида не зовёт вовсе.'
+  }
+
+  const live = await liveRecords()
+
+  if (live > 0) {
+    return `Сид не выполнен: в базе ${live} записей, которых сид не делал, — это не витрина. Синтетический пул в живом бюро означает команды из несуществующих людей и нормы без первоисточника.`
+  }
+
+  return null
+}
+
 async function main() {
+  const refusal = await refuseInProduction()
+
+  if (refusal) {
+    console.error(refusal)
+    process.exitCode = 1
+    return
+  }
+
   if (process.env.BUREAU_SEED_FORCE !== '1' && (await alreadySeeded())) {
     console.log('Сид: стенд уже засеян, пересборка пропущена (BUREAU_SEED_FORCE=1 — пересобрать).')
     return
