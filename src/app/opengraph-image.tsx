@@ -1,4 +1,19 @@
 import { ImageResponse } from 'next/og'
+import { CANVAS, MASTER, SEAL, band, bar } from '@/lib/mark'
+
+/** Знак строкой, пригодной для `src` картинки: satori рисует только так. */
+function markImage(size: number): string {
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS} ${CANVAS}" width="${size}" height="${size}">`,
+    `<mask id="og-cut"><rect width="${CANVAS}" height="${CANVAS}" fill="#fff"/>`,
+    `<polygon points="${band(MASTER)}" fill="#000"/></mask>`,
+    `<rect x="${SEAL.x}" y="${SEAL.y}" width="${SEAL.size}" height="${SEAL.size}" fill="none"`,
+    ` stroke="#1a1614" stroke-width="${MASTER.stroke}" mask="url(#og-cut)"/>`,
+    `<polygon points="${bar(MASTER)}" fill="#9c7a3c"/></svg>`,
+  ].join('')
+
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+}
 
 /**
  * Карточка ссылки: то, что видит человек, которому продукт переслали.
@@ -32,6 +47,13 @@ export default function Image() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 30 }}>
+          {/*
+            Знак картинкой, а не разметкой: карточку собирает satori, и своего
+            SVG у него нет — зато он принимает готовую картинку строкой.
+            Числа те же, что в шапке и в значке (`src/lib/mark.ts`).
+          */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={markImage(44)} width={44} height={44} alt="" />
           <span style={{ letterSpacing: '0.04em' }}>TinyArc</span>
           <span style={{ color: '#9c7a3c' }}>/</span>
           <span style={{ letterSpacing: '0.04em' }}>Bureau</span>

@@ -199,6 +199,17 @@ a:hover {
   color: var(--text);
   text-decoration: none;
   white-space: nowrap;
+  /* Разрядка 0.2em висит и на промежутке после знака: отступ задаёт gap. */
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: block;
 }
 
 .brand:hover {

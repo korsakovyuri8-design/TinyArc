@@ -4,6 +4,7 @@ import Link from 'next/link'
 import './globals.css'
 import { siteUrl } from '@/lib/site'
 import { ServiceWorker } from '@/components/ServiceWorker'
+import { CANVAS, MASTER, SEAL, band, bar } from '@/lib/mark'
 
 /*
  * Гарнитуры — те же, что у Tiny Mansion и Kin: старинная антиква для чтения и
@@ -98,8 +99,43 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <header className="site-header">
           <div className="shell">
-            <Link href="/" className="brand">
-              TinyArc<span style={{ color: 'var(--accent)' }}>/</span>Bureau
+            <Link href="/" className="brand" aria-label="TinyArc Bureau">
+              {/*
+                Знак встроен разметкой, а не картинкой: на шапке он двадцать два
+                пикселя, и отдельный запрос за файлом ради двадцати двух пикселей
+                — это лишний круг до сервера на каждой странице. Заодно рамка
+                берёт цвет чернил из темы, а не запекается в файл.
+
+                Числа берутся из `src/lib/mark.ts` — того же модуля, из которого
+                собирается значок. Набранные здесь руками, они уже разъехались с
+                значком на шестнадцать единиц, и на глаз это незаметно ровно до
+                того дня, когда знак поставят рядом с самим собой.
+              */}
+              <svg
+                className="brand-mark"
+                viewBox={`0 0 ${CANVAS} ${CANVAS}`}
+                aria-hidden="true"
+                focusable="false"
+              >
+                <mask id="brand-cut">
+                  <rect width={CANVAS} height={CANVAS} fill="#fff" />
+                  <polygon points={band(MASTER)} fill="#000" />
+                </mask>
+                <rect
+                  x={SEAL.x}
+                  y={SEAL.y}
+                  width={SEAL.size}
+                  height={SEAL.size}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={MASTER.stroke}
+                  mask="url(#brand-cut)"
+                />
+                <polygon points={bar(MASTER)} fill="var(--accent-dim)" />
+              </svg>
+              <span>
+                TinyArc<span style={{ color: 'var(--accent)' }}>/</span>Bureau
+              </span>
             </Link>
             <nav className="nav">
               <Link href="/how-it-works">

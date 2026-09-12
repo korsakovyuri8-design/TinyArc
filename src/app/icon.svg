@@ -1,6 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" fill="#f7f3ed"/>
-  <path d="M14 20h24" stroke="#1a1614" stroke-width="5" stroke-linecap="square"/>
-  <path d="M26 20v28" stroke="#1a1614" stroke-width="5" stroke-linecap="square"/>
-  <path d="M46 14 34 50" stroke="#9c7a3c" stroke-width="5" stroke-linecap="square"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#f7f3ed"/>
+  <mask id="cut">
+    <rect width="512" height="512" fill="#fff"/>
+    <polygon points="-8,472 88,472 520,40 424,40" fill="#000"/>
+  </mask>
+  <rect x="128" y="128" width="256" height="256"
+        fill="none" stroke="#1a1614" stroke-width="30" mask="url(#cut)"/>
+  <polygon points="50,428 118,428 462,84 394,84" fill="#9c7a3c"/>
 </svg>
