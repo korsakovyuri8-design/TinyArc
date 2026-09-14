@@ -104,6 +104,7 @@ export const briefSchema = z.object({
    */
   municipality: trimmed.max(120).default(''),
   zone: trimmed.max(60).default(''),
+  parcel: trimmed.max(60).default(''),
   plotAreaSqm: z.coerce.number().int().min(0).max(2_000_000).default(0),
   climateZone: z.enum(CLIMATE_ZONES),
   materialSystem: z.enum(MATERIAL_SYSTEMS),
@@ -149,6 +150,7 @@ const optionalNumber = (max: number) =>
 export const siteSchema = z.object({
   municipality: trimmed.max(120).default(''),
   zone: trimmed.max(60).default(''),
+  parcel: trimmed.max(60).default(''),
   plotAreaSqm: optionalNumber(2_000_000),
   footprintSqm: optionalNumber(2_000_000),
   heightM: optionalNumber(400),

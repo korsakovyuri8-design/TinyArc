@@ -18,9 +18,22 @@ describe('жёсткие гейты', () => {
     expect(passes(specialist({ portfolioRating: 7.99 }), requirements(), role('architecture'))).toBe(false)
   })
 
-  it('требует опыт согласований именно в стране проекта', () => {
+  it('требует страну проекта только там, где работа делается на месте', () => {
+    const elsewhere = specialist({
+      jurisdictions: ['RS'],
+      signsIn: ['RS'],
+      disciplines: ['architecture', 'permitting', 'survey'],
+      languages: ['en', 'sr', 'cnr'],
+    })
+
+    // Согласования и геодезия невыполнимы удалённо: орган и участок на месте.
+    expect(failedGate(elsewhere, requirements({ jurisdiction: 'ME' }), role('permitting'))).toBe('jurisdiction')
+    expect(failedGate(elsewhere, requirements({ jurisdiction: 'ME' }), role('survey'))).toBe('jurisdiction')
+  })
+
+  it('не отсекает по стране дисциплины, которые считаются откуда угодно', () => {
     const elsewhere = specialist({ jurisdictions: ['RS'], signsIn: ['RS'] })
-    expect(failedGate(elsewhere, requirements({ jurisdiction: 'ME' }), role('architecture'))).toBe('jurisdiction')
+    expect(failedGate(elsewhere, requirements({ jurisdiction: 'ME' }), role('architecture'))).toBeNull()
   })
 
   it('отсекает по этажности, если опыта на такой высоте нет', () => {

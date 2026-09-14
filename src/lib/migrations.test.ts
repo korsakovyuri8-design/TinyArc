@@ -52,6 +52,9 @@ const APPLIED: Record<string, string> = {
   '0019_build_access': '7ed5292d25ae27365a0313b5ef5d1235',
   '0020_specialist_rates': '6149254b322c0582ee39959f39a447ba',
   '0021_closed_access_default': '78061b73d1b16a3ae65a1b1a42c4d63f',
+  '0022_parcel_scope': '039d5a328c993e22e28366444b20705b',
+  '0023_model_calls': '4cb32970510a9bbcb7633ccaed3b1272',
+  '0024_accrual_drift_index': 'd24a37cbfd3eed44ccc99f53328315da',
 }
 
 function checksum(name: string): string {

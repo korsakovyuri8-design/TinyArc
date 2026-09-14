@@ -17,6 +17,7 @@ import {
   DOC_STAGES,
   GRID_CONNECTIONS,
   JURISDICTIONS,
+  LOCAL_ONLY_DISCIPLINES,
   MATERIAL_SYSTEMS,
   PORTFOLIO_THRESHOLD,
   TERRAINS,
@@ -39,13 +40,43 @@ import type { SpecialistProfile } from './types'
  */
 export const MIN_DEPTH = 2
 
+/**
+ * Кого вообще можно считать под эту роль в этой стране.
+ *
+ * Единственное место, где готовность узнаёт о географии, и оно повторяет
+ * правило отбора (filter.ts): страна сужает выборку только у дисциплин,
+ * которые делаются на месте, — согласования и геодезия. Архитектор,
+ * конструктор, MEP и визуализатор считаются по всему пулу, где бы ни жили.
+ *
+ * Пока этого не было, отчёт о готовности врал в обе стороны сразу: он
+ * показывал ноль там, где команда собирается, и звал нанимать конструктора в
+ * Черногории, когда конструктор уже есть в Тбилиси и проходит все гейты.
+ * Хуже, чем неверное число: это список найма, по которому тратят деньги.
+ */
+function poolForRole(
+  usable: SpecialistProfile[],
+  discipline: Discipline,
+  jurisdiction: Jurisdiction,
+): SpecialistProfile[] {
+  if (!LOCAL_ONLY_DISCIPLINES.includes(discipline)) return usable
+  return usable.filter((s) => s.jurisdictions.includes(jurisdiction))
+}
+
 export type Coverage = {
   discipline: Discipline
   jurisdiction: Jurisdiction
-  /** Прошедших порог портфолио и работающих в этой стране. */
+  /** Прошедших порог портфолио и пригодных под эту роль здесь. */
   depth: number
   /** Из них те, кто имеет право подписи здесь. */
   signatories: number
+  /**
+   * Считалась ли глубина по стране или по всему пулу.
+   *
+   * Без этой пометки строка «архитектура · Греция: 14» читается как «у нас
+   * четырнадцать греческих архитекторов», а это не так и решения по такому
+   * чтению принимаются неверные.
+   */
+  local: boolean
 }
 
 /** Кого пул считает пригодным вообще: порог портфолио — гейт до всего (п.9). */
@@ -59,9 +90,8 @@ export function coverage(pool: SpecialistProfile[]): Coverage[] {
   const result: Coverage[] = []
 
   for (const jurisdiction of JURISDICTIONS) {
-    const here = usable.filter((s) => s.jurisdictions.includes(jurisdiction))
-
     for (const discipline of DISCIPLINES_IN_USE) {
+      const here = poolForRole(usable, discipline, jurisdiction)
       const covering = here.filter((s) => s.disciplines.includes(discipline))
 
       result.push({
@@ -69,6 +99,7 @@ export function coverage(pool: SpecialistProfile[]): Coverage[] {
         jurisdiction,
         depth: covering.length,
         signatories: covering.filter((s) => s.signsIn.includes(jurisdiction)).length,
+        local: LOCAL_ONLY_DISCIPLINES.includes(discipline),
       })
     }
   }
@@ -152,11 +183,8 @@ export function gaps(pool: SpecialistProfile[]): Gap[] {
     const known = depths.get(key)
     if (known !== undefined) return known
 
-    const depth = usable.filter(
-      (s) =>
-        s.jurisdictions.includes(jurisdiction) &&
-        s.disciplines.includes(role.discipline) &&
-        coversRole(s.specializations, role),
+    const depth = poolForRole(usable, role.discipline, jurisdiction).filter(
+      (s) => s.disciplines.includes(role.discipline) && coversRole(s.specializations, role),
     ).length
 
     depths.set(key, depth)
@@ -204,10 +232,11 @@ export function gaps(pool: SpecialistProfile[]): Gap[] {
  * заняты» — это не «мы этого не умеем».
  */
 export function readiness(pool: SpecialistProfile[], jurisdiction: Jurisdiction): number {
-  const usable = eligible(pool).filter((s) => s.jurisdictions.includes(jurisdiction))
+  const usable = eligible(pool)
   const shapes = allShapes()
 
   // Подпись — отдельное условие состава: без неё пакет не имеет силы (п.10).
+  // Именно она, а не проживание команды, и делает страну открытой.
   const hasSignatory = usable.some((s) => s.signsIn.includes(jurisdiction))
   if (!hasSignatory) return 0
 
@@ -230,7 +259,7 @@ export function readiness(pool: SpecialistProfile[], jurisdiction: Jurisdiction)
     const known = covered.get(key)
     if (known !== undefined) return known
 
-    const answer = usable.some(
+    const answer = poolForRole(usable, role.discipline, jurisdiction).some(
       (s) => s.disciplines.includes(role.discipline) && coversRole(s.specializations, role),
     )
 

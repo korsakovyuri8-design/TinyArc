@@ -63,6 +63,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       // и есть весь смысл проверки на нормы (п.7б).
       municipality: input.municipality || null,
       zone: input.zone || null,
+      parcel: input.parcel || null,
       plotAreaSqm: input.plotAreaSqm > 0 ? input.plotAreaSqm : null,
       climateZone: input.climateZone,
       materialSystem: input.materialSystem,

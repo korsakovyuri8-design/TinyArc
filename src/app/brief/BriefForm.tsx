@@ -198,6 +198,21 @@ function BriefFields({
           </Field>
 
           <Field
+            label="Cadastral parcel"
+            name="parcel"
+            error={errors.parcel}
+            hint="The number your urban-planning conditions were issued against. With it the check uses your plot, not the zone average."
+          >
+            <input
+              id="parcel"
+              name="parcel"
+              type="text"
+              maxLength={60}
+              defaultValue={(values.parcel as string) ?? ''}
+            />
+          </Field>
+
+          <Field
             label="Plot area, m²"
             name="plotAreaSqm"
             error={errors.plotAreaSqm}

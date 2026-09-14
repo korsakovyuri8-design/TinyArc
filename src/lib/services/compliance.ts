@@ -17,6 +17,7 @@ export const SITE_SELECT = {
   jurisdiction: true,
   municipality: true,
   zone: true,
+  parcel: true,
   storeys: true,
   areaSqm: true,
   plotAreaSqm: true,
@@ -36,6 +37,7 @@ type RuleRow = {
   jurisdiction: string
   municipality: string | null
   zone: string | null
+  parcel: string | null
   subject: string
   operator: string
   value: number
@@ -54,6 +56,7 @@ function toRule(row: RuleRow): Rule {
       jurisdiction: row.jurisdiction as Jurisdiction,
       municipality: row.municipality ?? undefined,
       zone: row.zone ?? undefined,
+      parcel: row.parcel ?? undefined,
     },
     subject: row.subject as RuleSubject,
     operator: row.operator as RuleOperator,
@@ -79,6 +82,7 @@ export async function rulesForSite(site: {
   jurisdiction: string
   municipality?: string | null
   zone?: string | null
+  parcel?: string | null
 }): Promise<Rule[]> {
   const rows = await prisma.complianceRule.findMany({
     where: {
@@ -86,7 +90,13 @@ export async function rulesForSite(site: {
       // Страновое правило действует всюду, поэтому пустой муниципалитет
       // остаётся в выборке наравне со «своим».
       OR: [{ municipality: null }, { municipality: site.municipality ?? undefined }],
-      AND: [{ OR: [{ zone: null }, { zone: site.zone ?? undefined }] }],
+      AND: [
+        { OR: [{ zone: null }, { zone: site.zone ?? undefined }] },
+        // УТУ соседней парцелы к этому участку отношения не имеет, и читать
+        // его незачем: правил уровня участка со временем станет больше, чем
+        // зональных, — их выдают на каждую стройку.
+        { OR: [{ parcel: null }, { parcel: site.parcel ?? undefined }] },
+      ],
     },
   })
 

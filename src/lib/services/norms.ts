@@ -35,6 +35,7 @@ export type RuleRow = {
   jurisdiction: Jurisdiction
   municipality: string
   zone: string
+  parcel: string
   subject: RuleSubject
   operator: 'max' | 'min'
   value: number
@@ -97,6 +98,7 @@ export async function listRules(
       jurisdiction: row.jurisdiction as Jurisdiction,
       municipality: row.municipality ?? '',
       zone: row.zone ?? '',
+      parcel: row.parcel ?? '',
       subject: row.subject as RuleSubject,
       operator: row.operator as 'max' | 'min',
       value: row.value,
@@ -137,6 +139,7 @@ async function create(draft: RuleDraft): Promise<void> {
       jurisdiction: draft.jurisdiction,
       municipality: draft.municipality || null,
       zone: draft.zone || null,
+      parcel: draft.parcel || null,
       subject: draft.subject,
       operator: draft.operator,
       value: draft.value,

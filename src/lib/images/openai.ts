@@ -1,3 +1,4 @@
+import { recordModelCall } from '../services/spend'
 import type { GeneratedImage, ImageGenerator, ImageRequest } from './types'
 
 export type OpenAiImagesConfig = { apiKey: string; model: string }
@@ -19,6 +20,23 @@ export class OpenAiImageGenerator implements ImageGenerator {
   constructor(private readonly config: OpenAiImagesConfig) {}
 
   async generate(request: ImageRequest): Promise<GeneratedImage> {
+    const started = Date.now()
+
+    /*
+     * Изображение считается в журнале расхода штукой, а не токенами: провайдер
+     * их не возвращает, а выдумать число хуже, чем оставить пустым — по
+     * выдуманному потом сравнивают. Само обращение при этом самое дорогое из
+     * всего, что продукт делает наружу, и не считать его нельзя.
+     */
+    const note = (outcome: string) =>
+      recordModelCall({
+        provider: 'openai',
+        model: this.config.model,
+        purpose: 'image',
+        outcome,
+        ms: Date.now() - started,
+      })
+
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -34,17 +52,24 @@ export class OpenAiImageGenerator implements ImageGenerator {
     })
 
     if (!response.ok) {
+      await note('provider')
       throw new Error(`Изображение не получено: провайдер ответил ${response.status}.`)
     }
 
     const payload = (await response.json()) as { data?: { url?: string; b64_json?: string }[] }
     const first = payload.data?.[0]
 
-    if (first?.url) return { url: first.url, source: this.mode }
+    if (first?.url) {
+      await note('ok')
+      return { url: first.url, source: this.mode }
+    }
+
     if (first?.b64_json) {
+      await note('ok')
       return { url: `data:image/png;base64,${first.b64_json}`, source: this.mode }
     }
 
+    await note('schema')
     throw new Error('Изображение не получено: провайдер вернул пустой ответ.')
   }
 }

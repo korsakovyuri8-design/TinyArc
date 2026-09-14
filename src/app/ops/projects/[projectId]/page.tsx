@@ -34,6 +34,7 @@ import { SPECIALIZATIONS } from '@/engine/taxonomy'
 import { ChosenDirection } from '@/components/ChosenDirection'
 import { chosenDirection } from '@/lib/services/direction'
 import { latestRun } from '@/lib/services/matching'
+import { stageTiming } from '@/lib/services/relay'
 import { standingClass, standingOf } from '@/lib/standing'
 import { economicsOf } from '@/lib/services/payouts'
 import { fill } from '@/lib/fill'
@@ -90,20 +91,22 @@ export default async function OpsProjectPage({
 
   if (!project) notFound()
 
-  const [run, direction, alerts, thread, withdrawals, rules, build, economics] = await Promise.all([
-    latestRun(project.id),
-    chosenDirection(project.id),
-    alertsForProject(project.id),
-    threadOf(project.id),
-    prisma.withdrawal.findMany({
-      where: { projectId: project.id },
-      orderBy: { createdAt: 'asc' },
-      include: { specialist: { select: { displayName: true } } },
-    }),
-    checkSite(project),
-    buildFor(project),
-    economicsOf(project.id),
-  ])
+  const [run, direction, alerts, thread, withdrawals, rules, build, economics, timing] =
+    await Promise.all([
+      latestRun(project.id),
+      chosenDirection(project.id),
+      alertsForProject(project.id),
+      threadOf(project.id),
+      prisma.withdrawal.findMany({
+        where: { projectId: project.id },
+        orderBy: { createdAt: 'asc' },
+        include: { specialist: { select: { displayName: true } } },
+      }),
+      checkSite(project),
+      buildFor(project),
+      economicsOf(project.id),
+      stageTiming(project.id),
+    ])
 
   const replacedBy = new Map(
     (
@@ -205,13 +208,14 @@ export default async function OpsProjectPage({
         <div className="panel" style={{ marginTop: 24 }}>
           <div className="label label-accent">Site and massing</div>
           <p className="muted" style={{ marginTop: 10, marginBottom: 18 }}>
-            The client gives the first three from their documents. The rest appears with the concept and is entered here — until it is, the rules check says what it is missing. An empty field clears the value.
+            The client gives the first four from their documents. The rest appears with the concept and is entered here — until it is, the rules check says what it is missing. An empty field clears the value.
           </p>
 
           <OpsAction action={setSiteFacts} hidden={{ projectId: project.id }} label="Save site data" solid>
             <div className="grid grid-3" style={{ marginBottom: 16 }}>
               <SiteField id="municipality" label="Municipality" value={project.municipality} text />
               <SiteField id="zone" label="Zone" value={project.zone} text />
+              <SiteField id="parcel" label="Cadastral parcel" value={project.parcel} text />
               <SiteField id="plotAreaSqm" label="Plot area, m²" value={project.plotAreaSqm} />
               <SiteField id="footprintSqm" label="Footprint, m²" value={project.footprintSqm} />
               <SiteField id="heightM" label="Height, m" value={project.heightM} step="0.1" />
@@ -503,6 +507,19 @@ export default async function OpsProjectPage({
                   </p>
                 </div>
               ) : (
+                <>
+                <div className="panel" style={{ marginBottom: 20 }}>
+                  <div className="label label-accent">A copy of the client&rsquo;s data</div>
+                  <p className="muted" style={{ marginTop: 12, marginBottom: 12 }}>
+                    The brief, the thread with the bureau, invoices with their breakdown, the
+                    directions and the list of materials. Without the workspace key, and without
+                    anything about the team: specialists&rsquo; contacts are not passed to the client.
+                  </p>
+                  <a className="btn btn-quiet" href={`/api/copy?subject=client&id=${project.id}`}>
+                    Download the copy
+                  </a>
+                </div>
+
                 <div
                   className="panel"
                   style={{ marginBottom: 36, borderColor: 'var(--fail)' }}
@@ -520,6 +537,7 @@ export default async function OpsProjectPage({
                     />
                   </OpsAction>
                 </div>
+                </>
               )}
             </>
           )}
@@ -602,6 +620,49 @@ export default async function OpsProjectPage({
                       </p>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {timing.length > 0 && (
+              <div className="panel" style={{ marginTop: 24, marginBottom: 28 }}>
+                <div className="label label-accent">Promise against fact</div>
+                <p className="muted" style={{ marginTop: 10, marginBottom: 16 }}>
+                  Promised is the critical path through this stage’s tickets — the longest chain of
+                  dependencies, not the sum of the work: branches run at the same time. Fact is from
+                  the first ticket opening to the last one accepted, and it appears only once every
+                  ticket in the stage is accepted.
+                </p>
+
+                <div className="table-scroll" style={{ padding: 0 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Stage</th>
+                        <th>Promised, days</th>
+                        <th>Actual, days</th>
+                        <th>Difference</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timing.map((row) => (
+                        <tr key={row.stage}>
+                          <td>{DOC_STAGE_LABELS[row.stage] ?? row.stage}</td>
+                          <td className="num">{row.promisedDays}</td>
+                          <td className="num">{row.actualDays ?? <span className="dim">running</span>}</td>
+                          <td className="num">
+                            {row.overrunDays === null ? (
+                              <span className="dim">—</span>
+                            ) : (
+                              <span className={row.overrunDays > 0 ? 'tag tag-fail' : 'tag tag-pass'}>
+                                {row.overrunDays > 0 ? `+${row.overrunDays}` : row.overrunDays}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

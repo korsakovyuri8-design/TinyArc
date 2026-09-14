@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { PayoutRefused, markPayoutPaid, setRate } from '@/lib/services/payouts'
+import { PayoutRefused, accrueFor, markPayoutPaid, setRate } from '@/lib/services/payouts'
 import { AccessRefused, markAccessPaid } from '@/lib/services/build-access'
 import { SettingRefused, clearPilotUntil, clearTeamShare, setPilotUntil, setTeamShare } from '@/lib/services/settings'
 import {
@@ -306,6 +306,7 @@ export async function setSiteFacts(_prev: OpsState, formData: FormData): Promise
     data: {
       municipality: input.municipality || null,
       zone: input.zone || null,
+      parcel: input.parcel || null,
       plotAreaSqm: value(input.plotAreaSqm),
       footprintSqm: value(input.footprintSqm),
       heightM: value(input.heightM),
@@ -1370,6 +1371,9 @@ export async function addNorm(_prev: OpsState, formData: FormData): Promise<OpsS
     field('jurisdiction'),
     field('municipality'),
     field('zone'),
+    // Порядок здесь позиционный и сверяется с NORM_HEADER: пропущенный столбец
+    // не ошибка типов, а сдвиг всех следующих значений на одно поле.
+    field('parcel'),
     field('subject'),
     field('operator'),
     field('value'),
@@ -1543,4 +1547,43 @@ export async function setPilotAccess(_prev: OpsState, formData: FormData): Promi
     console.error('Срок пилота не записан:', error)
     return { error: 'Saving the pilot date failed.' }
   }
+}
+
+/**
+ * Досчитать то, что не досчиталось после приёмки.
+ *
+ * За приёмкой идут три шага вне её транзакции: гейты, статус проекта и
+ * начисление. Все три сделаны так, чтобы повторный вызов был безвреден, — и ни
+ * один не вызывался повторно никогда. Обрыв на любом из них оставлял проект
+ * стоять или человека без денег, и починка была ручной правкой базы.
+ *
+ * Кнопка, а не расписание, и это выбор. Расписания в продукте нет вовсе, а
+ * заводить его ради редкого случая значит завести вторую систему, которая
+ * работает сама и молча. Расхождение видно в панели цифрой; чинит его человек,
+ * видя, что чинит.
+ */
+export async function reconcileAfterAcceptance(
+  _prev: OpsState,
+  formData: FormData,
+): Promise<OpsState> {
+  await requireOperator()
+
+  const projectId = String(formData.get('projectId') ?? '').trim()
+  if (!projectId) return { error: 'No project named.' }
+
+  try {
+    // Порядок тот же, что после приёмки: гейты выставляют счета и открывают
+    // задачи, статус выводится из них, начисление идёт последним.
+    await applyGates(projectId)
+    await refreshProjectStatus(projectId)
+    await accrueFor(projectId)
+  } catch (error) {
+    console.error('Досчёт после приёмки не удался:', error)
+    return { error: 'The catch-up failed. The state is unchanged — try again.' }
+  }
+
+  revalidatePath('/ops')
+  revalidatePath(`/ops/projects/${projectId}`)
+
+  return { message: 'Caught up: gates, project status and obligations are recomputed.' }
 }

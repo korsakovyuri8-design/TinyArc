@@ -95,6 +95,21 @@ describe('блюпринт Render', () => {
 
     expect(command).toMatch(/scripts\/(demo-)?start\.sh/)
   })
+
+  /*
+   * Блюпринт называет канонический домен продукта — тот, который мы даём
+   * заказчикам. Демонстрационный запуск на нём означал бы выдуманных людей на
+   * боевом адресе: бюро, которое выглядит работающим и считается в готовности
+   * пула. Умолчание обязано ошибаться в сторону пустой базы.
+   */
+  it('на боевом домене блюпринт не разворачивает синтетический пул', () => {
+    const command = /dockerCommand:\s*(.+)/.exec(blueprint)?.[1].trim()
+    const named = /domains:\s*\n\s*-\s*(\S+)/.exec(blueprint)?.[1]
+
+    if (named && !named.endsWith('.onrender.com')) {
+      expect(command).toBe('sh ./scripts/start.sh')
+    }
+  })
 })
 
 /**

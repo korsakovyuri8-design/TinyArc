@@ -169,6 +169,18 @@ export default async function SpecialistPage({
             </p>
           </div>
         ) : (
+          <>
+          <div className="panel" style={{ marginTop: 20 }}>
+            <div className="label label-accent">A copy of their data</div>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 12 }}>
+              What they declared, their works, task events and money. Without the access key —
+              those are credentials, and a copy travels. Nothing belonging to anyone else is in it.
+            </p>
+            <a className="btn btn-quiet" href={`/api/copy?subject=specialist&id=${row.id}`}>
+              Download the copy
+            </a>
+          </div>
+
           <div className="panel" style={{ marginTop: 20, borderColor: 'var(--fail)' }}>
             <OpsAction
               action={anonymiseProfile}
@@ -183,6 +195,7 @@ export default async function SpecialistPage({
               />
             </OpsAction>
           </div>
+          </>
         )}
 
         <div className="divider" style={{ marginTop: 44 }} />

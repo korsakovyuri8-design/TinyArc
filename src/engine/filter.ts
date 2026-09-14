@@ -10,6 +10,7 @@
  */
 
 import {
+  LOCAL_ONLY_DISCIPLINES,
   MIN_TIMEZONE_OVERLAP_HOURS,
   OFFICIAL_LANGUAGE,
   PORTFOLIO_THRESHOLD,
@@ -79,7 +80,18 @@ export function failedGate(
   // Дисциплина совпала, но конструктор по бетону не считает деревянный дом.
   if (!coversRole(specialist.specializations, role)) return 'specialization'
 
-  if (!specialist.jurisdictions.includes(requirements.jurisdiction)) return 'jurisdiction'
+  /*
+   * Страна — гейт только там, где работа физически происходит в стране:
+   * согласования и геодезия (см. LOCAL_ONLY_DISCIPLINES). Для остальных
+   * дисциплин пул глобален по замыслу продукта, а местная подпись
+   * обеспечивается требованием к составу целиком, а не к каждому участнику.
+   */
+  if (
+    LOCAL_ONLY_DISCIPLINES.includes(role.discipline) &&
+    !specialist.jurisdictions.includes(requirements.jurisdiction)
+  ) {
+    return 'jurisdiction'
+  }
 
   if (specialist.maxStoreys < requirements.storeys) return 'storeys'
 

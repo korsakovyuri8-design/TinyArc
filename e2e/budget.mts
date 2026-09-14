@@ -18,6 +18,7 @@ import { assemble } from '../src/engine/assemble'
 import type { TeamBudget } from '../src/engine/types'
 import { prisma } from '../src/lib/db'
 import { activePool } from '../src/lib/services/matching'
+import { feeFactor } from '../src/engine/payout'
 import { costTable } from '../src/lib/services/payouts'
 import { clearTeamShare, setTeamShare, teamShare } from '../src/lib/services/settings'
 import { toRequirements } from '../src/lib/rows'
@@ -136,9 +137,16 @@ function budget(total: number, costs: Map<string, number>): TeamBudget {
     })
   }
 
-  const byBureau = await costTable([person.id], stage)
+  /*
+   * Названная ставка относится к объекту обычного размера и пересчитывается по
+   * площади проекта. Ждать здесь ровно названное значило бы ждать, что
+   * пересчёта нет, — и сценарий падал бы на любом проекте, кроме эталонного.
+   */
+  const perStage = Math.round(500 * feeFactor(project.areaSqm))
+
+  const byBureau = await costTable([person.id], stage, project.areaSqm)
   check(
-    byBureau.get(`${person.id}:${discipline}`) === upTo.length * 500,
+    byBureau.get(`${person.id}:${discipline}`) === upTo.length * perStage,
     `без своей ставки цена складывается из ставок бюро по всем стадиям: ${byBureau.get(`${person.id}:${discipline}`)}`,
   )
 
@@ -148,7 +156,7 @@ function budget(total: number, costs: Map<string, number>): TeamBudget {
     update: { amount: 700 },
   })
 
-  const byPerson = await costTable([person.id], stage)
+  const byPerson = await costTable([person.id], stage, project.areaSqm)
   const own = byPerson.get(`${person.id}:${discipline}`)
   const bureau = byBureau.get(`${person.id}:${discipline}`)
 
@@ -159,7 +167,7 @@ function budget(total: number, costs: Map<string, number>): TeamBudget {
    * как сумму известных стадий значило бы занизить: потолок соблюли бы, а
    * денег бы не хватило.
    */
-  const beyond = await costTable([person.id], 'construction')
+  const beyond = await costTable([person.id], 'construction', project.areaSqm)
   check(
     DOC_STAGE_ORDER[stage] === DOC_STAGE_ORDER.construction ||
       beyond.get(`${person.id}:${discipline}`) === undefined,

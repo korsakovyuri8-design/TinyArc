@@ -45,6 +45,39 @@ describe('какое правило действует на участке', () 
     expect(rulesFor(all, site).map((r) => r.id)).toEqual(['zone'])
   })
 
+  it('УТУ по участку сильнее правила зоны: факт перекрывает прогноз', () => {
+    const all = [
+      rule({
+        id: 'zone',
+        subject: 'coverage_ratio',
+        value: 0.4,
+        scope: { jurisdiction: 'ME', municipality: 'Bar', zone: 'S2' },
+      }),
+      rule({
+        id: 'utu',
+        subject: 'coverage_ratio',
+        value: 0.3,
+        scope: { jurisdiction: 'ME', municipality: 'Bar', zone: 'S2', parcel: '285/1' },
+      }),
+    ]
+
+    const onParcel: SiteFacts = { ...site, parcel: '285/1' }
+    expect(rulesFor(all, onParcel).map((r) => r.id)).toEqual(['utu'])
+  })
+
+  it('УТУ соседнего участка не применяется к этому', () => {
+    const all = [
+      rule({
+        id: 'utu-other',
+        subject: 'coverage_ratio',
+        value: 0.3,
+        scope: { jurisdiction: 'ME', municipality: 'Bar', zone: 'S2', parcel: '999/9' },
+      }),
+    ]
+
+    expect(rulesFor(all, { ...site, parcel: '285/1' })).toEqual([])
+  })
+
   it('чужой муниципалитет не применяется', () => {
     const all = [
       rule({ id: 'tivat', subject: 'storeys', scope: { jurisdiction: 'ME', municipality: 'Tivat' } }),

@@ -203,6 +203,11 @@ export default async function NormsPage({
               </div>
 
               <div className="field">
+                <label htmlFor="parcel-new">Cadastral parcel</label>
+                <input id="parcel-new" name="parcel" placeholder="optional — for a rule taken from urban-planning conditions" />
+              </div>
+
+              <div className="field">
                 <label htmlFor="subject-new">Subject</label>
                 <select id="subject-new" name="subject" defaultValue="height_m">
                   {RULE_SUBJECTS.map((value) => (

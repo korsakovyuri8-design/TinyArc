@@ -108,6 +108,20 @@ export type RuleScope = {
   jurisdiction: Jurisdiction
   municipality?: string
   zone?: string
+  /**
+   * Участок: самый узкий уровень, и в Черногории — единственный обязывающий.
+   *
+   * Орган выдаёт условия не на зону, а на локацию: УТУ называет предельные
+   * заузетость, изграђеност и спратност для конкретной парцелы и действует,
+   * пока действует план, на котором выдан. Значит правило зоны — это прогноз
+   * («так обычно бывает в этой зоне»), а УТУ — факт по этому проекту.
+   *
+   * Заведено уровнем области, а не отдельным перекрытием, и это не вкусовое
+   * решение. Перекрытие означало бы вторую механику разрешения конфликтов
+   * рядом с уже работающей, а факт стал бы исключением из прогноза. Здесь
+   * ничего нового не появилось: «уже — сильнее» просто продолжено на шаг.
+   */
+  parcel?: string
 }
 
 export type Rule = {
@@ -133,6 +147,8 @@ export type SiteFacts = {
   jurisdiction: Jurisdiction
   municipality?: string
   zone?: string
+  /** Кадастровый номер парцелы: то, на что выдан УТУ. */
+  parcel?: string
   storeys?: number
   heightM?: number
   /** Доля пятна застройки от площади участка, 0…1. */
@@ -180,6 +196,7 @@ export function isStale(source: RuleSource, now: Date): boolean {
 
 /** Насколько узко правило: чем больше, тем сильнее. */
 function specificity(scope: RuleScope): number {
+  if (scope.parcel) return 4
   if (scope.zone) return 3
   if (scope.municipality) return 2
   return 1
@@ -190,6 +207,7 @@ function applies(rule: Rule, facts: SiteFacts): boolean {
   if (scope.jurisdiction !== facts.jurisdiction) return false
   if (scope.municipality && scope.municipality !== facts.municipality) return false
   if (scope.zone && scope.zone !== facts.zone) return false
+  if (scope.parcel && scope.parcel !== facts.parcel) return false
   return true
 }
 

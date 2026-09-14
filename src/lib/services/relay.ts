@@ -8,13 +8,16 @@
 
 import {
   REQUEST_SLA_HOURS,
+  actualDays,
   deliveryDeltaFor,
   dueDate,
   openable,
+  promisedDays,
   type RelayTicket,
+  type TicketPlan,
   type TicketStatus,
 } from '@/engine/relay'
-import type { Discipline } from '@/engine/taxonomy'
+import { DOC_STAGE_ORDER, unique, type Discipline, type DocStage } from '@/engine/taxonomy'
 import { images } from '../images'
 import { MAX_FILE_BYTES, artifactKey, storage } from '../storage'
 import { prisma } from '../db'
@@ -680,4 +683,95 @@ export async function inboundArtifacts(ticketId: string) {
         fromDiscipline: d.prerequisite.discipline,
       })),
     )
+}
+
+/**
+ * Обещанный и фактический срок каждой стадии проекта.
+ *
+ * Существует потому, что «быстрее» было единственным из трёх обещаний
+ * продукта, которое ничем не подкреплялось. Цена ниже местной названа в
+ * `pricing.ts`, состав со всего мира обеспечен отбором, а срок не назывался
+ * нигде и не измерялся никогда: в продукте были часы тикета и не было ни
+ * одного места, где обещание встречалось бы с фактом.
+ *
+ * Обещание считается по настоящему плану стадии, а не по замыслу: тикеты уже
+ * заведены, у каждого свои часы и свои зависимости, и критический путь по ним
+ * — это то, что мы действительно пообещали этим составом. Факт берётся из
+ * меток самих тикетов, а не из отдельного поля: поле пришлось бы поддерживать,
+ * а метки ставит сам переход состояния.
+ */
+export type StageTiming = {
+  stage: DocStage
+  /** Календарных дней по критическому пути. */
+  promisedDays: number
+  /** Календарных дней по факту. `null` — стадия ещё идёт. */
+  actualDays: number | null
+  /** Просрочка в днях. Положительное — опоздали. `null` — считать не с чем. */
+  overrunDays: number | null
+}
+
+export async function stageTiming(projectId: string): Promise<StageTiming[]> {
+  const tickets = await prisma.ticket.findMany({
+    where: { projectId },
+    select: {
+      id: true,
+      stage: true,
+      status: true,
+      slaHours: true,
+      openedAt: true,
+      acceptedAt: true,
+      dependsOn: { select: { prerequisiteId: true } },
+    },
+  })
+
+  if (tickets.length === 0) return []
+
+  const plans: TicketPlan[] = tickets.map((t) => ({
+    key: t.id,
+    // Дисциплина и текст в расчёте срока не участвуют: считается граф и часы.
+    discipline: 'architecture',
+    stage: t.stage as DocStage,
+    title: '',
+    spec: '',
+    slaHours: t.slaHours,
+    dependsOn: t.dependsOn.map((d) => d.prerequisiteId),
+  }))
+
+  const stages = unique(tickets.map((t) => t.stage as DocStage)).sort(
+    (a, b) => DOC_STAGE_ORDER[a] - DOC_STAGE_ORDER[b],
+  )
+
+  return stages.map((stage) => {
+    const here = tickets.filter((t) => t.stage === stage)
+
+    /*
+     * Стадия считается закрытой, только когда принят каждый её тикет. Взять
+     * последнюю приёмку у незакрытой стадии значило бы назвать сроком то время,
+     * за которое сделана её часть, — число, которое всегда меньше правды.
+     */
+    const closed = here.every((t) => t.status === 'accepted')
+
+    const openedTimes = here.map((t) => t.openedAt).filter((d): d is Date => d !== null)
+    const acceptedTimes = here.map((t) => t.acceptedAt).filter((d): d is Date => d !== null)
+
+    const openedAt =
+      openedTimes.length === 0
+        ? null
+        : new Date(Math.min(...openedTimes.map((d) => d.getTime())))
+
+    const acceptedAt =
+      closed && acceptedTimes.length > 0
+        ? new Date(Math.max(...acceptedTimes.map((d) => d.getTime())))
+        : null
+
+    const promised = promisedDays(plans, stage)
+    const actual = actualDays(openedAt, acceptedAt)
+
+    return {
+      stage,
+      promisedDays: promised,
+      actualDays: actual,
+      overrunDays: actual === null || promised === 0 ? null : actual - promised,
+    }
+  })
 }

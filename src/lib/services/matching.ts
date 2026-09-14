@@ -288,6 +288,6 @@ async function budgetFor(
 
   return {
     total: Math.round(price * share),
-    costOf: await costTable(specialistIds, project.targetStage as DocStage),
+    costOf: await costTable(specialistIds, project.targetStage as DocStage, project.areaSqm),
   }
 }

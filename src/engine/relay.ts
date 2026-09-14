@@ -260,6 +260,120 @@ function intraStageDependencies(discipline: Discipline, present: Discipline[]): 
   return present.filter((d) => d === 'architecture')
 }
 
+// --- Срок стадии -----------------------------------------------------------
+
+/**
+ * Сколько часов в сутках считается рабочими.
+ *
+ * Шесть, а не восемь: срок должен выдерживаться, а не выглядеть красиво.
+ * Специалист ведёт не один проект, и восьмичасовой день здесь означал бы
+ * человека, занятого только нами, — такого в пуле нет и по замыслу не будет.
+ */
+export const WORKING_HOURS_PER_DAY = 6
+
+/**
+ * Плата за передачу между тикетами.
+ *
+ * Между сдачей одного тикета и открытием следующего стоит приёмка бюро: работу
+ * надо прочитать и принять, и только тогда откроется зависимый тикет (правило
+ * 3 протокола). Это время существует всегда, его не видно в SLA ни одного из
+ * двух тикетов, и именно из него набегает разница между «сумма сроков» и тем,
+ * что заказчик видит календарём.
+ */
+export const HANDOVER_HOURS = 8
+
+/**
+ * Самая длинная цепочка зависимостей внутри стадии, в часах.
+ *
+ * Здесь и живёт обещание «быстрее». Срок стадии — это не сумма работы, а её
+ * критический путь: конструктор и инженер считают по одному и тому же объёму
+ * и работают одновременно, поэтому стадия длится столько, сколько длится
+ * самая длинная последовательная ветка, а не столько, сколько всё вместе.
+ *
+ * Локальное бюро ту же работу чаще ведёт последовательно — не по глупости, а
+ * потому что людей в нём столько, сколько столов. Собранная под проект команда
+ * распараллеливает ветки по определению; выигрыш во времени берётся отсюда, а
+ * не из того, что кто-то печатает быстрее.
+ *
+ * Цикл в зависимостях даёт ноль: срок, посчитанный по испорченному графу, хуже
+ * ненайденного, потому что его назовут заказчику.
+ */
+export function criticalPathHours(plans: TicketPlan[], stage: DocStage): number {
+  const here = plans.filter((p) => p.stage === stage)
+  if (here.length === 0) return 0
+
+  const byKey = new Map(here.map((p) => [p.key, p]))
+  const longest = new Map<string, number>()
+  const visiting = new Set<string>()
+  let broken = false
+
+  const through = (key: string): number => {
+    const known = longest.get(key)
+    if (known !== undefined) return known
+
+    if (visiting.has(key)) {
+      broken = true
+      return 0
+    }
+
+    const plan = byKey.get(key)
+    if (!plan) return 0
+
+    visiting.add(key)
+
+    // Зависимости за пределами стадии не удлиняют её: они закрыты раньше, и
+    // ждать их внутри этой стадии уже не приходится.
+    const before = plan.dependsOn
+      .filter((dep) => byKey.has(dep))
+      .map((dep) => through(dep) + HANDOVER_HOURS)
+
+    visiting.delete(key)
+
+    const total = plan.slaHours + Math.max(0, ...before)
+    longest.set(key, total)
+    return total
+  }
+
+  const paths = here.map((p) => through(p.key))
+  return broken ? 0 : Math.max(...paths)
+}
+
+/**
+ * Обещанный срок стадии в календарных днях.
+ *
+ * Календарных, а не рабочих, и это решение: заказчик живёт по календарю, и
+ * «двенадцать рабочих дней» он всё равно пересчитает — обычно неверно и в свою
+ * пользу, а потом будет спорить. Названный срок должен совпадать с тем, по
+ * которому его будут проверять.
+ *
+ * Ноль часов даёт ноль дней, а не один: стадия без тикетов — это стадия,
+ * которой нет, и обещать по ней нечего.
+ */
+export function promisedDays(plans: TicketPlan[], stage: DocStage): number {
+  const hours = criticalPathHours(plans, stage)
+  if (hours <= 0) return 0
+
+  const workingDays = Math.ceil(hours / WORKING_HOURS_PER_DAY)
+  return Math.ceil((workingDays * 7) / 5)
+}
+
+/**
+ * Сколько стадия шла на самом деле, в календарных днях.
+ *
+ * От открытия первого тикета до приёмки последнего. Не от оплаты и не от
+ * подтверждения заказчиком: ни то, ни другое не зависит от нас, а измеряем мы
+ * свою работу. Незакрытая стадия срока не имеет — `null`, а не «сколько уже
+ * идёт»: это разные числа, и путать их значит однажды сравнить одно с другим.
+ */
+export function actualDays(openedAt: Date | null, acceptedAt: Date | null): number | null {
+  if (!openedAt || !acceptedAt) return null
+
+  const ms = acceptedAt.getTime() - openedAt.getTime()
+  if (ms < 0) return null
+
+  return Math.max(1, Math.ceil(ms / 86_400_000))
+}
+
 /**
  * Стадийный гейт. Тикет открывается, только когда все его зависимости приняты —
  * не «предъявлены», а именно приняты.

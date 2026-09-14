@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { HEADER, parseRules } from './parse'
 
@@ -23,7 +25,23 @@ const row = (parts: Partial<Record<string, string>> = {}, delimiter = ',') => {
   return `${header}\n${order.map((k) => merged[k] ?? '').join(delimiter)}`
 }
 
+/** Строка без шапки: чтобы собрать таблицу из нескольких строк. */
+const body = (built: string) => built.split('\n')[1]!
+
 describe('разбор корпуса норм', () => {
+  it('правило из УТУ приходит с номером парцелы', () => {
+    // УТУ выдаётся на локацию, и без её номера строка попадает в корпус как
+    // зональная — то есть начинает действовать на соседей.
+    const { drafts, rejected } = parseRules(row({ zone: 'S2', parcel: '285/1' }))
+
+    expect(rejected).toEqual([])
+    expect(drafts[0]!.parcel).toBe('285/1')
+  })
+
+  it('без столбца парцелы правило остаётся зональным', () => {
+    expect(parseRules(row()).drafts[0]!.parcel).toBe('')
+  })
+
   it('полная строка становится правилом', () => {
     const { drafts, rejected } = parseRules(row())
 
@@ -103,12 +121,56 @@ describe('разбор корпуса норм', () => {
   })
 
   it('номер строки называется по таблице, а не по массиву', () => {
-    const two = `${HEADER}\n${'zoning,ME,Tivat,,height_m,max,10,Doc,42,2024-01-01,2026-09-01,'}\n${'zoning,ME,,,height_m,max,10,Doc,42,2024-01-01,2026-09-01,'}`
+    /*
+     * Строки собираются тем же помощником, что и везде выше, а не пишутся
+     * столбцами вручную. Ручная строка молча ломается на первом же новом
+     * столбце в шапке — всё, что после него, съезжает на одно поле, и тест
+     * начинает проверять не то, что написано в его названии.
+     */
+    const good = body(row())
+    const bad = body(row({ operator: 'не больше' }))
+    const two = `${HEADER}\n${good}\n${bad}`
+
     expect(parseRules(two).rejected[0]?.line).toBe(3)
   })
 
   it('пустой текст не падает и ничего не заводит', () => {
     expect(parseRules('')).toEqual({ drafts: [], rejected: [] })
     expect(parseRules(HEADER)).toEqual({ drafts: [], rejected: [] })
+  })
+})
+
+/**
+ * Шапка корпуса и форма заведения правила руками.
+ *
+ * Форма собирает строку **позиционно** и отдаёт её тому же разбору, что и файл
+ * импорта. Пропущенный в форме столбец — не ошибка типов: строка остаётся
+ * строкой, все следующие значения сдвигаются на одно поле, и правило либо
+ * отвергается с непонятной причиной, либо заводится с чужим предметом. Один
+ * раз это уже случилось при добавлении столбца парцелы.
+ */
+describe('шапка и форма не расходятся', () => {
+  it('форма перечисляет ровно те столбцы и в том же порядке', () => {
+    const source = readFileSync(
+      join(import.meta.dirname, '..', '..', 'app', 'ops', 'actions.ts'),
+      'utf8',
+    )
+
+    const start = source.indexOf('export async function addNorm')
+    expect(start, 'функции addNorm больше нет — проверку надо переписать').toBeGreaterThan(-1)
+
+    const block = source.slice(start, source.indexOf('.map((value)', start))
+    const fields = [...block.matchAll(/field\('(\w+)'\)/g)].map((m) => m[1]!)
+
+    // Шапка пишется через подчёркивание, поля формы — слитно.
+    const same = (a: string, b: string) => a.replaceAll('_', '').toLowerCase() === b.toLowerCase()
+    const header = HEADER.split(',')
+
+    expect(fields.length, 'в форме не столько столбцов, сколько в шапке').toBe(header.length)
+    for (const [i, column] of header.entries()) {
+      expect(same(column, fields[i]!), `позиция ${i}: шапка «${column}», форма «${fields[i]}»`).toBe(
+        true,
+      )
+    }
   })
 })

@@ -200,3 +200,140 @@ export async function eraseProject(id: string): Promise<void> {
     }),
   ])
 }
+
+/**
+ * Копия своих данных.
+ *
+ * Политика называет шесть прав и утверждает, что это не намерения. Пять из них
+ * были действиями: обезличивание, стирание, правка профиля, отзыв согласия,
+ * возражение. Первое — «узнать, какие ваши данные у нас есть, и получить
+ * копию» — оставалось текстом, и на первом же обращении превратилось бы ровно
+ * в то, против чего написан этот модуль: в выборку из базы руками, под
+ * давлением срока, с шансом отдать чужое.
+ *
+ * Здесь важнее не полнота, а граница. Копия отдаётся **одному человеку**, и
+ * всё, что принадлежит другим, из неё вычтено: заказчик не получает почту и
+ * ключи специалистов (это прямо обещано в политике), специалист не получает
+ * имён и контактов заказчика и других участников. Копия, собранная «на всякий
+ * случай пошире», — это утечка, оформленная как исполнение права.
+ *
+ * Форма — обычные данные, а не файл: собрать из них выгрузку может страница,
+ * а служба обязана отвечать за состав.
+ */
+export type PersonalCopy = {
+  subject: 'specialist' | 'client'
+  generatedAt: string
+  /** Что отдано. Человек должен видеть состав, а не только содержимое. */
+  sections: string[]
+  data: Record<string, unknown>
+}
+
+export async function copyForSpecialist(id: string): Promise<PersonalCopy> {
+  const [person, works, tickets, payouts, rates] = await Promise.all([
+    prisma.specialist.findUnique({ where: { id } }),
+    prisma.portfolioItem.findMany({ where: { specialistId: id } }),
+    /*
+     * События задач — без постановки и без комментариев.
+     *
+     * Постановку пишет бюро под чужой проект, а в комментариях есть реплики
+     * других людей. Человеку принадлежит факт его работы: что взял, когда сдал,
+     * приняли ли, сколько раз возвращали, — из этого и считаются его метрики.
+     */
+    prisma.ticket.findMany({
+      where: { specialistId: id },
+      select: {
+        discipline: true,
+        stage: true,
+        status: true,
+        slaHours: true,
+        openedAt: true,
+        claimedAt: true,
+        submittedAt: true,
+        acceptedAt: true,
+        dueAt: true,
+        revisionRounds: true,
+      },
+    }),
+    prisma.payout.findMany({
+      where: { specialistId: id },
+      select: { discipline: true, stage: true, amount: true, currency: true, status: true, accruedAt: true },
+    }),
+    prisma.specialistRate.findMany({
+      where: { specialistId: id },
+      select: { discipline: true, stage: true, amount: true, currency: true },
+    }),
+  ])
+
+  if (!person) throw new NotErasable('There is no such specialist.')
+
+  /*
+   * Профиль отдаётся без ключа доступа.
+   *
+   * Ключ — это учётные данные, а не сведения о человеке, и он у него уже есть.
+   * Копия данных путешествует: её пересылают, кладут в почту и в облако, и
+   * ключ внутри неё превращает исполнение права в способ потерять доступ.
+   */
+  const { accessKey: _accessKey, ...profile } = person
+
+  return {
+    subject: 'specialist',
+    generatedAt: new Date().toISOString(),
+    sections: [
+      'profile — what you declared about yourself',
+      'portfolio — the works you listed',
+      'work — task events your delivery metrics are computed from',
+      'money — your own rates and what the bureau owes or has paid',
+    ],
+    data: { profile, portfolio: works, work: tickets, rates, payouts },
+  }
+}
+
+export async function copyForClient(id: string): Promise<PersonalCopy> {
+  const [project, messages, invoices, directions, artifacts] = await Promise.all([
+    prisma.project.findUnique({ where: { id } }),
+    prisma.clientMessage.findMany({
+      where: { projectId: id },
+      select: { author: true, body: true, createdAt: true },
+    }),
+    prisma.invoice.findMany({
+      where: { projectId: id },
+      select: { stage: true, amount: true, currency: true, status: true, basisJson: true, createdAt: true, paidAt: true },
+    }),
+    prisma.designDirection.findMany({
+      where: { projectId: id },
+      select: { title: true, summary: true, chosen: true, createdAt: true },
+    }),
+    /*
+     * Материалы — списком, а не файлами. Файл принадлежит проекту и выдаётся
+     * комплектом; здесь человек спрашивает, какие данные о нём у нас есть.
+     */
+    prisma.artifact.findMany({
+      where: { ticket: { projectId: id } },
+      select: { name: true, kind: true, createdAt: true },
+    }),
+  ])
+
+  if (!project) throw new NotErasable('There is no such project.')
+
+  /*
+   * Ключ кабинета не отдаётся по той же причине, что и ключ специалиста.
+   *
+   * Состав команды тоже не отдаётся: почта, ключи и контакты специалистов
+   * заказчику не передаются — это обещано в политике прямо, и обращение за
+   * своей копией не тот случай, когда обещание пересматривают.
+   */
+  const { clientKey: _clientKey, ...brief } = project
+
+  return {
+    subject: 'client',
+    generatedAt: new Date().toISOString(),
+    sections: [
+      'brief — what you told us about the project and the site',
+      'conversation — your thread with the bureau',
+      'invoices — what was billed, with the breakdown',
+      'directions — the design directions offered and the one you chose',
+      'materials — the list of files delivered on the project',
+    ],
+    data: { brief, conversation: messages, invoices, directions, materials: artifacts },
+  }
+}

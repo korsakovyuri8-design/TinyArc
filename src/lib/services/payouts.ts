@@ -12,7 +12,15 @@
  */
 
 import { DOC_STAGE_ORDER, type Discipline, type DocStage } from '@/engine/taxonomy'
-import { CURRENCY, margin, owed, rateFor, type Margin, type PayoutRate } from '@/engine/payout'
+import {
+  CURRENCY,
+  feeFactor,
+  feeFor,
+  margin,
+  owed,
+  type Margin,
+  type PayoutRate,
+} from '@/engine/payout'
 import { prisma } from '../db'
 import { bounded, TEXT_MAX } from '../text'
 import { payoutPaid, type Delivery } from './notify'
@@ -47,7 +55,8 @@ export class PayoutRefused extends Error {
  * проекту дешёв и идемпотентен, а значит лечится повторным вызовом.
  */
 export async function accrueFor(projectId: string): Promise<number> {
-  const [tickets, table] = await Promise.all([
+  const [project, tickets, table] = await Promise.all([
+    prisma.project.findUnique({ where: { id: projectId }, select: { areaSqm: true } }),
     prisma.ticket.findMany({
       where: { projectId, specialistId: { not: null } },
       select: { discipline: true, stage: true, status: true, specialistId: true },
@@ -55,7 +64,7 @@ export async function accrueFor(projectId: string): Promise<number> {
     rates(),
   ])
 
-  if (tickets.length === 0) return 0
+  if (!project || tickets.length === 0) return 0
 
   /*
    * Ключ — «человек + дисциплина + стадия». Дисциплину без исполнителя
@@ -83,6 +92,25 @@ export async function accrueFor(projectId: string): Promise<number> {
   if (ready.length === 0) return 0
 
   /*
+   * Своя ставка человека сильнее умолчания бюро — то же правило, по которому
+   * считается бюджет команды при сборке (`costTable`).
+   *
+   * Без этого две стороны денег расходились: отбор пропускал состав по
+   * названным людьми ценам, а начисление книжило умолчание. Человек, сказавший
+   * девятьсот, получал шестьсот пятьдесят, и узнавал об этом на своей странице
+   * денег — то есть после того, как работа принята. Занижение при этом
+   * систематическое: свою ставку называют те, кому умолчание мало.
+   */
+  const own = await prisma.specialistRate.findMany({
+    where: { specialistId: { in: [...new Set(ready.map((g) => g.specialistId))] } },
+    select: { specialistId: true, discipline: true, stage: true, amount: true },
+  })
+
+  const byPerson = new Map(
+    own.map((r) => [`${r.specialistId}:${r.discipline}:${r.stage}`, r.amount]),
+  )
+
+  /*
    * Заводятся по одному, а не `createMany`: повтор обязан пройти молча, а
    * `skipDuplicates` есть не у каждого провайдера. Групп на проект единицы —
    * это не то место, где число обращений к базе имеет значение.
@@ -90,7 +118,18 @@ export async function accrueFor(projectId: string): Promise<number> {
   let created = 0
 
   for (const group of ready) {
-    const amount = rateFor(table, group.discipline as Discipline, group.stage as DocStage)
+    /*
+     * Ставка названа для объекта обычного размера и пересчитывается на этот
+     * (движок, `feeFactor`). Пересчёт один и тот же для своей ставки и для
+     * умолчания бюро: иначе один и тот же раздел стоил бы разное в зависимости
+     * от того, дошёл ли человек до своей страницы денег.
+     */
+    const named = byPerson.get(`${group.specialistId}:${group.discipline}:${group.stage}`)
+
+    const amount =
+      named === undefined
+        ? feeFor(table, group.discipline as Discipline, group.stage as DocStage, project.areaSqm)
+        : Math.round(named * feeFactor(project.areaSqm))
 
     try {
       await prisma.payout.create({
@@ -313,6 +352,37 @@ export async function unratedObligations(): Promise<
   return [...counted.values()].sort((a, b) => b.count - a.count)
 }
 
+
+/**
+ * Подставляет названную ставку в уже начисленные обязательства без суммы.
+ *
+ * Пишется по одному, а не одним `updateMany`, и это следствие пересчёта по
+ * размеру (движок, `feeFactor`): у каждого обязательства свой проект, значит
+ * своя площадь, значит своя сумма. Одно число на все строки означало бы, что
+ * гонорар на вилле в 250 м² и на квартале в 3000 одинаков — ровно то, ради
+ * чего пересчёт и заведён.
+ *
+ * Строк здесь единицы: это долги, возникшие раньше, чем цена была названа.
+ */
+async function fillUnrated(
+  where: { discipline: string; stage: string; specialistId?: string },
+  base: number,
+): Promise<number> {
+  const rows = await prisma.payout.findMany({
+    where: { ...where, amount: null, status: 'accrued' },
+    select: { id: true, project: { select: { areaSqm: true } } },
+  })
+
+  for (const row of rows) {
+    await prisma.payout.update({
+      where: { id: row.id },
+      data: { amount: Math.round(base * feeFactor(row.project.areaSqm)) },
+    })
+  }
+
+  return rows.length
+}
+
 /**
  * Ставит ставку и подставляет её в уже начисленные обязательства без суммы.
  *
@@ -337,12 +407,7 @@ export async function setRate(
     update: { amount },
   })
 
-  const filled = await prisma.payout.updateMany({
-    where: { discipline, stage, amount: null, status: 'accrued' },
-    data: { amount },
-  })
-
-  return filled.count
+  return fillUnrated({ discipline, stage }, amount)
 }
 
 /**
@@ -451,6 +516,18 @@ export async function setOwnRate(
     create: { specialistId, discipline, stage, amount, currency: CURRENCY },
     update: { amount },
   })
+
+  /*
+   * Обязательства без суммы закрываются задним числом — так же, как их
+   * закрывает названная бюро ставка (`setRate`).
+   *
+   * Порядок здесь обычный, а не редкий: человека зовут в проект раньше, чем он
+   * доходит до своей страницы денег, и работа успевает быть принятой. Оставить
+   * такое обязательство пустым значит показать ему «не задано» ровно там, где
+   * он только что назвал число. Уже оценённые не трогаются: сумма обязательства
+   * зафиксирована в момент приёмки и задним числом не переписывается.
+   */
+  await fillUnrated({ specialistId, discipline, stage }, amount)
 }
 
 /** Снять свою ставку: цену снова определяет умолчание бюро, если оно есть. */
@@ -476,6 +553,7 @@ export async function clearOwnRate(
 export async function costTable(
   specialistIds: string[],
   targetStage: DocStage,
+  areaSqm: number,
 ): Promise<Map<string, number>> {
   const stages = (Object.keys(DOC_STAGE_ORDER) as DocStage[]).filter(
     (stage) => DOC_STAGE_ORDER[stage] <= DOC_STAGE_ORDER[targetStage],
@@ -522,7 +600,9 @@ export async function costTable(
           break
         }
 
-        sum += price
+        // Тот же пересчёт по размеру, что и при начислении: гейт по бюджету
+        // обязан считать по тем деньгам, которые потом будут книжиться.
+        sum += Math.round(price * feeFactor(areaSqm))
       }
 
       if (complete) table.set(`${specialistId}:${discipline}`, sum)
@@ -530,4 +610,83 @@ export async function costTable(
   }
 
   return table
+}
+
+/**
+ * Расхождение после приёмки: работа принята, обязательства нет.
+ *
+ * Начисление стоит вне транзакции приёмки намеренно — оно обходит проект
+ * целиком и читает ставки, и держать на нём транзакцию значило бы держать
+ * блокировку на приёмке. Разрыв между двумя шагами объявлен лечимым:
+ * обязательство уникально в схеме, повторный вызов не начислит второй раз.
+ *
+ * Лечимым — но никто не лечил. Второго вызова в продукте не существовало: если
+ * начисление падало после приёмки, деньги, которые бюро уже должно человеку,
+ * просто не появлялись. Заметить это было нельзя: панель считает обязательства,
+ * а не принятые работы без обязательств, — то есть смотрит ровно с той
+ * стороны, с которой пропажи не видно.
+ *
+ * Стадия целиком, а не тикет: обязательство заводится на пару «дисциплина ×
+ * стадия», сколько бы тикетов в ней ни было.
+ *
+ * Окно — тридцать дней, и это не экономия на буквах. Проверка идёт при каждой
+ * загрузке панели, а принятые тикеты копятся навсегда: без окна панель бюро с
+ * годовой историей начинала бы день с обхода всего архива. Разрыв старше
+ * месяца при этом либо уже закрыт, либо не закроется никогда — деньги за
+ * работу, принятую полгода назад, ищут не по этой очереди, а по обращению
+ * человека.
+ */
+const DRIFT_WINDOW_DAYS = 30
+export type AccrualDrift = {
+  projectId: string
+  projectTitle: string
+  specialistId: string
+  specialistName: string
+  discipline: string
+  stage: string
+}
+
+export async function accrualDrift(now = new Date()): Promise<AccrualDrift[]> {
+  const since = new Date(now.getTime() - DRIFT_WINDOW_DAYS * 86_400_000)
+
+  const accepted = await prisma.ticket.findMany({
+    where: { status: 'accepted', specialistId: { not: null }, acceptedAt: { gte: since } },
+    select: {
+      projectId: true,
+      specialistId: true,
+      discipline: true,
+      stage: true,
+      project: { select: { title: true } },
+      specialist: { select: { displayName: true } },
+    },
+  })
+
+  if (accepted.length === 0) return []
+
+  const payouts = await prisma.payout.findMany({
+    where: { projectId: { in: [...new Set(accepted.map((t) => t.projectId))] } },
+    select: { projectId: true, specialistId: true, discipline: true, stage: true },
+  })
+
+  const booked = new Set(
+    payouts.map((p) => `${p.projectId}:${p.specialistId}:${p.discipline}:${p.stage}`),
+  )
+
+  const missing = new Map<string, AccrualDrift>()
+
+  for (const ticket of accepted) {
+    const key = `${ticket.projectId}:${ticket.specialistId}:${ticket.discipline}:${ticket.stage}`
+    if (booked.has(key) || missing.has(key)) continue
+
+    missing.set(key, {
+      projectId: ticket.projectId,
+      projectTitle: ticket.project.title,
+      specialistId: ticket.specialistId!,
+      specialistName: ticket.specialist?.displayName ?? '—',
+      discipline: ticket.discipline,
+      stage: ticket.stage,
+    })
+  }
+
+  return [...missing.values()]
 }

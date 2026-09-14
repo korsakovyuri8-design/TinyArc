@@ -5,6 +5,7 @@ import {
   DISCIPLINES,
   JURISDICTIONS,
   JURISDICTION_NAMES,
+  LOCAL_ONLY_DISCIPLINES,
   PORTFOLIO_THRESHOLD,
   type Discipline,
 } from '@/engine/taxonomy'
@@ -201,7 +202,7 @@ export default async function PoolPage({
 
         <h2>Depth by role and country</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          In brackets — how many of them hold signing rights. Fewer than {MIN_DEPTH} people on a role is not coverage: the role rests on someone's holiday. Selection formally keeps working right up to the day the only suitable person is busy.
+          In brackets — how many of them hold signing rights. Fewer than {MIN_DEPTH} people on a role is not coverage: the role rests on someone's holiday. Selection formally keeps working right up to the day the only suitable person is busy. Only two roles are bound to the country — permitting and survey, because the authority and the plot are there. Every other role is counted across the whole pool, so its number repeats across the columns: that is the product, not a rendering fault.
         </p>
 
         <div className="table-scroll panel" style={{ padding: 0 }}>
@@ -217,7 +218,14 @@ export default async function PoolPage({
             <tbody>
               {disciplines.map((d) => (
                 <tr key={d}>
-                  <td>{DISCIPLINE_LABELS[d]}</td>
+                  <td>
+                    {DISCIPLINE_LABELS[d]}
+                    {LOCAL_ONLY_DISCIPLINES.includes(d) ? null : (
+                      <span className="hint" style={{ display: 'block' }}>
+                        counted worldwide
+                      </span>
+                    )}
+                  </td>
                   {JURISDICTIONS.map((j) => {
                     const cell = depth.find((c) => c.discipline === d && c.jurisdiction === j)
                     const value = cell?.depth ?? 0

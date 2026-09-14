@@ -20,6 +20,7 @@ export type SiteInput = {
   jurisdiction: string
   municipality: string | null
   zone: string | null
+  parcel: string | null
   storeys: number
   areaSqm: number
   plotAreaSqm: number | null
@@ -59,6 +60,7 @@ export function siteFacts(project: SiteInput): SiteFacts {
     jurisdiction: project.jurisdiction as Jurisdiction,
     municipality: text(project.municipality),
     zone: text(project.zone),
+    parcel: text(project.parcel),
     storeys: project.storeys,
     heightM: known(project.heightM),
     coverageRatio: ratio(project.footprintSqm, project.plotAreaSqm),

@@ -12,7 +12,8 @@ import { awaitingAccess } from '@/lib/services/access-queue'
 import { APPROVAL_NUDGE_HOURS, awaitingApproval } from '@/lib/services/approval'
 import { DIRECTION_NUDGE_HOURS, awaitingDirection } from '@/lib/services/direction'
 import { INSURANCE_HORIZON_DAYS, expiringInsurance } from '@/lib/services/contractors'
-import { unratedObligations } from '@/lib/services/payouts'
+import { accrualDrift, unratedObligations } from '@/lib/services/payouts'
+import { spendSince } from '@/lib/services/spend'
 import { TRADE_LABELS } from '@/lib/labels'
 import { INVOICE_NUDGE_HOURS, PAID_SHOWN, invoiceQueue } from '@/lib/services/billing'
 import { DOC_STAGE_LABELS } from '@/lib/labels'
@@ -20,7 +21,12 @@ import type { DocStage } from '@/engine/taxonomy'
 import { roleName } from '@/lib/gap'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import { isOperator } from '@/lib/session'
-import { markInvoicePaid, planBureauQueue, voidProjectInvoice } from './actions'
+import {
+  markInvoicePaid,
+  planBureauQueue,
+  reconcileAfterAcceptance,
+  voidProjectInvoice,
+} from './actions'
 import { OpsAction, OpsSignIn } from './OpsForms'
 
 export const metadata = { title: 'Bureau panel — TinyArc Cloud Bureau' }
@@ -53,7 +59,7 @@ export default async function OpsPage() {
     alertsForBureau(),
   ])
 
-  const [lost, questions, approvals, invoices, directions, policies, unrated, owedOpen, access] =
+  const [lost, questions, approvals, invoices, directions, policies, unrated, owedOpen, access, spend, drift] =
     await Promise.all([
       lostProjects(),
       waitingQuestions(),
@@ -64,6 +70,8 @@ export default async function OpsPage() {
       unratedObligations(),
       prisma.payout.count({ where: { status: 'accrued' } }),
       awaitingAccess(),
+      spendSince(new Date(Date.now() - 7 * 86_400_000)),
+      accrualDrift(),
     ])
 
   const waitingInvoices = invoices.filter((i) => i.status === 'issued').length
@@ -113,6 +121,59 @@ export default async function OpsPage() {
               )}
             </p>
             <Link href="/ops/payouts">Set the rates →</Link>
+          </div>
+        )}
+
+        {/*
+          Расход наружу. Стоит на главной, а не на отдельной странице, по той
+          же причине, что и обязательства: трата, которую видно только когда
+          за ней пришли, замечается счётом провайдера в конце месяца.
+        */}
+        {spend.calls > 0 && (
+          <div className="panel" style={{ marginTop: 24 }}>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <div className="label label-accent">Outside spend · last 7 days</div>
+              <span className="num dim">
+                {spend.calls} calls · {spend.inputTokens.toLocaleString('en')} in ·{' '}
+                {spend.outputTokens.toLocaleString('en')} out
+              </span>
+            </div>
+
+            <div className="table-scroll" style={{ padding: 0, marginTop: 16 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Assistant</th>
+                    <th>Calls</th>
+                    <th>Of them failed</th>
+                    <th>Input</th>
+                    <th>Output</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spend.rows.map((row) => (
+                    <tr key={row.purpose}>
+                      <td>{row.purpose}</td>
+                      <td className="num">{row.calls}</td>
+                      <td className="num">
+                        {row.failed > 0 ? <span className="tag tag-wait">{row.failed}</span> : '—'}
+                      </td>
+                      <td className="num">{row.inputTokens.toLocaleString('en')}</td>
+                      <td className="num">{row.outputTokens.toLocaleString('en')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="hint" style={{ marginTop: 14 }}>
+              Tokens, not euro: the price per token lives with the provider, changes without us and
+              differs by country — a figure hard-coded here would one day be confidently wrong.
+              Failed calls are counted too: an answer cut off at the ceiling is paid for in full.
+              {spend.incomplete
+                ? ' Some calls came back with no token count, so the totals are lower than the truth.'
+                : ''}
+            </p>
           </div>
         )}
 
@@ -627,6 +688,54 @@ export default async function OpsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </>
+        )}
+
+        {/*
+          Расхождение после приёмки. Показывается, только когда оно есть, и в
+          обычный день панель о нём не напоминает: это авария, а не очередь.
+          Зато когда оно есть — это деньги, которые бюро уже должно человеку, и
+          человек о них не узнает, потому что смотрит на свои обязательства, а
+          пропало именно обязательство.
+        */}
+        {drift.length > 0 && (
+          <>
+            <div className="divider" style={{ marginTop: 48 }} />
+            <h2>Accepted, but nothing is owed yet</h2>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 20 }}>
+              The work was accepted and the obligation was not booked — the accrual runs just
+              after acceptance and outside its transaction, so a break leaves this behind. Catching
+              up is safe to repeat: an obligation is unique in the schema and will not be booked
+              twice.
+            </p>
+
+            <div className="stack" style={{ gap: 12 }}>
+              {drift.map((row) => (
+                <div
+                  key={`${row.projectId}:${row.specialistId}:${row.discipline}:${row.stage}`}
+                  className="panel"
+                  style={{ padding: 16, borderColor: 'var(--fail)' }}
+                >
+                  <div
+                    className="row"
+                    style={{ justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}
+                  >
+                    <div>
+                      <strong>{row.projectTitle}</strong>
+                      <p className="hint" style={{ margin: '6px 0 0' }}>
+                        {row.specialistName} · {DISCIPLINE_LABELS[row.discipline as Discipline]} ·{' '}
+                        {DOC_STAGE_LABELS[row.stage as DocStage]}
+                      </p>
+                    </div>
+                    <OpsAction
+                      action={reconcileAfterAcceptance}
+                      hidden={{ projectId: row.projectId }}
+                      label="Catch up"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         )}

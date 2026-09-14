@@ -86,10 +86,27 @@ describe('готовность пула', () => {
     expect(value).toBeLessThan(1)
   })
 
-  it('в стране, где никого нет, нулевая', () => {
+  it('без местных ролей в стране берутся только стадии до разрешения', () => {
+    // Геодезия и согласования делаются на месте. Остальные дисциплины
+    // считаются откуда угодно, поэтому «в Греции никто не живёт» больше не
+    // означает «в Греции мы не можем ничего»: концепцию можем.
     const pool = fullPool().map((s) => ({ ...s, jurisdictions: ['ME' as const] }))
+    const value = readiness(pool, 'GR')
 
-    expect(readiness(pool, 'GR')).toBe(0)
+    expect(value).toBeGreaterThan(0)
+    expect(value).toBeLessThan(1)
+  })
+
+  it('страну открывает подпись и местные роли, а не проживание команды', () => {
+    // Вся команда живёт в Черногории; в Греции — только геодезист,
+    // согласователь и право подписи. Этого достаточно для любой формы.
+    const pool = fullPool().map((s) =>
+      s.disciplines.includes('survey') || s.disciplines.includes('permitting')
+        ? s
+        : { ...s, jurisdictions: ['ME' as const] },
+    )
+
+    expect(readiness(pool, 'GR')).toBe(1)
   })
 })
 
@@ -99,6 +116,19 @@ describe('глубина покрытия', () => {
     const architects = rows.find((r) => r.discipline === 'architecture' && r.jurisdiction === 'ME')
 
     expect(architects).toMatchObject({ depth: 2, signatories: 2 })
+  })
+
+  it('глобальную роль страна не сужает, местную — сужает', () => {
+    // Все живут в Черногории. Архитектор годится в греческий проект,
+    // геодезист — нет: он выезжает на участок.
+    const pool = fullPool().map((s) => ({ ...s, jurisdictions: ['ME' as const] }))
+    const rows = coverage(pool)
+
+    const architects = rows.find((r) => r.discipline === 'architecture' && r.jurisdiction === 'GR')
+    const surveyors = rows.find((r) => r.discipline === 'survey' && r.jurisdiction === 'GR')
+
+    expect(architects).toMatchObject({ depth: 2, local: false })
+    expect(surveyors).toMatchObject({ depth: 0, local: true })
   })
 
   it('не считает тех, кто не прошёл порог портфолио', () => {

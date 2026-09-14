@@ -221,3 +221,31 @@ describe('чужое не выдаётся', () => {
     }
   }
 })
+
+/**
+ * Выдача копии персональных данных.
+ *
+ * Стоит вне трёх областей выше — это обработчик маршрута, а не страница, — и
+ * потому не попадает ни под одну из проверок. Отдаёт он при этом самое
+ * чувствительное, что в продукте есть: все данные одного человека одним
+ * файлом. Незакрытая дверь здесь стоит дороже всех остальных вместе.
+ */
+describe('копия персональных данных', () => {
+  const source = readFileSync(join(APP, 'api', 'copy', 'route.ts'), 'utf8')
+
+  it('отдаётся только бюро', () => {
+    expect(source, 'дверь у копии данных не заперта').toContain('isOperator()')
+  })
+
+  it('не отдаётся ключ доступа: копия путешествует, а ключ — учётные данные', () => {
+    const privacy = readFileSync(join(APP, '..', 'lib', 'services', 'privacy.ts'), 'utf8')
+
+    expect(privacy).toContain('accessKey: _accessKey')
+    expect(privacy).toContain('clientKey: _clientKey')
+  })
+
+  it('не кэшируется и не индексируется', () => {
+    expect(source).toContain("'cache-control': 'no-store'")
+    expect(source).toContain('x-robots-tag')
+  })
+})

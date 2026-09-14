@@ -5,6 +5,7 @@ const empty: SiteInput = {
   jurisdiction: 'ME',
   municipality: null,
   zone: null,
+  parcel: null,
   storeys: 2,
   areaSqm: 420,
   plotAreaSqm: null,
@@ -19,6 +20,11 @@ const empty: SiteInput = {
 }
 
 describe('факты участка', () => {
+  it('номер парцелы доходит до проверки: на него выдан УТУ', () => {
+    expect(siteFacts({ ...empty, parcel: ' 285/1 ' }).parcel).toBe('285/1')
+    expect(siteFacts({ ...empty, parcel: '  ' }).parcel).toBeUndefined()
+  })
+
   it('этажность есть всегда: она в брифе обязательна', () => {
     expect(siteFacts(empty).storeys).toBe(2)
   })

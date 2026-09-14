@@ -11,16 +11,16 @@ const project = (patch: Partial<PricedProject> = {}): PricedProject => ({
 
 describe('цена стадии', () => {
   it('выводится из площади и ставки', () => {
-    // 400 м² × 10 €/м² × 1 × 1 = 4000, порог 2200 не срабатывает.
+    // 400 м² × 13 €/м² × 1 × 1 = 5200, порог 2200 не срабатывает.
     const basis = priceStage(project(), 'permit')
 
-    expect(basis.amount).toBe(4000)
+    expect(basis.amount).toBe(5200)
     expect(basis.atFloor).toBe(false)
     expect(basis.currency).toBe(CURRENCY)
   })
 
   it('не опускается ниже порога на маленьком объекте', () => {
-    // 90 м² × 10 = 900 против порога 2200: работа та же, площадь меньше.
+    // 90 м² × 13 = 1170 против порога 2200: работа та же, площадь меньше.
     const basis = priceStage(project({ areaSqm: 90 }), 'permit')
 
     expect(basis.amount).toBe(2200)
@@ -57,7 +57,7 @@ describe('цена стадии', () => {
   it('возвращает то, из чего цена сложилась', () => {
     const basis = priceStage(project(), 'permit')
 
-    expect(basis.ratePerSqm).toBe(10)
+    expect(basis.ratePerSqm).toBe(13)
     expect(basis.areaSqm).toBe(400)
     expect(basis.typologyFactor).toBe(1)
     expect(basis.jurisdictionFactor).toBe(1)

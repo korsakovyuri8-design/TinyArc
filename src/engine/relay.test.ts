@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  HANDOVER_HOURS,
+  WORKING_HOURS_PER_DAY,
+  actualDays,
   awaitingClient,
   billable,
   canOpen,
+  criticalPathHours,
+  promisedDays,
   deliveryDeltaFor,
   dueDate,
   openable,
@@ -349,5 +354,97 @@ describe('оплата открывает стадию', () => {
 
     // Всё оплачено — выставлять нечего.
     expect(billable(tickets, ['concept'], ['concept', 'permit'])).toEqual([])
+  })
+})
+
+describe('срок стадии', () => {
+  const plan = (key: string, slaHours: number, dependsOn: string[] = []) => ({
+    key,
+    discipline: 'architecture' as const,
+    stage: 'concept' as const,
+    title: key,
+    spec: '',
+    slaHours,
+    dependsOn,
+  })
+
+  it('стадия длится по самой длинной ветке, а не по сумме работы', () => {
+    // Две ветки по 10 часов, идущие одновременно: это десять часов, а не
+    // двадцать. Ровно отсюда и берётся выигрыш во времени.
+    const plans = [plan('a', 10), plan('b', 10)]
+
+    expect(criticalPathHours(plans, 'concept')).toBe(10)
+  })
+
+  it('последовательная цепочка складывается вместе с передачами', () => {
+    const plans = [plan('a', 10), plan('b', 10, ['a'])]
+
+    expect(criticalPathHours(plans, 'concept')).toBe(20 + HANDOVER_HOURS)
+  })
+
+  /*
+   * Приёмка между тикетами занимает время всегда, и в SLA ни одного из двух
+   * тикетов её не видно. Без неё названный срок систематически короче факта.
+   */
+  it('передача между тикетами стоит времени', () => {
+    expect(HANDOVER_HOURS).toBeGreaterThan(0)
+  })
+
+  it('чужая стадия срока этой не удлиняет', () => {
+    const plans = [
+      { ...plan('early', 40), stage: 'concept' as const },
+      { ...plan('late', 10, ['early']), stage: 'permit' as const },
+    ]
+
+    expect(criticalPathHours(plans, 'permit')).toBe(10)
+  })
+
+  it('цикл в зависимостях не превращается в срок', () => {
+    const plans = [plan('a', 10, ['b']), plan('b', 10, ['a'])]
+
+    expect(criticalPathHours(plans, 'concept')).toBe(0)
+    expect(promisedDays(plans, 'concept')).toBe(0)
+  })
+
+  it('стадия без тикетов не обещает ни одного дня', () => {
+    expect(promisedDays([], 'concept')).toBe(0)
+  })
+
+  it('часы переводятся в календарные дни, а не в рабочие', () => {
+    // Тридцать часов — пять рабочих дней по шесть, то есть календарная неделя.
+    const plans = [plan('a', 30)]
+
+    expect(WORKING_HOURS_PER_DAY).toBe(6)
+    expect(promisedDays(plans, 'concept')).toBe(7)
+  })
+
+  it('настоящий план стадии даёт срок, который можно назвать', () => {
+    const plans = planTickets('concept', ['architecture', 'structural', 'mep', 'visualization'])
+    const days = promisedDays(plans, 'concept')
+
+    expect(days).toBeGreaterThan(0)
+    expect(days).toBeLessThan(120)
+  })
+})
+
+describe('фактический срок стадии', () => {
+  it('считается от открытия первого тикета до приёмки последнего', () => {
+    const opened = new Date('2026-09-01T09:00:00Z')
+    const accepted = new Date('2026-09-11T09:00:00Z')
+
+    expect(actualDays(opened, accepted)).toBe(10)
+  })
+
+  it('незакрытая стадия срока не имеет', () => {
+    expect(actualDays(new Date('2026-09-01T09:00:00Z'), null)).toBeNull()
+    expect(actualDays(null, null)).toBeNull()
+  })
+
+  /* Стадия, закрытая в тот же день, длилась день, а не ноль дней. */
+  it('стадия в один день считается днём', () => {
+    const opened = new Date('2026-09-01T09:00:00Z')
+    const accepted = new Date('2026-09-01T17:00:00Z')
+
+    expect(actualDays(opened, accepted)).toBe(1)
   })
 })

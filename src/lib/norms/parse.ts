@@ -23,6 +23,8 @@ export type RuleDraft = {
   jurisdiction: Jurisdiction
   municipality: string
   zone: string
+  /** Кадастровый номер парцелы, когда правило пришло из УТУ на локацию. */
+  parcel: string
   subject: RuleSubject
   operator: 'max' | 'min'
   value: number
@@ -44,7 +46,7 @@ export type ParsedRow = { ok: true; draft: RuleDraft } | { ok: false; line: numb
  * проверкой языка, которая ищет ровно её.
  */
 export const HEADER =
-  'layer,jurisdiction,municipality,zone,subject,operator,value,document,article,effective_from,checked_at,url'
+  'layer,jurisdiction,municipality,zone,parcel,subject,operator,value,document,article,effective_from,checked_at,url'
 
 /**
  * Дата в ISO и только в ISO.
@@ -131,6 +133,7 @@ function readRow(row: Record<string, string>, line: number): ParsedRow {
       jurisdiction: jurisdiction as Jurisdiction,
       municipality,
       zone: at('zone'),
+      parcel: at('parcel'),
       subject: subject as RuleSubject,
       operator,
       value,
