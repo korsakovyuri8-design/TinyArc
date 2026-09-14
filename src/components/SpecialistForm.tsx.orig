@@ -1,7 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
-import type { Discipline } from '@/engine/taxonomy'
+import { useActionState } from 'react'
 import {
   CLIMATE_ZONES,
   DISCIPLINES,
@@ -117,16 +116,6 @@ export function SpecialistForm({
     return Array.isArray(fallback) ? fallback : []
   }
 
-  /*
-   * Выбранные дисциплины держатся в состоянии: от них зависит, какие
-   * специализации показывать. Начальное значение — то же, что у самих галочек,
-   * иначе после отказа формы человек увидел бы свои дисциплины отмеченными, а
-   * блок специализаций — пустым.
-   */
-  const [disciplines, setDisciplines] = useState<Discipline[]>(
-    () => list('disciplines') as Discipline[],
-  )
-
   return (
     <form action={action}>
       {Object.entries(hidden).map(([name, value]) => (
@@ -166,13 +155,7 @@ export function SpecialistForm({
         <legend>What you handle · dimensions 1–4</legend>
 
         <Field label="Disciplines" error={errors.disciplines}>
-          <Choices
-            defaultValue={list('disciplines') as never[]}
-            name="disciplines"
-            options={DISCIPLINES}
-            labels={DISCIPLINE_LABELS}
-            onChange={(picked) => setDisciplines(picked as Discipline[])}
-          />
+          <Choices defaultValue={list('disciplines') as never[]} name="disciplines" options={DISCIPLINES} labels={DISCIPLINE_LABELS} />
         </Field>
 
         <Field
@@ -180,24 +163,8 @@ export function SpecialistForm({
           error={errors.specializations}
           hint="Tick only what you have led yourself. A concrete-frame engineer on a timber house is not “near enough the same thing”, and the engine keeps the two apart on purpose"
         >
-          {/*
-            Показываются только специализации выбранных дисциплин.
-            Раньше форма выкладывала все сразу, и человек отмечал то, что
-            движок обязан отвергнуть: специализация должна принадлежать
-            заявленной дисциплине, иначе в пуле заводится конструктор,
-            который «немного ландшафт». Проверка была права, а форма
-            предлагала галочки, заведомо ведущие к отказу.
-          */}
-          {disciplines.length === 0 && (
-            <p className="hint" style={{ margin: 0 }}>
-              Pick your disciplines above — the specialisations for them appear here.
-            </p>
-          )}
-
           <div className="stack" style={{ gap: 16 }}>
-            {DISCIPLINES.filter(
-              (d) => DISCIPLINE_SPECIALIZATIONS[d].length > 0 && disciplines.includes(d),
-            ).map((d) => (
+            {DISCIPLINES.filter((d) => DISCIPLINE_SPECIALIZATIONS[d].length > 0).map((d) => (
               <div key={d}>
                 <div className="label" style={{ marginBottom: 8 }}>
                   {DISCIPLINE_LABELS[d]}

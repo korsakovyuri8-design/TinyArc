@@ -43,13 +43,19 @@ export function Choices<T extends string>({
   options,
   labels,
   defaultValue = [],
+  onChange,
 }: {
   name: string
   options: readonly T[]
   labels: Record<T, string>
   defaultValue?: readonly T[]
+  /*
+   * Необязательный слушатель: поле остаётся неуправляемым, значения по-прежнему
+   * собирает форма. Нужен там, где один набор галочек решает, что показывать в
+   * другом, — например, дисциплины определяют доступные специализации.
+   */
+  onChange?: (selected: T[]) => void
 }) {
-
   return (
     <div className="choices">
       {options.map((option) => (
@@ -59,6 +65,19 @@ export function Choices<T extends string>({
             name={name}
             value={option}
             defaultChecked={defaultValue.includes(option)}
+            onChange={
+              onChange &&
+              ((event) => {
+                const box = event.currentTarget
+                const form = box.form
+                if (!form) return
+                const all = Array.from(form.elements).filter(
+                  (el): el is HTMLInputElement =>
+                    el instanceof HTMLInputElement && el.name === name,
+                )
+                onChange(all.filter((i) => i.checked).map((i) => i.value as T))
+              })
+            }
           />
           {labels[option]}
         </label>

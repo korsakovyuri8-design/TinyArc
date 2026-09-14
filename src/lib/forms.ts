@@ -116,7 +116,16 @@ export const briefSchema = z.object({
   software: z.array(z.enum(SOFTWARE)),
   languages: z.array(z.enum(LANGUAGES)).min(1, 'Name at least one language'),
 
-  requiredHoursPerWeek: z.coerce.number().int().min(1).max(40),
+  /*
+   * Недельная нагрузка спрашивалась у заказчика, и это была чужая работа,
+   * переложенная на него: сколько часов специалиста съест раздел, знает бюро,
+   * а не человек, купивший участок. Он отвечал наугад, а число шло в подбор
+   * состава как факт.
+   *
+   * Поле осталось в требованиях — движок считает по нему ёмкость, — но
+   * заполняется умолчанием и правится в панели, если проект того потребует.
+   */
+  requiredHoursPerWeek: z.coerce.number().int().min(1).max(40).default(10),
   horizonDays: z.coerce.number().int().min(7).max(365),
 
   briefNotes: trimmed.max(4000).default(''),

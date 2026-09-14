@@ -123,24 +123,6 @@ function BriefFields({
   errors: Record<string, string>
   values: Record<string, string>
 }) {
-  /*
-   * Незаполненные поля с их подписями. Подпись берётся из разметки самой
-   * страницы по `id` поля: отдельный словарь названий разошёлся бы с формой
-   * при первой же правке и называл бы поле не так, как оно подписано.
-   *
-   * Согласие и общая ошибка формы сюда не идут — у них свои места на экране,
-   * и они видны без прокрутки.
-   */
-  const missing = Object.entries(errors)
-    .filter(([name]) => name !== 'form' && name !== 'consent')
-    .map(([name, message]) => ({
-      name,
-      message: String(message),
-      label:
-        (typeof document === 'undefined'
-          ? null
-          : document.querySelector(`label[for="${name}"]`)?.textContent?.trim()) || name,
-    }))
 
   return (
     <form action={action}>
@@ -326,13 +308,23 @@ function BriefFields({
           <Choices name="languages" options={LANGUAGES} labels={LANGUAGE_NAMES} defaultValue={['en']} />
         </Field>
 
-        {/*
-          Недельной нагрузки здесь больше нет: сколько часов специалиста съест
-          раздел — оценка бюро, а не человека, купившего участок. Он отвечал
-          наугад, и это число шло в подбор состава как факт. Умолчание стоит в
-          схеме, правится в панели.
-        */}
         <div className="grid grid-2">
+          <Field
+            label="Workload, h/week"
+            name="requiredHoursPerWeek"
+            error={errors.requiredHoursPerWeek}
+            hint="How much of a specialist’s time the project needs"
+          >
+            <input
+              id="requiredHoursPerWeek"
+              name="requiredHoursPerWeek"
+              type="number"
+              min={1}
+              max={40}
+              defaultValue={values.requiredHoursPerWeek ?? 10}
+            />
+          </Field>
+
           <Field
             label="Start within, days"
             name="horizonDays"
@@ -382,31 +374,6 @@ function BriefFields({
       {errors.form && (
         <div className="note note-fail" style={{ marginBottom: 20 }}>
           {errors.form}
-        </div>
-      )}
-
-      {/*
-        Сводка незаполненного — рядом с кнопкой, а не только у самих полей.
-        Причина отказа писалась под полем, до которого человек не долистал: он
-        нажимал «собрать команду», ничего не происходило, и форма выглядела
-        сломанной. На брифе в два десятка полей это потеря заказчика на
-        последнем шаге — он закрывает вкладку, а не ищет пустую строку.
-
-        Ссылки, а не перечисление: нажатие уводит к полю. Названия берутся из
-        подписей самих полей на странице — отдельный словарь разошёлся бы с
-        формой при первой же правке и врал бы, называя поле не так, как оно
-        подписано.
-      */}
-      {missing.length > 0 && (
-        <div className="note note-fail" style={{ marginBottom: 20 }}>
-          <strong>The form was not sent. Fill these in:</strong>
-          <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-            {missing.map((field) => (
-              <li key={field.name}>
-                <a href={`#${field.name}`}>{field.label}</a> — {field.message}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
 
