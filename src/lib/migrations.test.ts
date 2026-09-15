@@ -55,6 +55,7 @@ const APPLIED: Record<string, string> = {
   '0022_parcel_scope': '039d5a328c993e22e28366444b20705b',
   '0023_model_calls': '4cb32970510a9bbcb7633ccaed3b1272',
   '0024_accrual_drift_index': 'd24a37cbfd3eed44ccc99f53328315da',
+  '0025_site_distance_and_height': 'b0c13fc980b989548ab591fc7880a603',
 }
 
 function checksum(name: string): string {

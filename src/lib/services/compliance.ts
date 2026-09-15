@@ -29,6 +29,8 @@ export const SITE_SELECT = {
   units: true,
   parkingSpaces: true,
   greenSqm: true,
+  distanceToBuildingM: true,
+  ceilingHeightM: true,
 } as const
 
 type RuleRow = {

@@ -169,6 +169,12 @@ export const siteSchema = z.object({
   units: optionalNumber(10_000),
   parkingSpaces: optionalNumber(10_000),
   greenSqm: optionalNumber(2_000_000),
+  /*
+   * Потолок в сто метров — это не здание, а опечатка; предел стоит, чтобы
+   * такая опечатка не прошла в отчёт о соответствии как факт.
+   */
+  distanceToBuildingM: optionalNumber(1_000),
+  ceilingHeightM: optionalNumber(100),
 })
 
 /**

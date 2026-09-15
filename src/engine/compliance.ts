@@ -58,6 +58,26 @@ export const RULE_SUBJECTS = [
   'setback_rear_m',
   'parking_per_unit',
   'green_ratio',
+  /*
+   * Расстояние до ближайшего соседнего здания.
+   *
+   * Отдельно от трёх отступов, и это не дублирование: отступ меряется от
+   * границы участка, а это — от чужой стены. Здание может стоять с запасом от
+   * границы и всё равно оказаться слишком близко к соседнему, если тот тоже
+   * отступил мало. В Италии это самый жёсткий предел вообще — десять метров
+   * между окнами противостоящих зданий, и суды считают его от любой точки
+   * здания, а не только от участков стены напротив окон.
+   */
+  'distance_to_building_m',
+  /*
+   * Чистая высота помещения.
+   *
+   * Единственное требование к помещениям, которое имеет смысл на уровне
+   * проекта: остальные — площадь спальни, доля остекления — считаются по
+   * каждой комнате, и в корпусе, где правило описывает объект целиком, им
+   * места нет.
+   */
+  'ceiling_height_m',
 ] as const
 export type RuleSubject = (typeof RULE_SUBJECTS)[number]
 
@@ -72,6 +92,8 @@ export const SUBJECT_INPUT: Record<RuleSubject, keyof SiteFacts> = {
   setback_rear_m: 'setbackRearM',
   parking_per_unit: 'parkingPerUnit',
   green_ratio: 'greenRatio',
+  distance_to_building_m: 'distanceToBuildingM',
+  ceiling_height_m: 'ceilingHeightM',
 }
 
 export type RuleOperator = 'max' | 'min'
@@ -161,6 +183,10 @@ export type SiteFacts = {
   parkingPerUnit?: number
   /** Доля озеленения от площади участка, 0…1. */
   greenRatio?: number
+  /** До ближайшего соседнего здания, метров. Не до границы — до чужой стены. */
+  distanceToBuildingM?: number
+  /** Чистая высота помещения, метров. */
+  ceilingHeightM?: number
 }
 
 export type Verdict = 'pass' | 'fail' | 'needs_input'

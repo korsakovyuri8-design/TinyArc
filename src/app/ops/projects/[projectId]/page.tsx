@@ -225,6 +225,23 @@ export default async function OpsProjectPage({
               <SiteField id="setbackRearM" label="Rear setback, m" value={project.setbackRearM} step="0.1" />
               <SiteField id="parkingSpaces" label="Parking spaces" value={project.parkingSpaces} />
               <SiteField id="greenSqm" label="Green area, m²" value={project.greenSqm} />
+              {/*
+                Расстояние до соседнего здания стоит рядом с отступами, но это
+                другая величина: отступ меряется от границы участка, а это — от
+                чужой стены.
+              */}
+              <SiteField
+                id="distanceToBuildingM"
+                label="To nearest building, m"
+                value={project.distanceToBuildingM}
+                step="0.1"
+              />
+              <SiteField
+                id="ceilingHeightM"
+                label="Clear ceiling height, m"
+                value={project.ceilingHeightM}
+                step="0.01"
+              />
             </div>
           </OpsAction>
         </div>

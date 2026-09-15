@@ -17,6 +17,8 @@ const empty: SiteInput = {
   units: null,
   parkingSpaces: null,
   greenSqm: null,
+  distanceToBuildingM: null,
+  ceilingHeightM: null,
 }
 
 describe('факты участка', () => {

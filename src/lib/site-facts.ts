@@ -32,6 +32,8 @@ export type SiteInput = {
   units: number | null
   parkingSpaces: number | null
   greenSqm: number | null
+  distanceToBuildingM: number | null
+  ceilingHeightM: number | null
 }
 
 /**
@@ -75,6 +77,8 @@ export function siteFacts(project: SiteInput): SiteFacts {
     setbackFrontM: known(project.setbackFrontM),
     setbackSideM: known(project.setbackSideM),
     setbackRearM: known(project.setbackRearM),
+    distanceToBuildingM: known(project.distanceToBuildingM),
+    ceilingHeightM: known(project.ceilingHeightM),
     parkingPerUnit: ratio(project.parkingSpaces, project.units),
     greenRatio: ratio(project.greenSqm, project.plotAreaSqm),
   }

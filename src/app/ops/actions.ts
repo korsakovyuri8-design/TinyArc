@@ -316,6 +316,8 @@ export async function setSiteFacts(_prev: OpsState, formData: FormData): Promise
       units: value(input.units),
       parkingSpaces: value(input.parkingSpaces),
       greenSqm: value(input.greenSqm),
+      distanceToBuildingM: value(input.distanceToBuildingM),
+      ceilingHeightM: value(input.ceilingHeightM),
     },
   })
 
