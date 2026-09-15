@@ -51,13 +51,28 @@ function lcg(seed: number): () => number {
   }
 }
 
-const FIRST_NAMES: Record<Jurisdiction, string[]> = {
+/**
+ * Страны, для которых у стенда есть правдоподобные имена и климат.
+ *
+ * Демонстрационный пул остался на стартовой географии, хотя бюро открыло весь
+ * ЕЭП. Это не отставание: выдумывать восемь финских фамилий и восемь мальтийских
+ * значит городить тридцать списков ради данных, которые в бою не появляются
+ * вовсе — стенд разворачивается только в демонстрационном режиме, а боевой его
+ * не запускает.
+ *
+ * Если демонстрация понадобится по другой стране, список расширяется здесь, и
+ * тип сразу потребует имена, язык и климат для неё.
+ */
+const DEMO_JURISDICTIONS = ['ME', 'RS', 'GR'] as const
+type DemoJurisdiction = (typeof DEMO_JURISDICTIONS)[number]
+
+const FIRST_NAMES: Record<DemoJurisdiction, string[]> = {
   ME: ['Milo', 'Ana', 'Vuk', 'Jelena', 'Nikola', 'Tijana', 'Marko', 'Ivana'],
   RS: ['Stefan', 'Milica', 'Dušan', 'Jovana', 'Nemanja', 'Katarina', 'Filip', 'Sara'],
   GR: ['Dimitris', 'Eleni', 'Yannis', 'Sofia', 'Kostas', 'Maria', 'Nikos', 'Georgia'],
 }
 
-const LAST_NAMES: Record<Jurisdiction, string[]> = {
+const LAST_NAMES: Record<DemoJurisdiction, string[]> = {
   ME: ['Popović', 'Vujović', 'Radulović', 'Marković', 'Đukanović', 'Kovačević'],
   RS: ['Jovanović', 'Petrović', 'Nikolić', 'Ilić', 'Stanković', 'Pavlović'],
   GR: ['Papadopoulos', 'Georgiou', 'Nikolaou', 'Vasiliou', 'Antoniou', 'Christou'],
@@ -74,8 +89,8 @@ const SOFTWARE_MIXES: Software[][] = [
   ['rhino'],
 ]
 
-const LANGUAGE_BASE: Record<Jurisdiction, Language> = { ME: 'cnr', RS: 'sr', GR: 'el' }
-const CLIMATE_BASE: Record<Jurisdiction, ClimateZone> = {
+const LANGUAGE_BASE: Record<DemoJurisdiction, Language> = { ME: 'cnr', RS: 'sr', GR: 'el' }
+const CLIMATE_BASE: Record<DemoJurisdiction, ClimateZone> = {
   ME: 'mediterranean',
   RS: 'continental',
   GR: 'mediterranean',
@@ -131,7 +146,7 @@ export const DEMO_POOL_SIZE = 3 * ALL_DISCIPLINES.length * PER_DISCIPLINE_PER_JU
  */
 export function demoPool(seed = 20260824): DemoSpecialist[] {
   const random = lcg(seed)
-  const jurisdictions: Jurisdiction[] = ['ME', 'RS', 'GR']
+  const jurisdictions: readonly DemoJurisdiction[] = DEMO_JURISDICTIONS
   const people: DemoSpecialist[] = []
 
   let index = 0

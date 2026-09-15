@@ -29,8 +29,15 @@ function fullPool(): SpecialistProfile[] {
           id: `${role.disciplines[0]}-${copy}`,
           disciplines: [...role.disciplines],
           specializations: [...role.specializations],
-          jurisdictions: ['ME', 'RS', 'GR'],
-          signsIn: ['ME', 'RS', 'GR'],
+          /*
+           * Все страны бюро, а не три стартовые. Раньше здесь стоял список из
+           * трёх, и он означал «полный пул» ровно до тех пор, пока география
+           * была из трёх стран. С открытием ЕЭП фикстура стала описывать пул с
+           * дырами в двадцати семи странах, а тесты, проверяющие молчание на
+           * полном пуле, начали падать — и были правы.
+           */
+          jurisdictions: [...JURISDICTIONS],
+          signsIn: [...JURISDICTIONS],
           portfolioRating: 9,
         }),
       )
@@ -178,8 +185,9 @@ describe('дыры в пуле', () => {
     const pool = fullPool().filter((s) => !s.disciplines.includes('survey'))
     const survey = gaps(pool).filter((g) => g.role.discipline === 'survey')
 
-    // Три страны — три строки, а не по строке на каждую форму проекта.
-    expect(survey).toHaveLength(3)
+    // Строка на страну, а не на каждую форму проекта: форм сотни, стран
+    // тридцать, и разница между этими числами и есть смысл свёртки.
+    expect(survey).toHaveLength(JURISDICTIONS.length)
     expect(survey[0]!.shapes).toBeGreaterThan(1)
   })
 

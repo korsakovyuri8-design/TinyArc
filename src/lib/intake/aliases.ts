@@ -77,10 +77,50 @@ export const SPECIALIZATION_ALIASES: Record<Specialization, string[]> = {
   permit_flood: ['подтоплен', 'затоплен', 'паводок', 'flood'],
 }
 
+/**
+ * Как страна называется в свободном описании заказчика.
+ *
+ * Двухбуквенный код сюда не идёт: `at` и `it` — обычные английские слова, `me`
+ * и `no` тоже, и на свободном тексте они дают ложные срабатывания чаще, чем
+ * верные. У стартовых трёх стран коды остались — там они появились раньше и
+ * успели попасть в живые брифы.
+ *
+ * Города названы только там, где заказчик скорее напишет город, чем страну:
+ * человек с участком в Которе пишет «Котор», а не «Черногория».
+ */
 export const JURISDICTION_ALIASES: Record<Jurisdiction, string[]> = {
   ME: ['черногор', 'montenegro', 'crna gora', 'me', 'mne', 'тиват', 'будв', 'котор', 'подгориц'],
   RS: ['серб', 'serbia', 'srbija', 'rs', 'srb', 'белград', 'beograd', 'нови сад'],
   GR: ['грец', 'greece', 'ellada', 'gr', 'grc', 'афин', 'салоник', 'крит'],
+  AT: ['австри', 'austria', 'österreich', 'вен', 'vienna', 'зальцбург'],
+  BE: ['бельг', 'belgium', 'belgië', 'belgique', 'брюссел', 'антверпен'],
+  BG: ['болгар', 'bulgaria', 'българия', 'софи', 'варн', 'бургас'],
+  HR: ['хорват', 'croatia', 'hrvatska', 'загреб', 'сплит', 'дубровник', 'истри'],
+  CY: ['кипр', 'cyprus', 'kypros', 'лимассол', 'никоси', 'пафос'],
+  CZ: ['чехи', 'czech', 'česko', 'прага', 'praha', 'брно'],
+  DK: ['дани', 'denmark', 'danmark', 'копенгаген'],
+  EE: ['эстони', 'estonia', 'eesti', 'таллин', 'тарту'],
+  FI: ['финлянди', 'finland', 'suomi', 'хельсинки'],
+  FR: ['франц', 'france', 'париж', 'paris', 'ницц', 'прованс', 'лазурн'],
+  DE: ['герман', 'germany', 'deutschland', 'берлин', 'мюнхен', 'гамбург'],
+  HU: ['венгри', 'hungary', 'magyarország', 'будапешт', 'балатон'],
+  IE: ['ирланди', 'ireland', 'éire', 'дублин'],
+  IT: ['итали', 'italy', 'italia', 'рим', 'милан', 'тоскан', 'сардини', 'сицили', 'комо'],
+  LV: ['латви', 'latvia', 'latvija', 'риг', 'юрмал'],
+  LT: ['литв', 'lithuania', 'lietuva', 'вильнюс', 'каунас'],
+  LU: ['люксембург', 'luxembourg'],
+  MT: ['мальт', 'malta', 'валлетт'],
+  NL: ['нидерланд', 'голланди', 'netherlands', 'амстердам', 'роттердам'],
+  PL: ['польш', 'poland', 'polska', 'варшав', 'краков', 'гданьск'],
+  PT: ['португал', 'portugal', 'лиссабон', 'порту', 'алгарв', 'мадейр'],
+  RO: ['румын', 'romania', 'românia', 'бухарест', 'трансильван'],
+  SK: ['словаки', 'slovakia', 'slovensko', 'братислав'],
+  SI: ['словени', 'slovenia', 'slovenija', 'любляна', 'блед', 'пиран'],
+  ES: ['испани', 'spain', 'españa', 'мадрид', 'барселон', 'марбель', 'майорк', 'коста'],
+  SE: ['швеци', 'sweden', 'sverige', 'стокгольм', 'гётеборг'],
+  IS: ['исланди', 'iceland', 'ísland', 'рейкьявик'],
+  LI: ['лихтенштейн', 'liechtenstein', 'вадуц'],
+  NO: ['норвег', 'norway', 'norge', 'осло', 'берген', 'фьорд'],
 }
 
 export const SOFTWARE_ALIASES: Record<Software, string[]> = {
@@ -93,10 +133,35 @@ export const SOFTWARE_ALIASES: Record<Software, string[]> = {
 
 export const LANGUAGE_ALIASES: Record<Language, string[]> = {
   en: ['англ', 'english', 'en'],
+  ru: ['рус', 'russian', 'ru'],
   sr: ['серб', 'srpski', 'serbian', 'sr'],
   cnr: ['черногорск', 'crnogorski', 'cnr'],
   el: ['греч', 'greek', 'ellinika', 'el'],
-  ru: ['рус', 'russian', 'ru'],
+  bg: ['болгарск', 'bulgarian', 'български'],
+  hr: ['хорватск', 'croatian', 'hrvatski'],
+  cs: ['чешск', 'czech', 'čeština'],
+  da: ['датск', 'danish', 'dansk'],
+  nl: ['нидерландск', 'голландск', 'dutch', 'nederlands'],
+  et: ['эстонск', 'estonian', 'eesti keel'],
+  fi: ['финск', 'finnish', 'suomen kieli'],
+  fr: ['французск', 'french', 'français'],
+  de: ['немецк', 'german', 'deutsch'],
+  hu: ['венгерск', 'hungarian', 'magyar'],
+  ga: ['ирландск', 'irish', 'gaeilge'],
+  it: ['итальянск', 'italian', 'italiano'],
+  lv: ['латышск', 'latvian', 'latviešu'],
+  lt: ['литовск', 'lithuanian', 'lietuvių'],
+  lb: ['люксембургск', 'luxembourgish', 'lëtzebuergesch'],
+  mt: ['мальтийск', 'maltese', 'malti'],
+  pl: ['польск', 'polish', 'polski'],
+  pt: ['португальск', 'portuguese', 'português'],
+  ro: ['румынск', 'romanian', 'română'],
+  sk: ['словацк', 'slovak', 'slovenčina'],
+  sl: ['словенск', 'slovenian', 'slovenščina'],
+  es: ['испанск', 'spanish', 'español'],
+  sv: ['шведск', 'swedish', 'svenska'],
+  is: ['исландск', 'icelandic', 'íslenska'],
+  no: ['норвежск', 'norwegian', 'norsk'],
 }
 
 export const TYPOLOGY_ALIASES: Record<Typology, string[]> = {

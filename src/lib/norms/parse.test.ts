@@ -113,7 +113,10 @@ describe('разбор корпуса норм', () => {
   })
 
   it('чужая страна не берётся', () => {
-    expect(parseRules(row({ jurisdiction: 'FR' })).rejected[0]?.reason).toContain('jurisdiction')
+    // Франция здесь больше не годится: с открытием ЕЭП она стала своей.
+    // Грузия за границей списка по существу — директива о признании
+    // квалификаций на неё не распространяется.
+    expect(parseRules(row({ jurisdiction: 'GE' })).rejected[0]?.reason).toContain('jurisdiction')
   })
 
   it('оператор только max или min', () => {

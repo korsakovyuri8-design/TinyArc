@@ -136,21 +136,80 @@ export type ClimateZone = (typeof CLIMATE_ZONES)[number]
 
 // --- 7. Юрисдикция ---------------------------------------------------------
 
-/** Стартовая география (концепт, п.5). Страна открывается только с подписью. */
-export const JURISDICTIONS = ['ME', 'RS', 'GR'] as const
+/**
+ * География бюро: Западные Балканы и весь ЕЭП.
+ *
+ * Страна в этом списке означает ровно одно — движок готов собрать под неё
+ * команду и проверить право подписи. Она **не** означает, что для страны есть
+ * корпус норм: проверка участка идёт по правилам из `ComplianceRule`, и там,
+ * где правил нет, отчёт честно пишет, что это пробел корпуса, а не приговор
+ * проекту. Корпус заводится по одной стране за раз и живёт своим темпом.
+ *
+ * Разделение сделано намеренно. Слить два списка в один значило бы держать
+ * страну закрытой, пока юрист не свёл её нормы целиком, — то есть закрытой
+ * годами. Бюро при этом умеет собрать команду уже сегодня, и скрывать это от
+ * заказчика хуже, чем сказать ему, что нормы по его области ещё не сведены.
+ */
+export const JURISDICTIONS = [
+  // Западные Балканы — стартовая география.
+  'ME',
+  'RS',
+  // Европейский союз.
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+  'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+  'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+  // Остальной ЕЭП: та же директива о признании квалификаций.
+  'IS', 'LI', 'NO',
+] as const
 export type Jurisdiction = (typeof JURISDICTIONS)[number]
 
 export const JURISDICTION_NAMES: Record<Jurisdiction, string> = {
   ME: 'Montenegro',
   RS: 'Serbia',
+  AT: 'Austria',
+  BE: 'Belgium',
+  BG: 'Bulgaria',
+  HR: 'Croatia',
+  CY: 'Cyprus',
+  CZ: 'Czechia',
+  DK: 'Denmark',
+  EE: 'Estonia',
+  FI: 'Finland',
+  FR: 'France',
+  DE: 'Germany',
   GR: 'Greece',
+  HU: 'Hungary',
+  IE: 'Ireland',
+  IT: 'Italy',
+  LV: 'Latvia',
+  LT: 'Lithuania',
+  LU: 'Luxembourg',
+  MT: 'Malta',
+  NL: 'Netherlands',
+  PL: 'Poland',
+  PT: 'Portugal',
+  RO: 'Romania',
+  SK: 'Slovakia',
+  SI: 'Slovenia',
+  ES: 'Spain',
+  SE: 'Sweden',
+  IS: 'Iceland',
+  LI: 'Liechtenstein',
+  NO: 'Norway',
 }
 
-/** Смещение от UTC, в котором живёт стройка. Часовой пояс клиента не спрашивают. */
+/**
+ * Смещение от UTC, в котором живёт стройка. Часовой пояс клиента не спрашивают.
+ *
+ * Зимнее время: летний переход общий для всего ЕС и на разницу между странами
+ * не влияет, а сроки считаются в рабочих часах, а не в метках времени.
+ */
 export const JURISDICTION_UTC_OFFSET: Record<Jurisdiction, number> = {
-  ME: 1,
-  RS: 1,
-  GR: 2,
+  ME: 1, RS: 1,
+  AT: 1, BE: 1, BG: 2, HR: 1, CY: 2, CZ: 1, DK: 1, EE: 2, FI: 2, FR: 1,
+  DE: 1, GR: 2, HU: 1, IE: 0, IT: 1, LV: 2, LT: 2, LU: 1, MT: 1, NL: 1,
+  PL: 1, PT: 0, RO: 2, SK: 1, SI: 1, ES: 1, SE: 1,
+  IS: 0, LI: 1, NO: 1,
 }
 
 /**
@@ -180,7 +239,41 @@ export const LOCAL_ONLY_DISCIPLINES: readonly Discipline[] = ['permitting', 'sur
 export const OFFICIAL_LANGUAGE: Record<Jurisdiction, Language> = {
   ME: 'cnr',
   RS: 'sr',
+  AT: 'de',
+  // У Бельгии три государственных языка, у Финляндии два, у Мальты два, у
+  // Кипра два. Здесь стоит тот, на котором орган ведёт разрешительное дело в
+  // большинстве общин. Это упрощение, и оно сработает не везде: во Фландрии
+  // подают по-нидерландски, в Валлонии по-французски. Второй язык страны
+  // заводится тогда, когда появится первый проект, который об это споткнётся.
+  BE: 'nl',
+  BG: 'bg',
+  HR: 'hr',
+  CY: 'el',
+  CZ: 'cs',
+  DK: 'da',
+  EE: 'et',
+  FI: 'fi',
+  FR: 'fr',
+  DE: 'de',
   GR: 'el',
+  HU: 'hu',
+  IE: 'en',
+  IT: 'it',
+  LV: 'lv',
+  LT: 'lt',
+  LU: 'lb',
+  MT: 'mt',
+  NL: 'nl',
+  PL: 'pl',
+  PT: 'pt',
+  RO: 'ro',
+  SK: 'sk',
+  SI: 'sl',
+  ES: 'es',
+  SE: 'sv',
+  IS: 'is',
+  LI: 'de',
+  NO: 'no',
 }
 
 // --- 8. Софт ---------------------------------------------------------------
@@ -246,15 +339,55 @@ export type RegulatoryTrack = (typeof REGULATORY_TRACKS)[number]
 
 // --- 11. Язык --------------------------------------------------------------
 
-export const LANGUAGES = ['en', 'sr', 'cnr', 'el', 'ru'] as const
+/**
+ * Языки, на которых бюро работает.
+ *
+ * Список идёт от двух разных нужд, и смешивать их нельзя. Английский и русский
+ * стоят здесь как языки общения внутри команды. Остальные — государственные
+ * языки юрисдикций: на них разговаривают органы, и для согласований это гейт,
+ * а не удобство.
+ */
+export const LANGUAGES = [
+  // Языки команды.
+  'en', 'ru',
+  // Государственные языки юрисдикций.
+  'sr', 'cnr', 'el', 'bg', 'hr', 'cs', 'da', 'nl', 'et', 'fi', 'fr',
+  'de', 'hu', 'ga', 'it', 'lv', 'lt', 'lb', 'mt', 'pl', 'pt', 'ro',
+  'sk', 'sl', 'es', 'sv', 'is', 'no',
+] as const
 export type Language = (typeof LANGUAGES)[number]
 
 export const LANGUAGE_NAMES: Record<Language, string> = {
   en: 'English',
+  ru: 'Russian',
   sr: 'Serbian',
   cnr: 'Montenegrin',
   el: 'Greek',
-  ru: 'Russian',
+  bg: 'Bulgarian',
+  hr: 'Croatian',
+  cs: 'Czech',
+  da: 'Danish',
+  nl: 'Dutch',
+  et: 'Estonian',
+  fi: 'Finnish',
+  fr: 'French',
+  de: 'German',
+  hu: 'Hungarian',
+  ga: 'Irish',
+  it: 'Italian',
+  lv: 'Latvian',
+  lt: 'Lithuanian',
+  lb: 'Luxembourgish',
+  mt: 'Maltese',
+  pl: 'Polish',
+  pt: 'Portuguese',
+  ro: 'Romanian',
+  sk: 'Slovak',
+  sl: 'Slovenian',
+  es: 'Spanish',
+  sv: 'Swedish',
+  is: 'Icelandic',
+  no: 'Norwegian',
 }
 
 // --- 12. Режим работы ------------------------------------------------------
