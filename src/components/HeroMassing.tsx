@@ -3,30 +3,31 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Первый экран: объём, который собирается из линий.
+ * Первый экран: объём, который вычерчивается латунью в темноте.
  *
- * Не украшение и не сток. Это те же четыре объёмных решения, которые движок
- * выдаёт под настоящий бриф, — двор, павильоны, компактный объём, линейный, — и
- * та же геометрия, что уходит команде. Человек на главной видит ровно то, что
- * получит, а не картинку из фотобанка.
+ * Два языка, которые принято считать несовместимыми, здесь стоят вместе
+ * намеренно. Тёплый уголь, терракотовый отсвет и латунь — это Средиземноморье
+ * и старый Голливуд: то, за чем к архитектуре и приходят. Геометрия, точность
+ * хода и число рядом — это алгоритм.
  *
- * Схема рисуется штрихом: линии проступают по очереди, как на кальке. Приём
- * выбран не ради моды — он показывает, что здание разбирается на элементы, а
- * это и есть то, чем бюро занимается. Рендер показал бы результат; чертёж
- * показывает работу.
+ * Стык и есть смысл. Бюро, которое обещает алгоритмическую сборку, а
+ * показывает чужую виллу из фотобанка, теряет доверие на первом экране.
+ * Поэтому здесь не фотография, а чертёж, — но вычерченный так, как вычерчивал
+ * бы человек, которому не всё равно.
+ *
+ * Сами четыре решения — те же, что движок выдаёт под настоящий бриф.
  */
 
 type Option = {
   key: string
   title: string
   cost: string
-  /** Пути в порядке отрисовки. Порядок — это и есть сборка. */
   paths: string[]
 }
 
 const W = 640
-const H = 360
-const GROUND = 300
+const H = 380
+const GROUND = 310
 
 const OPTIONS: Option[] = [
   {
@@ -34,9 +35,10 @@ const OPTIONS: Option[] = [
     title: 'Courtyard',
     cost: 'Privacy comes from the plan, not from a fence',
     paths: [
-      `M 160 ${GROUND} L 480 ${GROUND}`,
-      `M 180 ${GROUND} L 180 140 L 460 140 L 460 ${GROUND}`,
-      'M 250 260 L 390 260 L 390 190 L 250 190 Z',
+      `M 150 ${GROUND} L 490 ${GROUND}`,
+      `M 175 ${GROUND} L 175 145 L 465 145 L 465 ${GROUND}`,
+      'M 250 265 L 390 265 L 390 195 L 250 195 Z',
+      'M 175 205 L 465 205',
     ],
   },
   {
@@ -44,12 +46,12 @@ const OPTIONS: Option[] = [
     title: 'Pavilions',
     cost: 'Perimeter and envelope cost rise; services run between the blocks',
     paths: [
-      `M 130 ${GROUND} L 510 ${GROUND}`,
-      `M 150 ${GROUND} L 150 215 L 250 215 L 250 ${GROUND}`,
-      `M 285 ${GROUND} L 285 170 L 395 170 L 395 ${GROUND}`,
-      `M 420 ${GROUND} L 420 225 L 505 225 L 505 ${GROUND}`,
-      'M 250 265 L 285 265',
-      'M 395 265 L 420 265',
+      `M 120 ${GROUND} L 520 ${GROUND}`,
+      `M 145 ${GROUND} L 145 220 L 250 220 L 250 ${GROUND}`,
+      `M 288 ${GROUND} L 288 170 L 400 170 L 400 ${GROUND}`,
+      `M 430 ${GROUND} L 430 232 L 515 232 L 515 ${GROUND}`,
+      'M 250 272 L 288 272',
+      'M 400 272 L 430 272',
     ],
   },
   {
@@ -57,9 +59,10 @@ const OPTIONS: Option[] = [
     title: 'Compact volume',
     cost: 'Less façade frontage and fewer viewpoints; the plan is rigid',
     paths: [
-      `M 200 ${GROUND} L 440 ${GROUND}`,
-      `M 230 ${GROUND} L 230 155 L 410 155 L 410 ${GROUND}`,
-      'M 230 215 L 410 215',
+      `M 195 ${GROUND} L 445 ${GROUND}`,
+      `M 225 ${GROUND} L 225 158 L 415 158 L 415 ${GROUND}`,
+      'M 225 222 L 415 222',
+      'M 320 158 L 320 310',
     ],
   },
   {
@@ -67,16 +70,15 @@ const OPTIONS: Option[] = [
     title: 'Linear volume',
     cost: 'Long service runs; it needs a site with a pronounced long side',
     paths: [
-      `M 90 ${GROUND} L 550 ${GROUND}`,
-      `M 110 ${GROUND} L 110 205 L 530 205 L 530 ${GROUND}`,
-      'M 200 205 L 200 300',
-      'M 320 205 L 320 300',
-      'M 440 205 L 440 300',
+      `M 80 ${GROUND} L 560 ${GROUND}`,
+      `M 100 ${GROUND} L 100 212 L 540 212 L 540 ${GROUND}`,
+      'M 190 212 L 190 310',
+      'M 320 212 L 320 310',
+      'M 450 212 L 450 310',
     ],
   },
 ]
 
-/** Сетка как на кальке: шаг крупный, линия тонкая, разговора не перебивает. */
 function Grid() {
   const step = 40
   const lines: string[] = []
@@ -84,7 +86,7 @@ function Grid() {
   for (let y = step; y < H; y += step) lines.push(`M 0 ${y} L ${W} ${y}`)
 
   return (
-    <g className="hero-grid">
+    <g className="night-grid">
       {lines.map((d) => (
         <path key={d} d={d} />
       ))}
@@ -96,14 +98,9 @@ export function HeroMassing() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
 
-  /*
-   * Смена сама по себе, но останавливается под курсором: если человек
-   * задержался на варианте, значит он его читает, и уводить схему из-под него
-   * значит мешать.
-   */
   useEffect(() => {
     if (paused) return
-    const timer = setTimeout(() => setIndex((i) => (i + 1) % OPTIONS.length), 5200)
+    const timer = setTimeout(() => setIndex((i) => (i + 1) % OPTIONS.length), 6000)
     return () => clearTimeout(timer)
   }, [index, paused])
 
@@ -111,35 +108,69 @@ export function HeroMassing() {
 
   return (
     <figure
-      className="hero-massing"
+      className="night-massing"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${option.title}: massing diagram`}>
+        <defs>
+          {/*
+            Латунь не однотонная. Градиент по ходу линии даёт тот перелив, по
+            которому металл отличается от краски, — и он же не даёт чертежу
+            выглядеть напечатанным.
+          */}
+          <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#c9a227" />
+            <stop offset="45%" stopColor="#e8c86a" />
+            <stop offset="100%" stopColor="#a8792c" />
+          </linearGradient>
+
+          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
         <Grid />
 
-        {/*
-          Ключ по варианту заставляет React пересоздать пути, а не переиспользовать
-          их. Без этого линии меняли бы форму на месте, и рисунок выглядел бы
-          перетеканием, а не новым чертежом.
-        */}
-        <g key={option.key} className="hero-lines">
+        <g key={option.key} className="night-lines" filter="url(#glow)">
           {option.paths.map((d, i) => (
-            <path key={d} d={d} style={{ animationDelay: `${i * 220}ms` }} />
+            <g key={d}>
+              <path d={d} style={{ animationDelay: `${i * 260}ms` }} />
+              {/*
+                Головка плоттера. Она и есть разница между «линия появилась» и
+                «линию провели»: глаз следит за точкой, а не за краем заливки.
+              */}
+              <circle className="night-head" r="3.5">
+                <animateMotion
+                  dur="1.2s"
+                  begin={`${i * 0.26}s`}
+                  fill="freeze"
+                  keyPoints="0;1"
+                  keyTimes="0;1"
+                  calcMode="spline"
+                  keySplines="0.22 1 0.36 1"
+                  path={d}
+                />
+              </circle>
+            </g>
           ))}
         </g>
       </svg>
 
       <figcaption>
-        <div className="hero-massing-row">
-          <span className="mono hero-massing-title">{option.title}</span>
-          <span className="mono hero-massing-count">
+        <div className="night-row">
+          <span className="mono night-title">{option.title}</span>
+          <span className="mono night-count">
             {String(index + 1).padStart(2, '0')} / {String(OPTIONS.length).padStart(2, '0')}
           </span>
         </div>
-        <p className="hint">{option.cost}</p>
+        <p className="night-cost">{option.cost}</p>
 
-        <div className="hero-massing-dots" role="tablist" aria-label="Massing options">
+        <div className="night-dots" role="tablist" aria-label="Massing options">
           {OPTIONS.map((o, i) => (
             <button
               key={o.key}

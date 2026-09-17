@@ -9,7 +9,11 @@ export default async function Home() {
 
   return (
     <>
-      <section style={{ paddingTop: 'clamp(64px, 12vw, 140px)' }}>
+      {/*
+        Первый экран — ночь, остальная страница — день. Переход между ними тот
+        же, что в работе с бюро: от впечатления к комплекту документации.
+      */}
+      <section className="night">
         <div className="shell">
           <span className="eyebrow">AI-native architectural practice</span>
           <h1 style={{ maxWidth: '18ch' }}>The bureau that ends the bureau</h1>
@@ -36,7 +40,12 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="grid grid-3" style={{ marginTop: 72 }}>
+        </div>
+      </section>
+
+      <section>
+        <div className="shell">
+          <div className="grid grid-3">
             <Figure value={`${MAX_STOREYS}`} unit="storeys" note="Where the bureau is sharpest: light-regulation zones" />
             <Figure value={`${PORTFOLIO_THRESHOLD}/10`} unit="threshold" note="Below the portfolio threshold a specialist does not pass" />
             <Figure
