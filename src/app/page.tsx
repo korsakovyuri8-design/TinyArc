@@ -1,7 +1,9 @@
 import Link from 'next/link'
+import { BriefSandbox } from '@/components/BriefSandbox'
+import { HeroMassing } from '@/components/HeroMassing'
 import { fill } from '@/lib/fill'
 import { STAGES } from '@/lib/labels'
-import { MAX_STOREYS, PORTFOLIO_THRESHOLD, JURISDICTIONS, JURISDICTION_NAMES } from '@/engine/taxonomy'
+import { MAX_STOREYS, PORTFOLIO_THRESHOLD, JURISDICTIONS } from '@/engine/taxonomy'
 
 export default async function Home() {
 
@@ -18,13 +20,29 @@ export default async function Home() {
             <Link href="/algorithm" className="btn">See how the algorithm chooses</Link>
           </div>
 
+          {/*
+            Схема объёма стоит выше цифр намеренно. Три плашки — это про то, как
+            бюро устроено; схема — про то, что человек получит. Порядок на
+            странице и есть порядок разговора.
+          */}
+          <div style={{ marginTop: 56 }}>
+            <HeroMassing />
+          </div>
+
+          <div style={{ marginTop: 56 }}>
+            <span className="eyebrow">Try it on your own numbers</span>
+            <div style={{ marginTop: 16 }}>
+              <BriefSandbox />
+            </div>
+          </div>
+
           <div className="grid grid-3" style={{ marginTop: 72 }}>
-            <Figure value={`${MAX_STOREYS}`} unit="storeys" note="Product boundary: light-regulation zones" />
+            <Figure value={`${MAX_STOREYS}`} unit="storeys" note="Where the bureau is sharpest: light-regulation zones" />
             <Figure value={`${PORTFOLIO_THRESHOLD}/10`} unit="threshold" note="Below the portfolio threshold a specialist does not pass" />
             <Figure
               value={`${JURISDICTIONS.length}`}
               unit="countries"
-              note={JURISDICTIONS.map((j) => JURISDICTION_NAMES[j]).join(' · ')}
+              note="Two roles are tied to the country. The rest of the team comes from wherever it is"
             />
           </div>
         </div>

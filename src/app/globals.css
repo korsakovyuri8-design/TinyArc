@@ -199,17 +199,6 @@ a:hover {
   color: var(--text);
   text-decoration: none;
   white-space: nowrap;
-  /* Разрядка 0.2em висит и на промежутке после знака: отступ задаёт gap. */
-  display: inline-flex;
-  align-items: center;
-  gap: 11px;
-}
-
-.brand-mark {
-  width: 22px;
-  height: 22px;
-  flex: none;
-  display: block;
 }
 
 .brand:hover {
@@ -762,4 +751,216 @@ ul.clean {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* --- Первый экран: чертёж, который проступает ----------------------------- */
+
+/*
+ * Схема объёма рисуется штрихом. Приём выбран не ради моды: линия, идущая по
+ * своему пути, показывает, что здание разбирается на элементы, — а это и есть
+ * работа бюро. Рендер показал бы результат, чертёж показывает работу.
+ */
+
+.hero-massing {
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.hero-massing svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hero-grid path {
+  stroke: var(--border);
+  stroke-width: 0.5;
+  fill: none;
+  opacity: 0;
+  animation: hero-grid-in 900ms ease-out forwards;
+}
+
+@keyframes hero-grid-in {
+  to { opacity: 0.55; }
+}
+
+.hero-lines path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: square;
+  /*
+   * Длина штриха берётся с запасом: у самого длинного пути здесь около
+   * восьмисот единиц, и одно число на все пути избавляет от измерения каждого
+   * по отдельности. Ошибка в большую сторону безвредна — линия просто начинает
+   * рисоваться чуть позже.
+   */
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: hero-draw 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes hero-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.hero-massing figcaption {
+  border-top: 1px solid var(--border);
+  padding: 16px 20px 20px;
+}
+
+.hero-massing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.hero-massing-title {
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.hero-massing-count {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.hero-massing figcaption .hint {
+  margin: 8px 0 0;
+}
+
+.hero-massing-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.hero-massing-dots button {
+  width: 28px;
+  height: 3px;
+  padding: 0;
+  border: 0;
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+
+.hero-massing-dots button.is-current {
+  background: var(--accent);
+}
+
+/*
+ * Кто просил меньше движения — получает меньше движения. Схема остаётся, она
+ * несёт смысл; уходит только то, как она появляется.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hero-grid path,
+  .hero-lines path {
+    animation: none;
+    opacity: 0.55;
+    stroke-dashoffset: 0;
+  }
+
+  .hero-lines path { opacity: 1; }
+}
+
+/* --- Песочница: числа, которые пересчитываются --------------------------- */
+
+.sandbox {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 24px;
+}
+
+.sandbox-controls {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.sandbox-controls label {
+  display: block;
+}
+
+.sandbox-controls .eyebrow {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.sandbox-controls input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.sandbox-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sandbox-choice {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sandbox-choice button {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.sandbox-choice button.is-current {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sandbox-result {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.sandbox-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sandbox-number {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.1;
+  color: var(--text);
+  /*
+   * Проявление, а не выезд. Число, которое приехало сбоку, читается как
+   * реклама; число, которое проступило на месте, — как пересчёт.
+   */
+  animation: sandbox-recount 380ms ease-out;
+}
+
+@keyframes sandbox-recount {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sandbox-note {
+  margin: 20px 0 0;
+  max-width: 62ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sandbox-number { animation: none; }
 }
