@@ -140,6 +140,13 @@ export class StubAssistant implements Assistant {
       fields,
       missing: wanted.filter(([key]) => !(key in fields)).map(([, label]) => label),
       notes: input.text.trim(),
+      /*
+       * Без модели перевести нечем, и выдумывать перевод хуже, чем не делать
+       * его: команда получила бы текст, который выглядит английским и не
+       * является им. Отдаём исходный — пусть будет видно, что стенд без
+       * помощника, а не что заказчик написал по-английски.
+       */
+      summary: input.text.trim(),
     }
   }
 

@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import { z } from 'zod'
+import { JURISDICTIONS } from '@/engine/taxonomy'
 import { recordModelCall } from '../services/spend'
 import { AssistantFailed } from './types'
 import type { AssistantMethod } from './methods'
@@ -108,7 +109,13 @@ const BriefSchema = z.object({
       typology: z.enum(['villa', 'townhouse', 'multi_family', 'mixed_use']).optional(),
       storeys: z.number().int().optional(),
       areaSqm: z.number().int().optional(),
-      jurisdiction: z.enum(['ME', 'RS', 'GR']).optional(),
+      /*
+       * Страны берутся из таксономии, а не переписываются здесь руками. Список
+       * уже расходился: география открылась на весь ЕЭП, а разбор брифа
+       * остался на трёх странах и молча не узнавал Италию — клиент писал
+       * «участок в Тоскане», поле оставалось пустым, и никто не понимал почему.
+       */
+      jurisdiction: z.enum(JURISDICTIONS).optional(),
       terrain: z.enum(['flat', 'slope', 'flood_prone']).optional(),
       gridConnection: z.enum(['grid', 'off_grid']).optional(),
       materialSystem: z.enum(['concrete', 'masonry', 'timber', 'steel', 'hybrid']).optional(),
@@ -117,6 +124,22 @@ const BriefSchema = z.object({
     .describe('Only what the text states outright. Do not infer and do not fill in.'),
   missing: z.array(z.string()).describe('Fields the text does not contain. Short.'),
   notes: z.string().describe('What else the client said about the site and the task.'),
+  /*
+   * Изложение по-английски.
+   *
+   * Заказчик пишет на своём языке — сайт ему переводит браузер, и это
+   * правильно. Но дальше текст уходит команде, собранной со всего мира:
+   * конструктор в Белграде получил бы описание участка по-немецки и понял бы
+   * его через переводчик, наугад, в разделе, который идёт под его подпись.
+   *
+   * Поэтому английский появляется здесь, на входе, один раз и осознанно —
+   * а не тридцать раз у тридцати специалистов.
+   */
+  summary: z
+    .string()
+    .describe(
+      'The same description in English, for the team. Keep it factual and do not add anything the client did not say. If the text is already English, repeat it as is.',
+    ),
 })
 
 const PortfolioSchema = z.object({
@@ -305,6 +328,9 @@ export class AnthropicAssistant implements Assistant {
         'Parse the project description into brief fields.',
         'Fill in only what is stated outright. Do not infer from general reasoning:',
         'an empty field the client will fill in themselves, a guessed one they will not notice.',
+        '',
+        'The client may write in any language. The team works in English, so also',
+        'restate the description in English — the same facts, nothing added.',
         '',
         untrusted('description', input.text),
       ].join('\n'),

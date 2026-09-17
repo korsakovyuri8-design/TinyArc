@@ -152,7 +152,20 @@ export async function readDescription(_prev: BriefState, formData: FormData): Pr
       if (value !== undefined && value !== null && value !== '') filled[key] = String(value)
     }
 
-    if (parse.notes) filled.briefNotes = bounded(parse.notes, TEXT_MAX.line)
+    /*
+     * В поле брифа кладётся изложение по-английски, а не то, что заказчик
+     * написал.
+     *
+     * Это единственное место, где перевод стоит сделать. Дальше текст идёт
+     * команде, собранной со всего мира: конструктор в Белграде получил бы
+     * описание участка по-немецки и понял бы его наугад — в разделе, который
+     * идёт под его подпись.
+     *
+     * Заказчик при этом видит, что подставилось, и может поправить: поле
+     * открыто, и последнее слово за ним.
+     */
+    const forTeam = parse.summary?.trim() || parse.notes
+    if (forTeam) filled.briefNotes = bounded(forTeam, TEXT_MAX.line)
 
     return { values: filled, read: { missing: parse.missing, notes: parse.notes } }
   } catch (error) {
