@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 /**
  * Первый экран: объём, который вычерчивается латунью в темноте.
@@ -97,6 +97,7 @@ function Grid() {
 export function HeroMassing() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
+  const frame = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (paused) return
@@ -104,13 +105,65 @@ export function HeroMassing() {
     return () => clearTimeout(timer)
   }, [index, paused])
 
+  /*
+   * Параллакс глубины.
+   *
+   * Сетка уходит медленнее линий, и чертёж перестаёт быть плоской картинкой:
+   * между подложкой и объёмом появляется расстояние. Величина намеренно мала —
+   * заметный сдвиг читался бы как эффект, а нужен не эффект, а глубина.
+   *
+   * Значение пишется в переменную CSS, а не в стиль элемента: так браузер
+   * считает его на своём слое и не перебирает разметку на каждый кадр.
+   */
+  useEffect(() => {
+    const node = frame.current
+    if (!node) return
+
+    let ticking = false
+
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+
+      requestAnimationFrame(() => {
+        const box = node.getBoundingClientRect()
+        const middle = box.top + box.height / 2 - window.innerHeight / 2
+        node.style.setProperty('--depth', String(Math.max(-1, Math.min(1, middle / 600))))
+        ticking = false
+      })
+    }
+
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  /*
+   * Лупа.
+   *
+   * Под фасадом действительно есть конструктив — это не метафора, а то, из чего
+   * состоит комплект документации. Поэтому линза не просто увеличивает: она
+   * высветляет сетку осей там, где человек смотрит, и показывает, что под
+   * объёмом лежит чертёж.
+   */
+  const onMove = (event: React.MouseEvent<HTMLElement>) => {
+    const node = frame.current
+    if (!node) return
+
+    const box = node.getBoundingClientRect()
+    node.style.setProperty('--lens-x', `${((event.clientX - box.left) / box.width) * 100}%`)
+    node.style.setProperty('--lens-y', `${((event.clientY - box.top) / box.height) * 100}%`)
+  }
+
   const option = OPTIONS[index]!
 
   return (
     <figure
+      ref={frame}
       className="night-massing"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onMouseMove={onMove}
     >
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${option.title}: massing diagram`}>
         <defs>
@@ -135,6 +188,9 @@ export function HeroMassing() {
         </defs>
 
         <Grid />
+
+        {/* Свет линзы: отдельным слоем, чтобы не трогать сам чертёж. */}
+        <rect className="night-lens" width={W} height={H} />
 
         <g key={option.key} className="night-lines" filter="url(#glow)">
           {option.paths.map((d, i) => (

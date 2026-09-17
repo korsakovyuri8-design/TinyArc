@@ -72,7 +72,8 @@ export default async function Home() {
         </div>
       </section>
 
-      <section>
+      {/* Сад в тени: третий тон между ночью и бумагой, чтобы страница не читалась как две половины. */}
+      <section className="grove">
         <div className="shell">
           <span className="eyebrow">Three stages</span>
           <h2 style={{ marginBottom: 40 }}>Filter · Score · Relay</h2>
