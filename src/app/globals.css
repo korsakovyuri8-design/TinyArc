@@ -1412,3 +1412,224 @@ body::after {
   .scale-tick { transition: none; }
   .scale-readout p { animation: none; }
 }
+
+/* --- Вилла: половина построена, половина начерчена ----------------------- */
+
+.villa {
+  --cut: 52%;
+  position: relative;
+  border: 1px solid rgba(217, 180, 95, 0.22);
+  background: linear-gradient(180deg, rgba(23, 19, 16, 0.35), rgba(15, 12, 10, 0.7));
+  cursor: ew-resize;
+  overflow: hidden;
+}
+
+.villa svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.villa-line {
+  fill: none;
+  stroke: url(#villa-brass);
+  stroke-width: 1.8;
+  stroke-dasharray: 2400;
+  stroke-dashoffset: 2400;
+}
+
+.is-drawn .villa-line {
+  animation: villa-draw 1600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes villa-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/*
+ * Оси тоньше и бледнее контура. Разница не косметическая: на чертеже линия
+ * здания и линия построения читаются по-разному, и если их уравнять, рисунок
+ * перестаёт быть чертежом и становится узором.
+ */
+.villa-axis {
+  fill: none;
+  stroke: #d9b45f;
+  stroke-width: 0.9;
+  opacity: 0.5;
+  stroke-dasharray: 7 5;
+}
+
+.villa-dim {
+  fill: #d9b45f;
+  font-family: var(--mono);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.villa-ground {
+  stroke: rgba(217, 180, 95, 0.45);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.villa-seam {
+  stroke: #e8c86a;
+  stroke-width: 1;
+  opacity: 0.65;
+}
+
+.villa-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid rgba(217, 180, 95, 0.18);
+  padding: 14px 20px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(239, 230, 216, 0.5);
+}
+
+.villa-legend-right { color: rgba(217, 180, 95, 0.75); }
+
+@media (prefers-reduced-motion: reduce) {
+  .is-drawn .villa-line { animation: none; stroke-dashoffset: 0; }
+}
+
+/* --- Винный тон: раздел для специалистов --------------------------------- */
+
+/*
+ * Четвёртый тон страницы. Ночь для заказчика, олива для механизма, бумага для
+ * чтения, вино для тех, кто работает. Разделение по смыслу, а не по вкусу: у
+ * специалиста другой разговор, и он должен чувствовать это раньше, чем прочтёт
+ * первую строку.
+ */
+.cellar {
+  --cellar-bg: #2a1518;
+  --cellar-brass: #d3ad5c;
+  --cellar-ivory: #eee2d6;
+
+  position: relative;
+  background: var(--cellar-bg);
+  color: var(--cellar-ivory);
+  padding: clamp(56px, 8vw, 100px) 0;
+}
+
+.cellar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(100% 70% at 20% 0%, rgba(211, 173, 92, 0.1), transparent 62%);
+  pointer-events: none;
+}
+
+.cellar > * { position: relative; }
+
+.cellar .eyebrow { color: var(--cellar-brass); }
+.cellar h2 { color: var(--cellar-ivory); }
+.cellar p { color: rgba(238, 226, 214, 0.72); }
+
+/* --- Тикет --------------------------------------------------------------- */
+
+.ticket {
+  border: 1px solid rgba(211, 173, 92, 0.24);
+  background: rgba(18, 9, 11, 0.5);
+  max-width: 560px;
+}
+
+.ticket-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(211, 173, 92, 0.2);
+  padding: 14px 20px;
+}
+
+.ticket-id {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: rgba(238, 226, 214, 0.5);
+}
+
+.ticket-state {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cellar-brass);
+  transition: color 300ms ease;
+}
+
+.ticket-state.is-done { color: #7fbf92; }
+
+.ticket-body { padding: 22px 20px 24px; }
+
+.ticket-body h4 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--cellar-ivory);
+}
+
+.ticket-body > p {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+}
+
+.ticket-facts {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(211, 173, 92, 0.16);
+}
+
+.ticket-facts dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(238, 226, 214, 0.45);
+}
+
+.ticket-facts dd {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  color: var(--cellar-ivory);
+}
+
+/* Путь тикета: четыре отрезка, которые заполняются по очереди. */
+.ticket-track {
+  display: flex;
+  gap: 6px;
+  margin-top: 22px;
+}
+
+.ticket-track span {
+  flex: 1;
+  height: 2px;
+  background: rgba(211, 173, 92, 0.18);
+  transition: background 420ms ease;
+}
+
+.ticket-track span.is-passed { background: var(--cellar-brass); }
+
+.ticket-hand {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px 16px;
+  border: 1px solid rgba(211, 173, 92, 0.4);
+  background: transparent;
+  color: var(--cellar-ivory);
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  transition: border-color 300ms ease, color 300ms ease, background 300ms ease;
+}
+
+.ticket-hand.is-done {
+  border-color: rgba(127, 191, 146, 0.5);
+  color: #7fbf92;
+  background: rgba(127, 191, 146, 0.06);
+}

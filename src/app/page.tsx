@@ -3,6 +3,8 @@ import { BriefSandbox } from '@/components/BriefSandbox'
 import { HeroMassing } from '@/components/HeroMassing'
 import { StageStamps } from '@/components/StageStamps'
 import { DimensionScale } from '@/components/DimensionScale'
+import { VillaSplit } from '@/components/VillaSplit'
+import { SpecialistTicket } from '@/components/SpecialistTicket'
 import { fill } from '@/lib/fill'
 import { STAGES } from '@/lib/labels'
 import { MAX_STOREYS, PORTFOLIO_THRESHOLD, JURISDICTIONS } from '@/engine/taxonomy'
@@ -54,6 +56,16 @@ export default async function Home() {
           */}
           <div style={{ marginTop: 56 }}>
             <HeroMassing />
+          </div>
+
+          {/*
+            Вилла идёт после схем, а не до. Сначала человек видит, что объём
+            выбирают, и только потом — чем построенное отличается от
+            начерченного. Обратный порядок дал бы красивую картинку раньше
+            мысли, и мысль бы её не догнала.
+          */}
+          <div style={{ marginTop: 40 }}>
+            <VillaSplit />
           </div>
 
           <div style={{ marginTop: 56 }}>
@@ -181,6 +193,35 @@ export default async function Home() {
                 <Link href="/specialists" className="btn">Apply</Link>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/*
+        Винный тон: у специалиста другой разговор, и он должен почувствовать
+        это раньше, чем прочтёт первую строку.
+      */}
+      <section className="cellar">
+        <div className="shell">
+          <span className="eyebrow">For specialists</span>
+          <div className="split">
+            <div>
+              <h2>This is your day here</h2>
+              <p style={{ marginTop: 16 }}>
+                Not a marketplace and not a club. A ticket: what to do, by when, for how much. The
+                engine puts you on a section where your facts match the project, and the bureau
+                speaks to the client for you.
+              </p>
+              <p style={{ marginTop: 14 }}>
+                The fee is per section, and the rate is the same for everyone regardless of the
+                country they work from.
+              </p>
+              <p style={{ marginTop: 22 }}>
+                <Link href="/specialists" className="btn">Apply</Link>
+              </p>
+            </div>
+
+            <SpecialistTicket />
           </div>
         </div>
       </section>
