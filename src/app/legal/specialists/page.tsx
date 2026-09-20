@@ -12,14 +12,14 @@ export const metadata = pageMetadata(
 /**
  * Условия участия в пуле.
  *
- * Написаны потому, что специалист до сих пор соглашался с офертой — договором
+ * Написаны потому, что специалист до сих пор соглашался с офертой, договором
  * о том, как бюро оказывает услугу заказчику. Про него самого там нет ничего:
  * ни отбора алгоритмом, ни подписки как гейта, ни метрик, ни запрета прямых
  * чатов, ни правил выхода из проекта. Человек ставил галочку под чужим
  * документом, и это тот случай, когда согласие есть, а согласия нет.
  *
  * Здесь нет ни одного условия, которого не было бы в продукте. Гонорар за
- * тикет — единственное, что живёт вне системы, и об этом сказано прямо, а не
+ * тикет, единственное, что живёт вне системы, и об этом сказано прямо, а не
  * обойдено молчанием: выдуманная ставка в документе хуже её отсутствия.
  */
 export default function SpecialistTermsPage() {
@@ -33,7 +33,7 @@ export default function SpecialistTermsPage() {
         <h1>Terms for specialists</h1>
 
         <p className="dim" style={{ marginTop: 12, fontSize: '0.85rem' }}>
-          Revision {LEGAL_VERSION} · governing law — {GOVERNING_LAW}
+          Revision {LEGAL_VERSION} · governing law, {GOVERNING_LAW}
         </p>
 
         <div className="panel panel-accent" style={{ marginTop: 28 }}>
@@ -58,9 +58,9 @@ export default function SpecialistTermsPage() {
 
         <Article title="1. Who this is between">
           <p>
-            The Bureau — {details.name || '— name not filled in —'}
+            The Bureau, {details.name || ' name not filled in '}
             {details.registration && `, registration number ${details.registration}`}
-            {details.address && `, address: ${details.address}`}, Montenegro — and you, an
+            {details.address && `, address: ${details.address}`}, Montenegro, and you, an
             independent specialist taking part in the pool. Nothing here creates employment,
             exclusivity, or an obligation to be available.
           </p>
@@ -93,7 +93,7 @@ export default function SpecialistTermsPage() {
           <p>
             Access is a subscription, and it is a gate rather than a score: without it you are
             not in selection at all, whatever your portfolio and metrics. It is checked before
-            the portfolio deliberately — being turned away over money must not look like being
+            the portfolio deliberately, being turned away over money must not look like being
             turned away over qualification.
           </p>
           <p>
@@ -132,7 +132,7 @@ export default function SpecialistTermsPage() {
 
         <Article title="6. No direct channels">
           <p>
-            There are no direct chats between specialists — not discouraged, but not built.
+            There are no direct chats between specialists, not discouraged, but not built.
             You see your ticket and its comments; teammates appear as roles, not as names, and
             their contact details do not exist in the system.
           </p>
@@ -150,7 +150,7 @@ export default function SpecialistTermsPage() {
             editable by anyone, the Bureau included.
           </p>
           <p>
-            There is no field for rating a person — not for the client, not for the Bureau. No
+            There is no field for rating a person, not for the client, not for the Bureau. No
             opinions about you are stored anywhere in the system.
           </p>
         </Article>
@@ -163,7 +163,7 @@ export default function SpecialistTermsPage() {
           </p>
           <p>
             The whole role goes: your open tasks on that project pass to the next by rank from
-            the same run. Work already accepted stays yours — it is in your metrics, and no
+            the same run. Work already accepted stays yours, it is in your metrics, and no
             one rewrites it.
           </p>
         </Article>
@@ -185,8 +185,8 @@ export default function SpecialistTermsPage() {
           <p>
             The documentation set is delivered to the client in full, and rights in it pass to
             the client on payment for the stage. You keep the right to state the fact of the
-            work and to show it in your own portfolio in anonymised form — typology, area,
-            stage, country, your part in it — without the address of the property, the
+            work and to show it in your own portfolio in anonymised form, typology, area,
+            stage, country, your part in it, without the address of the property, the
             client’s name, or the contents of the set.
           </p>
         </Article>
@@ -196,7 +196,7 @@ export default function SpecialistTermsPage() {
             What we hold, why, and who it goes to is set out in the{' '}
             <Link href="/legal/privacy">data processing policy</Link>. Two things from it
             belong here: your contact details never reach the client, and your profile is
-            anonymised on request — the name, the address, the portfolio link and the works
+            anonymised on request, the name, the address, the portfolio link and the works
             go, and the delivery metrics remain in the anonymised form they already had.
           </p>
         </Article>

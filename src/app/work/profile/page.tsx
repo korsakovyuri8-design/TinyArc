@@ -46,10 +46,10 @@ export default async function ProfilePage() {
   const delivery = deliveryScore(metrics)
   const weight = historyWeight(profile.delivery)
 
-  // Адрес бюро из настроек. Пока его нет — отвечать на письмо с ключом:
+  // Адрес бюро из настроек. Пока его нет, отвечать на письмо с ключом:
   // «напишите бюро» без адреса не действие, а отписка.
   const bureauEmail =
-    company().email || 'the bureau’s address — reply to the email with your access key'
+    company().email || 'the bureau’s address, reply to the email with your access key'
 
   return (
     <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
@@ -73,11 +73,11 @@ export default async function ProfilePage() {
             accent={profile.portfolioRating >= PORTFOLIO_THRESHOLD}
           />
           <Stat
-            value={metrics ? delivery.toFixed(1) : '—'}
+            value={metrics ? delivery.toFixed(1) : ''}
             label="delivery score"
             note={
               metrics
-                ? fill('weight in Quality — {percent}%', { percent: Math.round(weight * 100) })
+                ? fill('weight in Quality, {percent}%', { percent: Math.round(weight * 100) })
                 : 'no history yet'
             }
           />
@@ -98,7 +98,7 @@ export default async function ProfilePage() {
         {/*
           Доступ показывается всегда, а не только когда он закрыт. Гейт,
           который виден лишь в момент отказа, человек обнаруживает по
-          отсутствию задач — то есть позже всего и хуже всего.
+          отсутствию задач, то есть позже всего и хуже всего.
         */}
         <div
           className="panel"
@@ -123,15 +123,15 @@ export default async function ProfilePage() {
           {seat.gate === 'subscription' ? (
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
               {fill(
-                'While access is closed the engine does not consider you — whatever your portfolio and metrics. This is about paying for access, not about the quality of your work: being turned away over money and being turned away over qualification are different things, and we do not mix them. To open it, write to {email}.',
+                'While access is closed the engine does not consider you, whatever your portfolio and metrics. This is about paying for access, not about the quality of your work: being turned away over money and being turned away over qualification are different things, and we do not mix them. To open it, write to {email}.',
                 { email: bureauEmail },
               )}
             </p>
           ) : seat.inSelection ? (
-            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Access is open: you take part in selection on the usual terms. The supply side pays for access to demand — the bureau takes no commission from your fee.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Access is open: you take part in selection on the usual terms. The supply side pays for access to demand, the bureau takes no commission from your fee.</p>
           ) : (
             /*
-              Открытый доступ и участие в отборе — не одно и то же, и пока это
+              Открытый доступ и участие в отборе, не одно и то же, и пока это
               была одна фраза, ушедшему на разбор она обещала участие «на общих
               условиях». Деньги ему и правда не мешают; мешает то, что в пуле
               его нет. Поэтому здесь сначала правда про участие, а потом уже
@@ -140,8 +140,8 @@ export default async function ProfilePage() {
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
               {seat.body}{' '}
               {profile.subscription === 'none'
-                ? 'Access to projects is closed as well, and there is nothing to do about that yet: it is opened later, once the step above is behind you. The supply side pays for access to demand — the bureau takes no commission from your fee.'
-                : 'Money is not what is holding this up: access is open, and the supply side pays for access to demand — the bureau takes no commission from your fee.'}
+                ? 'Access to projects is closed as well, and there is nothing to do about that yet: it is opened later, once the step above is behind you. The supply side pays for access to demand, the bureau takes no commission from your fee.'
+                : 'Money is not what is holding this up: access is open, and the supply side pays for access to demand, the bureau takes no commission from your fee.'}
             </p>
           )}
         </div>
@@ -157,7 +157,7 @@ export default async function ProfilePage() {
             <div className="divider" style={{ marginTop: 44 }} />
 
             <h2>Your fees</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>A fee is accrued the moment the bureau accepts your work — not when the client confirms the stage. Acceptance means “done as specified”, and a client taking a week to confirm does not make your work undone. There is no payment processing here: the bureau marks a payout once it has sent the money, and you get a letter when it does.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>A fee is accrued the moment the bureau accepts your work, not when the client confirms the stage. Acceptance means “done as specified”, and a client taking a week to confirm does not make your work undone. There is no payment processing here: the bureau marks a payout once it has sent the money, and you get a letter when it does.</p>
 
             <div className="grid grid-3">
               {/*
@@ -165,19 +165,19 @@ export default async function ProfilePage() {
                 чью работу ещё не оценили, читает крупное «0» и понимает его
                 как «мне ничего не должны»; правда при этом стоит мелким
                 шрифтом ниже. Это тот же обман, что «бриф принят» над панелью
-                о несобравшейся команде, — успокаивающее число выше правды.
+                о несобравшейся команде,, успокаивающее число выше правды.
               */}
               <Stat
                 value={
                   money.owedKnown === 0 && money.owedUnknown > 0
-                    ? '—'
+                    ? ''
                     : `${amount(money.owedKnown)} ${money.currency}`
                 }
                 label="owed to you"
                 note={
                   money.owedUnknown === 0
                     ? 'every accrual has a rate'
-                    : fill('{count} accrual(s) have no rate yet — the bureau has not priced them', {
+                    : fill('{count} accrual(s) have no rate yet, the bureau has not priced them', {
                         count: money.owedUnknown,
                       })
                 }
@@ -246,13 +246,13 @@ export default async function ProfilePage() {
         <div className="divider" style={{ marginTop: 44 }} />
 
         {/*
-          Второе, чем человек управляет сам, — после времени. Цену называет он:
+          Второе, чем человек управляет сам,, после времени. Цену называет он:
           гонорар это его деньги, и бюро её не переписывает. В балл она не
-          входит, и сказано это прямо — иначе первым делом её начнут занижать,
+          входит, и сказано это прямо, иначе первым делом её начнут занижать,
           чтобы «подняться в выдаче», а подниматься от этого нечему.
         */}
         <h2>Your fee</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>You name it yourself, per discipline per stage, and the bureau does not talk it down. It never enters your score: a lower fee does not move you up the ranking, it only makes you affordable on projects whose budget is tighter. Naming nothing is allowed — then the bureau’s own default applies, if it has one for your discipline.</p>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>You name it yourself, per discipline per stage, and the bureau does not talk it down. It never enters your score: a lower fee does not move you up the ranking, it only makes you affordable on projects whose budget is tighter. Naming nothing is allowed, then the bureau’s own default applies, if it has one for your discipline.</p>
 
         <div className="panel" style={{ maxWidth: 560 }}>
           <FeeForm disciplines={profile.disciplines} rates={rates} currency={CURRENCY} />
@@ -400,7 +400,7 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
     <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
       <div className="label">{label}</div>
       <div className={mono ? 'num' : ''} style={{ marginTop: 4 }}>
-        {value || '—'}
+        {value || ''}
       </div>
     </div>
   )

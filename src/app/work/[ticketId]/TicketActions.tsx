@@ -131,7 +131,7 @@ export function RequestForm({
     <>
       {/*
         Черновик отдельной формой перед самим запросом. Адресат не видит ни
-        задачи автора, ни его модели — прямых каналов нет, — и «подвиньте
+        задачи автора, ни его модели, прямых каналов нет,, и «подвиньте
         дверь» доходит до него без единого признака того, какую дверь и куда.
         Помощник разворачивает заметку в запрос, который стоит сам по себе;
         отправляет его человек, прочитав.
@@ -228,11 +228,11 @@ export function RenderForm({ ticketId, hint }: { ticketId: string; hint: string 
 /**
  * Слишком большой файл останавливается здесь, а не на сервере.
  *
- * Проверка на сервере осталась и остаётся главной — форму обходят. Но она
+ * Проверка на сервере осталась и остаётся главной, форму обходят. Но она
  * срабатывает после того, как файл целиком доехал: на плохой связи это
  * несколько минут ожидания ради отказа, который был известен сразу. Хуже
  * того, тело серверного действия ограничено платформой, и файл сверх её
- * предела не доходит до нашей проверки вовсе — человек получает пятисотку
+ * предела не доходит до нашей проверки вовсе, человек получает пятисотку
  * вместо объяснения.
  */
 export function ArtifactForm({ ticketId }: { ticketId: string }) {
@@ -271,7 +271,7 @@ export function ArtifactForm({ ticketId }: { ticketId: string }) {
               event.currentTarget.value = ''
               setTooBig(
                 fill(
-                  'That file is {size} MB — over the {limit} MB limit. That is an archive, not a drawing: keep it elsewhere and give a link.',
+                  'That file is {size} MB, over the {limit} MB limit. That is an archive, not a drawing: keep it elsewhere and give a link.',
                   {
                     size: Math.round(chosen.size / 1024 / 1024),
                     limit: Math.round(MAX_FILE_BYTES / 1024 / 1024),
@@ -311,10 +311,10 @@ export function ArtifactForm({ ticketId }: { ticketId: string }) {
  *
  * Стоит на задаче, потому что именно здесь человек понимает, что не потянет.
  * Но действие шире задачи, и текст говорит это прямо: уходит роль целиком, со
- * всеми незакрытыми задачами. Бросить одну, оставив соседние, нельзя — они
+ * всеми незакрытыми задачами. Бросить одну, оставив соседние, нельзя, они
  * связаны графом, и такой проект потом никто не разберёт.
  *
- * Форма отдельная от Form: там скрытым полем идёт тикет, а здесь — проект.
+ * Форма отдельная от Form: там скрытым полем идёт тикет, а здесь, проект.
  */
 export function LeaveForm({ projectId }: { projectId: string }) {
   const [state, formAction, pending] = useActionState<WorkState, FormData>(leaveProject, {})
@@ -331,14 +331,14 @@ export function LeaveForm({ projectId }: { projectId: string }) {
           style={{ minHeight: 70 }}
           placeholder="Ill; I cannot start for another three weeks"
         />
-        <div className="hint">The bureau and whoever replaces you will see the reason. It does not become a rating — there is no field for rating a specialist in the system.</div>
+        <div className="hint">The bureau and whoever replaces you will see the reason. It does not become a rating, there is no field for rating a specialist in the system.</div>
       </div>
 
       <button type="submit" className="btn btn-quiet" disabled={pending}>
         {pending ? '…' : 'Leave the project'}
       </button>
 
-      <p className="hint" style={{ marginTop: 10 }}>The whole role goes: every open task of yours on this project passes to the next by rank from the same run. Accepted work stays yours — it is already in your metrics, and no one will rewrite it.</p>
+      <p className="hint" style={{ marginTop: 10 }}>The whole role goes: every open task of yours on this project passes to the next by rank from the same run. Accepted work stays yours, it is already in your metrics, and no one will rewrite it.</p>
 
       <Status state={state} />
     </form>

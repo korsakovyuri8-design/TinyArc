@@ -36,7 +36,7 @@ export default async function WorkPage({
     left === 'passed'
       ? 'You have left the project. The role went to the next by rank from the same run, and your open tasks on it went with the role.'
       : left === 'orphaned'
-        ? 'You have left the project. No replacement was found in the run — the role went back to the bureau, which is looking for someone.'
+        ? 'You have left the project. No replacement was found in the run, the role went back to the bureau, which is looking for someone.'
         : null
 
   // Канбан: ждёт гейта → открыт → в работе → сдано.
@@ -61,7 +61,7 @@ export default async function WorkPage({
     {
       title: 'Submitted',
       /*
-       * Принятые здесь — подтверждение, а не история: человек сдал работу и
+       * Принятые здесь, подтверждение, а не история: человек сдал работу и
        * должен увидеть, что её взяли. Их показываются последние, и об этом
        * сказано прямо: доска, копящая всё сданное за годы, прячет за собой
        * сегодняшнюю работу.
@@ -96,7 +96,7 @@ export default async function WorkPage({
               {leftNotice}
             </p>
             <p className="hint" style={{ margin: 0 }}>
-              This does not touch your score: leaving is not counted as a failure and does not enter selection. But if you left because of workload, correct your free capacity —{' '}
+              This does not touch your score: leaving is not counted as a failure and does not enter selection. But if you left because of workload, correct your free capacity {' '}
               <Link href="/work/profile">in your profile</Link>.{' '}
               Selection counts on it, and declared hours you do not have will bring you here again.
             </p>
@@ -111,11 +111,11 @@ export default async function WorkPage({
             {/*
               Причина названа там, где человек её ищет. Пустая доска без
               объяснения читается как «меня не выбирают», то есть как приговор
-              профессии; если дело в доступе, надо сказать про доступ — иначе
+              профессии; если дело в доступе, надо сказать про доступ, иначе
               человек будет переделывать портфолио, а мешает не оно.
 
               Причин таких больше одной, и считает их `seatOf`: доступ был
-              назван, а разбор заявки — нет, и ушедший на разбор читал здесь
+              назван, а разбор заявки, нет, и ушедший на разбор читал здесь
               «тикеты появятся, когда движок поставит вас в команду». Движок не
               может: в пуле его ещё нет. На запуске пул набирается импортом, то
               есть этим путём проходит почти каждый первый специалист.

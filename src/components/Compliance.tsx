@@ -3,7 +3,7 @@
  *
  * Показывается одинаково заказчику и бюро: правило принадлежит участку, а не
  * чьему-то экрану. Четыре исхода различимы глазом, потому что различие между
- * ними и есть весь смысл: «прошло» и «нечем проверить» — это разные новости,
+ * ними и есть весь смысл: «прошло» и «нечем проверить», это разные новости,
  * и одинаково зелёными они быть не должны.
  */
 
@@ -34,7 +34,7 @@ function Tone({ finding }: { finding: Finding }) {
 
 export function Compliance({ view, audience }: { view: ComplianceView; audience: 'client' | 'bureau' }) {
   /*
-   * Пустая база — это не «всё в порядке», и сказано это прямо. Молчание на
+   * Пустая база, это не «всё в порядке», и сказано это прямо. Молчание на
    * непокрытом муниципалитете читается как разрешение, а стоит оно отказом
    * органа через полгода.
    */
@@ -45,7 +45,7 @@ export function Compliance({ view, audience }: { view: ComplianceView; audience:
         <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
           {audience === 'client'
             ? 'We do not yet hold the planning rules for this municipality, so nothing here has been checked against them. That is our gap, not a verdict on your project: the bureau checks it by hand meanwhile.'
-            : 'No rules stored for this area. Nothing was checked — this is a gap in the corpus, not a passing project.'}
+            : 'No rules stored for this area. Nothing was checked, this is a gap in the corpus, not a passing project.'}
         </p>
       </div>
     )
@@ -89,7 +89,7 @@ export function Compliance({ view, audience }: { view: ComplianceView; audience:
                   {shown(finding.rule.value, finding.rule.subject)}
                 </td>
                 <td className="num">
-                  {finding.actual === undefined ? '—' : shown(finding.actual, finding.rule.subject)}
+                  {finding.actual === undefined ? '' : shown(finding.actual, finding.rule.subject)}
                 </td>
                 <td>
                   <Tone finding={finding} />
@@ -119,7 +119,7 @@ export function Compliance({ view, audience }: { view: ComplianceView; audience:
             what: view.missing.map((key) => SITE_INPUT_LABELS[key] ?? key).join(', '),
           })}{' '}
           {audience === 'client'
-            ? 'Some of it only exists once there is a design — the check completes itself as the project develops.'
+            ? 'Some of it only exists once there is a design, the check completes itself as the project develops.'
             : 'Part of it appears with the concept stage.'}
         </p>
       )}

@@ -1,5 +1,5 @@
 /**
- * Выбранное клиентом направление — то, что видит команда.
+ * Выбранное клиентом направление, то, что видит команда.
  *
  * Показывается одинаково клиенту, специалисту и бюро: направление принадлежит
  * проекту, а не чьему-то экрану. Формулировка про необязывающий характер
@@ -24,7 +24,7 @@ export function ChosenDirection({
   /**
    * Переводчик приходит сверху: компонент показывают три разные стороны, и у
    * каждой свой язык. Название и описание направления переводятся тем же
-   * словарём — набор направлений фиксирован кодом, а не введён человеком.
+   * словарём, набор направлений фиксирован кодом, а не введён человеком.
    */
 }) {
   return (
@@ -51,7 +51,7 @@ export function ChosenDirection({
           <p className="dim" style={{ marginTop: 12, marginBottom: 0, fontSize: '0.84rem' }}>
             {audience === 'team'
               ? 'Chosen by the client before work began. A reference point, not a requirement: if the direction cannot be built on this site, say so in the ticket.'
-              : 'Your choice. A reference point for the team — not a design decision and not part of the documentation set.'}
+              : 'Your choice. A reference point for the team, not a design decision and not part of the documentation set.'}
           </p>
         </div>
       </div>

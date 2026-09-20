@@ -28,7 +28,7 @@ function DialogueForm() {
           id="body"
           name="body"
           style={{ minHeight: 90 }}
-          placeholder="I need to push the deadline by a month — I’m travelling. Or: I’ve changed my mind on the direction and want to go back to the first option."
+          placeholder="I need to push the deadline by a month, I’m travelling. Or: I’ve changed my mind on the direction and want to go back to the first option."
         />
       </div>
 
@@ -48,7 +48,7 @@ function DialogueForm() {
       )}
 
       <p className="hint" style={{ marginTop: 14 }}>
-        What you write goes to the bureau, not to the team. That is deliberate: the bureau answers to you for the project as a whole and turns your request into task specifications. A request handed straight to a contributor breaks precisely what you are paying for — accountability for the result.
+        What you write goes to the bureau, not to the team. That is deliberate: the bureau answers to you for the project as a whole and turns your request into task specifications. A request handed straight to a contributor breaks precisely what you are paying for, accountability for the result.
       </p>
     </form>
   )
@@ -59,7 +59,7 @@ function DialogueForm() {
  *
  * Кнопка стоит рядом с тем, что подтверждается, и говорит о последствии до
  * нажатия, а не после: следующая стадия откроется, и вернуть её обратно
- * бесплатно уже нельзя. Замечания уводятся в разговор с бюро — там они
+ * бесплатно уже нельзя. Замечания уводятся в разговор с бюро, там они
  * становятся кругом правок, а не молчаливым отказом подтвердить.
  */
 export function StageApproval({
@@ -105,7 +105,7 @@ function ApprovalForm({ stage, title }: { stage: string; title: string }) {
       )}
 
       <p className="hint" style={{ marginTop: 12 }}>
-        Confirming opens the next stage for the team. Until you do, no work on it begins — that is not a delay but a safeguard: documentation built on an unconfirmed concept gets redone in full. If you have comments, do not confirm — write to the bureau below and it will turn them into a round of revisions.
+        Confirming opens the next stage for the team. Until you do, no work on it begins, that is not a delay but a safeguard: documentation built on an unconfirmed concept gets redone in full. If you have comments, do not confirm, write to the bureau below and it will turn them into a round of revisions.
       </p>
     </form>
   )

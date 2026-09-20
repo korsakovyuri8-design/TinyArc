@@ -17,7 +17,7 @@ export default async function SpecialistsPage() {
         <div className="shell">
           <span className="eyebrow">The pool</span>
           <h1 style={{ maxWidth: '16ch' }}>Projects come to you, not the other way round</h1>
-          <p className="lead" style={{ marginTop: 24, maxWidth: '54ch' }}>No tenders, no “tell us about yourself” emails, no haggling over rates. The engine decides who joins a team — from the facts you declared and from how you delivered past tickets.</p>
+          <p className="lead" style={{ marginTop: 24, maxWidth: '54ch' }}>No tenders, no “tell us about yourself” emails, no haggling over rates. The engine decides who joins a team, from the facts you declared and from how you delivered past tickets.</p>
           <Link href="/specialists/apply" className="btn btn-solid" style={{ marginTop: 32 }}>Apply</Link>
         </div>
       </section>
@@ -27,7 +27,7 @@ export default async function SpecialistsPage() {
           <span className="eyebrow">The terms are fair, not soft</span>
           <div className="grid grid-2">
             <Term
-              title={fill('Portfolio threshold — {threshold}/10', {
+              title={fill('Portfolio threshold, {threshold}/10', {
                 threshold: PORTFOLIO_THRESHOLD,
               })}
               body="The gate comes before the scoring. Below the threshold an application does not pass, however free your week is."
@@ -64,7 +64,7 @@ export default async function SpecialistsPage() {
               <h2>Ticket, gate, acceptance</h2>
             </div>
             <div className="stack" style={{ gap: 22 }}>
-              <Step n="01" title="The gate opens the ticket">Until the tasks yours depends on are accepted, the ticket stays closed. You see the title and the stage but not the content — the input files do not exist yet.</Step>
+              <Step n="01" title="The gate opens the ticket">Until the tasks yours depends on are accepted, the ticket stays closed. You see the title and the stage but not the content, the input files do not exist yet.</Step>
               <Step n="02" title="You work and comment in the ticket">Your first substantive reply starts the Response Time clock. All communication happens in the ticket, and that is the only place it can happen at all.</Step>
               <Step n="03" title="The bureau accepts or sends it back">Acceptance on time and first time raises Quality. A return adds a revision round and lowers First Time Right.</Step>
             </div>

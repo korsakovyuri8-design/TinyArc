@@ -19,7 +19,7 @@ export default async function AlgorithmPage() {
         <h1 style={{ maxWidth: '16ch' }}>How the algorithm assembles a team</h1>
         <p className="lead" style={{ marginTop: 24, maxWidth: '58ch' }}>
           {fill(
-            'Change the project requirements and watch what happens to the pool. The counting is done by the same engine that runs in the product — here it simply runs in the browser against a synthetic pool of {count} specialists.',
+            'Change the project requirements and watch what happens to the pool. The counting is done by the same engine that runs in the product, here it simply runs in the browser against a synthetic pool of {count} specialists.',
             { count: DEMO_POOL_SIZE },
           )}
         </p>

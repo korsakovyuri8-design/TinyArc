@@ -12,14 +12,14 @@ import { MAX_STOREYS, PORTFOLIO_THRESHOLD, JURISDICTIONS } from '@/engine/taxono
 /**
  * Значения взяты из таксономии, а не придуманы для красоты. Если в движке
  * появится шестой материал или тридцать первая страна, эта строка разойдётся с
- * правдой — и лучше, чтобы расхождение было заметным здесь, чем чтобы сайт
+ * правдой, и лучше, чтобы расхождение было заметным здесь, чем чтобы сайт
  * годами обещал то, чего нет.
  */
 const DIMENSIONS = [
   { name: 'Discipline', values: 'Architecture · structural · MEP · landscape · visualisation · survey · permitting · cost' },
   { name: 'Typology', values: 'Villa · townhouse · multi-family · mixed-use' },
   { name: 'Scale', values: 'Up to 250 m2 · 250-1000 · 1000-3000 · over 3000' },
-  { name: 'Storey count', values: `Up to ${MAX_STOREYS} storeys — where the bureau is sharpest` },
+  { name: 'Storey count', values: `Up to ${MAX_STOREYS} storeys, where the bureau is sharpest` },
   { name: 'Structural system', values: 'Concrete · masonry · timber · steel · hybrid' },
   { name: 'Climate zone', values: 'Mediterranean · continental · alpine · arid' },
   { name: 'Jurisdiction and signing rights', values: `${JURISDICTIONS.length} countries. Only survey and permitting are tied to one` },
@@ -35,7 +35,7 @@ export default async function Home() {
   return (
     <>
       {/*
-        Первый экран — ночь, остальная страница — день. Переход между ними тот
+        Первый экран, ночь, остальная страница, день. Переход между ними тот
         же, что в работе с бюро: от впечатления к комплекту документации.
       */}
       <section className="night">
@@ -50,8 +50,8 @@ export default async function Home() {
           </div>
 
           {/*
-            Схема объёма стоит выше цифр намеренно. Три плашки — это про то, как
-            бюро устроено; схема — про то, что человек получит. Порядок на
+            Схема объёма стоит выше цифр намеренно. Три плашки, это про то, как
+            бюро устроено; схема, про то, что человек получит. Порядок на
             странице и есть порядок разговора.
           */}
           <div style={{ marginTop: 56 }}>
@@ -60,7 +60,7 @@ export default async function Home() {
 
           {/*
             Вилла идёт после схем, а не до. Сначала человек видит, что объём
-            выбирают, и только потом — чем построенное отличается от
+            выбирают, и только потом, чем построенное отличается от
             начерченного. Обратный порядок дал бы красивую картинку раньше
             мысли, и мысль бы её не догнала.
           */}

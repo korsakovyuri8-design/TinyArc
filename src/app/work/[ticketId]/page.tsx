@@ -60,7 +60,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
     chosenDirection(ticket.projectId),
   ])
 
-  // Соседи по команде — роли, не люди (п.11).
+  // Соседи по команде, роли, не люди (п.11).
   const roles = teammateRoles(
     slots.map((s) => ({ specialist: { id: s.specialistId }, discipline: s.discipline as Discipline })),
     specialist.id,
@@ -127,7 +127,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               {ticket.dependsOn
                 .filter((d) => d.prerequisite.status !== 'accepted')
                 .map((d) => DISCIPLINE_LABELS[d.prerequisite.discipline as Discipline])
-                .join(', ') || '—'}
+                .join(', ') || ''}
               . The brief and the input files appear here when the ticket opens.
             </p>
           </div>
@@ -143,7 +143,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <div className="label">The brief</div>
               <p style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
                 {ticket.spec ||
-                  'The bureau has not finished the brief — ask in a comment.'}
+                  'The bureau has not finished the brief, ask in a comment.'}
               </p>
             </div>
 
@@ -175,7 +175,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
                 {fill('Adjacent roles on the project: {roles}.', {
                   roles: roles.map((r) => DISCIPLINE_LABELS[r]).join(', '),
                 })}{' '}
-                The system holds no contacts for them — everything goes through the bureau.
+                The system holds no contacts for them, everything goes through the bureau.
               </p>
             )}
 
@@ -222,7 +222,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <>
                 <div className="divider" />
                 <div className="label label-accent">Image</div>
-                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>Draft material to work from. The records mark it as generated — responsibility for what you hand in stays yours.</p>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>Draft material to work from. The records mark it as generated, responsibility for what you hand in stays yours.</p>
                 <RenderForm
                   ticketId={ticket.id}
 
@@ -279,7 +279,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <>
                 <div className="divider" />
                 <SubmitWork ticketId={ticket.id} />
-                <p className="hint" style={{ marginTop: 10 }}>The bureau does the accepting. Accepted on time and first time — Quality goes up.</p>
+                <p className="hint" style={{ marginTop: 10 }}>The bureau does the accepting. Accepted on time and first time, Quality goes up.</p>
               </>
             )}
 
@@ -320,7 +320,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               <>
                 <div className="divider" />
                 <div className="label label-accent">Need something from an adjacent discipline</div>
-                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>This is neither an argument nor a conversation. The request becomes a ticket for that discipline — with someone on it, a deadline and acceptance, like any other work.</p>
+                <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>This is neither an argument nor a conversation. The request becomes a ticket for that discipline, with someone on it, a deadline and acceptance, like any other work.</p>
                 <RequestForm ticketId={ticket.id} disciplines={roles} />
               </>
             )}
@@ -342,7 +342,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
         {/*
           Выход из роли живёт вне ветки статуса намеренно.
           Он про роль, а не про задачу, и доступен в том числе на
-          заблокированном тикете — а это ровно то состояние, в котором человек
+          заблокированном тикете, а это ровно то состояние, в котором человек
           и понимает, что не потянет: работа ещё не началась, зависимости не
           пришли, и сказать об этом надо сейчас, а не когда срок загорится.
         */}
@@ -352,7 +352,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
             <div className="label" style={{ color: 'var(--fail)' }}>
               If you cannot carry it
             </div>
-            <p className="hint" style={{ marginTop: 8, marginBottom: 16, maxWidth: '58ch' }}>Illness, someone else’s deadline, an underestimated scope — it happens, and silence here is worse than declining. Saying it early lets the project find a replacement while the deadline is not yet burning.</p>
+            <p className="hint" style={{ marginTop: 8, marginBottom: 16, maxWidth: '58ch' }}>Illness, someone else’s deadline, an underestimated scope, it happens, and silence here is worse than declining. Saying it early lets the project find a replacement while the deadline is not yet burning.</p>
             <LeaveForm projectId={ticket.projectId} />
           </>
         )}

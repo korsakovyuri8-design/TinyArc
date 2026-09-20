@@ -44,11 +44,11 @@ export type SpecialistFormAction = (
 ) => Promise<ApplicationState>
 
 /**
- * Двенадцать измерений таксономии — одной формой на два входа.
+ * Двенадцать измерений таксономии, одной формой на два входа.
  *
  * Вход первый: человек пришёл сам и подаёт заявку. Вход второй: бюро завело его
  * импортом базы, и он дозаполняет профиль по приглашению. Спрашивается одно и
- * то же, потому что движку нужно одно и то же — держать две формы значило бы
+ * то же, потому что движку нужно одно и то же, держать две формы значило бы
  * рано или поздно спрашивать в них разное.
  *
  * Заполненные импортом поля приходят в defaults и стоят отмеченными: человек
@@ -67,7 +67,7 @@ type SpecialistFormProps = {
    *
    * Своим временем распоряжается специалист, и в правке из панели бюро это
    * поле было бы обманкой: видно, вводится, ни на что не влияет. Значение
-   * всё равно уходит скрытым — схема проверяет форму целиком.
+   * всё равно уходит скрытым, схема проверяет форму целиком.
    */
   showCapacity?: boolean
   /** Спрашивать согласие: только там, где форму заполняет сам человек. */
@@ -90,7 +90,7 @@ export function SpecialistForm({
       done ?? (
         <div className="panel panel-accent">
           <div className="label label-accent">Application received</div>
-          <h3 style={{ marginTop: 12 }}>Next — the portfolio review</h3>
+          <h3 style={{ marginTop: 12 }}>Next, the portfolio review</h3>
           <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
             {fill(
               'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10; below it an application does not pass, and that is not negotiated case by case. If you pass, the access key arrives at the address you gave.',
@@ -119,9 +119,9 @@ export function SpecialistForm({
 
   /*
    * Выбранные дисциплины держатся в состоянии: от них зависит, какие
-   * специализации показывать. Начальное значение — то же, что у самих галочек,
+   * специализации показывать. Начальное значение, то же, что у самих галочек,
    * иначе после отказа формы человек увидел бы свои дисциплины отмеченными, а
-   * блок специализаций — пустым.
+   * блок специализаций, пустым.
    */
   const [disciplines, setDisciplines] = useState<Discipline[]>(
     () => list('disciplines') as Discipline[],
@@ -190,7 +190,7 @@ export function SpecialistForm({
           */}
           {disciplines.length === 0 && (
             <p className="hint" style={{ margin: 0 }}>
-              Pick your disciplines above — the specialisations for them appear here.
+              Pick your disciplines above, the specialisations for them appear here.
             </p>
           )}
 

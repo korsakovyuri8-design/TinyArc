@@ -7,11 +7,11 @@ import { ServiceWorker } from '@/components/ServiceWorker'
 import { CANVAS, MASTER, SEAL, band, bar } from '@/lib/mark'
 
 /*
- * Гарнитуры — те же, что у Tiny Mansion и Kin: старинная антиква для чтения и
+ * Гарнитуры, те же, что у Tiny Mansion и Kin: старинная антиква для чтения и
  * моно для служебного. Bureau стоял на Playfair и DM Sans и читался как
  * презентация; группа набирается как документ, и это её общий признак.
  *
- * EB Garamond — то же семейство, что на Tiny Mansion. IBM Plex Mono — оттуда
+ * EB Garamond, то же семейство, что на Tiny Mansion. IBM Plex Mono, оттуда
  * же; у обеих есть кириллица, и подпорка из третьей гарнитуры, которая раньше
  * закрывала её отсутствие, больше не нужна.
  */
@@ -35,7 +35,7 @@ const DESCRIPTION =
  * Метаданные сайта.
  *
  * metadataBase задаёт хост, относительно которого Next разворачивает
- * относительные ссылки — канонические адреса и og:image. Без него страница,
+ * относительные ссылки, канонические адреса и og:image. Без него страница,
  * открытая по любому другому адресу (превью Render, IP), уводит поисковик и
  * мессенджер на себя, а не на домен продукта.
  *
@@ -44,31 +44,31 @@ const DESCRIPTION =
  */
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
+  title: 'TinyArc Cloud Bureau, an AI-native architectural practice',
   description: DESCRIPTION,
   openGraph: {
     type: 'website',
     siteName: 'TinyArc Cloud Bureau',
     locale: 'en_GB',
-    title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
+    title: 'TinyArc Cloud Bureau, an AI-native architectural practice',
     description: DESCRIPTION,
   },
   /*
    * Карточку собирает opengraph-image.tsx; здесь сказано только, какого она
    * размера в X. Без этой строки ссылка приходит туда узкой строкой с
-   * миниатюрой — то есть картинка есть, а видно её не будет.
+   * миниатюрой, то есть картинка есть, а видно её не будет.
    */
   twitter: {
     card: 'summary_large_image',
-    title: 'TinyArc Cloud Bureau — an AI-native architectural practice',
+    title: 'TinyArc Cloud Bureau, an AI-native architectural practice',
     description: DESCRIPTION,
   },
   /*
-   * Установленное приложение. Манифест лежит в app/manifest.ts; здесь —
+   * Установленное приложение. Манифест лежит в app/manifest.ts; здесь 
    * то, что читает именно iOS: он манифест почти игнорирует и берёт своё.
    *
    * `capable` убирает адресную строку у ярлыка на домашнем экране,
-   * `statusBarStyle` красит полосу под тёмный фон продукта — иначе поверх
+   * `statusBarStyle` красит полосу под тёмный фон продукта, иначе поверх
    * тёмного экрана стоит светлая полоса с чёрным временем.
    */
   appleWebApp: {
@@ -103,10 +103,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/*
                 Знак встроен разметкой, а не картинкой: на шапке он двадцать два
                 пикселя, и отдельный запрос за файлом ради двадцати двух пикселей
-                — это лишний круг до сервера на каждой странице. Заодно рамка
+               , это лишний круг до сервера на каждой странице. Заодно рамка
                 берёт цвет чернил из темы, а не запекается в файл.
 
-                Числа берутся из `src/lib/mark.ts` — того же модуля, из которого
+                Числа берутся из `src/lib/mark.ts`, того же модуля, из которого
                 собирается значок. Набранные здесь руками, они уже разъехались с
                 значком на шестнадцать единиц, и на глаз это незаметно ровно до
                 того дня, когда знак поставят рядом с самим собой.

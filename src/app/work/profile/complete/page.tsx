@@ -31,7 +31,7 @@ export default async function CompleteProfilePage() {
           {fill('{name}, complete your profile', { name: profile.displayName })}
         </h1>
 
-        <p className="muted" style={{ marginTop: 16 }}>The bureau invited you — you did not apply. From our records we know your name and address, and possibly your discipline and country: those are already ticked below. The rest only you know.</p>
+        <p className="muted" style={{ marginTop: 16 }}>The bureau invited you, you did not apply. From our records we know your name and address, and possibly your discipline and country: those are already ticked below. The rest only you know.</p>
 
         <div className="panel" style={{ marginTop: 28 }}>
           <div className="label label-accent">What these fields are for</div>
@@ -67,7 +67,7 @@ export default async function CompleteProfilePage() {
           done={
             <div className="panel panel-accent">
               <div className="label label-accent">Profile submitted</div>
-              <h3 style={{ marginTop: 12 }}>Next — the portfolio review</h3>
+              <h3 style={{ marginTop: 12 }}>Next, the portfolio review</h3>
               <p className="muted" style={{ marginTop: 12, marginBottom: 16 }}>
                 {/*
                   Про ключ сказано полностью. «Ключ у вас уже есть» правда
@@ -76,7 +76,7 @@ export default async function CompleteProfilePage() {
                   которого его не предупреждали.
                 */}
                 {fill(
-                  'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10. The access key is the one you signed in with — keep it: at the door it starts working once the review passes.',
+                  'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10. The access key is the one you signed in with, keep it: at the door it starts working once the review passes.',
                   { threshold: PORTFOLIO_THRESHOLD },
                 )}
               </p>

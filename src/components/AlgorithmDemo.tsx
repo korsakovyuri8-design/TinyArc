@@ -98,7 +98,7 @@ function Demo() {
   /*
    * Воронка считается по тем, кто в этой дисциплине вообще работает.
    *
-   * Иначе она сообщает пустое: конструктор не прошёл гейт архитектуры — это не
+   * Иначе она сообщает пустое: конструктор не прошёл гейт архитектуры, это не
    * отсев, это другая профессия. Движку такой порядок проверок не мешает (гейт
    * дисциплины там стоит вторым и работает), а показывать его в воронке незачем.
    */
@@ -139,7 +139,7 @@ function Demo() {
 
           <Field
             label="Storeys"
-            hint={fill('Product boundary — {n}', { n: MAX_STOREYS })}
+            hint={fill('Product boundary, {n}', { n: MAX_STOREYS })}
           >
             <input
               type="number"
@@ -385,7 +385,7 @@ function Demo() {
           <Stage index={2} name="Score" internal="Assemble" />
 
           {passed.length === 0 ? (
-            <div className="note note-fail">No one is left in this discipline. The team does not assemble — relax the requirements or widen the pool.</div>
+            <div className="note note-fail">No one is left in this discipline. The team does not assemble, relax the requirements or widen the pool.</div>
           ) : (
             <div className="grid grid-2" style={{ marginBottom: 40 }}>
               {passed.slice(0, 6).map((candidate) => (
@@ -582,7 +582,7 @@ function Stage({ index, name, internal }: { index: number; name: string; interna
         {name}
       </h3>
       <span className="dim" style={{ fontSize: '0.85rem' }}>
-        internal stage name — {internal}
+        internal stage name, {internal}
       </span>
     </div>
   )

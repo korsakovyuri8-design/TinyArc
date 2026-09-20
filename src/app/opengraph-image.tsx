@@ -18,7 +18,7 @@ function markImage(size: number): string {
 /**
  * Карточка ссылки: то, что видит человек, которому продукт переслали.
  *
- * Ссылка без картинки приходит в мессенджер серой строкой — а именно так
+ * Ссылка без картинки приходит в мессенджер серой строкой, а именно так
  * продукт и показывают первому заказчику и инвестору. Собирается кодом, а не
  * лежит файлом: заголовок и обещание меняются вместе с продуктом, и картинка,
  * нарисованная однажды, разошлась бы с ним молча.
@@ -27,7 +27,7 @@ function markImage(size: number): string {
  * подгружать файлами на каждую сборку картинки ради текста в две строки;
  * взамен взяты вес и разрядка, по которым узнаётся тот же тон.
  */
-export const alt = 'TinyArc Cloud Bureau — the bureau that ends the bureau'
+export const alt = 'TinyArc Cloud Bureau, the bureau that ends the bureau'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -49,7 +49,7 @@ export default function Image() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 30 }}>
           {/*
             Знак картинкой, а не разметкой: карточку собирает satori, и своего
-            SVG у него нет — зато он принимает готовую картинку строкой.
+            SVG у него нет, зато он принимает готовую картинку строкой.
             Числа те же, что в шапке и в значке (`src/lib/mark.ts`).
           */}
           {/* eslint-disable-next-line @next/next/no-img-element */}

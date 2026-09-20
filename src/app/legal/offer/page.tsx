@@ -31,7 +31,7 @@ export default async function OfferPage() {
         <h1>Terms of service</h1>
 
         <p className="dim" style={{ marginTop: 12, fontSize: '0.85rem' }}>
-          Revision {LEGAL_VERSION} · governing law — {GOVERNING_LAW}
+          Revision {LEGAL_VERSION} · governing law, {GOVERNING_LAW}
         </p>
 
         <div className="panel panel-accent" style={{ marginTop: 28 }}>
@@ -48,7 +48,7 @@ export default async function OfferPage() {
 
         <Article title="1. Who provides the service">
           <p>
-            The service is provided by {details.name || '— company name not set —'}
+            The service is provided by {details.name || ' company name not set '}
             {details.registration && `, $registration number ${details.registration}`}
             {details.taxId && `, $tax number ${details.taxId}`}
             {details.address && `, $address: ${details.address}`} (the “Bureau”).
@@ -64,13 +64,13 @@ export default async function OfferPage() {
             <li>a permit as a guaranteed outcome: the Bureau prepares and submits the set, the authority makes the decision;</li>
             <li>
               {fill(
-                'work outside the product boundary — the Bureau does not take buildings above {n} storeys or sites in standard (heavy) regulation zones;',
+                'work outside the product boundary, the Bureau does not take buildings above {n} storeys or sites in standard (heavy) regulation zones;',
                 { n: MAX_STOREYS },
               )}
             </li>
             <li>
               {fill(
-                'issuing permit documentation outside the countries where the team holds signing rights. Currently those are {countries}. A project outside that list is one the Bureau cannot take — not as a matter of policy, but because there would be no one to sign the set.',
+                'issuing permit documentation outside the countries where the team holds signing rights. Currently those are {countries}. A project outside that list is one the Bureau cannot take, not as a matter of policy, but because there would be no one to sign the set.',
                 { countries: JURISDICTIONS.map((j) => JURISDICTION_NAMES[j]).join(', ') },
               )}
             </li>
@@ -88,7 +88,7 @@ export default async function OfferPage() {
               },
             )}
           </p>
-          <p>The tasks in each stage follow from the shape of the project — typology, structural system, terrain, utility connection — and are visible to the Client in the project workspace before work begins.</p>
+          <p>The tasks in each stage follow from the shape of the project, typology, structural system, terrain, utility connection, and are visible to the Client in the project workspace before work begins.</p>
         </Article>
 
         <Article title="4. Price and payment">
@@ -100,7 +100,7 @@ export default async function OfferPage() {
         </Article>
 
         <Article title="5. Acceptance and confirmation of a stage">
-          <p>A stage closes on two acts. The Bureau accepts the work from the specialists — that means “done as specified”. The Client confirms the stage — that means “what was specified is what was ordered”.</p>
+          <p>A stage closes on two acts. The Bureau accepts the work from the specialists, that means “done as specified”. The Client confirms the stage, that means “what was specified is what was ordered”.</p>
           <p>Until confirmation arrives, the next stage does not begin. The Client’s comments are received through their channel to the Bureau and turned by the Bureau into a round of revisions within the stage already paid for.</p>
         </Article>
 
@@ -121,7 +121,7 @@ export default async function OfferPage() {
 
         <Article title="9. Withdrawal and refunds">
           <p>The Client may withdraw from further work at any time. A stage that has been paid for but not started (no task opened) is refunded in full. For a stage already underway, the share corresponding to tasks not yet accepted at the moment of withdrawal is refunded: accepted work was done by people and has been paid to them.</p>
-          <p>The Bureau may decline a project if, after the brief, it turns out to fall outside the product boundary — with a full refund of anything paid.</p>
+          <p>The Bureau may decline a project if, after the brief, it turns out to fall outside the product boundary, with a full refund of anything paid.</p>
         </Article>
 
         <Article title="10. Personal data">
@@ -159,7 +159,7 @@ export default async function OfferPage() {
         <div className="divider" style={{ marginTop: 44 }} />
 
         <p className="dim" style={{ fontSize: '0.85rem' }}>
-          Questions about the contract: {details.email || '— address not set —'}
+          Questions about the contract: {details.email || ' address not set '}
         </p>
 
         <p style={{ marginTop: 24 }}>

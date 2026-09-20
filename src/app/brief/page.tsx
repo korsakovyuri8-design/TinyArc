@@ -15,7 +15,7 @@ export default async function BriefPage() {
         <span className="eyebrow">Stage 01 · Filter</span>
         <h1>Project brief</h1>
         <p className="lead" style={{ marginTop: 20 }}>
-          {'The sharper the input, the less the selection has to guess. Nothing here is a matter of taste — every field is a dimension the engine computes on.'}
+          {'The sharper the input, the less the selection has to guess. Nothing here is a matter of taste, every field is a dimension the engine computes on.'}
         </p>
 
         <div style={{ marginTop: 44 }}>

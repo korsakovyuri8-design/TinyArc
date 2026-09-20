@@ -22,7 +22,7 @@ export default async function HowItWorks() {
         <div className="shell">
           <span className="eyebrow">Three stages</span>
           <h1 style={{ maxWidth: '14ch' }}>Validate · Assemble · Deliver</h1>
-          <p className="lead" style={{ marginTop: 24, maxWidth: '56ch' }}>These are the internal names. On the site the same three stages go by shorter ones — Filter, Score, Relay. Same thing, seen from the other side of the table.</p>
+          <p className="lead" style={{ marginTop: 24, maxWidth: '56ch' }}>These are the internal names. On the site the same three stages go by shorter ones, Filter, Score, Relay. Same thing, seen from the other side of the table.</p>
         </div>
       </section>
 
@@ -36,7 +36,7 @@ export default async function HowItWorks() {
         <p>The brief is parsed into structured requirements: jurisdiction, typology, storeys, area, climate zone, structural system, documentation stage, timing, software.</p>
         <p>
           {fill(
-            'The project itself is checked here too. Bureau handles buildings up to {n} storeys in light-regulation zones in three countries: {countries}. A project outside that boundary is declined — not taken on and then dragged along.',
+            'The project itself is checked here too. Bureau handles buildings up to {n} storeys in light-regulation zones in three countries: {countries}. A project outside that boundary is declined, not taken on and then dragged along.',
             {
               n: MAX_STOREYS,
               countries: JURISDICTIONS.map((j) => JURISDICTION_NAMES[j]).join(', '),
@@ -45,7 +45,7 @@ export default async function HowItWorks() {
         </p>
         <p>
           {fill(
-            'The pool then goes through the hard gates: discipline, jurisdiction, storeys, stage, model exchange, language, working-hours overlap. And the portfolio threshold — {threshold}/10, below which a specialist does not pass, however free their week.',
+            'The pool then goes through the hard gates: discipline, jurisdiction, storeys, stage, model exchange, language, working-hours overlap. And the portfolio threshold, {threshold}/10, below which a specialist does not pass, however free their week.',
             { threshold: PORTFOLIO_THRESHOLD },
           )}
         </p>
@@ -65,8 +65,8 @@ export default async function HowItWorks() {
         <p>
           <strong>Quality</strong>for a specialist with no history it is the portfolio rating. As soon as closed tickets appear, delivery metrics enter Quality: they displace the portfolio up to a ceiling of 60%. Portfolios age; metrics do not.</p>
         <p>
-          <strong>Availability</strong>— free capacity against what is required, time to start on a task, and the working-day overlap across time zones.</p>
-        <p>Then the Tiny Team is assembled — the minimum sufficient team, not a full practice roster. The set of disciplines follows from the project: a villa does not need what a mixed-use building needs. Software compatibility is checked — a candidate who breaks model exchange gives way to the next one even with a higher score. And signing rights are checked: without someone who can sign the set in the project’s country, no team is assembled at all.</p>
+          <strong>Availability</strong> free capacity against what is required, time to start on a task, and the working-day overlap across time zones.</p>
+        <p>Then the Tiny Team is assembled, the minimum sufficient team, not a full practice roster. The set of disciplines follows from the project: a villa does not need what a mixed-use building needs. Software compatibility is checked, a candidate who breaks model exchange gives way to the next one even with a higher score. And signing rights are checked: without someone who can sign the set in the project’s country, no team is assembled at all.</p>
         <p>
           <Link href="/algorithm">See how this is computed →</Link>
         </p>
@@ -93,7 +93,7 @@ export default async function HowItWorks() {
         <div className="shell">
           <span className="eyebrow">Quality</span>
           <h2>Metrics, not reviews</h2>
-          <p style={{ marginTop: 20 }}>A specialist’s quality is measured mathematically and computed from ticket events. Neither the client nor an operator has any way to leave a rating — no such field exists.</p>
+          <p style={{ marginTop: 20 }}>A specialist’s quality is measured mathematically and computed from ticket events. Neither the client nor an operator has any way to leave a rating, no such field exists.</p>
 
           <div className="grid grid-2" style={{ marginTop: 32 }}>
             <Metric name="SLA compliance" body="Share of tickets closed on time." />
@@ -143,7 +143,7 @@ function Stage({
               <div>
                 <div className="label label-accent">{publicName}</div>
                 <div className="label">
-                  internal name — {internal}
+                  internal name, {internal}
                 </div>
               </div>
             </div>

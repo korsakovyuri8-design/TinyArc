@@ -5,7 +5,7 @@ import type { ScoreBreakdown } from '@/engine/types'
 /**
  * Разбор балла (концепт, п.9).
  *
- * Показывается целиком и всегда: прозрачность здесь — не любезность, а способ
+ * Показывается целиком и всегда: прозрачность здесь, не любезность, а способ
  * не отдавать клиенту право выбирать специалиста самому.
  */
 export function BreakdownRow({
@@ -37,7 +37,7 @@ export function BreakdownRow({
         />
       ) : (
         <div className="dim" style={{ fontSize: '0.78rem' }}>
-          No delivery history yet — Quality is the portfolio
+          No delivery history yet, Quality is the portfolio
         </div>
       )}
       <Line

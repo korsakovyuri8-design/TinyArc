@@ -36,7 +36,7 @@ export function BriefForm() {
   const [read, readAction, reading] = useActionState<BriefState, FormData>(readDescription, {})
 
   /*
-   * Что показывать — последнее, что случилось. Разбор описания и отправка
+   * Что показывать, последнее, что случилось. Разбор описания и отправка
    * формы наполняют одно и то же состояние, и брать значения из отправки,
    * когда человек только что нажал «прочитать», значит стереть у него на
    * глазах то, ради чего он и нажимал.
@@ -58,7 +58,7 @@ export function BriefForm() {
  *
  * Стоит над формой, а не вместо неё: человек, у которого проект в голове, а
  * не в таблице, пишет пару абзацев, и заполненными оказываются те поля,
- * которые он назвал. Остальные он видит пустыми — и это правда: угаданное
+ * которые он назвал. Остальные он видит пустыми, и это правда: угаданное
  * поле он не заметит, а пустое заполнит.
  */
 function Description({
@@ -75,7 +75,7 @@ function Description({
   return (
     <form action={action} className="panel" style={{ marginBottom: 32 }}>
       <div className="label label-accent">Describe it in your own words</div>
-      <p className="muted" style={{ marginTop: 10, marginBottom: 14, maxWidth: '58ch' }}>Optional, and it fills the form in below rather than replacing it. Only what you state outright is filled in — nothing is inferred, because a guessed field is one you will not notice, and an empty one you will.</p>
+      <p className="muted" style={{ marginTop: 10, marginBottom: 14, maxWidth: '58ch' }}>Optional, and it fills the form in below rather than replacing it. Only what you state outright is filled in, nothing is inferred, because a guessed field is one you will not notice, and an empty one you will.</p>
 
       <textarea
         id="description"
@@ -128,7 +128,7 @@ function BriefFields({
    * страницы по `id` поля: отдельный словарь названий разошёлся бы с формой
    * при первой же правке и называл бы поле не так, как оно подписано.
    *
-   * Согласие и общая ошибка формы сюда не идут — у них свои места на экране,
+   * Согласие и общая ошибка формы сюда не идут, у них свои места на экране,
    * и они видны без прокрутки.
    */
   const missing = Object.entries(errors)
@@ -180,8 +180,8 @@ function BriefFields({
 
           {/*
             Участок спрашивается тремя полями и все три необязательны.
-            Владелец берёт их из своих бумаг; проектных величин — пятна, высоты,
-            отступов — он не знает, и требовать их у него значит требовать
+            Владелец берёт их из своих бумаг; проектных величин, пятна, высоты,
+            отступов, он не знает, и требовать их у него значит требовать
             проект до проекта. Без этих полей бриф принимается, а проверка на
             нормы честно говорит, чего ей не хватило.
           */}
@@ -204,7 +204,7 @@ function BriefFields({
             label="Zone"
             name="zone"
             error={errors.zone}
-            hint="As written in your documents — leave empty if you do not know it"
+            hint="As written in your documents, leave empty if you do not know it"
           >
             <input
               id="zone"
@@ -317,7 +317,7 @@ function BriefFields({
         <Field
           label="Software"
           error={errors.software}
-          hint="For reference only: tick this if you already have a model from a previous consultant. It does not constrain the team — the team converges on one package by itself"
+          hint="For reference only: tick this if you already have a model from a previous consultant. It does not constrain the team, the team converges on one package by itself"
         >
           <Choices name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
         </Field>
@@ -328,7 +328,7 @@ function BriefFields({
 
         {/*
           Недельной нагрузки здесь больше нет: сколько часов специалиста съест
-          раздел — оценка бюро, а не человека, купившего участок. Он отвечал
+          раздел, оценка бюро, а не человека, купившего участок. Он отвечал
           наугад, и это число шло в подбор состава как факт. Умолчание стоит в
           схеме, правится в панели.
         */}
@@ -386,14 +386,14 @@ function BriefFields({
       )}
 
       {/*
-        Сводка незаполненного — рядом с кнопкой, а не только у самих полей.
+        Сводка незаполненного, рядом с кнопкой, а не только у самих полей.
         Причина отказа писалась под полем, до которого человек не долистал: он
         нажимал «собрать команду», ничего не происходило, и форма выглядела
         сломанной. На брифе в два десятка полей это потеря заказчика на
-        последнем шаге — он закрывает вкладку, а не ищет пустую строку.
+        последнем шаге, он закрывает вкладку, а не ищет пустую строку.
 
         Ссылки, а не перечисление: нажатие уводит к полю. Названия берутся из
-        подписей самих полей на странице — отдельный словарь разошёлся бы с
+        подписей самих полей на странице, отдельный словарь разошёлся бы с
         формой при первой же правке и врал бы, называя поле не так, как оно
         подписано.
       */}
@@ -403,7 +403,7 @@ function BriefFields({
           <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
             {missing.map((field) => (
               <li key={field.name}>
-                <a href={`#${field.name}`}>{field.label}</a> — {field.message}
+                <a href={`#${field.name}`}>{field.label}</a>, {field.message}
               </li>
             ))}
           </ul>
@@ -415,7 +415,7 @@ function BriefFields({
       <div className="row" style={{ gap: 16 }}>
         <Submit pending={pending}>Assemble the team</Submit>
         <span className="dim" style={{ fontSize: '0.85rem' }}>
-          The engine answers immediately — no “we’ll get back to you”
+          The engine answers immediately, no “we’ll get back to you”
         </span>
       </div>
     </form>

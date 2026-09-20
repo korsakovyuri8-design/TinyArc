@@ -96,7 +96,7 @@ export default async function ProjectPage({
   const offer = quote(project)
 
   // Следующая стадия за той, до которой проект вёлся. Нужна только на
-  // закрытии: предлагать её раньше — торопить человека, который ещё не увидел
+  // закрытии: предлагать её раньше, торопить человека, который ещё не увидел
   // результат.
   const nextStage = DOC_STAGES.find(
     (s) => DOC_STAGE_ORDER[s] === DOC_STAGE_ORDER[project.targetStage as DocStage] + 1,
@@ -113,7 +113,7 @@ export default async function ProjectPage({
           {/*
             Метка считается из статуса и исхода прогона вместе, а не из одного
             статуса. Проект, чей прогон не собрал команду, остаётся черновиком:
-            «бриф принят» здесь — правда для базы и успокоительное для того,
+            «бриф принят» здесь, правда для базы и успокоительное для того,
             кому команду укомплектовать не удалось, а тремя строками ниже
             панель говорит обратное.
           */}
@@ -131,7 +131,7 @@ export default async function ProjectPage({
             </p>
             <p className="muted" style={{ marginBottom: 0 }}>
               {fill(
-                'The key replaces a password: it gets you back into this workspace from any device. A copy went to {email} — but if that email never arrives, this screen is all there is.',
+                'The key replaces a password: it gets you back into this workspace from any device. A copy went to {email}, but if that email never arrives, this screen is all there is.',
                 { email: project.clientEmail },
               )}
             </p>
@@ -146,7 +146,7 @@ export default async function ProjectPage({
           <Fact label="Access key" value={project.clientKey} mono />
           <Fact
             label="Pool → passed the gates"
-            value={run ? `${run.pooledCount} → ${run.survivedCount}` : '—'}
+            value={run ? `${run.pooledCount} → ${run.survivedCount}` : ''}
             mono
           />
         </div>
@@ -226,7 +226,7 @@ export default async function ProjectPage({
                     <div className="dim" style={{ marginTop: 10, fontSize: '0.82rem' }}>
                       {/*
                         Причина простоя названа своим именем. «Ждёт предыдущей
-                        стадии» на неоплаченной стадии — это неправда, из-за
+                        стадии» на неоплаченной стадии, это неправда, из-за
                         которой человек ждёт нас, пока мы ждём его.
                       */}
                       {share === 1
@@ -308,7 +308,7 @@ export default async function ProjectPage({
 
           Предлагается только когда комплект уже делается: короткий список
           строится из типологии, площадей, материальной системы и инженерных
-          решений — то есть из комплекта, а не из брифа. Проданный на черновике,
+          решений, то есть из комплекта, а не из брифа. Проданный на черновике,
           он считался бы по одному, а стройка пошла бы по другому.
 
           Неоплаченный доступ ничего не останавливает: гейт стоит на показе
@@ -322,7 +322,7 @@ export default async function ProjectPage({
 
             {build && access?.status === 'paid' ? (
               <>
-                <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>Selected the same way your design team was: gates first, then a score, then the top three. The arithmetic is below each name. You sign the works contract with them yourself — the bureau answers for the documentation set and for the selection being computed honestly, not for the construction.</p>
+                <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>Selected the same way your design team was: gates first, then a score, then the top three. The arithmetic is below each name. You sign the works contract with them yourself, the bureau answers for the documentation set and for the selection being computed honestly, not for the construction.</p>
 
                 <div className="stack" style={{ gap: 20 }}>
                   {build.lists.map((list) => (
@@ -335,7 +335,7 @@ export default async function ProjectPage({
                       </div>
 
                       {list.ranked.length === 0 ? (
-                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Nobody in the network passes the gates for this trade yet. The bureau is looking — this is ours to fix, not yours.</p>
+                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Nobody in the network passes the gates for this trade yet. The bureau is looking, this is ours to fix, not yours.</p>
                       ) : (
                         <div className="stack" style={{ gap: 8, marginTop: 14 }}>
                           {list.ranked.map((row) => (
@@ -369,7 +369,7 @@ export default async function ProjectPage({
               </>
             ) : (
               <div className="panel panel-accent" style={{ marginTop: 20 }}>
-                <p className="muted" style={{ marginTop: 0, marginBottom: 16, maxWidth: '62ch' }}>By the time your set is issued the bureau knows more about this build than anyone: the typology, the areas, the material system, the engineering. From that follows both who should build it and what gets bought — and until now the two were never connected, because the designer and the buyer are not connected in the usual order of things.</p>
+                <p className="muted" style={{ marginTop: 0, marginBottom: 16, maxWidth: '62ch' }}>By the time your set is issued the bureau knows more about this build than anyone: the typology, the areas, the material system, the engineering. From that follows both who should build it and what gets bought, and until now the two were never connected, because the designer and the buyer are not connected in the usual order of things.</p>
 
                 {access ? (
                   <>
@@ -408,7 +408,7 @@ export default async function ProjectPage({
                         </p>
                       </div>
                     ) : (
-                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Payment details have not been published yet — the bureau will send them by email.</p>
+                      <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Payment details have not been published yet, the bureau will send them by email.</p>
                     )}
 
                     <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>The list opens once the bureau sees the money arrive. There is no payment processing on this site, and pretending otherwise would promise a reconciliation that does not exist.</p>
@@ -420,7 +420,7 @@ export default async function ProjectPage({
                     </div>
                     <p className="dim" style={{ marginTop: 0, marginBottom: 16, fontSize: '0.85rem' }}>
                       {fill(
-                        '{base} {currency} plus {perTrade} {currency} for each of the {trades} trades this build needs. Not by area — the area is already paid for in the set; this is the selection run, the insurance checked and a shortlist assembled per trade.',
+                        '{base} {currency} plus {perTrade} {currency} for each of the {trades} trades this build needs. Not by area, the area is already paid for in the set; this is the selection run, the insurance checked and a shortlist assembled per trade.',
                         {
                           base: offer.base,
                           perTrade: offer.perTrade,
@@ -442,7 +442,7 @@ export default async function ProjectPage({
           <>
             <div className="divider" style={{ marginTop: 48 }} />
             <h2>Production</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>A ticket opens only once the tickets it depends on are accepted. Specialists do not correspond with each other — all work goes through the bureau.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>A ticket opens only once the tickets it depends on are accepted. Specialists do not correspond with each other, all work goes through the bureau.</p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
               <table>
@@ -461,7 +461,7 @@ export default async function ProjectPage({
                       <td className="dim">{DOC_STAGE_LABELS[ticket.stage as DocStage]}</td>
                       <td>{ticket.title}</td>
                       <td className="dim">{DISCIPLINE_LABELS[ticket.discipline as Discipline]}</td>
-                      <td className="dim">{ticket.specialist?.displayName ?? '—'}</td>
+                      <td className="dim">{ticket.specialist?.displayName ?? ''}</td>
                       <td>
                         <span className={`tag ${statusTone(ticket.status)}`}>
                           {TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}
@@ -485,13 +485,13 @@ export default async function ProjectPage({
             <div className="divider" style={{ marginTop: 48 }} />
 
             <h2>Documentation set</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>It builds up as stages close rather than arriving all at once at the end: you paid for a stage, you get its files when that stage closes. Generated images never form part of it at any stage — they are working material, not documentation.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>It builds up as stages close rather than arriving all at once at the end: you paid for a stage, you get its files when that stage closes. Generated images never form part of it at any stage, they are working material, not documentation.</p>
 
             {/*
-              Обычная ссылка, а не кнопка: скачивание — это переход по адресу,
+              Обычная ссылка, а не кнопка: скачивание, это переход по адресу,
               и браузер умеет его сам. Кнопка со скриптом здесь добавила бы
               состояние, которое нечем показать, и сломала бы «открыть в новой
-              вкладке» — то самое, чем человек и пользуется.
+              вкладке», то самое, чем человек и пользуется.
             */}
             <div className="row" style={{ gap: 16, marginBottom: 24 }}>
               <a
@@ -618,10 +618,10 @@ export default async function ProjectPage({
                           </p>
                         </div>
                       ) : (
-                        // Реквизитов нет — так и сказано. «Мы свяжемся» на счёте
+                        // Реквизитов нет, так и сказано. «Мы свяжемся» на счёте
                         // означает, что заплатить сейчас нельзя, и написать это
                         // прямо честнее, чем оставить человека гадать.
-                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Payment details have not been published yet — the bureau will send them by email.</p>
+                        <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>Payment details have not been published yet, the bureau will send them by email.</p>
                       )}
 
                       <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>The bureau marks an invoice paid once it sees the money arrive: there is no payment processing on this site, and pretending otherwise would promise a reconciliation that does not exist.</p>
@@ -638,7 +638,7 @@ export default async function ProjectPage({
             <div className="divider" style={{ marginTop: 48 }} />
 
             <h2>Awaiting your confirmation</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>The bureau has accepted every task in this stage — that means “done as specified”. Your confirmation means something else: “this is what was specified”. Until it arrives, the next stage does not start.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>The bureau has accepted every task in this stage, that means “done as specified”. Your confirmation means something else: “this is what was specified”. Until it arrives, the next stage does not start.</p>
 
             <div className="stack" style={{ gap: 24 }}>
               {pendingStages.map((stage) => (
@@ -665,7 +665,7 @@ export default async function ProjectPage({
 
             {/*
               Заметный блок, а не подпись мелким.
-              После подтверждения форма исчезает вместе со своим сообщением —
+              После подтверждения форма исчезает вместе со своим сообщением 
               человек нажал и остался без ответа. Подтверждённое и есть ответ,
               и увидеть его он должен сразу, а не искать глазами.
             */}
@@ -684,7 +684,7 @@ export default async function ProjectPage({
         <div className="divider" style={{ marginTop: 48 }} />
 
         <h2>Talking to the bureau</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>Deadlines, the site, changed circumstances — all of it goes here. The bureau answers to you for the project as a whole, and a question about the project is a question for the bureau.</p>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '60ch' }}>Deadlines, the site, changed circumstances, all of it goes here. The bureau answers to you for the project as a whole, and a question about the project is a question for the bureau.</p>
 
         {thread.length > 0 && (
           <div className="stack" style={{ gap: 14, marginBottom: 32 }}>
@@ -739,8 +739,8 @@ function Fact({ label, value, mono }: { label: string; value: string; mono?: boo
  * Что видит заказчик, когда команда не собралась.
  *
  * Это самый вероятный экран первых недель: пул ещё тонкий, а брифы уже идут.
- * Раньше здесь стояла записка движка с именами словарей — «дисциплина "mep" со
- * специализацией mep_hvac» — и ни одного слова о том, что будет дальше.
+ * Раньше здесь стояла записка движка с именами словарей, «дисциплина "mep" со
+ * специализацией mep_hvac», и ни одного слова о том, что будет дальше.
  *
  * Нехватка подписи выделена отдельно: людей мы нашли, но пакет без локальной
  * подписи не имеет силы, и это не та новость, которую можно смешивать с
@@ -762,7 +762,7 @@ function IncompleteRun({
         <div className="label" style={{ color: 'var(--fail)' }}>The team is not assembled yet</div>
         <p style={{ marginTop: 12, marginBottom: 0 }}>
           {fill(
-              'There are specialists for your project, but none of them holds signing rights in {country}. A documentation set without a local signature has no force — the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
+              'There are specialists for your project, but none of them holds signing rights in {country}. A documentation set without a local signature has no force, the authorities will not accept it, and taking the project on without one would mean selling you paper. The bureau is looking for a signatory; you have your key and can come back to the project with it.',
             { country: JURISDICTION_NAMES[jurisdiction] ?? jurisdiction },
           )}
         </p>
@@ -771,16 +771,16 @@ function IncompleteRun({
   }
 
   /*
-   * Дороговизна — не нехватка людей, и говорить о ней надо иначе. «Под ваш
+   * Дороговизна, не нехватка людей, и говорить о ней надо иначе. «Под ваш
    * проект не нашлось специалистов» отправляет человека ждать найма, который
    * не требуется: состав существует, и упёрлось всё в деньги. Это лечится
-   * сегодня, и заказчик — одна из двух сторон, которые могут это сделать.
+   * сегодня, и заказчик, одна из двух сторон, которые могут это сделать.
    */
   if (outcome === 'over_budget') {
     return (
       <div className="panel" style={{ borderColor: 'var(--fail)', marginTop: 40 }}>
         <div className="label" style={{ color: 'var(--fail)' }}>The team is not assembled yet</div>
-        <p style={{ marginTop: 12, marginBottom: 0 }}>A team for your project does exist, but their fees come to more than the budget this project leaves for them. Specialists name their own fees, and the bureau does not talk them down. This is about money rather than about people, and it is solvable: write to the bureau — the options are a different scope, a different stage to stop at, or a different budget.</p>
+        <p style={{ marginTop: 12, marginBottom: 0 }}>A team for your project does exist, but their fees come to more than the budget this project leaves for them. Specialists name their own fees, and the bureau does not talk them down. This is about money rather than about people, and it is solvable: write to the bureau, the options are a different scope, a different stage to stop at, or a different budget.</p>
       </div>
     )
   }
