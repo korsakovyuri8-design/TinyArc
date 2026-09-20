@@ -1,9 +1,32 @@
 import Link from 'next/link'
 import { BriefSandbox } from '@/components/BriefSandbox'
 import { HeroMassing } from '@/components/HeroMassing'
+import { StageStamps } from '@/components/StageStamps'
+import { DimensionScale } from '@/components/DimensionScale'
 import { fill } from '@/lib/fill'
 import { STAGES } from '@/lib/labels'
 import { MAX_STOREYS, PORTFOLIO_THRESHOLD, JURISDICTIONS } from '@/engine/taxonomy'
+
+/**
+ * Значения взяты из таксономии, а не придуманы для красоты. Если в движке
+ * появится шестой материал или тридцать первая страна, эта строка разойдётся с
+ * правдой — и лучше, чтобы расхождение было заметным здесь, чем чтобы сайт
+ * годами обещал то, чего нет.
+ */
+const DIMENSIONS = [
+  { name: 'Discipline', values: 'Architecture · structural · MEP · landscape · visualisation · survey · permitting · cost' },
+  { name: 'Typology', values: 'Villa · townhouse · multi-family · mixed-use' },
+  { name: 'Scale', values: 'Up to 250 m2 · 250-1000 · 1000-3000 · over 3000' },
+  { name: 'Storey count', values: `Up to ${MAX_STOREYS} storeys — where the bureau is sharpest` },
+  { name: 'Structural system', values: 'Concrete · masonry · timber · steel · hybrid' },
+  { name: 'Climate zone', values: 'Mediterranean · continental · alpine · arid' },
+  { name: 'Jurisdiction and signing rights', values: `${JURISDICTIONS.length} countries. Only survey and permitting are tied to one` },
+  { name: 'Software and IFC exchange', values: 'Revit · ArchiCAD · AutoCAD · Rhino · Tekla, and the IFC level between them' },
+  { name: 'Documentation stage', values: 'Concept · permit · tender · construction' },
+  { name: 'Regulatory track', values: 'Light zone · standard · heritage · flood-prone' },
+  { name: 'Language', values: 'With the client in any language; with the authorities in theirs' },
+  { name: 'Working mode and capacity', values: 'Hours a week, current load, and what is already booked' },
+] as const
 
 export default async function Home() {
 
@@ -78,19 +101,7 @@ export default async function Home() {
           <span className="eyebrow">Three stages</span>
           <h2 style={{ marginBottom: 40 }}>Filter · Score · Relay</h2>
 
-          <div className="grid grid-3">
-            {STAGES.map((stage, i) => (
-              <div key={stage.public} className="panel">
-                <div className="label label-accent">
-                  {String(i + 1).padStart(2, '0')} / {stage.public}
-                </div>
-                <h3 style={{ marginTop: 14 }}>{stage.internal}</h3>
-                <p className="muted" style={{ marginTop: 10, marginBottom: 0 }}>
-                  {stage.note}
-                </p>
-              </div>
-            ))}
-          </div>
+          <StageStamps stages={STAGES} />
 
           <p style={{ marginTop: 32 }}>
             <Link href="/how-it-works">Each stage in detail →</Link>
@@ -111,35 +122,9 @@ export default async function Home() {
 
             <div className="panel panel-raised">
               <div className="label">Twelve dimensions of the taxonomy</div>
-              <ul className="clean" style={{ marginTop: 18 }}>
-                {[
-                  'Discipline',
-                  'Typology',
-                  'Scale',
-                  'Storey count',
-                  'Structural system',
-                  'Climate zone',
-                  'Jurisdiction and signing rights',
-                  'Software and IFC exchange level',
-                  'Documentation stage',
-                  'Regulatory track',
-                  'Language with the client and the authorities',
-                  'Working mode and capacity',
-                ].map((dimension, i) => (
-                  <li
-                    key={dimension}
-                    style={{
-                      display: 'flex',
-                      gap: 14,
-                      padding: '9px 0',
-                      borderBottom: i === 11 ? 'none' : '1px solid var(--border)',
-                    }}
-                  >
-                    <span className="num dim">{String(i + 1).padStart(2, '0')}</span>
-                    <span>{dimension}</span>
-                  </li>
-                ))}
-              </ul>
+              <div style={{ marginTop: 18 }}>
+                <DimensionScale dimensions={DIMENSIONS} />
+              </div>
             </div>
           </div>
         </div>
