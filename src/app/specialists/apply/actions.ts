@@ -79,7 +79,20 @@ export async function submitApplication(
 
   const existing = await prisma.specialist.findUnique({ where: { email: input.email } })
   if (existing) {
-    return { errors: { email: 'There is already an application from this address.' }, values: raw }
+    /*
+     * Сообщение ведёт ко входу, а не сообщает тупик.
+     *
+     * Человек, который подал анкету и вернулся на эту страницу, почти всегда
+     * не помнит, дошла ли она: ответ «такая уже есть» подтверждает, что дошла,
+     * и не говорит, что делать дальше. Ему нужен вход, и он в двух словах
+     * отсюда.
+     */
+    return {
+      errors: {
+        email: 'An application from this address already exists. Sign in at /enter to see it.',
+      },
+      values: raw,
+    }
   }
 
   // Проверки пройдены — списываем дорогую отправку. До этого места заявка

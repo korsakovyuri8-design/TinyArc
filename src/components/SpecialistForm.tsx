@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import type { Discipline } from '@/engine/taxonomy'
 import {
   CLIMATE_ZONES,
@@ -44,11 +44,11 @@ export type SpecialistFormAction = (
 ) => Promise<ApplicationState>
 
 /**
- * Двенадцать измерений таксономии, одной формой на два входа.
+ * Двенадцать измерений таксономии — одной формой на два входа.
  *
  * Вход первый: человек пришёл сам и подаёт заявку. Вход второй: бюро завело его
  * импортом базы, и он дозаполняет профиль по приглашению. Спрашивается одно и
- * то же, потому что движку нужно одно и то же, держать две формы значило бы
+ * то же, потому что движку нужно одно и то же — держать две формы значило бы
  * рано или поздно спрашивать в них разное.
  *
  * Заполненные импортом поля приходят в defaults и стоят отмеченными: человек
@@ -67,7 +67,7 @@ type SpecialistFormProps = {
    *
    * Своим временем распоряжается специалист, и в правке из панели бюро это
    * поле было бы обманкой: видно, вводится, ни на что не влияет. Значение
-   * всё равно уходит скрытым, схема проверяет форму целиком.
+   * всё равно уходит скрытым — схема проверяет форму целиком.
    */
   showCapacity?: boolean
   /** Спрашивать согласие: только там, где форму заполняет сам человек. */
@@ -85,24 +85,32 @@ export function SpecialistForm({
 }: SpecialistFormProps) {
   const [state, action, pending] = useActionState<ApplicationState, FormData>(submit, {})
 
-  if (state.submitted) {
-    return (
-      done ?? (
-        <div className="panel panel-accent">
-          <div className="label label-accent">Application received</div>
-          <h3 style={{ marginTop: 12 }}>Next, the portfolio review</h3>
-          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-            {fill(
-              'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10; below it an application does not pass, and that is not negotiated case by case. If you pass, the access key arrives at the address you gave.',
-              { threshold: PORTFOLIO_THRESHOLD },
-            )}
-          </p>
-        </div>
-      )
-    )
-  }
+  /*
+   * Перемотка к сводке после неудачной отправки.
+   *
+   * Стоит здесь, а не рядом со сводкой: ниже по коду есть ранний возврат для
+   * отправленной анкеты, а хук после возврата вызывался бы не на каждом
+   * проходе, и React сломался бы ровно в момент успеха.
+   */
+  const summary = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (state.errors && Object.keys(state.errors).length > 0) {
+      summary.current?.scrollIntoView({ block: 'center' })
+    }
+  }, [state])
 
+  /*
+   * Всё, что считается по состоянию, включая хуки, стоит до раннего возврата
+   * для отправленной анкеты.
+   *
+   * Так было не всегда: `useState` с дисциплинами оказался ниже возврата, и в
+   * момент успешной отправки React увидел бы на один хук меньше, чем на
+   * прошлом проходе, — то есть человек, заполнивший анкету правильно, получал
+   * бы экран ошибки вместо подтверждения. Ломается только удачный путь,
+   * поэтому на неудачных отправках это не всплывало.
+   */
   const errors = state.errors ?? {}
+  const failed = Object.entries(errors)
   // Значения после неудачной отправки важнее исходных: человек только что их
   // правил, и вернуть ему довведённое было бы потерей работы.
   const submitted = (state.values ?? {}) as Record<string, string>
@@ -119,13 +127,31 @@ export function SpecialistForm({
 
   /*
    * Выбранные дисциплины держатся в состоянии: от них зависит, какие
-   * специализации показывать. Начальное значение, то же, что у самих галочек,
+   * специализации показывать. Начальное значение — то же, что у самих галочек,
    * иначе после отказа формы человек увидел бы свои дисциплины отмеченными, а
-   * блок специализаций, пустым.
+   * блок специализаций — пустым.
    */
   const [disciplines, setDisciplines] = useState<Discipline[]>(
     () => list('disciplines') as Discipline[],
   )
+
+
+  if (state.submitted) {
+    return (
+      done ?? (
+        <div className="panel panel-accent">
+          <div className="label label-accent">Application received</div>
+          <h3 style={{ marginTop: 12 }}>Next, the portfolio review</h3>
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+            {fill(
+              'The bureau reviews the portfolio and sets the rating. The threshold is {threshold}/10; below it an application does not pass, and that is not negotiated case by case. If you pass, the access key arrives at the address you gave.',
+              { threshold: PORTFOLIO_THRESHOLD },
+            )}
+          </p>
+        </div>
+      )
+    )
+  }
 
   return (
     <form action={action}>
@@ -389,6 +415,35 @@ export function SpecialistForm({
         значило бы получать его не у того, чьи это данные.
       */}
       {askConsent && <Consent error={errors.consent} side="specialist" />}
+
+      {/*
+        Сводка ошибок у самой кнопки.
+
+        Ошибки полей стоят под своими полями, и это правильно: там их и правят.
+        Но анкета идёт на двенадцать разделов, и поле бывает в трёх экранах
+        выше кнопки. Человек жмёт «Apply», форма возвращается с ошибкой
+        наверху, а перед глазами остаётся только сброшенная галочка согласия,
+        и выглядит это как сломанная кнопка, а не как непройденная проверка.
+      */}
+      {failed.length > 0 && (
+        <div
+          ref={summary}
+          className="panel"
+          style={{ borderColor: 'var(--fail)', marginBottom: 20 }}
+          role="alert"
+        >
+          <div className="label" style={{ color: 'var(--fail)' }}>
+            {failed.length === 1 ? 'One field needs fixing' : `${failed.length} fields need fixing`}
+          </div>
+          <ul style={{ margin: '12px 0 0', paddingLeft: 20 }}>
+            {failed.map(([name, message]) => (
+              <li key={name} style={{ marginTop: 4 }}>
+                {message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Submit pending={pending}>{submitLabel}</Submit>
     </form>
