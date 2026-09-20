@@ -247,6 +247,7 @@ export const GATE_LABELS: Record<GateName, string> = {
   timezone_overlap: 'Working-hours overlap below the working minimum',
   availability: 'No free capacity, or cannot start in time',
   subscription: 'No active subscription for access to projects',
+  premium_tier: 'Quality or declared floor area below what premium projects require',
 }
 
 /**
