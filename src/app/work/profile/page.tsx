@@ -6,6 +6,7 @@ import {
   type Discipline,
   type Jurisdiction,
   type Specialization,
+  PREMIUM_QUALITY_THRESHOLD,
 } from '@/engine/taxonomy'
 import { JURISDICTION_NAMES } from '@/engine/taxonomy'
 import {
@@ -46,7 +47,17 @@ export default async function ProfilePage() {
   const delivery = deliveryScore(metrics)
   const weight = historyWeight(profile.delivery)
 
-  // Адрес бюро из настроек. Пока его нет, отвечать на письмо с ключом:
+  /*
+   * Качество человека само по себе, без привязки к конкретному проекту.
+   *
+   * Именно это число сравнивается с премиальным порогом, и именно его человек
+   * должен видеть. Показывать балл под проект было бы нечестно: он меняется от
+   * заказа к заказу, и понять по нему, растёшь ты или нет, невозможно.
+   */
+  const qualityNow = profile.portfolioRating * (1 - weight) + delivery * weight
+  const toPremium = PREMIUM_QUALITY_THRESHOLD - qualityNow
+
+  // Адрес бюро из настроек. Пока его нет — отвечать на письмо с ключом:
   // «напишите бюро» без адреса не действие, а отписка.
   const bureauEmail =
     company().email || 'the bureau’s address, reply to the email with your access key'
@@ -98,7 +109,7 @@ export default async function ProfilePage() {
         {/*
           Доступ показывается всегда, а не только когда он закрыт. Гейт,
           который виден лишь в момент отказа, человек обнаруживает по
-          отсутствию задач, то есть позже всего и хуже всего.
+          отсутствию задач — то есть позже всего и хуже всего.
         */}
         <div
           className="panel"
@@ -131,7 +142,7 @@ export default async function ProfilePage() {
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>Access is open: you take part in selection on the usual terms. The supply side pays for access to demand, the bureau takes no commission from your fee.</p>
           ) : (
             /*
-              Открытый доступ и участие в отборе, не одно и то же, и пока это
+              Открытый доступ и участие в отборе — не одно и то же, и пока это
               была одна фраза, ушедшему на разбор она обещала участие «на общих
               условиях». Деньги ему и правда не мешают; мешает то, что в пуле
               его нет. Поэтому здесь сначала правда про участие, а потом уже
@@ -165,7 +176,7 @@ export default async function ProfilePage() {
                 чью работу ещё не оценили, читает крупное «0» и понимает его
                 как «мне ничего не должны»; правда при этом стоит мелким
                 шрифтом ниже. Это тот же обман, что «бриф принят» над панелью
-                о несобравшейся команде,, успокаивающее число выше правды.
+                о несобравшейся команде, — успокаивающее число выше правды.
               */}
               <Stat
                 value={
@@ -246,9 +257,9 @@ export default async function ProfilePage() {
         <div className="divider" style={{ marginTop: 44 }} />
 
         {/*
-          Второе, чем человек управляет сам,, после времени. Цену называет он:
+          Второе, чем человек управляет сам, — после времени. Цену называет он:
           гонорар это его деньги, и бюро её не переписывает. В балл она не
-          входит, и сказано это прямо, иначе первым делом её начнут занижать,
+          входит, и сказано это прямо — иначе первым делом её начнут занижать,
           чтобы «подняться в выдаче», а подниматься от этого нечему.
         */}
         <h2>Your fee</h2>
@@ -259,6 +270,33 @@ export default async function ProfilePage() {
         </div>
 
         <div className="divider" style={{ marginTop: 44 }} />
+
+        {/*
+          Порог премиума показывается всем, а не только тем, кто его взял.
+          Человек, который не видит, чего ему не хватает, не растёт, а гадает.
+        */}
+        <div className="panel panel-raised" style={{ marginBottom: 36 }}>
+          <div className="label">Premium projects</div>
+          <p style={{ marginTop: 12, marginBottom: 12 }}>
+            {toPremium <= 0
+              ? fill(
+                  'Your Quality is {now}, above the {threshold} needed for premium projects. Whether you are considered for one also depends on the floor areas you have declared: the engine looks for the band the project falls into.',
+                  { now: qualityNow.toFixed(1), threshold: PREMIUM_QUALITY_THRESHOLD.toFixed(1) },
+                )
+              : fill(
+                  'Your Quality is {now}. Premium projects need {threshold}, so {gap} to go. Closing tickets on time raises it: delivery metrics displace the portfolio rating as the history grows.',
+                  {
+                    now: qualityNow.toFixed(1),
+                    threshold: PREMIUM_QUALITY_THRESHOLD.toFixed(1),
+                    gap: toPremium.toFixed(1),
+                  },
+                )}
+          </p>
+          <p className="hint" style={{ margin: 0 }}>
+            Premium covers larger buildings and work carried past the permit stage. The team keeps a
+            larger share of the fee there.
+          </p>
+        </div>
 
         <h2>Quality metrics</h2>
         <p className="muted" style={{ marginTop: 12 }}>Calculated from the events on your tickets. Neither the bureau nor the client can adjust them: there is no field for a rating in the system.</p>

@@ -14,12 +14,15 @@ import {
   MIN_TIMEZONE_OVERLAP_HOURS,
   OFFICIAL_LANGUAGE,
   PORTFOLIO_THRESHOLD,
+  fitsPremium,
+  tierFor,
+  PREMIUM_GATED_DISCIPLINES,
   DOC_STAGE_ORDER,
   coversRole,
   type RequiredRole,
   type Software,
 } from './taxonomy'
-import { availability, timezoneOverlapHours } from './score'
+import { availability, quality, timezoneOverlapHours } from './score'
 import type { GateName, ProjectRequirements, SpecialistProfile } from './types'
 
 /**
@@ -94,6 +97,26 @@ export function failedGate(
   }
 
   if (specialist.maxStoreys < requirements.storeys) return 'storeys'
+
+  /*
+   * Премиальный сегмент: свой порог, выше общего.
+   *
+   * Стоит после портфолио и не вместо него. Общий порог решает, есть ли
+   * человеку место в пуле; этот — доверять ли ему сложный объект, и считается
+   * уже по качеству целиком, вместе с историей закрытых разделов.
+   *
+   * Отсюда и рост, о котором человеку стоит знать: метрики поставок со
+   * временем вытесняют портфолио, качество поднимается, и порог берётся сам.
+   * Никто никого не переводит вручную, и просить о переводе не у кого.
+   *
+   * Заявленный диапазон площади проверяется вместе с качеством, а не вместо.
+   * Сильный проектировщик малых форм на девятистах метрах остаётся
+   * проектировщиком малых форм: это другая работа, а не та же побольше.
+   */
+  if (tierFor(requirements) === 'premium' && PREMIUM_GATED_DISCIPLINES.includes(role.discipline)) {
+    const { base } = quality(specialist, requirements)
+    if (!fitsPremium(specialist, base, requirements.areaSqm)) return 'premium_tier'
+  }
 
   const covers = specialist.docStages.some(
     (s) => DOC_STAGE_ORDER[s] >= DOC_STAGE_ORDER[requirements.targetStage],

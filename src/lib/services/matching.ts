@@ -9,9 +9,9 @@
 import { assemble } from '@/engine/assemble'
 import { totalPrice } from '@/engine/pricing'
 import type { TeamBudget } from '@/engine/types'
-import type { DocStage, Jurisdiction, Typology } from '@/engine/taxonomy'
+import { tierFor, type DocStage, type Jurisdiction, type Typology } from '@/engine/taxonomy'
 import { costTable } from './payouts'
-import { teamShare } from './settings'
+import { teamShareFor } from './settings'
 import { planTickets } from '@/engine/relay'
 import type { Assembly } from '@/engine/types'
 import type { Discipline } from '@/engine/taxonomy'
@@ -273,11 +273,25 @@ export async function outcomesFor(projectIds: string[]): Promise<Map<string, str
  * раз на весь путь до целевой стадии, и платить ей придётся за каждую.
  */
 async function budgetFor(
-  project: { typology: string; jurisdiction: string; areaSqm: number; targetStage: string },
+  project: {
+    typology: string
+    jurisdiction: string
+    areaSqm: number
+    targetStage: string
+  },
   specialistIds: string[],
 ): Promise<TeamBudget | null> {
-  const share = await teamShare()
-  if (share === null) return null
+  /*
+   * Сегмент считается здесь же, из фактов проекта. Хранить его отдельным полем
+   * значило бы завести вторую правду: поле осталось бы прежним, если площадь
+   * или рельеф в брифе поправили, и бюджет разошёлся бы с объектом.
+   */
+  const tier = tierFor({
+    areaSqm: project.areaSqm,
+    targetStage: project.targetStage as DocStage,
+  })
+
+  const share = await teamShareFor(tier)
 
   const price = totalPrice({
     typology: project.typology as Typology,

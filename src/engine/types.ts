@@ -105,6 +105,7 @@ export type GateName =
   | 'timezone_overlap'
   | 'availability'
   | 'subscription'
+  | 'premium_tier'
 
 export type ScoredCandidate = {
   specialist: SpecialistProfile

@@ -10,6 +10,7 @@
  * взявшаяся сама, ведёт себя как решение, которого никто не принимал.
  */
 
+import { TEAM_SHARE as TEAM_SHARE_DEFAULTS, type ProjectTier } from '@/engine/taxonomy'
 import { prisma } from '../db'
 
 /**
@@ -22,6 +23,16 @@ import { prisma } from '../db'
  * называло.
  */
 export const TEAM_SHARE = 'team_budget_share'
+
+/**
+ * Доля команды на премиальном проекте.
+ *
+ * Отдельным ключом, а не надбавкой к обычному: надбавка связала бы две цифры
+ * так, что подвинуть одну без другой стало бы нельзя, — а они отвечают за
+ * разное. Обычная доля держит экономику малых объектов, премиальная — тех
+ * людей, ради которых премиум и затевался.
+ */
+export const TEAM_SHARE_PREMIUM = 'team_budget_share_premium'
 
 export class SettingRefused extends Error {
   constructor(message: string) {
@@ -37,6 +48,25 @@ export async function teamShare(): Promise<number | null> {
 
   const value = Number(row.value)
   return Number.isFinite(value) && value > 0 && value <= 1 ? value : null
+}
+
+/**
+ * Доля команды по сегменту проекта.
+ *
+ * Значение из базы сильнее умолчания из таксономии: цифру правит человек,
+ * увидевший первый закрытый комплект, а не тот, кто её когда-то вывел. Но
+ * когда в базе пусто, продукт не встаёт молча, а берёт заложенное.
+ */
+export async function teamShareFor(tier: ProjectTier): Promise<number> {
+  const key = tier === 'premium' ? TEAM_SHARE_PREMIUM : TEAM_SHARE
+  const row = await prisma.setting.findUnique({ where: { key } })
+
+  if (row) {
+    const value = Number(row.value)
+    if (Number.isFinite(value) && value > 0 && value <= 1) return value
+  }
+
+  return TEAM_SHARE_DEFAULTS[tier]
 }
 
 export async function setTeamShare(value: number): Promise<void> {

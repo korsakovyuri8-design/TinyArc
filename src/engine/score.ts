@@ -134,14 +134,36 @@ export function availability(
 export function quality(
   specialist: SpecialistProfile,
   requirements: ProjectRequirements,
-): { quality: number; deliveryScore: number; historyWeight: number; relevance: number } {
+): {
+  quality: number
+  /**
+   * Качество человека до умножения на соответствие проекту.
+   *
+   * Нужно отдельно, потому что отвечает на другой вопрос. `quality` говорит,
+   * насколько человек хорош **для этого проекта**, и годится для ранжирования.
+   * `base` говорит, насколько он хорош вообще, и только это имеет смысл
+   * сравнивать с порогом: иначе сильный специалист не прошёл бы премиальный
+   * порог из-за того, что проект слегка не по его профилю, — а это уже
+   * сказано другими гейтами и учтено в балле.
+   */
+  base: number
+  deliveryScore: number
+  historyWeight: number
+  relevance: number
+} {
   const delivery = deliveryScore(deliveryMetrics(specialist.delivery))
   const weight = historyWeight(specialist.delivery)
   const fit = relevance(specialist, requirements)
 
   const base = specialist.portfolioRating * (1 - weight) + delivery * weight
 
-  return { quality: base * fit, deliveryScore: delivery, historyWeight: weight, relevance: fit }
+  return {
+    quality: base * fit,
+    base,
+    deliveryScore: delivery,
+    historyWeight: weight,
+    relevance: fit,
+  }
 }
 
 /** Полный разбор балла для одного специалиста под один проект. */
