@@ -1633,3 +1633,112 @@ body::after {
   color: #7fbf92;
   background: rgba(127, 191, 146, 0.06);
 }
+
+/* --- Первый экран внутренних страниц -------------------------------------- */
+
+/*
+ * Та же ночь, олива и вино, что на главной, но ниже ростом: здесь первый
+ * экран представляет страницу, а не бюро, и не должен отнимать у формы место
+ * на телефоне.
+ */
+.page-hero {
+  padding: clamp(44px, 7vw, 88px) 0 clamp(40px, 6vw, 72px);
+}
+
+.page-hero h1 {
+  max-width: 18ch;
+}
+
+.page-hero .lead {
+  margin-top: 22px;
+  max-width: 58ch;
+}
+
+.page-hero .hero-meta {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.page-hero .hero-extra {
+  margin-top: 28px;
+}
+
+.page-hero .hero-extra > .note,
+.page-hero .hero-extra > p {
+  max-width: 62ch;
+}
+
+/* Заголовки и вторичный текст в каждом тоне. У оливы и вина раньше был
+   только h2: они жили внутри главной и первым экраном не бывали. */
+.night .hero-meta,
+.night .note { color: rgba(239, 230, 216, 0.6); }
+
+.grove h1 { color: var(--grove-ivory); }
+.grove .lead { color: rgba(232, 226, 212, 0.78); }
+.grove .hero-meta,
+.grove .note { color: rgba(232, 226, 212, 0.6); }
+
+.cellar h1 { color: var(--cellar-ivory); }
+.cellar .lead { color: rgba(238, 226, 214, 0.78); }
+.cellar .hero-meta,
+.cellar .note { color: rgba(238, 226, 214, 0.6); }
+
+.grove .btn,
+.cellar .btn {
+  border-color: rgba(217, 180, 95, 0.4);
+  color: inherit;
+}
+
+.grove .btn:hover { border-color: var(--grove-brass); color: var(--grove-brass); }
+.cellar .btn:hover { border-color: var(--cellar-brass); color: var(--cellar-brass); }
+
+.grove .btn-solid,
+.cellar .btn-solid {
+  background: var(--night-terracotta, #c4623a);
+  border-color: #c4623a;
+  color: #17110d;
+}
+
+.grove .btn-solid:hover,
+.cellar .btn-solid:hover {
+  background: #d16d42;
+  border-color: #d16d42;
+  color: #17110d;
+}
+
+.night a:not(.btn),
+.grove a:not(.btn),
+.cellar a:not(.btn) {
+  color: inherit;
+  text-decoration-color: rgba(217, 180, 95, 0.5);
+}
+
+/* Бумага сразу под тёмным экраном начинается с воздуха, а не впритык. */
+.page-hero + section {
+  padding-top: clamp(40px, 6vw, 72px);
+}
+
+.page-hero .hero-back {
+  display: inline-block;
+  margin-bottom: 18px;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.page-hero .hero-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Метки и кнопки кабинета на тёмном: светлая рамка вместо бумажной. */
+.page-hero .hero-aside .tag,
+.page-hero .hero-aside .btn {
+  border-color: rgba(217, 180, 95, 0.45);
+  color: inherit;
+  background: transparent;
+}

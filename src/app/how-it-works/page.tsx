@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { fill } from '@/lib/fill'
 import { pageMetadata } from '@/lib/metadata'
@@ -18,13 +19,12 @@ export default async function HowItWorks() {
 
   return (
     <>
-      <section style={{ paddingTop: 'clamp(48px, 8vw, 88px)', paddingBottom: 40 }}>
-        <div className="shell">
-          <span className="eyebrow">Three stages</span>
-          <h1 style={{ maxWidth: '14ch' }}>Validate · Assemble · Deliver</h1>
-          <p className="lead" style={{ marginTop: 24, maxWidth: '56ch' }}>These are the internal names. On the site the same three stages go by shorter ones, Filter, Score, Relay. Same thing, seen from the other side of the table.</p>
-        </div>
-      </section>
+      <PageHero
+        tone="grove"
+        eyebrow="Three stages"
+        title="Validate · Assemble · Deliver"
+        lead="These are the internal names. On the site the same three stages go by shorter ones, Filter, Score, Relay. Same thing, seen from the other side of the table."
+      />
 
       <Stage
 
@@ -63,9 +63,9 @@ export default async function HowItWorks() {
           A product, not a sum: a sum would let quality make up for unavailability, a product does not. An excellent specialist with no free capacity is of no use to a project that has a date.
         </p>
         <p>
-          <strong>Quality</strong>for a specialist with no history it is the portfolio rating. As soon as closed tickets appear, delivery metrics enter Quality: they displace the portfolio up to a ceiling of 60%. Portfolios age; metrics do not.</p>
+          <strong>Quality</strong>: for a specialist with no history it is the portfolio rating. As soon as closed tickets appear, delivery metrics enter Quality: they displace the portfolio up to a ceiling of 60%. Portfolios age; metrics do not.</p>
         <p>
-          <strong>Availability</strong> free capacity against what is required, time to start on a task, and the working-day overlap across time zones.</p>
+          <strong>Availability</strong>: free capacity against what is required, time to start on a task, and the working-day overlap across time zones.</p>
         <p>Then the Tiny Team is assembled, the minimum sufficient team, not a full practice roster. The set of disciplines follows from the project: a villa does not need what a mixed-use building needs. Software compatibility is checked, a candidate who breaks model exchange gives way to the next one even with a higher score. And signing rights are checked: without someone who can sign the set in the project’s country, no team is assembled at all.</p>
         <p>
           <Link href="/algorithm">See how this is computed →</Link>

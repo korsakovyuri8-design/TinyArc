@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { LEGAL_VERSION, company, isIdentified } from '@/lib/legal'
 import { pageMetadata } from '@/lib/metadata'
@@ -25,14 +26,10 @@ export default async function PrivacyPage() {
   const identified = isIdentified(details)
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)', paddingBottom: 80 }}>
+    <>
+    <PageHero width={760} eyebrow="Legal" title="Processing of personal data" meta={<>Revision {LEGAL_VERSION}</>} />
+    <section style={{ paddingBottom: 80 }}>
       <div className="shell" style={{ maxWidth: 760 }}>
-        <span className="eyebrow">Legal</span>
-        <h1>Processing of personal data</h1>
-
-        <p className="dim" style={{ marginTop: 12, fontSize: '0.85rem' }}>
-          Revision {LEGAL_VERSION}
-        </p>
 
         <div className="panel panel-accent" style={{ marginTop: 28 }}>
           <div className="label label-accent">In short</div>
@@ -161,6 +158,7 @@ export default async function PrivacyPage() {
         </p>
       </div>
     </section>
+    </>
   )
 }
 

@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { fill } from '@/lib/fill'
 import { pageMetadata } from '@/lib/metadata'
@@ -105,20 +106,21 @@ export default async function ProjectPage({
   const standing = standingOf(project.status, run?.outcome ?? null)
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
+    <>
+    {/*
+      Метка считается из статуса и исхода прогона вместе, а не из одного
+      статуса. Проект, чей прогон не собрал команду, остаётся черновиком:
+      «бриф принят» здесь, правда для базы и успокоительное для того, кому
+      команду укомплектовать не удалось, а тремя строками ниже панель
+      говорит обратное.
+    */}
+    <PageHero
+      eyebrow="Project workspace"
+      title={project.title}
+      aside={<span className={standingClass(standing)}>{standing.label}</span>}
+    />
+    <section>
       <div className="shell">
-        <span className="eyebrow">Project workspace</span>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <h1 style={{ maxWidth: '18ch' }}>{project.title}</h1>
-          {/*
-            Метка считается из статуса и исхода прогона вместе, а не из одного
-            статуса. Проект, чей прогон не собрал команду, остаётся черновиком:
-            «бриф принят» здесь, правда для базы и успокоительное для того,
-            кому команду укомплектовать не удалось, а тремя строками ниже
-            панель говорит обратное.
-          */}
-          <span className={standingClass(standing)}>{standing.label}</span>
-        </div>
 
         {issued === '1' && (
           <div className="panel panel-accent" style={{ marginTop: 32 }}>
@@ -665,7 +667,7 @@ export default async function ProjectPage({
 
             {/*
               Заметный блок, а не подпись мелким.
-              После подтверждения форма исчезает вместе со своим сообщением 
+              После подтверждения форма исчезает вместе со своим сообщением —
               человек нажал и остался без ответа. Подтверждённое и есть ответ,
               и увидеть его он должен сразу, а не искать глазами.
             */}
@@ -714,6 +716,7 @@ export default async function ProjectPage({
         </div>
       </div>
     </section>
+    </>
   )
 }
 

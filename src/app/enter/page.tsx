@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { pageMetadata } from '@/lib/metadata'
 import { EnterForm, RecoverForm } from './EnterForm'
@@ -7,15 +8,16 @@ export const metadata = pageMetadata('Sign in')
 export default async function EnterPage() {
 
   return (
-    <section style={{ paddingTop: 'clamp(48px, 8vw, 96px)' }}>
+    <>
+    <PageHero
+      width={520}
+      eyebrow="Sign in"
+      title="With your key"
+      lead="There is no separate sign-up step. Clients get a key after submitting a brief; specialists get one once their application is approved."
+    />
+    <section>
       <div className="shell" style={{ maxWidth: 520 }}>
-        <span className="eyebrow">Sign in</span>
-        <h1>With your key</h1>
-        <p className="lead" style={{ marginTop: 18 }}>
-          {'There is no separate sign-up step. Clients get a key after submitting a brief; specialists get one once their application is approved.'}
-        </p>
-
-        <div style={{ marginTop: 36 }}>
+        <div>
           <EnterForm />
         </div>
 
@@ -44,5 +46,6 @@ export default async function EnterPage() {
         </div>
       </div>
     </section>
+    </>
   )
 }

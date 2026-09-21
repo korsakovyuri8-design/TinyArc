@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics, deliveryScore, historyWeight } from '@/engine/metrics'
@@ -63,18 +64,17 @@ export default async function ProfilePage() {
     company().email || 'the bureau’s address, reply to the email with your access key'
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
+    <>
+    <PageHero
+      tone="cellar"
+      width={900}
+      back={{ href: '/work', label: '← back to the work board' }}
+      eyebrow="Profile and metrics"
+      title={profile.displayName}
+      aside={<span className="tag">{SPECIALIST_STATUS_LABELS[row.status] ?? row.status}</span>}
+    />
+    <section>
       <div className="shell" style={{ maxWidth: 900 }}>
-        <Link href="/work" className="label">
-          ← back to the work board
-        </Link>
-
-        <div className="row" style={{ justifyContent: 'space-between', marginTop: 20 }}>
-          <h1>{profile.displayName}</h1>
-          <span className="tag tag-accent">
-            {SPECIALIST_STATUS_LABELS[row.status] ?? row.status}
-          </span>
-        </div>
 
         <div className="grid grid-3" style={{ marginTop: 36 }}>
           <Stat
@@ -379,6 +379,7 @@ export default async function ProfilePage() {
         <p className="hint" style={{ marginTop: 28 }}>These fields are changed through the bureau: they enter selection, and editing them yourself, around the review, would mean editing your own score.</p>
       </div>
     </section>
+    </>
   )
 }
 

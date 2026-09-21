@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { fill } from '@/lib/fill'
 import { pageMetadata } from '@/lib/metadata'
@@ -13,14 +14,14 @@ export default async function SpecialistsPage() {
 
   return (
     <>
-      <section style={{ paddingTop: 'clamp(48px, 8vw, 96px)' }}>
-        <div className="shell">
-          <span className="eyebrow">The pool</span>
-          <h1 style={{ maxWidth: '16ch' }}>Projects come to you, not the other way round</h1>
-          <p className="lead" style={{ marginTop: 24, maxWidth: '54ch' }}>No tenders, no “tell us about yourself” emails, no haggling over rates. The engine decides who joins a team, from the facts you declared and from how you delivered past tickets.</p>
-          <Link href="/specialists/apply" className="btn btn-solid" style={{ marginTop: 32 }}>Apply</Link>
-        </div>
-      </section>
+      <PageHero
+        tone="cellar"
+        eyebrow="The pool"
+        title="Projects come to you, not the other way round"
+        lead="No tenders, no “tell us about yourself” emails, no haggling over rates. The engine decides who joins a team, from the facts you declared and from how you delivered past tickets."
+      >
+        <Link href="/specialists/apply" className="btn btn-solid">Apply</Link>
+      </PageHero>
 
       <section>
         <div className="shell">

@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
@@ -29,18 +30,18 @@ export default async function DirectionPage({
   const chosen = directions.find((d) => d.chosen)
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
+    <>
+    <PageHero
+      eyebrow="Direction"
+      title="How the building relates to the site"
+      lead="The variants follow from your brief: typology, terrain and material system. Nothing inapplicable appears here, terracing, for instance, shows up only on a slope."
+    >
+      <p className="note">
+        This is neither a design nor a promise. The choice fixes the direction for the team to move in and settles nothing about structure, areas or codes. The team may show that what you chose is impossible on this site, that is the work going normally, not an agreement being broken.
+      </p>
+    </PageHero>
+    <section>
       <div className="shell">
-        <span className="eyebrow">Direction</span>
-        <h1 style={{ maxWidth: '20ch' }}>How the building relates to the site</h1>
-
-        <p className="lead" style={{ marginTop: 22, maxWidth: '58ch' }}>
-          The variants follow from your brief: typology, terrain and material system. Nothing inapplicable appears here, terracing, for instance, shows up only on a slope.
-        </p>
-
-        <p className="note" style={{ marginTop: 22 }}>
-          This is neither a design nor a promise. The choice fixes the direction for the team to move in and settles nothing about structure, areas or codes. The team may show that what you chose is impossible on this site, that is the work going normally, not an agreement being broken.
-        </p>
 
         {issued === '1' && (
           <div className="panel panel-accent" style={{ marginTop: 28 }}>
@@ -125,5 +126,6 @@ export default async function DirectionPage({
         )}
       </div>
     </section>
+    </>
   )
 }

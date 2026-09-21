@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { fill } from '@/lib/fill'
 import { pageMetadata } from '@/lib/metadata'
@@ -27,14 +28,10 @@ export default function SpecialistTermsPage() {
   const identified = isIdentified(details)
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)', paddingBottom: 80 }}>
+    <>
+    <PageHero tone="cellar" width={760} eyebrow="Legal" title="Terms for specialists" meta={<>Revision {LEGAL_VERSION} · governing law, {GOVERNING_LAW}</>} />
+    <section style={{ paddingBottom: 80 }}>
       <div className="shell" style={{ maxWidth: 760 }}>
-        <span className="eyebrow">Legal</span>
-        <h1>Terms for specialists</h1>
-
-        <p className="dim" style={{ marginTop: 12, fontSize: '0.85rem' }}>
-          Revision {LEGAL_VERSION} · governing law, {GOVERNING_LAW}
-        </p>
 
         <div className="panel panel-accent" style={{ marginTop: 28 }}>
           <div className="label label-accent">Before you read</div>
@@ -217,6 +214,7 @@ export default function SpecialistTermsPage() {
         </p>
       </div>
     </section>
+    </>
   )
 }
 

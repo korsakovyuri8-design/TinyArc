@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { fill } from '@/lib/fill'
 import { pageMetadata } from '@/lib/metadata'
@@ -13,19 +14,21 @@ export const generateMetadata = () =>
 export default async function AlgorithmPage() {
 
   return (
-    <section style={{ paddingTop: 'clamp(48px, 8vw, 88px)' }}>
+    <>
+    <PageHero
+      tone="grove"
+      eyebrow="Filter · Score · Relay"
+      title="How the algorithm assembles a team"
+      lead={fill(
+        'Change the project requirements and watch what happens to the pool. The counting is done by the same engine that runs in the product, here it simply runs in the browser against a synthetic pool of {count} specialists.',
+        { count: DEMO_POOL_SIZE },
+      )}
+    >
+      <p className="note">The pool is synthetic and deliberately uneven: it contains people below the portfolio threshold, without signing rights, without the required language and without free capacity. A demonstration where everyone passes demonstrates nothing.</p>
+    </PageHero>
+    <section>
       <div className="shell">
-        <span className="eyebrow">Filter · Score · Relay</span>
-        <h1 style={{ maxWidth: '16ch' }}>How the algorithm assembles a team</h1>
-        <p className="lead" style={{ marginTop: 24, maxWidth: '58ch' }}>
-          {fill(
-            'Change the project requirements and watch what happens to the pool. The counting is done by the same engine that runs in the product, here it simply runs in the browser against a synthetic pool of {count} specialists.',
-            { count: DEMO_POOL_SIZE },
-          )}
-        </p>
-        <p className="note" style={{ marginTop: 20 }}>The pool is synthetic and deliberately uneven: it contains people below the portfolio threshold, without signing rights, without the required language and without free capacity. A demonstration where everyone passes demonstrates nothing.</p>
-
-        <div style={{ marginTop: 48 }}>
+        <div>
           <AlgorithmDemo />
         </div>
 
@@ -37,5 +40,6 @@ export default async function AlgorithmPage() {
         </div>
       </div>
     </section>
+    </>
   )
 }

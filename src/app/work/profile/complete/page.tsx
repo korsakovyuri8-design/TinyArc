@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import { contactDefaults } from '@/lib/licence-form'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -22,17 +23,17 @@ export default async function CompleteProfilePage() {
   const profile = toProfile(row)
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
+    <>
+    <PageHero
+      tone="cellar"
+      width={760}
+      back={{ href: '/work/profile', label: '← profile' }}
+      eyebrow="Your profile"
+      title={fill('{name}, complete your profile', { name: profile.displayName })}
+      lead="The bureau invited you, you did not apply. From our records we know your name and address, and possibly your discipline and country: those are already ticked below. The rest only you know."
+    />
+    <section>
       <div className="shell" style={{ maxWidth: 760 }}>
-        <Link href="/work/profile" className="label">
-          ← profile
-        </Link>
-
-        <h1 style={{ marginTop: 18 }}>
-          {fill('{name}, complete your profile', { name: profile.displayName })}
-        </h1>
-
-        <p className="muted" style={{ marginTop: 16 }}>The bureau invited you, you did not apply. From our records we know your name and address, and possibly your discipline and country: those are already ticked below. The rest only you know.</p>
 
         <div className="panel" style={{ marginTop: 28 }}>
           <div className="label label-accent">What these fields are for</div>
@@ -88,5 +89,6 @@ export default async function CompleteProfilePage() {
         />
       </div>
     </section>
+    </>
   )
 }

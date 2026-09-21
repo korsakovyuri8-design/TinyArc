@@ -1,3 +1,4 @@
+import { PageHero } from '@/components/PageHero'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { DISCIPLINE_LABELS, DOC_STAGE_LABELS, TICKET_STATUS_LABELS } from '@/lib/labels'
@@ -77,17 +78,19 @@ export default async function WorkPage({
   ]
 
   return (
-    <section style={{ paddingTop: 'clamp(40px, 7vw, 72px)' }}>
+    <>
+    <PageHero
+      tone="cellar"
+      eyebrow="Work board"
+      title={specialist.displayName}
+      aside={
+        <Link href="/work/profile" className="btn">
+          Profile and metrics
+        </Link>
+      }
+    />
+    <section>
       <div className="shell">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <span className="eyebrow">Work board</span>
-            <h1>{specialist.displayName}</h1>
-          </div>
-          <Link href="/work/profile" className="btn btn-quiet">
-            Profile and metrics
-          </Link>
-        </div>
 
         {leftNotice && (
           <div className="panel panel-accent" style={{ marginTop: 28 }}>
@@ -169,6 +172,7 @@ export default async function WorkPage({
         )}
       </div>
     </section>
+    </>
   )
 }
 
