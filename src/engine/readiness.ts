@@ -28,8 +28,9 @@ import {
   type Jurisdiction,
   type ProjectShape,
   type RequiredRole,
+  SIGNED_DISCIPLINES,
 } from './taxonomy'
-import type { SpecialistProfile } from './types'
+import type { SigningPartner, SpecialistProfile } from './types'
 
 /**
  * Меньше двух человек на роль в стране, это не покрытие.
@@ -231,14 +232,30 @@ export function gaps(pool: SpecialistProfile[]): Gap[] {
  * Считается по способности собрать состав, а не по загрузке: «сегодня все
  * заняты», это не «мы этого не умеем».
  */
-export function readiness(pool: SpecialistProfile[], jurisdiction: Jurisdiction): number {
+export function readiness(
+  pool: SpecialistProfile[],
+  jurisdiction: Jurisdiction,
+  /** Местные фирмы с правом подписи. Пусто, подписывать могут только люди пула. */
+  partners: readonly SigningPartner[] = [],
+): number {
   const usable = eligible(pool)
   const shapes = allShapes()
 
-  // Подпись, отдельное условие состава: без неё пакет не имеет силы (п.10).
-  // Именно она, а не проживание команды, и делает страну открытой.
-  const hasSignatory = usable.some((s) => s.signsIn.includes(jurisdiction))
-  if (!hasSignatory) return 0
+  /*
+   * Подпись, отдельное условие состава: без неё пакет не имеет силы (п.10).
+   * Именно она, а не проживание команды, и делает страну открытой.
+   *
+   * Подпись нужна под каждым разделом, где её требует закон, а не одна на
+   * страну. Раньше страна считалась открытой, если в пуле нашёлся хоть один
+   * человек с подписью, и архитектор с черногорской лицензией открывал
+   * Черногорию целиком, хотя подписать конструкции было некому.
+   */
+  const signable = SIGNED_DISCIPLINES.every(
+    (d) =>
+      usable.some((s) => s.disciplines.includes(d) && s.signsIn.includes(jurisdiction)) ||
+      partners.some((p) => p.jurisdiction === jurisdiction && p.disciplines.includes(d)),
+  )
+  if (!signable) return 0
 
   /*
    * Ответ «закрывает ли роль хоть кто-то» считается один раз на подпись роли.

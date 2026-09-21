@@ -751,6 +751,7 @@ export default async function OpsPage() {
           <Link href="/ops/payouts">Rates and payouts →</Link>
           <Link href="/ops/norms">Norms corpus →</Link>
           <Link href="/ops/contractors">Contractor network →</Link>
+          <Link href="/ops/partners">Signing partners →</Link>
         </div>
       </div>
     </section>

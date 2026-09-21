@@ -1,3 +1,5 @@
+import { SIGNED_DISCIPLINES } from './taxonomy'
+import type { SigningPartner } from './types'
 import { describe, expect, it } from 'vitest'
 import { assemble, rankFor } from './assemble'
 import { pairKey } from './collaboration'
@@ -82,13 +84,43 @@ describe('сборка Tiny Team', () => {
     expect(result.notes).toContain('signing rights')
   })
 
-  it('ставит ровно одного подписывающего', () => {
+  /*
+   * Подпись по разделу, а не одна на состав. Пакет с подписью архитектора и
+   * без подписи конструктора орган не примет: каждый вид проекта подписывает
+   * свой ответственный проектант.
+   */
+  it('ставит по одному подписывающему на каждый раздел, где нужна подпись', () => {
     const result = assemble(fullPool(), requirements())
     const signatories = result.team.filter((m) => m.isSignatory)
+    const signedHere = result.team
+      .map((m) => m.discipline)
+      .filter((d) => SIGNED_DISCIPLINES.includes(d))
 
     expect(result.outcome).toBe('ok')
-    expect(signatories).toHaveLength(1)
-    expect(signatories[0].specialist.signsIn).toContain('ME')
+    expect(signatories.map((m) => m.discipline).sort()).toEqual([...new Set(signedHere)].sort())
+    expect(result.unsigned).toEqual([])
+    for (const m of signatories) expect(m.specialist.signsIn).toContain('ME')
+  })
+
+  it('одного подписанта на команду больше не хватает', () => {
+    const pool = [
+      ...fullPool().map((s) => ({ ...s, signsIn: [] as never[] })),
+      specialist({
+        id: 'signing-structural',
+        displayName: 'Конструктор с подписью',
+        disciplines: ['structural'],
+        portfolioRating: 8,
+        signsIn: ['ME'],
+      }),
+    ]
+
+    const result = assemble(pool, requirements())
+
+    expect(result.outcome).toBe('no_signatory')
+    // Подписать архитектуру и системы некому, значит пакет не выпустить,
+    // сколько бы конструкторов с подписью ни было.
+    expect(result.unsigned).toContain('architecture')
+    expect(result.notes).toContain('architecture')
   })
 
   it('меняет состав ради подписи с наименьшей потерей балла', () => {
@@ -102,12 +134,43 @@ describe('сборка Tiny Team', () => {
         signsIn: ['ME'],
       }),
     ]
+    // Остальные разделы подписывает местная фирма: так видно, что свой
+    // подписант в составе всё равно предпочтительнее чужой проверки.
+    const partner = partnerFor(['architecture', 'mep'])
 
-    const result = assemble(pool, requirements())
+    const result = assemble(pool, requirements(), new Map(), null, [partner])
     const signatory = result.team.find((m) => m.isSignatory)
 
     expect(result.outcome).toBe('ok')
     expect(signatory?.specialist.id).toBe('signing-structural')
+  })
+
+  it('местная фирма закрывает подпись, которой нет в команде', () => {
+    const nobodySigns = fullPool().map((s) => ({ ...s, signsIn: [] as never[] }))
+    const partner = partnerFor(['architecture', 'structural', 'mep'])
+
+    const result = assemble(nobodySigns, requirements(), new Map(), null, [partner])
+
+    expect(result.outcome).toBe('ok')
+    expect(result.team.some((m) => m.isSignatory)).toBe(false)
+    expect(result.signOff.every((o) => o.by === 'partner')).toBe(true)
+  })
+
+  it('свой подписант идёт раньше фирмы', () => {
+    const partner = partnerFor(['architecture', 'structural', 'mep'])
+    const result = assemble(fullPool(), requirements(), new Map(), null, [partner])
+
+    expect(result.outcome).toBe('ok')
+    expect(result.signOff.every((o) => o.by === 'member')).toBe(true)
+  })
+
+  it('фирма из другой страны подпись не закрывает', () => {
+    const nobodySigns = fullPool().map((s) => ({ ...s, signsIn: [] as never[] }))
+    const foreign = { ...partnerFor(['architecture', 'structural', 'mep']), jurisdiction: 'RS' as const }
+
+    const result = assemble(nobodySigns, requirements(), new Map(), null, [foreign])
+
+    expect(result.outcome).toBe('no_signatory')
   })
 
   it('уступает место следующему, если кандидат вне пакета команды', () => {
@@ -513,3 +576,7 @@ describe('бюджет на команду', () => {
     expect(result.unpricedMembers).toBe(0)
   })
 })
+
+function partnerFor(disciplines: SigningPartner['disciplines']): SigningPartner {
+  return { id: 'partner-me', name: 'Local design firm', jurisdiction: 'ME', disciplines }
+}

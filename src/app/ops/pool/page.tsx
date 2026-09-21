@@ -1,3 +1,4 @@
+import { allPartners } from '@/lib/services/partners'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { deliveryMetrics } from '@/engine/metrics'
@@ -87,6 +88,8 @@ export default async function PoolPage({
   })
 
   const pool = rows.filter((r) => r.status === 'active').map((r) => profiles.get(r.id)!)
+  // Фирмы с правом подписи тоже открывают страну: см. readiness.
+  const partners = await allPartners()
 
   // Ликвидность пула: без покрытия по дисциплинам мэтчинг не имеет смысла (п.21).
   const coverage = new Map<string, number>()
@@ -179,7 +182,7 @@ export default async function PoolPage({
 
         <div className="grid grid-3">
           {JURISDICTIONS.map((j) => {
-            const share = readiness(pool, j)
+            const share = readiness(pool, j, partners)
 
             return (
               <div key={j} style={{ borderTop: '1px solid var(--border-strong)', paddingTop: 14 }}>

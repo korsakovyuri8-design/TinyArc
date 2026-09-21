@@ -12,6 +12,7 @@ import type { TeamBudget } from '@/engine/types'
 import { tierFor, type DocStage, type Jurisdiction, type Typology } from '@/engine/taxonomy'
 import { costTable } from './payouts'
 import { teamShareFor } from './settings'
+import { partnersIn } from './partners'
 import { planTickets } from '@/engine/relay'
 import type { Assembly } from '@/engine/types'
 import type { Discipline } from '@/engine/taxonomy'
@@ -50,7 +51,10 @@ export async function runAssembly(projectId: string): Promise<{ runId: string; a
   // вариантов: кто проходит гейты, от неё не зависит.
   const history = await historyFor(pool.map((s) => s.id))
   const budget = await budgetFor(project, pool.map((s) => s.id))
-  const assembly = assemble(pool, toRequirements(project), history, budget)
+  // Подпись по разделам может поставить местная фирма, если в составе нет
+  // своего подписанта: см. SIGNED_DISCIPLINES.
+  const partners = await partnersIn(project.jurisdiction)
+  const assembly = assemble(pool, toRequirements(project), history, budget, partners)
 
   const runId = await prisma.$transaction(async (tx) => {
     /*

@@ -9,7 +9,13 @@
  * получить другой состав, изменить требования проекта или пул.
  */
 
-import { requiredRoles, type Discipline, type RequiredRole, type Software } from './taxonomy'
+import {
+  requiredRoles,
+  SIGNED_DISCIPLINES,
+  type Discipline,
+  type RequiredRole,
+  type Software,
+} from './taxonomy'
 import { teamFactor, type PairHistory } from './collaboration'
 import { failedGate, narrowPackages, sharesPackage } from './filter'
 import { availability, scoreFor } from './score'
@@ -19,6 +25,8 @@ import type {
   Assembly,
   ProjectRequirements,
   ScoredCandidate,
+  SignOff,
+  SigningPartner,
   SpecialistProfile,
   TeamBudget,
   TeamMember,
@@ -114,6 +122,8 @@ function search(
   history: Map<string, PairHistory>,
   /** Потолок на команду. `null`, потолка нет, и цена ни на что не влияет. */
   budget: TeamBudget | null,
+  /** Местные фирмы с правом подписи в стране проекта. */
+  partners: readonly SigningPartner[],
 ): Assignment[] | null {
   const order = [...roles].sort((a, b) => {
     if (a.discipline === LEAD_DISCIPLINE) return -1
@@ -140,10 +150,9 @@ function search(
       visited += 1
 
       if (requireSignatory) {
-        const signs = chosen.some((a) =>
-          a.candidate.specialist.signsIn.includes(requirements.jurisdiction),
-        )
-        if (!signs) return
+        // Подпись нужна под каждым разделом, где её требует закон, а не одна
+        // на весь состав. См. SIGNED_DISCIPLINES.
+        if (signing(members(chosen), requirements, partners).unsigned.length > 0) return
       }
 
       // Сработанность применяется к собранному составу, а не к отдельному
@@ -220,6 +229,12 @@ export function assemble(
    * значением `null`, и различать их обязательно.
    */
   budget: TeamBudget | null = null,
+  /**
+   * Местные проектные фирмы, которые проверяют и подписывают разделы в стране
+   * проекта. Пусто, подписать может только сам участник команды с правом
+   * подписи.
+   */
+  partners: readonly SigningPartner[] = [],
 ): Assembly {
   const validation = validateProject(requirements)
   const roles = requiredRoles(shapeOf(requirements))
@@ -236,6 +251,8 @@ export function assemble(
       team: [],
       teamCost: null,
       unpricedMembers: 0,
+      signOff: [],
+      unsigned: [],
     }
   }
 
@@ -275,29 +292,32 @@ export function assemble(
     ]),
   )
 
-  const withSignatory = search(roles, byRole, requirements, true, history, budget)
+  const withSignatory = search(roles, byRole, requirements, true, history, budget, partners)
 
   if (withSignatory) {
-    const team = toTeam(withSignatory, requirements)
+    const { signOff } = signing(members(withSignatory), requirements, partners)
+    const team = toTeam(withSignatory, signOff)
 
-    return { ...base, outcome: 'ok', notes: '', gap: null, team, ...priced(team) }
+    return { ...base, outcome: 'ok', notes: '', gap: null, team, ...priced(team), signOff, unsigned: [] }
   }
 
   // Состав не собрался. Различаем две причины: людей нет вовсе или они есть,
   // но подписать пакет некому. Для клиента это разные ответы.
-  const withoutSignatory = search(roles, byRole, requirements, false, history, budget)
+  const withoutSignatory = search(roles, byRole, requirements, false, history, budget, partners)
 
   if (withoutSignatory) {
-    const team = toTeam(withoutSignatory, requirements)
+    const { signOff, unsigned } = signing(members(withoutSignatory), requirements, partners)
+    const team = toTeam(withoutSignatory, signOff)
 
     return {
       ...base,
       outcome: 'no_signatory',
       gap: null,
-      notes:
-        'A team does come together, but no variant includes a specialist with signing rights in the project’s jurisdiction. A documentation set without a local signature has no force, so the project is not taken on (§10, §21).',
+      notes: `A team does come together, but nobody holds signing rights in the project’s jurisdiction for: ${unsigned.join(', ')}. Neither a team member nor a local signing partner can sign these sections, and a documentation set without the responsible designer’s signature on every section has no force, so the project is not taken on (§10, §21).`,
       team,
       ...priced(team),
+      signOff,
+      unsigned,
     }
   }
 
@@ -309,10 +329,11 @@ export function assemble(
    * отправить человека ждать того, что уже случилось.
    */
   if (budget) {
-    const unbounded = search(roles, byRole, requirements, true, history, null)
+    const unbounded = search(roles, byRole, requirements, true, history, null, partners)
 
     if (unbounded) {
-      const team = toTeam(unbounded, requirements)
+      const { signOff } = signing(members(unbounded), requirements, partners)
+      const team = toTeam(unbounded, signOff)
       const { teamCost, unpricedMembers } = priced(team)
 
       return {
@@ -324,6 +345,8 @@ export function assemble(
         team: [],
         teamCost,
         unpricedMembers,
+        signOff: [],
+        unsigned: [],
       }
     }
   }
@@ -338,26 +361,79 @@ export function assemble(
     team: [],
     teamCost: null,
     unpricedMembers: 0,
+    signOff: [],
+    unsigned: [],
   }
 }
 
-function toTeam(assignments: Assignment[], requirements: ProjectRequirements): TeamMember[] {
-  // Подписывающий помечается один: если их в составе несколько, ответственность
-  // должна быть на конкретном человеке, а не «на ком-то из команды».
-  let marked = false
+function toTeam(assignments: Assignment[], signOff: readonly SignOff[]): TeamMember[] {
+  // Подписывающий отмечается по разделу: архитектор подписывает архитектуру,
+  // конструктор конструкции. Раздел, который подписывает партнёрская фирма,
+  // своего подписанта в команде не имеет.
+  return assignments.map((a) => ({
+    specialist: a.candidate.specialist,
+    role: a.role,
+    discipline: a.role.discipline,
+    isSignatory: signOff.some(
+      (o) =>
+        o.by === 'member' &&
+        o.specialistId === a.candidate.specialist.id &&
+        o.discipline === a.role.discipline,
+    ),
+    score: a.score,
+  }))
+}
 
-  return assignments.map((a) => {
-    const signs = !marked && a.candidate.specialist.signsIn.includes(requirements.jurisdiction)
-    if (signs) marked = true
+/** Состав в виде пар «человек, раздел»: то, по чему считается подпись. */
+function members(assignments: readonly Assignment[]) {
+  return assignments.map((a) => ({ specialist: a.candidate.specialist, discipline: a.role.discipline }))
+}
 
-    return {
-      specialist: a.candidate.specialist,
-      role: a.role,
-      discipline: a.role.discipline,
-      isSignatory: signs,
-      score: a.score,
+/**
+ * Кто подписывает каждый раздел, где нужна подпись.
+ *
+ * Сначала свой: участник, который сделал раздел и имеет право подписи в стране
+ * проекта. Он отвечает за то, что сам сделал, и чужая проверка ему не нужна.
+ * Только если своего подписанта нет, раздел уходит партнёрской фирме, и её
+ * инженер проверяет чужую работу, прежде чем подписать.
+ *
+ * Внутри раздела подписывает один. Если в составе двое с правом подписи по
+ * одной дисциплине, ответственность должна лежать на конкретном человеке, а
+ * не «на ком-то из команды».
+ */
+export function signing(
+  chosen: readonly { specialist: SpecialistProfile; discipline: Discipline }[],
+  requirements: ProjectRequirements,
+  partners: readonly SigningPartner[],
+): { signOff: SignOff[]; unsigned: Discipline[] } {
+  const needed = [...new Set(chosen.map((c) => c.discipline))].filter((d) =>
+    SIGNED_DISCIPLINES.includes(d),
+  )
+
+  const signOff: SignOff[] = []
+  const unsigned: Discipline[] = []
+
+  for (const discipline of needed) {
+    const member = chosen.find(
+      (c) => c.discipline === discipline && c.specialist.signsIn.includes(requirements.jurisdiction),
+    )
+    if (member) {
+      signOff.push({ discipline, by: 'member', specialistId: member.specialist.id })
+      continue
     }
-  })
+
+    const partner = partners.find(
+      (p) => p.jurisdiction === requirements.jurisdiction && p.disciplines.includes(discipline),
+    )
+    if (partner) {
+      signOff.push({ discipline, by: 'partner', partnerId: partner.id })
+      continue
+    }
+
+    unsigned.push(discipline)
+  }
+
+  return { signOff, unsigned }
 }
 
 /** Роль, на которой поиск упирается раньше всего: с неё и начинать разбор. */
