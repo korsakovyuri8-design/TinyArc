@@ -16,7 +16,7 @@ export type ArtifactLocation = {
   storageKey: string | null
 }
 
-/** Адрес для показа человеку. Пустая строка — файла нет ни там, ни там. */
+/** Адрес для показа человеку. Пустая строка, файла нет ни там, ни там. */
 export function artifactHref(artifact: ArtifactLocation): string {
   if (artifact.storageKey) return `/api/files/${artifact.id}`
   return artifact.url

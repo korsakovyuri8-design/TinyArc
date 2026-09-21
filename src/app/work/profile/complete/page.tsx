@@ -1,3 +1,4 @@
+import { contactDefaults } from '@/lib/licence-form'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
@@ -51,6 +52,7 @@ export default async function CompleteProfilePage() {
           action={completeProfile}
           submitLabel="Send for review"
           defaults={{
+            ...contactDefaults(row),
             portfolioUrl: row.portfolioUrl,
             disciplines: profile.disciplines,
             specializations: profile.specializations,

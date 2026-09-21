@@ -14,7 +14,7 @@ import { isOperator } from '@/lib/session'
 import { proposeRating, reinviteSpecialist, reviewApplication } from '../actions'
 import { OpsAction } from '../OpsForms'
 
-export const metadata = { title: 'Applications — bureau panel' }
+export const metadata = { title: 'Applications, bureau panel' }
 
 export default async function ApplicationsPage() {
   if (!(await isOperator())) redirect('/ops')
@@ -52,7 +52,7 @@ export default async function ApplicationsPage() {
               <span className="tag tag-wait">{invited.length}</span>
             </div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '58ch' }}>
-              These came in through a database import. The ball is in their court, not ours: until the profile is filled in, selection does not see them — not by a decision of the bureau, but because there is nothing to compute on.
+              These came in through a database import. The ball is in their court, not ours: until the profile is filled in, selection does not see them, not by a decision of the bureau, but because there is nothing to compute on.
             </p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
@@ -78,7 +78,7 @@ export default async function ApplicationsPage() {
                         <td className="dim">{row.email}</td>
                         {/* Ключ виден здесь, потому что при почте-заглушке
                             письмо не уходит, а передать доступ всё равно надо.
-                            Панель закрыта паролем — это не публичное место. */}
+                            Панель закрыта паролем, это не публичное место. */}
                         <td className="num dim" style={{ fontSize: '0.78rem' }}>{row.accessKey}</td>
                         <td className="num dim">
                           {days === null ? 'not invited yet' : `${days} days`}
@@ -209,7 +209,7 @@ function Line({ label, value }: { label: string; value: string }) {
   return (
     <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
       <span className="dim">{label}</span>
-      <span style={{ textAlign: 'right' }}>{value || '—'}</span>
+      <span style={{ textAlign: 'right' }}>{value || 'n/a'}</span>
     </div>
   )
 }

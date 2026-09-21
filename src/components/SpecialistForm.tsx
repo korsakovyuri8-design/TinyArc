@@ -1,7 +1,9 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import type { Discipline } from '@/engine/taxonomy'
+import type { Discipline, Jurisdiction } from '@/engine/taxonomy'
+import { authoritiesFor } from '@/engine/licensing'
+import { COUNTRIES, COUNTRY_NAMES } from '@/lib/countries'
 import {
   CLIMATE_ZONES,
   DISCIPLINES,
@@ -19,6 +21,8 @@ import {
   TYPOLOGIES,
   WORK_MODES,
   PORTFOLIO_THRESHOLD,
+  UTC_OFFSETS,
+  utcOffsetLabel,
 } from '@/engine/taxonomy'
 import {
   CLIMATE_LABELS,
@@ -44,11 +48,11 @@ export type SpecialistFormAction = (
 ) => Promise<ApplicationState>
 
 /**
- * Двенадцать измерений таксономии — одной формой на два входа.
+ * Двенадцать измерений таксономии, одной формой на два входа.
  *
  * Вход первый: человек пришёл сам и подаёт заявку. Вход второй: бюро завело его
  * импортом базы, и он дозаполняет профиль по приглашению. Спрашивается одно и
- * то же, потому что движку нужно одно и то же — держать две формы значило бы
+ * то же, потому что движку нужно одно и то же, держать две формы значило бы
  * рано или поздно спрашивать в них разное.
  *
  * Заполненные импортом поля приходят в defaults и стоят отмеченными: человек
@@ -67,7 +71,7 @@ type SpecialistFormProps = {
    *
    * Своим временем распоряжается специалист, и в правке из панели бюро это
    * поле было бы обманкой: видно, вводится, ни на что не влияет. Значение
-   * всё равно уходит скрытым — схема проверяет форму целиком.
+   * всё равно уходит скрытым, схема проверяет форму целиком.
    */
   showCapacity?: boolean
   /** Спрашивать согласие: только там, где форму заполняет сам человек. */
@@ -105,7 +109,7 @@ export function SpecialistForm({
    *
    * Так было не всегда: `useState` с дисциплинами оказался ниже возврата, и в
    * момент успешной отправки React увидел бы на один хук меньше, чем на
-   * прошлом проходе, — то есть человек, заполнивший анкету правильно, получал
+   * прошлом проходе,, то есть человек, заполнивший анкету правильно, получал
    * бы экран ошибки вместо подтверждения. Ломается только удачный путь,
    * поэтому на неудачных отправках это не всплывало.
    */
@@ -127,13 +131,29 @@ export function SpecialistForm({
 
   /*
    * Выбранные дисциплины держатся в состоянии: от них зависит, какие
-   * специализации показывать. Начальное значение — то же, что у самих галочек,
+   * специализации показывать. Начальное значение, то же, что у самих галочек,
    * иначе после отказа формы человек увидел бы свои дисциплины отмеченными, а
-   * блок специализаций — пустым.
+   * блок специализаций, пустым.
    */
   const [disciplines, setDisciplines] = useState<Discipline[]>(
     () => list('disciplines') as Discipline[],
   )
+
+  /*
+   * Отмеченные страны подписи держатся в состоянии: под каждой появляется своё
+   * поле лицензии. Без состояния поля рисовались бы только после отправки
+   * формы, то есть ровно тогда, когда человек уже всё заполнил и ушёл.
+   */
+  const [signsIn, setSignsIn] = useState<Jurisdiction[]>(() => list('signsIn') as Jurisdiction[])
+  const [residence, setResidence] = useState<string>(() => values.residenceCountry ?? '')
+
+  /*
+   * Страны, под которыми спрашивается лицензия: страна проживания и страны
+   * подписи. Архитектор из Бразилии держит бразильскую лицензию, даже если
+   * права подписи в тридцати странах проектов у него нет, и бюро полезно её
+   * знать: так видно, что перед нами профессионал, а не студент.
+   */
+  const licenceCountries = [...new Set([residence, ...signsIn].filter(Boolean))]
 
 
   if (state.submitted) {
@@ -185,6 +205,91 @@ export function SpecialistForm({
             placeholder="https://"
             defaultValue={values.portfolioUrl ?? ''}
           />
+        </Field>
+
+        {/*
+          Контакты помимо почты.
+
+          Движок их не читает и в отборе они не участвуют: это связь на то
+          время, пока бюро заводит первых людей руками. Почта у половины
+          найденных оказывается рабочей и читается раз в неделю, а ответ на
+          первый заход нужен в тот же день.
+        */}
+        <div className="grid grid-2">
+          <Field
+            label="LinkedIn"
+            name="linkedinUrl"
+            error={errors.linkedinUrl}
+            hint="Optional. Helps us recognise you if we have already written"
+          >
+            <input
+              id="linkedinUrl"
+              name="linkedinUrl"
+              type="url"
+              placeholder="https://linkedin.com/in/"
+              defaultValue={values.linkedinUrl ?? ''}
+            />
+          </Field>
+
+          <Field
+            label="Phone"
+            name="phone"
+            error={errors.phone}
+            hint="Optional, with the country code: +382, +381, +39"
+          >
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              placeholder="+382"
+              defaultValue={values.phone ?? ''}
+            />
+          </Field>
+        </div>
+
+        {/*
+          WhatsApp спрашивается прямо, а не выводится из номера: на Балканах
+          Viber стоит чаще, и написать не в тот мессенджер значит решить, что
+          человек молчит, когда он просто не видел сообщения.
+        */}
+        <label className="row" style={{ gap: 10, marginTop: 4 }}>
+          <input
+            type="checkbox"
+            name="phoneWhatsapp"
+            value="1"
+            defaultChecked={values.phoneWhatsapp === '1'}
+          />
+          <span>This number is on WhatsApp</span>
+        </label>
+
+        {/*
+          Страна проживания: любая страна мира.
+
+          Отдельно от стран проектов ниже. Там тридцать стран, где бюро берёт
+          заказы; здесь вопрос о человеке, и отвечать на него «ни одна из
+          тридцати» было бы нельзя.
+        */}
+        <Field
+          label="Country you live in"
+          name="residenceCountry"
+          error={errors.residenceCountry}
+          hint="Any country. Where the bureau takes projects is asked separately below"
+        >
+          <select
+            id="residenceCountry"
+            name="residenceCountry"
+            defaultValue={values.residenceCountry ?? ''}
+            onChange={(e) => setResidence(e.target.value)}
+          >
+            <option value="" disabled>
+              Choose a country
+            </option>
+            {COUNTRIES.map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </select>
         </Field>
       </fieldset>
 
@@ -276,9 +381,9 @@ export function SpecialistForm({
         </Field>
 
         <Field
-          label="Jurisdictions"
+          label="Countries where you have taken projects through approvals"
           error={errors.jurisdictions}
-          hint="Where you have actually taken projects through approvals"
+          hint="These are the countries where the bureau currently takes projects. Leave empty if none applies: design work is open to the whole pool, only permitting and survey are tied to a country"
         >
           <Choices defaultValue={list('jurisdictions') as never[]} name="jurisdictions" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
         </Field>
@@ -286,10 +391,87 @@ export function SpecialistForm({
         <Field
           label="Signing rights"
           error={errors.signsIn}
-          hint="Only countries from the list above. Without signing rights in a country the project is not taken at all"
+          hint="Only among the countries you marked above. If you hold a licence elsewhere, the field for it is under your country of residence"
         >
-          <Choices defaultValue={list('signsIn') as never[]} name="signsIn" options={JURISDICTIONS} labels={JURISDICTION_NAMES} />
+          <Choices
+            defaultValue={list('signsIn') as never[]}
+            name="signsIn"
+            options={JURISDICTIONS}
+            labels={JURISDICTION_NAMES}
+            onChange={(next) => setSignsIn(next as Jurisdiction[])}
+          />
         </Field>
+
+        {/*
+          Лицензия спрашивается под каждой отмеченной страной отдельно.
+          Одно общее поле на всех не годится: человек с правом подписи в двух
+          странах держит два разных номера от двух разных органов, и слитые в
+          одну строку они не проверяются ни по одному реестру.
+        */}
+        {licenceCountries.map((j) => {
+          const authorities = authoritiesFor(j)
+          return (
+            <div key={j} className="panel" style={{ marginBottom: 16 }}>
+              <div className="label">{fill('Licence in {country}', { country: COUNTRY_NAMES[j] ?? j })}</div>
+
+              {authorities.length > 0 ? (
+                <p className="hint" style={{ marginTop: 10 }}>
+                  {authorities.length > 1
+                    ? fill('Licences here are held through one of: {names}.', {
+                        names: authorities.map((a) => a.name).join('; '),
+                      })
+                    : fill('Licences here are held through {name}.', { name: authorities[0].name })}
+                  {authorities.find((a) => a.hint)?.hint ? ` ${authorities.find((a) => a.hint)?.hint}` : ''}
+                </p>
+              ) : (
+                <p className="hint" style={{ marginTop: 10 }}>
+                  We have not yet mapped the licensing body for this country. Name it yourself: that
+                  is how the list grows.
+                </p>
+              )}
+
+              <div className="grid grid-2" style={{ marginTop: 16 }}>
+                <Field label="Issuing body" name={`licence_${j}_authority`}>
+                  <input
+                    id={`licence_${j}_authority`}
+                    name={`licence_${j}_authority`}
+                    placeholder={authorities[0]?.name ?? ''}
+                    defaultValue={values[`licence_${j}_authority`] ?? ''}
+                  />
+                </Field>
+                <Field
+                  label="Licence number"
+                  name={`licence_${j}_number`}
+                  hint="Exactly as written in the document"
+                >
+                  <input
+                    id={`licence_${j}_number`}
+                    name={`licence_${j}_number`}
+                    defaultValue={values[`licence_${j}_number`] ?? ''}
+                  />
+                </Field>
+              </div>
+
+              <Field
+                label="Registry entry"
+                name={`licence_${j}_registry`}
+                hint={
+                  authorities[0]?.registryUrl
+                    ? fill('Optional. The public registry is at {url}', {
+                        url: authorities[0].registryUrl,
+                      })
+                    : 'Optional, if the registry is public'
+                }
+              >
+                <input
+                  id={`licence_${j}_registry`}
+                  name={`licence_${j}_registry`}
+                  defaultValue={values[`licence_${j}_registry`] ?? ''}
+                />
+              </Field>
+            </div>
+          )
+        })}
 
         <Field label="Software" error={errors.software}>
           <Choices defaultValue={list('software') as never[]} name="software" options={SOFTWARE} labels={SOFTWARE_LABELS} />
@@ -352,14 +534,13 @@ export function SpecialistForm({
             error={errors.utcOffset}
             hint="Working-day overlap is calculated from it"
           >
-            <input
-              id="utcOffset"
-              name="utcOffset"
-              type="number"
-              min={-12}
-              max={14}
-              defaultValue={values.utcOffset ?? 1}
-            />
+            <select id="utcOffset" name="utcOffset" defaultValue={values.utcOffset ?? '1'}>
+              {UTC_OFFSETS.map((o) => (
+                <option key={o} value={String(o)}>
+                  {utcOffsetLabel(o)}
+                </option>
+              ))}
+            </select>
           </Field>
 
           {showCapacity ? (

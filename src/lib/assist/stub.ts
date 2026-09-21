@@ -27,7 +27,7 @@ import type {
  * чем угадать и подставить.
  *
  * Слова английские: продукт существует на английском, и бриф пишут на нём.
- * Русские остались рядом намеренно — они ничего не стоят, а владелец участка,
+ * Русские остались рядом намеренно, они ничего не стоят, а владелец участка,
  * дописывающий пару фраз на родном языке, встречается чаще, чем кажется.
  */
 const KEYWORDS: Record<string, Record<string, string[]>> = {
@@ -77,7 +77,7 @@ function findAll(text: string): Record<string, string> {
  * Режим без модели: черновик собирается по шаблону из фактов проекта.
  *
  * Он намеренно не притворяется умным. Зато он полезен и без ключа: половина
- * работы над постановкой — это перенести в неё контекст, который и так есть в
+ * работы над постановкой, это перенести в неё контекст, который и так есть в
  * системе, и шаблон делает ровно это. Оставшуюся половину пишет человек.
  */
 export class StubAssistant implements Assistant {
@@ -103,7 +103,7 @@ export class StubAssistant implements Assistant {
       lines.push('', `Input material: ${input.inboundArtifacts.join(', ')}.`)
     }
 
-    lines.push('', 'The bounds of the task and the deliverables — to be written in.')
+    lines.push('', 'The bounds of the task and the deliverables, to be written in.')
 
     return {
       spec: lines.join('\n'),
@@ -143,7 +143,7 @@ export class StubAssistant implements Assistant {
       /*
        * Без модели перевести нечем, и выдумывать перевод хуже, чем не делать
        * его: команда получила бы текст, который выглядит английским и не
-       * является им. Отдаём исходный — пусть будет видно, что стенд без
+       * является им. Отдаём исходный, пусть будет видно, что стенд без
        * помощника, а не что заказчик написал по-английски.
        */
       summary: input.text.trim(),
@@ -161,8 +161,8 @@ export class StubAssistant implements Assistant {
     return {
       rating: 0,
       reasoning:
-        `Works in the profile: ${input.works.length}. Disciplines: ${input.disciplines.join(', ') || '—'}. ` +
-        'Without a model the portfolio is not assessed — open the link and set the rating yourself.',
+        `Works in the profile: ${input.works.length}. Disciplines: ${input.disciplines.join(', ') || 'n/a'}. ` +
+        'Without a model the portfolio is not assessed, open the link and set the rating yourself.',
       gaps,
     }
   }
@@ -206,14 +206,14 @@ export class StubAssistant implements Assistant {
 
     const opening = {
       unclaimed: `Задача «${input.ticketTitle}» открыта ${hours} ч и не взята в работу.`,
-      overdue: `По задаче «${input.ticketTitle}» прошёл срок — ${hours} ч назад.`,
+      overdue: `По задаче «${input.ticketTitle}» прошёл срок, ${hours} ч назад.`,
       due_soon: `По задаче «${input.ticketTitle}» срок через ${hours} ч.`,
     }[input.kind]
 
     const ask = {
       unclaimed: 'Are you taking this on, or should it go to someone else?',
       overdue: 'Name the date by which the work will be handed in.',
-      due_soon: 'Will you make the deadline? If not — what is in the way.',
+      due_soon: 'Will you make the deadline? If not, what is in the way.',
     }[input.kind]
 
     return { body: `${opening}\n\n${ask}`, ask }
@@ -229,12 +229,12 @@ export class StubAssistant implements Assistant {
     const head = input.alerts[0]!
 
     return {
-      first: `${ALERT_ACTIONS[head.kind]} — «${head.title}», ${head.projectTitle}.`,
+      first: `${ALERT_ACTIONS[head.kind]}, «${head.title}», ${head.projectTitle}.`,
       steps: input.alerts
         .slice(0, 8)
         .map((a) => `${ALERT_ACTIONS[a.kind]}: «${a.title}» (${a.projectTitle}, ${Math.round(a.hours)} ч).`),
       notes:
-        'Without a model the queue is not worked through — this is a retelling of it in order of urgency, ' +
+        'Without a model the queue is not worked through, this is a retelling of it in order of urgency, ' +
         `посчитанному движком: ${ALERT_LABELS[head.kind].toLowerCase()} идёт первым.`,
     }
   }

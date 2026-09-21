@@ -9,7 +9,7 @@ import { readEmail } from '@/lib/forms'
 import { OpsAction } from '../OpsForms'
 import { resendLetter } from '../actions'
 
-export const metadata = { title: 'Letters — bureau panel' }
+export const metadata = { title: 'Letters, bureau panel' }
 
 /** Сколько строк показывать. Журнал растёт с каждым поводом. */
 const SHOWN = 100
@@ -17,7 +17,7 @@ const SHOWN = 100
 /**
  * Сколько неушедших показывать разом.
  *
- * Их не должно быть много: неушедшее письмо — это происшествие, а не строка
+ * Их не должно быть много: неушедшее письмо, это происшествие, а не строка
  * статистики. Если их больше потолка, дело не в адресах, а в почте целиком, и
  * список из тысячи строк этого не объяснит лучше, чем первые двадцать.
  */
@@ -28,11 +28,11 @@ const FAILED_SHOWN = 20
  *
  * Он писался с самого начала и не был виден нигде. На пилоте это стоило
  * дорого: почта выключена, значит систему знает, кого надо позвать, а
- * оператор — нет. Единственным следом было «скажите ему сами» в строке ответа
+ * оператор, нет. Единственным следом было «скажите ему сами» в строке ответа
  * действия, а она живёт до первой перерисовки страницы.
  *
  * В бою у того же журнала другая работа: он отвечает на «мне ничего не
- * приходило» — ровно затем в нём и хранится адрес. Обезличенные строки
+ * приходило», ровно затем в нём и хранится адрес. Обезличенные строки
  * остаются с непригодным адресом: повод был, человека больше нет.
  */
 export default async function LettersPage({
@@ -50,7 +50,7 @@ export default async function LettersPage({
    * приведены на записи.
    *
    * Без этого поиск ведёт себя на стенде и в бою по-разному: `contains` у
-   * prisma на SQLite регистр не различает, на Postgres — различает. То есть
+   * prisma на SQLite регистр не различает, на Postgres, различает. То есть
    * здесь всё работало бы, а оператор в бою на жалобу «мне ничего не
    * приходило» отвечал бы «и правда ничего», набрав адрес с заглавной, —
    * ровно в том разговоре, ради которого журнал и заведён.
@@ -63,7 +63,7 @@ export default async function LettersPage({
   /*
    * Неушедшие идут отдельно и первыми, а не строкой в общем списке.
    *
-   * Письмо, которое не ушло, — это человек, которого не позвали: срок по
+   * Письмо, которое не ушло,, это человек, которого не позвали: срок по
    * задаче идёт на нём, а он об этом не знает. Раньше запись о неудаче
    * удалялась вовсе, и единственным следом была строка ответа действия,
    * живущая до перерисовки страницы.
@@ -98,7 +98,7 @@ export default async function LettersPage({
           {off ? (
             <>
               <strong>Email delivery is off.</strong> Nothing below was actually sent. Each row is
-              somebody the system would have written to — and until delivery is switched on, that
+              somebody the system would have written to, and until delivery is switched on, that
               is your list: they are waiting, and they do not know they are.
             </>
           ) : (
@@ -115,8 +115,8 @@ export default async function LettersPage({
           <div className="panel" style={{ marginTop: 24, borderColor: 'var(--fail)' }}>
             <div className="label label-accent">Did not go out</div>
             <p className="hint" style={{ marginTop: 8 }}>
-              Each of these is somebody who was not reached. Send it again — mail fails
-              temporarily more often than finally — and if it fails again, write to them by hand:
+              Each of these is somebody who was not reached. Send it again, mail fails
+              temporarily more often than finally, and if it fails again, write to them by hand:
               the address is right here.
             </p>
 

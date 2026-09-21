@@ -21,7 +21,7 @@ import { pilotUntil } from '@/lib/services/settings'
 import { setPilotAccess } from '../actions'
 import { OpsAction } from '../OpsForms'
 
-export const metadata = { title: 'Pool — bureau panel' }
+export const metadata = { title: 'Pool, bureau panel' }
 
 /**
  * Статусы, которые видно в пуле. Заявка на разборе и приглашение, ещё не
@@ -35,7 +35,7 @@ const LISTED_STATUSES = ['active', 'paused', 'rejected'] as const
  *
  * Предел не про экономию, а про то, что страница обязана открыться. База бюро
  * растёт импортом, и на пяти тысячах человек таблица без предела отдавалась
- * две секунды — это уже не список, а документ, который надо ждать. Условия
+ * две секунды, это уже не список, а документ, который надо ждать. Условия
  * выше сужают выборку до того, что читают глазами; всё остальное ищут ими же,
  * а не прокруткой на тысячу строк.
  */
@@ -53,7 +53,7 @@ export default async function PoolPage({
     orderBy: [{ status: 'asc' }, { portfolioRating: 'desc' }],
   })
 
-  // Условия — только к списку по именам. Покрытие и дыры считаются по всему
+  // Условия, только к списку по именам. Покрытие и дыры считаются по всему
   // пулу: сужать их вместе с таблицей значило бы показывать дыру там, где её
   // закрывает человек, отфильтрованный из виду.
   const criteria = readCriteria(await searchParams, {
@@ -67,7 +67,7 @@ export default async function PoolPage({
    *
    * Строился дважды: сначала на отборе по условиям, потом на счёте покрытия.
    * Каждое построение разбирает дюжину списков из json, и на пуле в пять тысяч
-   * это была секунда лишнего времени на каждое открытие страницы — замерено
+   * это была секунда лишнего времени на каждое открытие страницы, замерено
    * на живом Postgres: 1885 мс против 521 при двух тысячах.
    */
   const profiles = new Map(rows.map((row) => [row.id, toProfile(row)]))
@@ -101,7 +101,7 @@ export default async function PoolPage({
   const disciplines = [...new Set(depth.map((d) => d.discipline))]
 
   /*
-   * Состояние пилота и его следствие. Настройка без числа рядом — это форма,
+   * Состояние пилота и его следствие. Настройка без числа рядом, это форма,
    * по которой не видно, что она уже сделала: сколько человек пришло
    * бесплатно, столько бюро и раздало доступа, и знать это надо до того, как
    * решать, продлевать ли.
@@ -148,13 +148,13 @@ export default async function PoolPage({
           </div>
           <p className="hint" style={{ marginTop: 14 }}>
             {pilotOn
-              ? 'While the pilot runs, a specialist who applies or is imported arrives with access already open. After the date they arrive without it, and the bureau opens access by hand — there is no card processing yet.'
+              ? 'While the pilot runs, a specialist who applies or is imported arrives with access already open. After the date they arrive without it, and the bureau opens access by hand, there is no card processing yet.'
               : 'A specialist who applies or is imported arrives without access, and the bureau opens it by hand on their card in the pool. Set a date below to make access free until then.'}
           </p>
           <p className="hint" style={{ marginTop: 10 }}>
             Ending the pilot changes nothing for anybody already in the pool: {freeAccess} have access
             today and keep it, {closedAccess} do not. Access is closed one person at a time, on their
-            card — one setting must not take whole teams off live projects.
+            card, one setting must not take whole teams off live projects.
           </p>
 
           <OpsAction action={setPilotAccess} label="Save the date" solid>
@@ -174,7 +174,7 @@ export default async function PoolPage({
 
         <h2>What we can take on</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          The share of project shapes inside the product boundary for which the pool can assemble a team. What is counted is capability, not workload: “everyone is busy today” is not “we cannot do this”. Without signing rights in a country the share is zero however many people there are — a documentation set without a signature has no legal force.
+          The share of project shapes inside the product boundary for which the pool can assemble a team. What is counted is capability, not workload: “everyone is busy today” is not “we cannot do this”. Without signing rights in a country the share is zero however many people there are, a documentation set without a signature has no legal force.
         </p>
 
         <div className="grid grid-3">
@@ -202,7 +202,7 @@ export default async function PoolPage({
 
         <h2>Depth by role and country</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          In brackets — how many of them hold signing rights. Fewer than {MIN_DEPTH} people on a role is not coverage: the role rests on someone's holiday. Selection formally keeps working right up to the day the only suitable person is busy. Only two roles are bound to the country — permitting and survey, because the authority and the plot are there. Every other role is counted across the whole pool, so its number repeats across the columns: that is the product, not a rendering fault.
+          In brackets, how many of them hold signing rights. Fewer than {MIN_DEPTH} people on a role is not coverage: the role rests on someone's holiday. Selection formally keeps working right up to the day the only suitable person is busy. Only two roles are bound to the country, permitting and survey, because the authority and the plot are there. Every other role is counted across the whole pool, so its number repeats across the columns: that is the product, not a rendering fault.
         </p>
 
         <div className="table-scroll panel" style={{ padding: 0 }}>
@@ -281,7 +281,7 @@ export default async function PoolPage({
                       <td className="dim" style={{ fontSize: '0.85rem' }}>
                         {gap.role.specializations
                           .map((x) => SPECIALIZATION_LABELS[x])
-                          .join(gap.role.mode === 'all' ? ' + ' : ' / ') || '—'}
+                          .join(gap.role.mode === 'all' ? ' + ' : ' / ') || 'n/a'}
                       </td>
                       <td className="num dim">{gap.shapes}</td>
                       <td>
@@ -370,14 +370,14 @@ export default async function PoolPage({
             {listed.length === rows.length
               ? fill('{total} in the pool.', { total: rows.length })
               : fill('{shown} of {total} match.', { shown: listed.length, total: rows.length })}{' '}
-            Country here means where a person works, not where they can sign — signing rights are on
+            Country here means where a person works, not where they can sign, signing rights are on
             the profile.
           </p>
         </form>
 
         {listed.length === 0 ? (
           <p className="dim" style={{ marginTop: 32 }}>
-            Nobody matches. The pool is not empty — these conditions are.
+            Nobody matches. The pool is not empty, these conditions are.
           </p>
         ) : (
         <div className="table-scroll panel" style={{ marginTop: 24, padding: 0 }}>
@@ -420,10 +420,10 @@ export default async function PoolPage({
                     </td>
                     <td className="num dim">{profile.delivery.deliveredTickets}</td>
                     <td className="num dim">
-                      {metrics ? `${Math.round(metrics.slaCompliance * 100)}%` : '—'}
+                      {metrics ? `${Math.round(metrics.slaCompliance * 100)}%` : 'n/a'}
                     </td>
                     <td className="num dim">
-                      {metrics ? `${Math.round(metrics.firstTimeRight * 100)}%` : '—'}
+                      {metrics ? `${Math.round(metrics.firstTimeRight * 100)}%` : 'n/a'}
                     </td>
                     <td className="num dim">{profile.weeklyCapacityHours} h</td>
                     <td>

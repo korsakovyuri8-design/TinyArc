@@ -57,7 +57,7 @@ async function act(
   return message ? { message } : {}
 }
 
-/** Тикет вошедшего. `null` — чужой или несуществующий. */
+/** Тикет вошедшего. `null`, чужой или несуществующий. */
 async function ownTicket(ticketId: string, specialistId: string) {
   return prisma.ticket.findFirst({
     where: { id: ticketId, specialistId },
@@ -74,7 +74,7 @@ export async function postComment(_prev: WorkState, formData: FormData): Promise
   if (!body) return { error: 'The comment is empty.' }
 
   return act(formData, async (ticketId, specialistId) => {
-    // comment() отдаёт id созданной записи — он нужен уведомлению о
+    // comment() отдаёт id созданной записи, он нужен уведомлению о
     // комментарии бюро, а не этому вызову: письмо исполнителю о его
     // собственном комментарии было бы эхом.
     await comment(ticketId, { role: 'specialist', specialistId }, body)
@@ -86,7 +86,7 @@ export async function submitTicket(_prev: WorkState, formData: FormData): Promis
 }
 
 /**
- * Поднять конфликт. Это не переписка со смежником — такого канала нет. Это
+ * Поднять конфликт. Это не переписка со смежником, такого канала нет. Это
  * сигнал арбитру: бюро видит его в панели и решает (п.11).
  */
 export async function raiseTicketConflict(
@@ -132,7 +132,7 @@ export async function askDiscipline(_prev: WorkState, formData: FormData): Promi
  *
  * Помощник специалиста (п.12а), и до сих пор он был написан, но никем не
  * вызывался. Задача у него узкая и настоящая: адресат запроса не видит ни
- * задачи автора, ни его модели — прямых каналов нет, — и написанное «подвинь
+ * задачи автора, ни его модели, прямых каналов нет,, и написанное «подвинь
  * дверь» доходит до него без единого признака того, какую дверь и куда.
  *
  * Ничего не отправляется: черновик возвращается в форму, человек его читает,
@@ -173,11 +173,11 @@ export async function draftDisciplineRequest(
         title: bounded(draft.title, TEXT_MAX.line),
         body: bounded(draft.body, TEXT_MAX.note),
       },
-      message: 'A draft — read it and correct it. It is sent only when you press send.',
+      message: 'A draft, read it and correct it. It is sent only when you press send.',
     }
   } catch (error) {
     console.error('Черновик запроса не собрался:', error)
-    return { error: assistantNote(error, 'Write the request yourself — the fields are below.') }
+    return { error: assistantNote(error, 'Write the request yourself, the fields are below.') }
   }
 }
 
@@ -195,7 +195,7 @@ export async function makeRender(_prev: WorkState, formData: FormData): Promise<
 
   /*
    * Единственное действие специалиста, которое стоит денег наружу. Предел
-   * мягкий — за вечер вариантов рисуют десятками, — и стоит он ровно там, где
+   * мягкий, за вечер вариантов рисуют десятками,, и стоит он ровно там, где
    * нажатие перестало быть осмысленным.
    */
   const verdict = await allow('render')
@@ -213,7 +213,7 @@ export async function makeRender(_prev: WorkState, formData: FormData): Promise<
  * Приложить работу к задаче: файлом или ссылкой.
  *
  * Файл предпочтительнее, и это не вкус. Материалы проекта принадлежат
- * заказчику и передаются ему по завершении в полном объёме (п.13) — а ссылка
+ * заказчику и передаются ему по завершении в полном объёме (п.13), а ссылка
  * на чужой диск живёт ровно до того дня, когда её владелец наведёт порядок.
  * Ссылка остаётся для того, что снаружи по своей природе: облачная модель,
  * общий диск заказчика.
@@ -263,7 +263,7 @@ export async function addArtifact(_prev: WorkState, formData: FormData): Promise
  * Не «отказ от тикета»: тикеты в роли связаны графом, и бросить один, оставив
  * соседние, значит оставить проект в состоянии, которое никто не разберёт.
  * Человек выходит из роли целиком, и алгоритм ищет замену там же, где искал
- * состав — в ранжированном списке того же прогона.
+ * состав, в ранжированном списке того же прогона.
  *
  * Кнопка стоит на задаче, потому что именно там человек понимает, что не
  * потянет. Но действие шире задачи, и текст рядом с кнопкой говорит об этом
@@ -299,6 +299,6 @@ export async function leaveProject(_prev: WorkState, formData: FormData): Promis
     if (error instanceof HandoverRefused) return { error: error.message }
 
     console.error('Leaving the project did not go through:', error)
-    return { error: 'That did not work. Write in the ticket — the bureau will sort it by hand.' }
+    return { error: 'That did not work. Write in the ticket, the bureau will sort it by hand.' }
   }
 }

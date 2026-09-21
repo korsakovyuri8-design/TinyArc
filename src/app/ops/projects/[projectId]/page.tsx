@@ -61,7 +61,7 @@ import {
 } from '../../actions'
 import { OpsAction } from '../../OpsForms'
 
-export const metadata = { title: 'Project — bureau panel' }
+export const metadata = { title: 'Project, bureau panel' }
 
 /** Сколько связок показывается: список читают, чтобы предложить, а не целиком. */
 const BUNDLES_SHOWN = 4
@@ -136,7 +136,7 @@ export default async function OpsProjectPage({
           <h1>{project.title}</h1>
           {/*
             То же положение, что видит заказчик. Оператор и заказчик, читающие
-            на одном проекте разные новости, — это разговор, в котором один из
+            на одном проекте разные новости,, это разговор, в котором один из
             них неправ, и неправ обычно оператор.
           */}
           <span className={standingClass(standing)}>{standing.label}</span>
@@ -188,7 +188,7 @@ export default async function OpsProjectPage({
           <div className="row" style={{ gap: 12 }}>
             {/*
               Гейт зовётся сам после каждой приёмки, подтверждения и оплаты.
-              Кнопка — на случай разрыва между переходом состояния и гейтом:
+              Кнопка, на случай разрыва между переходом состояния и гейтом:
               после него проект стоит молча, всё оплачено и подтверждено, а
               работа никому не выдана.
             */}
@@ -202,13 +202,13 @@ export default async function OpsProjectPage({
         {/*
           Участок и объём. Заполняет бюро, потому что пятна застройки, высоты и
           отступов до проекта не существует: они появляются с концепцией. До тех
-          пор проверка честно говорит, что ей нечем считать, — и именно этот
+          пор проверка честно говорит, что ей нечем считать,, и именно этот
           список полей она называет заказчику в кабинете.
         */}
         <div className="panel" style={{ marginTop: 24 }}>
           <div className="label label-accent">Site and massing</div>
           <p className="muted" style={{ marginTop: 10, marginBottom: 18 }}>
-            The client gives the first four from their documents. The rest appears with the concept and is entered here — until it is, the rules check says what it is missing. An empty field clears the value.
+            The client gives the first four from their documents. The rest appears with the concept and is entered here, until it is, the rules check says what it is missing. An empty field clears the value.
           </p>
 
           <OpsAction action={setSiteFacts} hidden={{ projectId: project.id }} label="Save site data" solid>
@@ -227,7 +227,7 @@ export default async function OpsProjectPage({
               <SiteField id="greenSqm" label="Green area, m²" value={project.greenSqm} />
               {/*
                 Расстояние до соседнего здания стоит рядом с отступами, но это
-                другая величина: отступ меряется от границы участка, а это — от
+                другая величина: отступ меряется от границы участка, а это, от
                 чужой стены.
               */}
               <SiteField
@@ -250,12 +250,12 @@ export default async function OpsProjectPage({
 
         {/*
           Экономика проекта. Выручкой считается оплаченное, а не выставленное:
-          выставленный счёт — это намерение заказчика, и маржа по нему считалась
+          выставленный счёт, это намерение заказчика, и маржа по нему считалась
           бы по деньгам, которых нет.
 
           Маржа не показывается, пока хоть одно обязательство без ставки.
-          Посчитанная по части расхода, она всегда завышена — недостающее
-          всегда со стороны расхода, — а число, ошибающееся всегда в одну
+          Посчитанная по части расхода, она всегда завышена, недостающее
+          всегда со стороны расхода,, а число, ошибающееся всегда в одну
           сторону, хуже отсутствия числа: по нему принимают решения.
         */}
         <div className="panel" style={{ marginTop: 40 }}>
@@ -283,7 +283,7 @@ export default async function OpsProjectPage({
               <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
                 {economics.owedUnknown === 0
                   ? 'every obligation has a rate'
-                  : fill('{count} without a rate — this total is short by them', {
+                  : fill('{count} without a rate, this total is short by them', {
                       count: economics.owedUnknown,
                     })}
               </div>
@@ -312,7 +312,7 @@ export default async function OpsProjectPage({
                 </>
               ) : (
                 <>
-                  <div className="num" style={{ fontSize: '1.5rem', color: 'var(--fail)' }}>—</div>
+                  <div className="num" style={{ fontSize: '1.5rem', color: 'var(--fail)' }}>n/a</div>
                   <div className="label" style={{ marginTop: 6 }}>gross margin</div>
                   <div className="dim" style={{ fontSize: '0.8rem', marginTop: 4 }}>
                     {fill('not computable: {count} rate(s) are not set', {
@@ -338,7 +338,7 @@ export default async function OpsProjectPage({
         {/*
           Подрядчики и закупка. Список считается тем же движком, что состав
           команды, и по тем же правилам: гейты, балл, трое. Пустая сеть
-          показывается пустой — «подрядчиков нет» и «мы их не нашли» разные
+          показывается пустой, «подрядчиков нет» и «мы их не нашли» разные
           сообщения, и второе бюро должно уметь отличить.
         */}
         <div className="panel" style={{ marginTop: 40 }}>
@@ -374,19 +374,19 @@ export default async function OpsProjectPage({
                       <td>{TRADE_LABELS[list.trade] ?? list.trade}</td>
                       <td className="dim" style={{ fontSize: '0.85rem' }}>
                         {list.ranked.length === 0
-                          ? '—'
+                          ? 'n/a'
                           : list.ranked
                               .map((row) => `${build.names[row.contractorId] ?? row.contractorId} · ${row.score}`)
                               .join(' / ')}
                       </td>
                       {/*
                         Считается от тех, кто эту работу ведёт, а не от всей
-                        сети: кровельщик, не прошедший «фундаменты», — другой
+                        сети: кровельщик, не прошедший «фундаменты»,, другой
                         подрядчик, а не дыра. Сводка отказов читается как
                         список дыр, и врать в ней нельзя.
                       */}
                       {/*
-                        Годных считает база, а прошедших — движок по прочитанным
+                        Годных считает база, а прошедших, движок по прочитанным
                         кандидатам. Числа разные намеренно: потолок выборки не
                         должен читаться как размер сети.
                       */}
@@ -398,7 +398,7 @@ export default async function OpsProjectPage({
                         {Object.entries(list.rejected)
                           .filter(([, count]) => count > 0)
                           .map(([reason, count]) => `${count} ${CONTRACTOR_REJECTION_LABELS[reason] ?? reason}`)
-                          .join(', ') || '—'}
+                          .join(', ') || 'n/a'}
                       </td>
                     </tr>
                   ))}
@@ -409,10 +409,10 @@ export default async function OpsProjectPage({
 
           {/*
             Связки показываются фактом, а не поправкой к списку выше. Стык
-            между подрядчиками — то место, где размывается ответственность, и
+            между подрядчиками, то место, где размывается ответственность, и
             «одна фирма берёт три работы» стоит знать. Но менять ради этого
             порядок значило бы дать заказчику подрядчика послабее в обмен на
-            меньшее число договоров — размен, которого он не просил.
+            меньшее число договоров, размен, которого он не просил.
           */}
           {build.bundles.length > 0 && (
             <div style={{ marginTop: 22 }}>
@@ -421,21 +421,21 @@ export default async function OpsProjectPage({
                 {build.bundles.slice(0, BUNDLES_SHOWN).map((bundle) => (
                   <li key={bundle.contractorId} style={{ fontSize: '0.85rem' }}>
                     <strong>{build.names[bundle.contractorId] ?? bundle.contractorId}</strong>
-                    {' — '}
+                    {', '}
                     {bundle.trades.map((trade) => TRADE_LABELS[trade] ?? trade).join(', ')}
                     {bundle.bestPlace > 1 && ` · best place ${bundle.bestPlace}`}
                   </li>
                 ))}
               </ul>
               <p className="hint" style={{ marginTop: 8, marginBottom: 0 }}>
-                Fewer seams, fewer contracts. The ranking above is not adjusted for this — the trade-off is the client&rsquo;s to make, not ours.
+                Fewer seams, fewer contracts. The ranking above is not adjusted for this, the trade-off is the client&rsquo;s to make, not ours.
               </p>
             </div>
           )}
 
           <p className="hint" style={{ marginTop: 18, marginBottom: 0 }}>
             To buy: {build.groups.map((group) => MATERIAL_GROUP_LABELS[group] ?? group).join(', ')}.
-            Quantities come with the construction documentation — an approximate bill presented as exact is a dispute at handover.
+            Quantities come with the construction documentation, an approximate bill presented as exact is a dispute at handover.
           </p>
         </div>
 
@@ -488,8 +488,8 @@ export default async function OpsProjectPage({
                           </span>
                         )}
                       </td>
-                      <td className="num dim">{candidate?.quality.toFixed(2) ?? '—'}</td>
-                      <td className="num dim">{candidate?.availability.toFixed(2) ?? '—'}</td>
+                      <td className="num dim">{candidate?.quality.toFixed(2) ?? 'n/a'}</td>
+                      <td className="num dim">{candidate?.availability.toFixed(2) ?? 'n/a'}</td>
                       <td className="num" style={{ color: 'var(--accent)' }}>
                         {slot.score.toFixed(2)}
                       </td>
@@ -511,7 +511,7 @@ export default async function OpsProjectPage({
               <h2>At the client’s request</h2>
               <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
                 Erasing removes the contacts, the brief, the correspondence, the task briefs
-                and the files — from the storage too, not only from the database. Invoices
+                and the files, from the storage too, not only from the database. Invoices
                 remain: keeping them is an obligation of the country of registration, and a
                 request does not lift it. This cannot be undone.
               </p>
@@ -520,7 +520,7 @@ export default async function OpsProjectPage({
                 <div className="panel" style={{ marginBottom: 36 }}>
                   <div className="label">Erased</div>
                   <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-                    {date(project.dataErasedAt)} — nothing personal is left on this project.
+                    {date(project.dataErasedAt)}, nothing personal is left on this project.
                   </p>
                 </div>
               ) : (
@@ -566,7 +566,7 @@ export default async function OpsProjectPage({
             <div className="panel" style={{ marginBottom: 32 }}>
               <div className="label label-accent">Conversation with the client</div>
               <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                The team does not see this exchange. The bureau turns a client’s request into a task — otherwise the client starts directing the people doing the work, and no one is left answering for the result.
+                The team does not see this exchange. The bureau turns a client’s request into a task, otherwise the client starts directing the people doing the work, and no one is left answering for the result.
               </p>
 
               {thread.length === 0 ? (
@@ -615,7 +615,7 @@ export default async function OpsProjectPage({
                   Who left the project
                 </div>
                 <p className="hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                  This is not a rating of people — there is no rating field in the system. It is a fact that shows where a line-up rested on one person.
+                  This is not a rating of people, there is no rating field in the system. It is a fact that shows where a line-up rested on one person.
                 </p>
                 <div className="stack" style={{ gap: 12 }}>
                   {withdrawals.map((w) => (
@@ -628,7 +628,7 @@ export default async function OpsProjectPage({
                         </span>
                         <span className={w.replacedById ? 'tag' : 'tag tag-fail'}>
                           {w.replacedById
-                            ? `role taken over by ${replacedBy.get(w.replacedById) ?? '—'}`
+                            ? `role taken over by ${replacedBy.get(w.replacedById) ?? 'n/a'}`
                             : 'no replacement found'}
                         </span>
                       </div>
@@ -645,7 +645,7 @@ export default async function OpsProjectPage({
               <div className="panel" style={{ marginTop: 24, marginBottom: 28 }}>
                 <div className="label label-accent">Promise against fact</div>
                 <p className="muted" style={{ marginTop: 10, marginBottom: 16 }}>
-                  Promised is the critical path through this stage’s tickets — the longest chain of
+                  Promised is the critical path through this stage’s tickets, the longest chain of
                   dependencies, not the sum of the work: branches run at the same time. Fact is from
                   the first ticket opening to the last one accepted, and it appears only once every
                   ticket in the stage is accepted.
@@ -669,7 +669,7 @@ export default async function OpsProjectPage({
                           <td className="num">{row.actualDays ?? <span className="dim">running</span>}</td>
                           <td className="num">
                             {row.overrunDays === null ? (
-                              <span className="dim">—</span>
+                              <span className="dim">n/a</span>
                             ) : (
                               <span className={row.overrunDays > 0 ? 'tag tag-fail' : 'tag tag-pass'}>
                                 {row.overrunDays > 0 ? `+${row.overrunDays}` : row.overrunDays}
@@ -686,7 +686,7 @@ export default async function OpsProjectPage({
 
             <h2>Tickets</h2>
             <p className="muted" style={{ marginTop: 12, marginBottom: 28 }}>
-              The bureau writes the brief. Gates open tickets by themselves — no status is set by hand.
+              The bureau writes the brief. Gates open tickets by themselves, no status is set by hand.
             </p>
 
             <div className="stack" style={{ gap: 24 }}>
@@ -727,7 +727,7 @@ export default async function OpsProjectPage({
                       </div>
                       <p style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>{ticket.conflictNote}</p>
                       <p className="hint" style={{ marginBottom: 14 }}>
-                        Work on the ticket is on hold. The participants do not settle it between themselves — the bureau rules.
+                        Work on the ticket is on hold. The participants do not settle it between themselves, the bureau rules.
                       </p>
 
                       <div style={{ marginBottom: 16 }}>
@@ -769,7 +769,7 @@ export default async function OpsProjectPage({
                           label="Draft a nudge"
                         />
                         <p className="hint" style={{ marginTop: 8 }}>
-                          The assistant writes a draft. You send it — as a comment in the ticket: there is no other channel to the person doing the work.
+                          The assistant writes a draft. You send it, as a comment in the ticket: there is no other channel to the person doing the work.
                         </p>
                       </div>
                     </div>
@@ -784,7 +784,7 @@ export default async function OpsProjectPage({
                           label="Draft the brief"
                         />
                         <p className="hint" style={{ marginTop: 8 }}>
-                          The assistant assembles a draft from the facts of the project. It is a starting point to read and correct — the bureau writes the brief.
+                          The assistant assembles a draft from the facts of the project. It is a starting point to read and correct, the bureau writes the brief.
                         </p>
                       </div>
                     )}
@@ -861,7 +861,7 @@ export default async function OpsProjectPage({
                         label="Check against the brief"
                       />
                       <p className="hint" style={{ marginTop: 8 }}>
-                        The assistant names discrepancies from the file list. You look at the contents yourself — you are the one accepting.
+                        The assistant names discrepancies from the file list. You look at the contents yourself, you are the one accepting.
                       </p>
                     </div>
                   )}
@@ -903,8 +903,8 @@ export default async function OpsProjectPage({
 /**
  * Поле участка.
  *
- * Пустое значение показывается пустым, а не нулём: ноль здесь — это утверждение
- * («отступ ноль метров»), а пустота — отсутствие сведений, и путать их нельзя
+ * Пустое значение показывается пустым, а не нулём: ноль здесь, это утверждение
+ * («отступ ноль метров»), а пустота, отсутствие сведений, и путать их нельзя
  * ровно по той же причине, по которой их не путает движок.
  */
 function SiteField({

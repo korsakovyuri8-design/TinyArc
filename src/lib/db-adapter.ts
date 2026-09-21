@@ -6,7 +6,7 @@ import { providerFor, redact } from './db-provider'
 /**
  * Драйвер под ту базу, на которую показывает DATABASE_URL.
  *
- * Один и тот же выбор делают приложение и сид — поэтому он живёт здесь, а не
+ * Один и тот же выбор делают приложение и сид, поэтому он живёт здесь, а не
  * двумя копиями. Подгружается только нужный драйвер: на Postgres код SQLite не
  * выполняется вовсе, и сломанный драйвер разработки не может уронить старт.
  */
@@ -21,7 +21,7 @@ export function adapterFor(url: string): Adapter {
   if (provider === 'sqlite') {
     const mod = require_<typeof import('@prisma/adapter-better-sqlite3')>(
       '@prisma/adapter-better-sqlite3',
-      'SQLite — база разработки. В окружении её пакетов нет: либо поставьте dev-зависимости, либо укажите postgresql:// в DATABASE_URL.',
+      'SQLite, база разработки. В окружении её пакетов нет: либо поставьте dev-зависимости, либо укажите postgresql:// в DATABASE_URL.',
       url,
     )
 

@@ -2,7 +2,7 @@
  * Русские подписи к словарям таксономии.
  *
  * Живут отдельно от src/engine/taxonomy.ts: движок считает, интерфейс называет.
- * Смешивать нельзя — иначе переименование кнопки правит логику отбора.
+ * Смешивать нельзя, иначе переименование кнопки правит логику отбора.
  */
 
 import type { GateName } from '@/engine/types'
@@ -122,6 +122,9 @@ export const CLIMATE_LABELS: Record<ClimateZone, string> = {
   continental: 'Continental',
   alpine: 'Alpine',
   arid: 'Arid',
+  humid_subtropical: 'Humid subtropical',
+  tropical: 'Tropical',
+  cold: 'Cold and subarctic',
 }
 
 export const SOFTWARE_LABELS: Record<Software, string> = {
@@ -174,7 +177,7 @@ export const PROJECT_STATUS_LABELS: Record<string, string> = {
 }
 
 /**
- * Поводы для письма — словами, а не ключами.
+ * Поводы для письма, словами, а не ключами.
  *
  * Ключ повода живёт в базе и в коде; в панели он читается человеком, который
  * по этому списку решает, кого сегодня позвать руками.
@@ -230,10 +233,23 @@ export const SUBSCRIPTION_LABELS: Record<Subscription, string> = {
 }
 
 /**
+ * Проверена ли лицензия бюро или только заявлена.
+ *
+ * Формулировки нарочно разные по весу: «со слов» звучит слабее, чем
+ * «проверено», и должно звучать слабее. Тот, кто собирает первую команду,
+ * обязан видеть разницу между напечатанным номером и открытым реестром.
+ */
+export const LICENCE_STATUS_LABELS: Record<string, string> = {
+  declared: 'as declared, not checked',
+  verified: 'checked against the registry',
+  rejected: 'not found in the registry',
+}
+
+/**
  * Почему специалист не прошёл гейт.
  *
  * Названия живут здесь, а не рядом с проверками: движок считает, интерфейс
- * называет. Порог подставляется на месте показа — вписанный в строку числом,
+ * называет. Порог подставляется на месте показа, вписанный в строку числом,
  * он разошёлся бы с движком в тот день, когда порог изменят.
  */
 export const GATE_LABELS: Record<GateName, string> = {
@@ -253,7 +269,7 @@ export const GATE_LABELS: Record<GateName, string> = {
 /**
  * Как называется предмет нормы для человека.
  *
- * Заказчик читает «Site coverage», а не `coverage_ratio`: словарь движка — это
+ * Заказчик читает «Site coverage», а не `coverage_ratio`: словарь движка, это
  * словарь движка, и показывать его наружу значит показывать внутренности.
  */
 export const RULE_SUBJECT_LABELS: Record<string, string> = {
@@ -283,7 +299,7 @@ export const RULE_LAYER_LABELS: Record<string, string> = {
   accessibility: 'Accessibility',
 }
 
-/** В чём измеряется предмет: доли показываются процентами, метры — метрами. */
+/** В чём измеряется предмет: доли показываются процентами, метры, метрами. */
 export const RULE_SUBJECT_UNIT: Record<string, 'ratio' | 'metres' | 'count'> = {
   storeys: 'count',
   height_m: 'metres',
@@ -361,15 +377,15 @@ export const CONTRACTOR_REJECTION_LABELS: Record<string, string> = {
 }
 
 /**
- * Что мешает закрыть работу — и что с этим делать.
+ * Что мешает закрыть работу, и что с этим делать.
  *
  * Причина названа действием, а не состоянием: бюро читает эту строку затем,
- * чтобы понять, звонить или искать. «Нет страховки» — это состояние, «полис
- * просрочен, нужен звонок» — действие.
+ * чтобы понять, звонить или искать. «Нет страховки», это состояние, «полис
+ * просрочен, нужен звонок», действие.
  */
 export const NETWORK_REASON_LABELS: Record<string, string> = {
-  insurance: 'insurance lapsed — a call, not a hire',
-  availability: 'everyone taking a break — ask when they are free',
-  portfolio: 'nobody above the portfolio bar — a hire',
-  nobody: 'not enough people — a hire',
+  insurance: 'insurance lapsed, a call, not a hire',
+  availability: 'everyone taking a break, ask when they are free',
+  portfolio: 'nobody above the portfolio bar, a hire',
+  nobody: 'not enough people, a hire',
 }

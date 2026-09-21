@@ -79,7 +79,7 @@ export async function opsSignIn(_prev: OpsState, formData: FormData): Promise<Op
   const ok = await signInOperator(String(formData.get('password') ?? ''))
   if (!ok) return { error: 'Wrong password.' }
 
-  // Успех обнуляет счётчик: ограничитель здесь про подбор, а подбор — это
+  // Успех обнуляет счётчик: ограничитель здесь про подбор, а подбор, это
   // неудачные попытки. Иначе обычная работа выбирает лимит и панель
   // закрывается перед своими.
   await forgive('opsLogin')
@@ -96,7 +96,7 @@ export async function opsSignOut(): Promise<void> {
  * Разбор заявки: бюро ставит рейтинг портфолио и всё.
  *
  * Решение «в пул или нет» из рейтинга следует, а не принимается отдельно:
- * порог — это правило продукта, а не усмотрение оператора (п.9).
+ * порог, это правило продукта, а не усмотрение оператора (п.9).
  */
 export async function reviewApplication(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
@@ -118,7 +118,7 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   revalidatePath('/ops/applications')
   revalidatePath('/ops/pool')
   // Панель тоже: подтверждённый с закрытым доступом появляется в очереди
-  // ожидающих открытия, и очередь, отставшая на один разбор, — это человек,
+  // ожидающих открытия, и очередь, отставшая на один разбор,, это человек,
   // о котором никто не вспомнит.
   revalidatePath('/ops')
 
@@ -132,12 +132,12 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
     })
 
     return {
-      message: `Below the ${PORTFOLIO_THRESHOLD}/10 threshold — the application does not pass. ${deliveryNote(told, 'The applicant')}`,
+      message: `Below the ${PORTFOLIO_THRESHOLD}/10 threshold, the application does not pass. ${deliveryNote(told, 'The applicant')}`,
     }
   }
 
   /*
-   * «В пуле» — это про статус, а не про отбор. Пока доступ закрыт, движок не
+   * «В пуле», это про статус, а не про отбор. Пока доступ закрыт, движок не
    * рассматривает человека вовсе, и оператор, прочитавший одно «the specialist
    * is in the pool», закрывает карточку и уходит; человек при этом читает у
    * себя «ход бюро». Остаток хода называется здесь, той же функцией, что
@@ -154,10 +154,10 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   //
   // При заглушке письмо никуда не уходит, и говорить «ключ отправлен» нельзя:
   // оператор закроет карточку, а человек останется без доступа. Ключ в этом
-  // случае показывается прямо здесь — передать его есть чем.
+  // случае показывается прямо здесь, передать его есть чем.
   if (mailer().mode === 'stub') {
     return {
-      message: `The specialist is in the pool. Email delivery is off: the key is ${specialist.accessKey} — hand it over yourself.${move}`,
+      message: `The specialist is in the pool. Email delivery is off: the key is ${specialist.accessKey}, hand it over yourself.${move}`,
     }
   }
 
@@ -171,7 +171,7 @@ export async function reviewApplication(_prev: OpsState, formData: FormData): Pr
   } catch (error) {
     console.error('The email with the key did not go out:', error)
     return {
-      message: `The specialist is in the pool, but the email did not go out. Key: ${specialist.accessKey} — hand it over yourself.${move}`,
+      message: `The specialist is in the pool, but the email did not go out. Key: ${specialist.accessKey}, hand it over yourself.${move}`,
     }
   }
 }
@@ -198,7 +198,7 @@ export async function rerunAssembly(_prev: OpsState, formData: FormData): Promis
  * пор проверка на нормы честно говорит, что ей нечем считать (п.7б).
  *
  * Пустое поле стирает значение. Иначе неверно введённую высоту нельзя было бы
- * убрать — только заменить другой такой же.
+ * убрать, только заменить другой такой же.
  */
 /** Поля формы подрядчика, приходящие списком. */
 const CONTRACTOR_MULTI = ['trades', 'jurisdictions', 'typologies', 'scaleBands']
@@ -208,7 +208,7 @@ const CONTRACTOR_MULTI = ['trades', 'jurisdictions', 'typologies', 'scaleBands']
  *
  * Формой бюро, а не заявкой с сайта: сеть на пилоте собирается руками, по
  * одному. Статус сразу `active`, если портфолио прошло порог, и `rejected`,
- * если нет, — тем же порогом и той же логикой, что у специалиста. Разбирать
+ * если нет,, тем же порогом и той же логикой, что у специалиста. Разбирать
  * очередь заявок подрядчиков пока нечего: очереди нет.
  */
 export async function addContractor(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -224,7 +224,7 @@ export async function addContractor(_prev: OpsState, formData: FormData): Promis
   const input = parsed.data
 
   /*
-   * Срок полиса разбирается здесь, а не в схеме: пустая дата допустима — она
+   * Срок полиса разбирается здесь, а не в схеме: пустая дата допустима, она
    * означает «срок неизвестен», и подрядчик с ней не проходит страховой гейт.
    * Неразобранная строка означает то же самое, и молча превращать её в
    * «застрахован» нельзя.
@@ -256,7 +256,7 @@ export async function addContractor(_prev: OpsState, formData: FormData): Promis
       },
     })
   } catch {
-    // Единственная причина, по которой запись не проходит, — тот же адрес.
+    // Единственная причина, по которой запись не проходит,, тот же адрес.
     // Показывать её как «что-то пошло не так» значит заставить оператора
     // гадать, что он сделал не так.
     return { error: 'A contractor with this address is already in the network.' }
@@ -268,7 +268,7 @@ export async function addContractor(_prev: OpsState, formData: FormData): Promis
     message:
       input.portfolioRating >= PORTFOLIO_THRESHOLD
         ? 'Added to the network.'
-        : `Recorded, but below the ${PORTFOLIO_THRESHOLD}/10 threshold — not in selection.`,
+        : `Recorded, but below the ${PORTFOLIO_THRESHOLD}/10 threshold, not in selection.`,
   }
 }
 
@@ -352,13 +352,13 @@ export async function setTicketSpec(_prev: OpsState, formData: FormData): Promis
  *
  * Пишется в тикет только если постановки там ещё нет: затирать написанное
  * человеком помощник не должен ни при каких обстоятельствах. Дальше бюро
- * правит текст и сохраняет его обычной формой — черновик не уходит никуда сам.
+ * правит текст и сохраняет его обычной формой, черновик не уходит никуда сам.
  */
 export async function draftTicketSpec(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
   // Помощник обращается к внешней модели: предел здесь про счёт, а не про
-  // доступ — вход в панель уже закрыт паролем.
+  // доступ, вход в панель уже закрыт паролем.
   const assistVerdict = await allow('assist')
   if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
@@ -370,7 +370,7 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
   })
 
   if (ticket.spec.trim().length > 0) {
-    return { error: 'A brief is already written. The draft does not overwrite it — edit it by hand.' }
+    return { error: 'A brief is already written. The draft does not overwrite it, edit it by hand.' }
   }
 
   const [slot, direction, inbound] = await Promise.all([
@@ -401,9 +401,9 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
       inboundArtifacts: inbound.map((a) => a.name),
     })
 
-    // Черновик приходит из слоя помощников, а не от человека, — и потолок ему
+    // Черновик приходит из слоя помощников, а не от человека,, и потолок ему
     // нужен ровно поэтому: что вернёт модель, здесь никто не обещает.
-    const spec = [draft.spec, '', 'Check on acceptance:', ...draft.checklist.map((c) => `— ${c}`)]
+    const spec = [draft.spec, '', 'Check on acceptance:', ...draft.checklist.map((c) => `- ${c}`)]
       .join('\n')
       .trim()
       .slice(0, TEXT_MAX.spec)
@@ -411,17 +411,17 @@ export async function draftTicketSpec(_prev: OpsState, formData: FormData): Prom
     await prisma.ticket.update({ where: { id: ticketId }, data: { spec } })
     revalidatePath(`/ops/projects/${ticket.projectId}`)
 
-    return { message: 'The draft is saved. Read it and correct it — it is not a finished brief.' }
+    return { message: 'The draft is saved. Read it and correct it, it is not a finished brief.' }
   } catch (error) {
     console.error('No brief draft came back:', error)
-    return { error: assistantNote(error, 'The brief can be written by hand — the field is below.') }
+    return { error: assistantNote(error, 'The brief can be written by hand, the field is below.') }
   }
 }
 
 /**
  * Сводка спора для арбитра.
  *
- * Только позиции сторон и вопрос. Кто прав — не её дело: решение принимает
+ * Только позиции сторон и вопрос. Кто прав, не её дело: решение принимает
  * человек, и подсказка тут была бы решением, замаскированным под пересказ.
  */
 export async function summariseTicketConflict(
@@ -431,7 +431,7 @@ export async function summariseTicketConflict(
   await requireOperator()
 
   // Помощник обращается к внешней модели: предел здесь про счёт, а не про
-  // доступ — вход в панель уже закрыт паролем.
+  // доступ, вход в панель уже закрыт паролем.
   const assistVerdict = await allow('assist')
   if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
@@ -468,14 +468,14 @@ export async function summariseTicketConflict(
  * Предложение рейтинга портфолио.
  *
  * В базу оно не пишется: помощник смотрит профиль и говорит, что видит, а
- * рейтинг ставит человек той же формой, что и раньше. Порог допуска — восемь,
+ * рейтинг ставит человек той же формой, что и раньше. Порог допуска, восемь,
  * и цена ошибки в обе стороны слишком высока, чтобы число проставлялось само.
  */
 export async function proposeRating(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
   // Помощник обращается к внешней модели: предел здесь про счёт, а не про
-  // доступ — вход в панель уже закрыт паролем.
+  // доступ, вход в панель уже закрыт паролем.
   const assistVerdict = await allow('assist')
   if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
@@ -507,11 +507,11 @@ export async function proposeRating(_prev: OpsState, formData: FormData): Promis
     const gaps = proposal.gaps.length > 0 ? ` Gaps: ${proposal.gaps.join('; ')}.` : ''
 
     return {
-      message: `Suggested: ${proposal.rating.toFixed(1)}. ${proposal.reasoning}${gaps} You set the rating — in the field below.`,
+      message: `Suggested: ${proposal.rating.toFixed(1)}. ${proposal.reasoning}${gaps} You set the rating, in the field below.`,
     }
   } catch (error) {
     console.error('No rating suggestion came back:', error)
-    return { error: assistantNote(error, 'Look at the portfolio yourself — the link is above.') }
+    return { error: assistantNote(error, 'Look at the portfolio yourself, the link is above.') }
   }
 }
 
@@ -529,7 +529,7 @@ export async function checkTicketCompleteness(
   await requireOperator()
 
   // Помощник обращается к внешней модели: предел здесь про счёт, а не про
-  // доступ — вход в панель уже закрыт паролем.
+  // доступ, вход в панель уже закрыт паролем.
   const assistVerdict = await allow('assist')
   if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
@@ -578,13 +578,13 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
   await requireOperator()
 
   // Помощник обращается к внешней модели: предел здесь про счёт, а не про
-  // доступ — вход в панель уже закрыт паролем.
+  // доступ, вход в панель уже закрыт паролем.
   const assistVerdict = await allow('assist')
   if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
   const alerts = await alertsForBureau()
 
-  if (alerts.length === 0) return { message: 'The queue is empty — nothing to work through.' }
+  if (alerts.length === 0) return { message: 'The queue is empty, nothing to work through.' }
 
   try {
     const plan = await assistant().planQueue({
@@ -608,7 +608,7 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
     }
   } catch (error) {
     console.error('The queue was not worked through:', error)
-    return { error: assistantNote(error, 'The queue is below — sorted by the engine.') }
+    return { error: assistantNote(error, 'The queue is below, sorted by the engine.') }
   }
 }
 
@@ -616,14 +616,14 @@ export async function planBureauQueue(_prev: OpsState, _formData: FormData): Pro
  * Черновик напоминания по вставшей задаче.
  *
  * Причину пишем не с чужих слов: вид сигнала берётся из движка по текущему
- * состоянию тикета, а не из формы. Отправляет напоминание человек — обычным
+ * состоянию тикета, а не из формы. Отправляет напоминание человек, обычным
  * комментарием в тикет, потому что другого канала до исполнителя нет (п.11).
  */
 export async function draftTicketNudge(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
 
   // Помощник обращается к внешней модели: предел здесь про счёт, а не про
-  // доступ — вход в панель уже закрыт паролем.
+  // доступ, вход в панель уже закрыт паролем.
   const assistVerdict = await allow('assist')
   if (!assistVerdict.allowed) return { error: retryMessage(assistVerdict.retryAfterSeconds) }
 
@@ -647,11 +647,11 @@ export async function draftTicketNudge(_prev: OpsState, formData: FormData): Pro
     })
 
     return {
-      message: `Draft: ${draft.body.replace(/\n+/g, ' ')} Read it and send it with the form below — by itself it goes nowhere.`,
+      message: `Draft: ${draft.body.replace(/\n+/g, ' ')} Read it and send it with the form below, by itself it goes nowhere.`,
     }
   } catch (error) {
     console.error('No nudge draft came back:', error)
-    return { error: assistantNote(error, 'Write in the ticket yourself — the form is below.') }
+    return { error: assistantNote(error, 'Write in the ticket yourself, the form is below.') }
   }
 }
 
@@ -664,7 +664,7 @@ export async function acceptTicket(_prev: OpsState, formData: FormData): Promise
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     await accept(ticketId)
 
-    // Про возврат на круг человеку писали, про приёмку — нет. Сдав работу, он
+    // Про возврат на круг человеку писали, про приёмку, нет. Сдав работу, он
     // ждёт вердикта, и молчание означает для него «ещё не смотрели».
     const told = await ticketAccepted(ticketId).catch((error) => {
       console.error('Письмо о приёмке не ушло:', error)
@@ -693,7 +693,7 @@ export async function returnTicket(_prev: OpsState, formData: FormData): Promise
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     await requestRevision(ticketId, note)
 
-    // Письмо здесь, а не в гейте: гейт зовут после приёмки, а возврат — это
+    // Письмо здесь, а не в гейте: гейт зовут после приёмки, а возврат, это
     // как раз то, что до приёмки не дошло.
     await ticketReturned(ticketId).catch((error) =>
       console.error('Письмо о возврате не ушло:', error),
@@ -709,7 +709,7 @@ export async function returnTicket(_prev: OpsState, formData: FormData): Promise
 /**
  * Решение арбитра (концепт, п.11).
  *
- * Спор между смежниками разрешает бюро — не потому, что оно умнее, а потому что
+ * Спор между смежниками разрешает бюро, не потому, что оно умнее, а потому что
  * между собой им спорить негде: канала нет, и «договорились устно» в системе не
  * существует.
  */
@@ -726,7 +726,7 @@ export async function resolveTicketConflict(_prev: OpsState, formData: FormData)
     const rulingId = await resolveConflict(ticketId, ruling)
 
     // Работа стояла, пока шёл спор, и теперь пошла: срок идёт снова, значит
-    // человека надо позвать — как и на открытии задачи.
+    // человека надо позвать, как и на открытии задачи.
     const told = await conflictResolved(ticketId, rulingId).catch((error) => {
       console.error('Письмо о решении не ушло:', error)
       return 'failed' as const
@@ -755,9 +755,9 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
     const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })
     const commentId = await comment(ticketId, { role: 'bureau' }, body)
 
-    // Реплика бюро — это то, после чего от человека чего-то ждут: вопрос про
+    // Реплика бюро, это то, после чего от человека чего-то ждут: вопрос про
     // срок, уточнение постановки, напоминание. Без письма он прочтёт её в тот
-    // день, когда сам зайдёт на доску, — то есть после срока.
+    // день, когда сам зайдёт на доску,, то есть после срока.
     const told = await ticketCommented(commentId).catch((error) => {
       console.error('Письмо о реплике не ушло:', error)
       return 'failed' as const
@@ -782,7 +782,7 @@ export async function bureauComment(_prev: OpsState, formData: FormData): Promis
  * Потолок на таблицу импорта.
  *
  * Разбор идёт в памяти целиком, и до сих пор его ограничивал только предел
- * тела серверного действия — который поднят до пятидесяти мегабайт ради
+ * тела серверного действия, который поднят до пятидесяти мегабайт ради
  * чертежей. Пятьдесят мегабайт CSV в разборе это не «медленно», это упавший
  * процесс, унёсший с собой всех, кто в этот момент работал.
  */
@@ -807,7 +807,7 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
 
   const parts = [
     `Rows read: ${intake.rows.length}. Ready to create: ${good.length}.`,
-    `Columns recognised: ${intake.recognisedColumns.join(', ') || '—'}.`,
+    `Columns recognised: ${intake.recognisedColumns.join(', ') || 'n/a'}.`,
   ]
 
   if (intake.ignoredColumns.length > 0) {
@@ -819,7 +819,7 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
       `Rows with an error ${bad.length}: ` +
         bad
           .slice(0, 5)
-          .map((r) => (r.ok ? '' : `${r.line} — ${r.problem}`))
+          .map((r) => (r.ok ? '' : `${r.line}, ${r.problem}`))
           .join('; ') +
         (bad.length > 5 ? ' and others' : '') +
         '.',
@@ -844,8 +844,8 @@ export async function previewIntake(_prev: OpsState, formData: FormData): Promis
  * всегда найдётся тот, у кого вместо адреса телеграм, и останавливать из-за
  * него остальных незачем. Отчёт называет, сколько пропущено.
  *
- * Письма отсюда не уходят. Рассылка — отдельная кнопка: вставка записей это
- * один запрос, а письмо — сетевой вызов на человека, и связывать их значит
+ * Письма отсюда не уходят. Рассылка, отдельная кнопка: вставка записей это
+ * один запрос, а письмо, сетевой вызов на человека, и связывать их значит
  * ставить заведение базы в зависимость от почтового провайдера.
  */
 export async function runIntake(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -874,9 +874,9 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
       `Created: ${outcome.created}.`,
       outcome.existing > 0 ? `Already in the database and left untouched: ${outcome.existing}.` : '',
       outcome.skipped > 0
-        ? `Over the ${MAX_IMPORT_ROWS}-row ceiling, ${outcome.skipped} remain — paste them on the next pass.`
+        ? `Over the ${MAX_IMPORT_ROWS}-row ceiling, ${outcome.skipped} remain, paste them on the next pass.`
         : '',
-      outcome.created > 0 ? 'The invitations have not been sent yet — the button is below.' : '',
+      outcome.created > 0 ? 'The invitations have not been sent yet, the button is below.' : '',
     ]
 
     return { message: parts.filter(Boolean).join(' ') }
@@ -891,7 +891,7 @@ export async function runIntake(_prev: OpsState, formData: FormData): Promise<Op
  *
  * Идёт порциями и не отмечает приглашённым того, до кого письмо не дошло:
  * иначе он молча выпал бы из рассылки навсегда. Незаконченная очередь не
- * теряется — следующий заход берёт её же.
+ * теряется, следующий заход берёт её же.
  */
 export async function sendInvites(_prev: OpsState, _formData: FormData): Promise<OpsState> {
   await requireOperator()
@@ -908,14 +908,14 @@ export async function sendInvites(_prev: OpsState, _formData: FormData): Promise
 
     const parts = [
       `Sent: ${outcome.sent}.`,
-      outcome.waiting > 0 ? `Waiting their turn: ${outcome.waiting} — press again.` : '',
+      outcome.waiting > 0 ? `Waiting their turn: ${outcome.waiting}, press again.` : '',
     ]
 
     if (outcome.unsent.length > 0) {
       parts.push(
-        `Did not go out: ${outcome.unsent.length}. The keys — ` +
+        `Did not go out: ${outcome.unsent.length}. The keys, ` +
           outcome.unsent.map((u) => `${u.email}: ${u.accessKey}`).join('; ') +
-          ' — hand it over by hand.',
+          ', hand it over by hand.',
       )
     }
 
@@ -930,7 +930,7 @@ export async function sendInvites(_prev: OpsState, _formData: FormData): Promise
  * Повторить отправку письма, которое не ушло.
  *
  * Повод собирается заново из нынешнего состояния базы: копии текста у нас нет
- * и не должно быть — письмо содержит чужие данные, и хранить его вторым
+ * и не должно быть, письмо содержит чужие данные, и хранить его вторым
  * экземпляром значит завести вторую базу этих данных рядом с первой.
  */
 export async function resendLetter(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -970,10 +970,10 @@ export async function resendLetter(_prev: OpsState, formData: FormData): Promise
  * оплаты. Кнопка нужна на случай разрыва между переходом состояния и гейтом:
  * приёмка записана транзакцией, а открытие зависимых задач идёт следующим
  * вызовом, и между ними помещается перезапуск контейнера. После такого
- * разрыва проект стоит молча — всё оплачено, всё подтверждено, а работа
+ * разрыва проект стоит молча, всё оплачено, всё подтверждено, а работа
  * никому не выдана.
  *
- * Ничего не открыть — нормальный исход, и он назван словами: чаще всего гейт
+ * Ничего не открыть, нормальный исход, и он назван словами: чаще всего гейт
  * ждёт человека, а не сбоя.
  */
 export async function runProjectGate(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -1015,7 +1015,7 @@ export async function reinviteSpecialist(_prev: OpsState, formData: FormData): P
 
     return sent
       ? { message: 'The invitation was sent again.' }
-      : { message: `The email did not go out. Key: ${key} — hand it over yourself.` }
+      : { message: `The email did not go out. Key: ${key}, hand it over yourself.` }
   } catch (error) {
     // Неизвестный идентификатор приходит прямым запросом, а не из списка:
     // серверное действие достижимо и без формы.
@@ -1028,7 +1028,7 @@ export async function reinviteSpecialist(_prev: OpsState, formData: FormData): P
  * Ответ бюро заказчику.
  *
  * Закрывает все висящие вопросы по проекту разом: три вопроса подряд от одного
- * человека — это один разговор, а не три очереди.
+ * человека, это один разговор, а не три очереди.
  */
 export async function answerClient(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
@@ -1064,7 +1064,7 @@ export async function answerClient(_prev: OpsState, formData: FormData): Promise
  *
  * Платёжного провайдера нет, и это осознанно: отметку ставит человек, увидев
  * поступление. Автоматический «приём платежа» без сверки с банком означал бы,
- * что непроведённый платёж открывает стадию, — а открытая стадия это уже
+ * что непроведённый платёж открывает стадию,, а открытая стадия это уже
  * начатая работа живых людей.
  *
  * После отметки сразу же вызывается гейт: оплата и есть то, чего стадия ждала,
@@ -1094,11 +1094,11 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
      *
      * Оплаченный счёт уходит из очереди, а вместе со строкой очереди
      * исчезает и форма, которая показывает ответ. Оператор жмёт «отметить
-     * оплаченным», строка пропадает — и он не знает, прошло ли и открылось ли
+     * оплаченным», строка пропадает, и он не знает, прошло ли и открылось ли
      * что-нибудь. Отличить успех от ошибки в этот момент невозможно.
      *
      * Устаревшая на один переход очередь безопасна: повторная отметка того же
-     * счёта молча проходит. Пропавшее подтверждение — нет.
+     * счёта молча проходит. Пропавшее подтверждение, нет.
      */
     revalidatePath(`/ops/projects/${projectId}`)
     revalidatePath('/project')
@@ -1126,7 +1126,7 @@ export async function markInvoicePaid(_prev: OpsState, formData: FormData): Prom
  * страна дают неверную сумму. Без отзыва единственным способом это исправить
  * была бы правка базы руками.
  *
- * Причина обязательна: заказчик этот счёт уже видел, и «он исчез» — не ответ.
+ * Причина обязательна: заказчик этот счёт уже видел, и «он исчез», не ответ.
  */
 export async function voidProjectInvoice(_prev: OpsState, formData: FormData): Promise<OpsState> {
   await requireOperator()
@@ -1168,7 +1168,7 @@ export async function voidProjectInvoice(_prev: OpsState, formData: FormData): P
  * Обезличить профиль специалиста по его обращению (п.13).
  *
  * Действие необратимо, поэтому оператор пишет, откуда взялось требование:
- * через полгода «почему у нас тут Former specialist» — вопрос, на который
+ * через полгода «почему у нас тут Former specialist», вопрос, на который
  * должен быть ответ. Причина остаётся в записях, как и у выхода из проекта.
  */
 export async function anonymiseProfile(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -1196,7 +1196,7 @@ export async function anonymiseProfile(_prev: OpsState, formData: FormData): Pro
   revalidatePath(`/ops/pool/${specialistId}`)
 
   // Что стало с ролями, оператор узнаёт здесь, а не из просроченного проекта.
-  // Роль без замены — не сбой обезличивания, а состояние, за которым надо
+  // Роль без замены, не сбой обезличивания, а состояние, за которым надо
   // следить: задача вернулась бюро и ждёт постановки заново.
   const roles =
     moved.handed + moved.stranded === 0
@@ -1206,7 +1206,7 @@ export async function anonymiseProfile(_prev: OpsState, formData: FormData): Pro
             handed: moved.handed,
           })
         : fill(
-            '{handed} role(s) went to the next candidate in the run; {stranded} found no replacement and are back with the bureau — those tasks need a fresh assembly.',
+            '{handed} role(s) went to the next candidate in the run; {stranded} found no replacement and are back with the bureau, those tasks need a fresh assembly.',
             { handed: moved.handed, stranded: moved.stranded },
           )
 
@@ -1218,7 +1218,7 @@ export async function anonymiseProfile(_prev: OpsState, formData: FormData): Pro
 /**
  * Удалить данные закрытого проекта по обращению заказчика (п.13).
  *
- * Счета остаются: их хранение — обязанность перед страной регистрации, и
+ * Счета остаются: их хранение, обязанность перед страной регистрации, и
  * обращение человека её не снимает. Об этом сказано в самом сообщении, иначе
  * оператор узнает об этом от заказчика, а не от нас.
  */
@@ -1246,7 +1246,7 @@ export async function eraseProjectData(_prev: OpsState, formData: FormData): Pro
 
   return {
     message:
-      'The data is erased: contacts, brief, correspondence and files are gone. Invoices remain — keeping them is an obligation of the country of registration.',
+      'The data is erased: contacts, brief, correspondence and files are gone. Invoices remain, keeping them is an obligation of the country of registration.',
   }
 }
 
@@ -1256,7 +1256,7 @@ export async function eraseProjectData(_prev: OpsState, formData: FormData): Pro
  * Ставки не зашиты в код намеренно: выдуманная ставка означает выдуманную
  * маржу, а маржа это то, по чему решают, жив ли бизнес. Здесь бюро называет
  * её само, и названная подставляется в уже начисленные обязательства без
- * суммы — работа была той же самой, и первый месяц не должен навсегда
+ * суммы, работа была той же самой, и первый месяц не должен навсегда
  * выпасть из расчёта.
  */
 export async function setPayoutRate(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -1318,7 +1318,7 @@ export async function markObligationPaid(_prev: OpsState, formData: FormData): P
  * Пополнение корпуса норм таблицей: предпросмотр.
  *
  * Отдельным действием от прогона, как у импорта базы. Набор из сотни строк,
- * отвергнутый целиком из-за одной, — это потерянный вечер; прогон без
+ * отвергнутый целиком из-за одной,, это потерянный вечер; прогон без
  * предпросмотра означает, что ошибку видно уже в базе.
  */
 export async function previewNorms(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -1355,7 +1355,7 @@ export async function runNorms(_prev: OpsState, formData: FormData): Promise<Ops
     revalidatePath('/ops/norms')
 
     return {
-      message: `Added: ${result.created}.${result.rejected.length > 0 ? ` Not taken: ${result.rejected.length} — run the preview to see why.` : ''}`,
+      message: `Added: ${result.created}.${result.rejected.length > 0 ? ` Not taken: ${result.rejected.length}, run the preview to see why.` : ''}`,
     }
   } catch (error) {
     console.error('Пополнение корпуса норм не прошло:', error)
@@ -1426,7 +1426,7 @@ export async function checkNorm(_prev: OpsState, formData: FormData): Promise<Op
  * Удаление правила.
  *
  * Нужно ровно для одного: убрать запись, которой не должно было быть. Норма,
- * переставшая действовать, удалением не оформляется — у неё есть преемница с
+ * переставшая действовать, удалением не оформляется, у неё есть преемница с
  * более поздней датой, и движок выберет её сам.
  */
 export async function removeNorm(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -1475,7 +1475,7 @@ export async function markBuildAccessPaid(_prev: OpsState, formData: FormData): 
  * Доля цены стадии, уходящая команде.
  *
  * Из неё считается потолок на гонорары. Пока не задана, бюджетного гейта не
- * существует вовсе — и это честнее умолчания: доля, взявшаяся из воздуха,
+ * существует вовсе, и это честнее умолчания: доля, взявшаяся из воздуха,
  * начала бы отсеивать людей по цене, которую бюро не называло.
  */
 export async function setTeamBudgetShare(_prev: OpsState, formData: FormData): Promise<OpsState> {
@@ -1489,7 +1489,7 @@ export async function setTeamBudgetShare(_prev: OpsState, formData: FormData): P
       revalidatePath('/ops/payouts')
 
       return {
-        message: 'Share removed. Assembly no longer filters anyone on price — as it did before.',
+        message: 'Share removed. Assembly no longer filters anyone on price, as it did before.',
       }
     }
 
@@ -1498,7 +1498,7 @@ export async function setTeamBudgetShare(_prev: OpsState, formData: FormData): P
     revalidatePath('/ops/payouts')
 
     return {
-      message: `Saved. From now on a team whose fees exceed ${raw}% of the set’s price will not be assembled — and the client is told it is about money, not about people.`,
+      message: `Saved. From now on a team whose fees exceed ${raw}% of the set’s price will not be assembled, and the client is told it is about money, not about people.`,
     }
   } catch (error) {
     if (error instanceof SettingRefused) return { error: error.message }
@@ -1512,7 +1512,7 @@ export async function setTeamBudgetShare(_prev: OpsState, formData: FormData): P
  * Конец бесплатного доступа специалистов.
  *
  * Пустое поле кончает пилот: новые приходят с закрытым доступом, а уже
- * пришедшие остаются как есть. Об этом сказано в самом ответе — иначе
+ * пришедшие остаются как есть. Об этом сказано в самом ответе, иначе
  * оператор, снявший дату, вправе ожидать, что пул тут же опустеет, и станет
  * искать несуществующую поломку. Или, что хуже, не станет: решит, что
  * настройка не сработала, и откроет пилот заново.
@@ -1529,7 +1529,7 @@ export async function setPilotAccess(_prev: OpsState, formData: FormData): Promi
 
       return {
         message:
-          'Pilot ended. New specialists now arrive without access, and the bureau opens it by hand. Everyone who already has access keeps it — ending the pilot does not take anybody off a live project.',
+          'Pilot ended. New specialists now arrive without access, and the bureau opens it by hand. Everyone who already has access keeps it, ending the pilot does not take anybody off a live project.',
       }
     }
 
@@ -1555,7 +1555,7 @@ export async function setPilotAccess(_prev: OpsState, formData: FormData): Promi
  * Досчитать то, что не досчиталось после приёмки.
  *
  * За приёмкой идут три шага вне её транзакции: гейты, статус проекта и
- * начисление. Все три сделаны так, чтобы повторный вызов был безвреден, — и ни
+ * начисление. Все три сделаны так, чтобы повторный вызов был безвреден,, и ни
  * один не вызывался повторно никогда. Обрыв на любом из них оставлял проект
  * стоять или человека без денег, и починка была ручной правкой базы.
  *
@@ -1581,7 +1581,7 @@ export async function reconcileAfterAcceptance(
     await accrueFor(projectId)
   } catch (error) {
     console.error('Досчёт после приёмки не удался:', error)
-    return { error: 'The catch-up failed. The state is unchanged — try again.' }
+    return { error: 'The catch-up failed. The state is unchanged, try again.' }
   }
 
   revalidatePath('/ops')

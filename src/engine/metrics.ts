@@ -2,7 +2,7 @@
  * Метрики качества (концепт, п.12).
  *
  * Считаются из счётчиков тикетов. Поля «оценка специалиста» не существует ни у
- * клиента, ни у оператора: отзывы — это мнение, а отбор идёт по фактам.
+ * клиента, ни у оператора: отзывы, это мнение, а отбор идёт по фактам.
  */
 
 import type { DeliveryCounters } from './types'
@@ -34,7 +34,7 @@ export function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
-/** null, если истории поставок нет: у такого специалиста Quality — портфолио. */
+/** null, если истории поставок нет: у такого специалиста Quality, портфолио. */
 export function deliveryMetrics(counters: DeliveryCounters): DeliveryMetrics | null {
   const { deliveredTickets: n } = counters
   if (n <= 0) return null
@@ -68,7 +68,7 @@ export function deliveryScore(metrics: DeliveryMetrics | null): number {
 }
 
 /**
- * Насколько можно опереться на историю. Три закрытых тикета — это ещё не
+ * Насколько можно опереться на историю. Три закрытых тикета, это ещё не
  * репутация, поэтому вес растёт постепенно и упирается в потолок.
  */
 export function historyWeight(counters: DeliveryCounters): number {

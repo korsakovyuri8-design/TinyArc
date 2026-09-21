@@ -19,7 +19,7 @@ import { isOperator } from '@/lib/session'
 import { OpsAction } from '../OpsForms'
 import { addContractor, markBuildAccessPaid, setContractorStatus } from '../actions'
 
-export const metadata = { title: 'Contractors — bureau panel' }
+export const metadata = { title: 'Contractors, bureau panel' }
 
 /**
  * Потолок тот же, что у пула, и по той же причине: страница обязана
@@ -32,7 +32,7 @@ const SHOWN = 200
  * Сколько незакрытых работ показывается по стране.
  *
  * На пустой сети незакрыты все четырнадцать, и полный список превращает панель
- * в стену. Показываются первые, а сколько всего — сказано числом: список тут
+ * в стену. Показываются первые, а сколько всего, сказано числом: список тут
  * читают, чтобы начать действовать, а не чтобы прочитать целиком.
  */
 const HOLES_SHOWN = 5
@@ -65,7 +65,7 @@ export default async function ContractorsPage() {
         </div>
 
         <p className="muted" style={{ marginTop: 14, maxWidth: '68ch' }}>
-          The client pays for access to the shortlist. A contractor never pays for a place in it — there is no field for that, here or in the engine. Selection works the same way as for specialists: hard gates first, then a score, then three names.
+          The client pays for access to the shortlist. A contractor never pays for a place in it, there is no field for that, here or in the engine. Selection works the same way as for specialists: hard gates first, then a score, then three names.
         </p>
 
         <div className="divider" style={{ marginTop: 40 }} />
@@ -73,14 +73,14 @@ export default async function ContractorsPage() {
         {/*
           Глубина сети стоит выше формы добавления намеренно: это ответ на
           вопрос «кого заводить», и читать его надо до того, как заводишь.
-          Работа с одним подрядчиком не дыра по отбору — список из одного он
-          соберёт, — но она держится на его занятости и полисе, и узнать об
+          Работа с одним подрядчиком не дыра по отбору, список из одного он
+          соберёт,, но она держится на его занятости и полисе, и узнать об
           этом надо не в тот день, когда в неё упёрся заказчик.
         */}
         <h2>Where the network is thin</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '64ch' }}>
           {fill(
-            'Capability, not workload. A work is covered when at least {depth} contractors pass every gate; one is not coverage — it holds on that one firm being free.',
+            'Capability, not workload. A work is covered when at least {depth} contractors pass every gate; one is not coverage, it holds on that one firm being free.',
             { depth: MIN_TRADE_DEPTH },
           )}
         </p>
@@ -117,15 +117,15 @@ export default async function ContractorsPage() {
                     {holes.slice(0, HOLES_SHOWN).map((row) => (
                       <li key={row.trade} style={{ fontSize: '0.85rem' }}>
                         <strong>{TRADE_LABELS[row.trade] ?? row.trade}</strong>
-                        {' — '}
+                        {', '}
                         {/*
                           Причина показывается, только если добавляет что-то к
-                          числам. «Никого: нужен найм» — это одно и то же
+                          числам. «Никого: нужен найм», это одно и то же
                           сказанное дважды, а вот «один из двух: просрочен
                           полис» говорит, что делать сегодня.
                         */}
                         {row.claimed === 0
-                          ? 'nobody in the network — a hire'
+                          ? 'nobody in the network, a hire'
                           : `${row.eligible} of ${row.claimed}: ${NETWORK_REASON_LABELS[row.reason ?? 'nobody'] ?? row.reason}`}
                       </li>
                     ))}
@@ -169,7 +169,7 @@ export default async function ContractorsPage() {
               <Field
                 label="Insurance valid until"
                 name="insuredUntil"
-                hint="Without a date the contractor does not pass the insurance gate — a tick with no expiry never expires"
+                hint="Without a date the contractor does not pass the insurance gate, a tick with no expiry never expires"
               >
                 <input id="insuredUntil" name="insuredUntil" type="date" />
               </Field>
@@ -199,7 +199,7 @@ export default async function ContractorsPage() {
 
         {/*
           Очередь на доступ к подрядчикам. Заказчик попросил и ждёт: пока
-          оплата не отмечена, короткий список ему закрыт — и это единственное,
+          оплата не отмечена, короткий список ему закрыт, и это единственное,
           что закрыто, работа идёт своим ходом.
 
           Неоплаченные показываются все и потолка не имеют: срезанная строка —
@@ -210,7 +210,7 @@ export default async function ContractorsPage() {
             <div className="divider" style={{ marginTop: 44 }} />
 
             <h2>Contractor access asked for</h2>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>The client pays for access to the selection; the contractor never pays for a place in it. There is no payment processing here — mark it once the money has arrived, and the shortlist opens in their workspace.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>The client pays for access to the selection; the contractor never pays for a place in it. There is no payment processing here, mark it once the money has arrived, and the shortlist opens in their workspace.</p>
 
             <div className="stack" style={{ gap: 14 }}>
               {access.map((row) => (
@@ -268,7 +268,7 @@ export default async function ContractorsPage() {
 
         {rows.length === 0 ? (
           <p className="dim" style={{ marginTop: 16 }}>
-            The network is empty. Until it has someone, the shortlist on a project card is empty too — and that is stated there rather than hidden.
+            The network is empty. Until it has someone, the shortlist on a project card is empty too, and that is stated there rather than hidden.
           </p>
         ) : (
           <>

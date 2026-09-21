@@ -27,6 +27,7 @@ function application(patch: Record<string, unknown> = {}) {
     displayName: 'Иван Петров',
     email: 'ivan@example.com',
     portfolioUrl: 'https://example.com/ivan',
+    residenceCountry: 'ME',
     disciplines: ['architecture'],
     specializations: ['arch_small_scale'],
     typologies: ['villa'],
@@ -140,8 +141,34 @@ describe('заявка специалиста', () => {
     expect(signaturesWithinJurisdictions(parsed)).toBe(false)
   })
 
-  it('без юрисдикции заявки нет', () => {
-    expect(applicationSchema.safeParse(application({ jurisdictions: [] })).success).toBe(false)
+  /*
+   * Правило перевёрнуто намеренно. Пул мировой: архитектор без объектов в
+   * тридцати странах проектов подходит движку (страну тот требует только от
+   * согласователя и геодезиста), и обязательное поле заставляло его либо уйти,
+   * либо отметить страну, где он не работал.
+   */
+  it('без стран проектов заявка проходит: пул мировой', () => {
+    expect(
+      applicationSchema.safeParse(application({ jurisdictions: [], signsIn: [] })).success,
+    ).toBe(true)
+  })
+
+  it('без страны проживания заявки нет', () => {
+    expect(applicationSchema.safeParse(application({ residenceCountry: '' })).success).toBe(false)
+  })
+
+  it('страна проживания может быть любой, не только страной проектов', () => {
+    expect(applicationSchema.safeParse(application({ residenceCountry: 'BR' })).success).toBe(true)
+  })
+
+  it('выдуманный код страны не проходит', () => {
+    expect(applicationSchema.safeParse(application({ residenceCountry: 'QQ' })).success).toBe(false)
+  })
+
+  it('часовой пояс может быть дробным, если такой пояс существует', () => {
+    expect(applicationSchema.safeParse(application({ utcOffset: 5.5 })).success).toBe(true)
+    expect(applicationSchema.safeParse(application({ utcOffset: 5.75 })).success).toBe(true)
+    expect(applicationSchema.safeParse(application({ utcOffset: 3.7 })).success).toBe(false)
   })
 
   it('без дисциплины заявки нет', () => {

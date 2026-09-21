@@ -7,7 +7,7 @@ import { MAX_IMPORT_ROWS } from '@/lib/services/intake'
 import { previewIntake, runIntake, sendInvites } from '../actions'
 import { OpsAction } from '../OpsForms'
 
-export const metadata = { title: 'Database import — bureau panel' }
+export const metadata = { title: 'Database import, bureau panel' }
 
 export default async function ImportPage() {
   if (!(await isOperator())) redirect('/ops')
@@ -37,7 +37,7 @@ export default async function ImportPage() {
         </p>
 
         <p className="hint" style={{ marginTop: 12, maxWidth: '62ch' }}>
-          That is by design. A database assembled by hand holds no jurisdictions, no software suite, no time zone and no free capacity. Selecting on such a record would assemble a team out of defaults — and it would show on the project, not before it.
+          That is by design. A database assembled by hand holds no jurisdictions, no software suite, no time zone and no free capacity. Selecting on such a record would assemble a team out of defaults, and it would show on the project, not before it.
         </p>
 
         {invited > 0 && (
@@ -97,14 +97,14 @@ export default async function ImportPage() {
         </div>
 
         <p className="hint" style={{ marginTop: 14 }}>
-          Columns outside this list are not imported — and do not get in the way: the parse names them so you can see what stayed out. A value absent from the taxonomy is not guessed at either: “Quantity surveyor” lands in the report, not in a discipline.
+          Columns outside this list are not imported, and do not get in the way: the parse names them so you can see what stayed out. A value absent from the taxonomy is not guessed at either: “Quantity surveyor” lands in the report, not in a discipline.
         </p>
 
         <div className="divider" style={{ marginTop: 40 }} />
 
         <h2>Paste the table</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Copy it from Excel or Google Sheets together with the header row. First <strong>“Parse”</strong> — it creates nothing and only shows what the system read. Creating the records is the second button.
+          Copy it from Excel or Google Sheets together with the header row. First <strong>“Parse”</strong>: it creates nothing and only shows what the system read. Creating the records is the second button.
         </p>
 
         <OpsAction action={previewIntake} label="Parse">
@@ -123,7 +123,7 @@ export default async function ImportPage() {
 
         <h2>Create the records</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Paste the same table again — deliberately: creating records must not happen from a second press on the preview form. Addresses already in the database are skipped: the import does not overwrite a profile the person may have filled in themselves. One pass takes up to {MAX_IMPORT_ROWS} rows; the rest on the next one.
+          Paste the same table again, deliberately: creating records must not happen from a second press on the preview form. Addresses already in the database are skipped: the import does not overwrite a profile the person may have filled in themselves. One pass takes up to {MAX_IMPORT_ROWS} rows; the rest on the next one.
         </p>
 
         <OpsAction action={runIntake} label="Create the records" solid>
@@ -147,7 +147,7 @@ export default async function ImportPage() {
         <OpsAction action={sendInvites} label="Send the invitations" solid />
 
         <p className="hint" style={{ marginTop: 16 }}>
-          It runs in batches — if more are waiting, press again. Only someone the email actually reached is marked invited: otherwise a person would silently drop out of the mailing for good. With the stub mailer nothing is sent anywhere, and the keys are visible in the invited list on the applications page — hand them over through whatever channel you already use.
+          It runs in batches, if more are waiting, press again. Only someone the email actually reached is marked invited: otherwise a person would silently drop out of the mailing for good. With the stub mailer nothing is sent anywhere, and the keys are visible in the invited list on the applications page, hand them over through whatever channel you already use.
         </p>
       </div>
     </section>

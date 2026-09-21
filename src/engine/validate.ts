@@ -1,8 +1,8 @@
 /**
- * Стадия Validate (концепт, п.7). Публичное имя стадии — Filter.
+ * Стадия Validate (концепт, п.7). Публичное имя стадии, Filter.
  *
  * Здесь проверяется не специалист, а сам проект: попадает ли он в продуктовую
- * границу (п.5). Если нет — мы отказываем, а не берём и не тянем. Отказ выдаёт
+ * границу (п.5). Если нет, мы отказываем, а не берём и не тянем. Отказ выдаёт
  * движок, не человек: границу нельзя подвинуть уговорами.
  */
 
@@ -21,7 +21,7 @@ export function validateProject(requirements: ProjectRequirements): Validation {
   if (requirements.storeys > MAX_STOREYS) {
     return {
       ok: false,
-      reason: `${requirements.storeys} storeys — above the product boundary. Bureau handles buildings up to ${MAX_STOREYS} storeys inclusive: above that the scope of expert review and the legal construction are different.`,
+      reason: `${requirements.storeys} storeys, above the product boundary. Bureau handles buildings up to ${MAX_STOREYS} storeys inclusive: above that the scope of expert review and the legal construction are different.`,
     }
   }
 
@@ -50,7 +50,7 @@ export function validateProject(requirements: ProjectRequirements): Validation {
   if (requirements.regulatoryTrack !== 'light') {
     return {
       ok: false,
-      reason: 'The project sits in a standard-regulation zone. Bureau handles buildings in light-regulation zones — that is the condition under which algorithmic team assembly works.',
+      reason: 'The project sits in a standard-regulation zone. Bureau handles buildings in light-regulation zones, that is the condition under which algorithmic team assembly works.',
     }
   }
 

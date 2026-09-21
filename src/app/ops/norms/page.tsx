@@ -15,7 +15,7 @@ import { isOperator } from '@/lib/session'
 import { OpsAction } from '../OpsForms'
 import { addNorm, checkNorm, previewNorms, removeNorm, runNorms } from '../actions'
 
-export const metadata = { title: 'Norms — bureau panel' }
+export const metadata = { title: 'Norms, bureau panel' }
 
 export default async function NormsPage({
   searchParams,
@@ -51,11 +51,11 @@ export default async function NormsPage({
           </Link>
         </div>
 
-        <p className="muted" style={{ marginTop: 14, maxWidth: '64ch' }}>Every rule carries its source: document, article, the date it takes effect and the date we last checked it against the original. That is not paperwork. A rule with no source cannot be defended in front of an authority and cannot be re-checked when the norm changes — and it will change.</p>
+        <p className="muted" style={{ marginTop: 14, maxWidth: '64ch' }}>Every rule carries its source: document, article, the date it takes effect and the date we last checked it against the original. That is not paperwork. A rule with no source cannot be defended in front of an authority and cannot be re-checked when the norm changes, and it will change.</p>
 
         <p className="hint" style={{ marginTop: 12, maxWidth: '64ch' }}>
           {fill(
-            'A rule is never edited in place. A norm does not get corrected, it gets replaced — and the replacement has its own effective date. A set issued last month was computed against last month’s rule, and overwriting the value would destroy the answer to “what did we compute against”. Add the new edition as a new rule; the engine picks between them by date and by how narrow the scope is. Checking against the source is a separate act: it moves the check date and nothing else, and a rule goes unverified {days} days after it.',
+            'A rule is never edited in place. A norm does not get corrected, it gets replaced, and the replacement has its own effective date. A set issued last month was computed against last month’s rule, and overwriting the value would destroy the answer to “what did we compute against”. Add the new edition as a new rule; the engine picks between them by date and by how narrow the scope is. Checking against the source is a separate act: it moves the check date and nothing else, and a rule goes unverified {days} days after it.',
             { days: STALE_AFTER_DAYS },
           )}
         </p>
@@ -116,7 +116,7 @@ export default async function NormsPage({
         <h2>Add a corpus</h2>
         <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
           {fill(
-            'Paste a table with exactly these columns, up to {rows} rows at a time. Nothing is guessed here — unlike the specialist import, where a wrong column costs one uncalled specialist. A norm read out of the wrong column travels into a documentation set under our signature and surfaces as a refusal six months later.',
+            'Paste a table with exactly these columns, up to {rows} rows at a time. Nothing is guessed here, unlike the specialist import, where a wrong column costs one uncalled specialist. A norm read out of the wrong column travels into a documentation set under our signature and surfaces as a refusal six months later.',
             { rows: MAX_RULE_ROWS },
           )}
         </p>
@@ -155,7 +155,7 @@ export default async function NormsPage({
         <div className="divider" style={{ marginTop: 44 }} />
 
         <h2>Add one rule</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>Zoning has to name a municipality: there is no such thing as a country-level setback. A rule written at country level would apply silently in every town whose own plan says otherwise. The engineering layers do generalise — Eurocodes with national annexes, EPBD, EN — and are written once.</p>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>Zoning has to name a municipality: there is no such thing as a country-level setback. A rule written at country level would apply silently in every town whose own plan says otherwise. The engineering layers do generalise (Eurocodes with national annexes, EPBD, EN) and are written once.</p>
 
         <div className="panel">
           <OpsAction action={addNorm} label="Add the rule" solid>
@@ -204,7 +204,7 @@ export default async function NormsPage({
 
               <div className="field">
                 <label htmlFor="parcel-new">Cadastral parcel</label>
-                <input id="parcel-new" name="parcel" placeholder="optional — for a rule taken from urban-planning conditions" />
+                <input id="parcel-new" name="parcel" placeholder="optional, for a rule taken from urban-planning conditions" />
               </div>
 
               <div className="field">
@@ -221,8 +221,8 @@ export default async function NormsPage({
               <div className="field">
                 <label htmlFor="operator-new">Operator</label>
                 <select id="operator-new" name="operator" defaultValue="max">
-                  <option value="max">max — not more than</option>
-                  <option value="min">min — not less than</option>
+                  <option value="max">max, not more than</option>
+                  <option value="min">min, not less than</option>
                 </select>
               </div>
 

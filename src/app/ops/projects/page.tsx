@@ -13,29 +13,29 @@ import { outcomesFor } from '@/lib/services/matching'
 import { standingClass, standingOf } from '@/lib/standing'
 import { isOperator } from '@/lib/session'
 
-export const metadata = { title: 'Projects — bureau panel' }
+export const metadata = { title: 'Projects, bureau panel' }
 
 /** Статусы проекта, по которым имеет смысл сужать. */
 const STATUSES = ['draft', 'assembled', 'delivering', 'delivered', 'rejected'] as const
 
 /*
- * Подписи фильтра — не подписи строк.
+ * Подписи фильтра, не подписи строк.
  *
  * Фильтр сужает по столбцу статуса в базе, и «бриф принят» на нём означало бы
  * не то, что показано в строках: в черновиках лежат и только что принятые
  * брифы, и те, под которые команда не собралась. Столбец называет положение,
- * фильтр называет отбор — и путать их значит обещать оператору выборку,
+ * фильтр называет отбор, и путать их значит обещать оператору выборку,
  * которой он не получит.
  */
 const FILTER_LABELS: Record<string, string> = {
-  draft: 'Draft — accepted or not assembled',
+  draft: 'Draft, accepted or not assembled',
 }
 
 /**
  * Сколько проектов показывать разом.
  *
  * Список проектов бюро растёт всю его жизнь и не убывает: закрытый проект
- * остаётся. Без потолка страница читала и рисовала каждый — замерено на живом
+ * остаётся. Без потолка страница читала и рисовала каждый, замерено на живом
  * Postgres: при двух тысячах проектов это девятьсот миллисекунд и два
  * мегабайта разметки в браузер оператора. Нужное при этом всегда в начале:
  * список отсортирован от новых к старым, а старое ищут условиями.
@@ -73,7 +73,7 @@ export default async function ProjectsPage({
    * лени: `contains` у prisma на SQLite и на Postgres смотрит на регистр
    * по-разному, и поиск вёл бы себя на стенде не так, как в бою. Расхождение
    * между разработкой и боем дороже лишнего прохода по списку, у которого
-   * верхняя граница — проекты одного бюро.
+   * верхняя граница, проекты одного бюро.
    */
   const needle = query.toLowerCase()
   const projects = all.filter((project) => {
@@ -95,7 +95,7 @@ export default async function ProjectsPage({
    * Исходы читаются одним запросом и только для показанных строк. Положение
    * проекта не совпадает со статусом: черновик, под который команду собрать не
    * удалось, остаётся черновиком, и в столбце статуса он неотличим от только
-   * что принятого брифа — а это два разных дела для оператора.
+   * что принятого брифа, а это два разных дела для оператора.
    */
   const outcomes = await outcomesFor(shown.map((project) => project.id))
 
@@ -154,7 +154,7 @@ export default async function ProjectsPage({
             {projects.length === all.length
               ? fill('{total} projects.', { total: all.length })
               : fill('{shown} of {total} match.', { shown: projects.length, total: all.length })}{' '}
-            The client’s key is searched too — it is what you have when they write in.
+            The client’s key is searched too, it is what you have when they write in.
           </p>
 
           {projects.length > SHOWN && (
@@ -172,7 +172,7 @@ export default async function ProjectsPage({
           </p>
         ) : projects.length === 0 ? (
           <p className="dim" style={{ marginTop: 36 }}>
-            Nothing matches. There are projects — these conditions are the empty part.
+            Nothing matches. There are projects, these conditions are the empty part.
           </p>
         ) : (
           <div className="table-scroll panel" style={{ marginTop: 32, padding: 0 }}>

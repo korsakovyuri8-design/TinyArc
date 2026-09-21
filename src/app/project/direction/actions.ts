@@ -19,7 +19,7 @@ export async function pickDirection(
     await chooseDirection(projectId, key)
   } catch (error) {
     // Наружу идут только те две причины, которые заказчик может понять и с
-    // которыми может что-то сделать. Всё остальное — наше, и в тексте на
+    // которыми может что-то сделать. Всё остальное, наше, и в тексте на
     // экране от него пользы нет.
     if (error instanceof DirectionClosed || error instanceof UnknownDirection) {
       return { error: error.message }

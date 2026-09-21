@@ -7,7 +7,7 @@ import { mailer } from '@/lib/mail'
 import { DirectionPicker } from './DirectionPicker'
 import { ChosenDirection } from '@/components/ChosenDirection'
 
-export const metadata = { title: 'Project direction, TinyArc Cloud Bureau' }
+export const metadata = { title: 'Project direction · TinyArc Cloud Bureau' }
 
 export default async function DirectionPage({
   searchParams,

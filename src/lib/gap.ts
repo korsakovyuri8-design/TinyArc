@@ -1,5 +1,5 @@
 /**
- * Нехватка состава — словами, которые понимает заказчик.
+ * Нехватка состава, словами, которые понимает заказчик.
  *
  * Движок отдаёт структуру, а не фразу. Фраза, собранная в движке, неминуемо
  * оказывается на его языке: в кабинете у владельца участка стояло «дисциплина
@@ -25,7 +25,7 @@ export function parseGap(json: string): AssemblyGap | null {
   }
 }
 
-/** Кого не хватает: «конструктор — дерево, каркас, CLT». */
+/** Кого не хватает: «конструктор, дерево, каркас, CLT». */
 export function roleName(gap: AssemblyGap): string {
   const discipline = DISCIPLINE_LABELS[gap.discipline] ?? gap.discipline
 
@@ -34,15 +34,15 @@ export function roleName(gap: AssemblyGap): string {
   const parts = gap.specializations.map((s) => SPECIALIZATION_LABELS[s] ?? s)
 
   // «all» значит, что нужен один человек, закрывающий всё перечисленное; «any»
-  // — что достаточно любого из. Для читателя это «и» против «или».
-  return `${discipline} — ${parts.join(gap.mode === 'all' ? ' and ' : ' or ')}`
+  //, что достаточно любого из. Для читателя это «и» против «или».
+  return `${discipline}: ${parts.join(gap.mode === 'all' ? ' and ' : ' or ')}`
 }
 
 /**
  * Что показать заказчику.
  *
  * Без извинений и без внутренней кухни: причина, честный статус и следующий
- * шаг. Обещания срока здесь нет намеренно — обещать неделю, не имея человека
+ * шаг. Обещания срока здесь нет намеренно, обещать неделю, не имея человека
  * на руках, значит потерять заказчика дважды.
  */
 export function clientExplanation(
@@ -60,11 +60,11 @@ export function clientExplanation(
           `There is no such specialist in the pool with approvals experience in ${where} right now. ` +
           'We do not put someone adjacent in their place: that substitution is exactly what ' +
           'makes projects get redone later. ' +
-          'The bureau is looking for a person for this role — you have your key and can come back to the project with it.'
+          'The bureau is looking for a person for this role, you have your key and can come back to the project with it.'
         : `Your project needs a role we have not covered yet: ${who}. ` +
-          `Suitable people in ${where} exist — ${gap.candidates} of them — but no team ` +
+          `Suitable people in ${where} exist, ${gap.candidates} of them, but no team ` +
           'comes together in full: some have no free time before your deadline, ' +
           'others do not share a working suite with the rest of the team. ' +
-          'The bureau is sorting this out by hand — you have your key and can come back to the project with it.',
+          'The bureau is sorting this out by hand, you have your key and can come back to the project with it.',
   }
 }

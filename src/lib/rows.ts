@@ -94,7 +94,7 @@ export function toProfile(row: Specialist): SpecialistProfile {
       revisionRoundsTotal: row.revisionRoundsTotal,
     },
     // Незнакомое значение читается как «доступа нет». Обратный по умолчанию
-    // разбор — пускать всё, чего не поняли, — на гейте доступа неуместен.
+    // разбор, пускать всё, чего не поняли,, на гейте доступа неуместен.
     subscription: SUBSCRIPTIONS.includes(row.subscription as Subscription)
       ? (row.subscription as Subscription)
       : 'none',

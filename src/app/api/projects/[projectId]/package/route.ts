@@ -12,15 +12,15 @@ import type { DocStage } from '@/engine/taxonomy'
  * Комплект документации одним архивом.
  *
  * П.13 говорит, что материалы передаются заказчику в полном объёме. По одной
- * ссылке за раз это исполняется терпением: разрешительный пакет — это десятки
+ * ссылке за раз это исполняется терпением: разрешительный пакет, это десятки
  * файлов, и человек, пришедший забрать то, за что заплатил, вместо документации
- * получает работу. Архив — это и есть «в полном объёме», сделанное один раз.
+ * получает работу. Архив, это и есть «в полном объёме», сделанное один раз.
  *
  * Право то же, что и на одиночный файл, и проверяется так же строго: заказчик
- * этого проекта и бюро. Специалиста здесь нет намеренно — он видит свою задачу
+ * этого проекта и бюро. Специалиста здесь нет намеренно, он видит свою задачу
  * и входные к ней, а комплект целиком не полагается никому в команде (п.11).
  *
- * Отказ — тот же 404, что и везде: разница между «нет проекта» и «есть, но не
+ * Отказ, тот же 404, что и везде: разница между «нет проекта» и «есть, но не
  * ваш» сама по себе сведения.
  */
 export async function GET(
@@ -56,7 +56,7 @@ export async function GET(
         `${archiveName(project.title)}.zip`,
       )}`,
       // Длину заранее не знаем: архив собирается по ходу отдачи. Ответ уходит
-      // кусками, и это правильный размен — иначе комплект пришлось бы целиком
+      // кусками, и это правильный размен, иначе комплект пришлось бы целиком
       // собрать в памяти, чтобы сообщить число, которое никому не нужно.
       'Cache-Control': 'private, no-store',
     },
@@ -66,9 +66,9 @@ export async function GET(
 /**
  * Что кладём в архив.
  *
- * Стадия — папка: комплект читается по стадиям, а плоская куча из сорока
+ * Стадия, папка: комплект читается по стадиям, а плоская куча из сорока
  * файлов читается никак. Файлы, которых у нас нет (внешние ссылки старых
- * записей), в архив попасть не могут — они названы в описи, и это честнее,
+ * записей), в архив попасть не могут, они названы в описи, и это честнее,
  * чем промолчать о них.
  */
 async function* entries(projectId: string, stages: PackageStage[]): AsyncGenerator<ZipEntry> {
@@ -80,7 +80,7 @@ async function* entries(projectId: string, stages: PackageStage[]): AsyncGenerat
 
     for (const file of stage.files) {
       if (!file.storageKey) {
-        missed.push(`${folder} — ${file.name}: ${file.url}`)
+        missed.push(`${folder}, ${file.name}: ${file.url}`)
         continue
       }
 
@@ -89,7 +89,7 @@ async function* entries(projectId: string, stages: PackageStage[]): AsyncGenerat
       if (!stored) {
         // Строка есть, файла нет. Молчать нельзя: заказчик пересчитает
         // листы по кабинету и не найдёт этого, а спросить будет не о чем.
-        missed.push(`${folder} — ${file.name}: missing from storage`)
+        missed.push(`${folder}, ${file.name}: missing from storage`)
         continue
       }
 
@@ -111,7 +111,7 @@ async function* entries(projectId: string, stages: PackageStage[]): AsyncGenerat
 /** Опись: что в архиве, по стадиям, и чего в нём нет. */
 function manifest(projectId: string, stages: PackageStage[], missed: string[]): string {
   const lines = [
-    'TinyArc Cloud Bureau — project documentation set',
+    'TinyArc Cloud Bureau, project documentation set',
     `Assembled: ${dateTime(new Date())}`,
     '',
     'The set builds up as stages close, so it holds every stage closed to date.',
@@ -122,7 +122,7 @@ function manifest(projectId: string, stages: PackageStage[], missed: string[]): 
 
   for (const stage of stages) {
     lines.push(
-      `${DOC_STAGE_LABELS[stage.stage as DocStage] ?? stage.stage} — ${
+      `${DOC_STAGE_LABELS[stage.stage as DocStage] ?? stage.stage}, ${
         stage.approved ? 'confirmed by you' : 'awaiting your confirmation'
       }`,
     )
@@ -139,7 +139,7 @@ function manifest(projectId: string, stages: PackageStage[], missed: string[]): 
       'Not in this archive:',
       ...missed.map((line) => `  ${line}`),
       '',
-      'Tell the bureau about anything listed here — it is a gap on our side, not yours.',
+      'Tell the bureau about anything listed here, it is a gap on our side, not yours.',
       '',
     )
   }
@@ -151,7 +151,7 @@ function manifest(projectId: string, stages: PackageStage[], missed: string[]): 
  * Имя архива из названия проекта.
  *
  * Название писал человек, и в нём бывает всё. Чистится до того, из чего
- * получается имя файла на любой системе; если не осталось ничего — берётся
+ * получается имя файла на любой системе; если не осталось ничего, берётся
  * нейтральное, а не пустое.
  */
 function archiveName(title: string): string {

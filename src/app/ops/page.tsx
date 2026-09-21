@@ -29,7 +29,7 @@ import {
 } from './actions'
 import { OpsAction, OpsSignIn } from './OpsForms'
 
-export const metadata = { title: 'Bureau panel — TinyArc Cloud Bureau' }
+export const metadata = { title: 'Bureau panel · TinyArc Cloud Bureau' }
 
 export default async function OpsPage() {
   if (!(await isOperator())) {
@@ -39,7 +39,7 @@ export default async function OpsPage() {
           <span className="eyebrow">Bureau panel</span>
           <h1>Sign in</h1>
           <p className="muted" style={{ marginTop: 16 }}>
-            The panel covers application review, writing briefs and accepting work. It gives no one the right to assign a specialist to a team — there is no such field in the schema.
+            The panel covers application review, writing briefs and accepting work. It gives no one the right to assign a specialist to a team, there is no such field in the schema.
           </p>
           <div style={{ marginTop: 32 }}>
             <OpsSignIn />
@@ -94,7 +94,7 @@ export default async function OpsPage() {
           <Tile value={contractors} label="contractors in the network" href="/ops/contractors" />
           {/*
             Вторая сторона денег стоит рядом с первой. Обязательство перед
-            человеком, которое видно только на отдельной странице, — это долг,
+            человеком, которое видно только на отдельной странице,, это долг,
             про который вспоминают, когда о нём напомнят.
           */}
           <Tile
@@ -106,7 +106,7 @@ export default async function OpsPage() {
         </div>
 
         {/*
-          Незаданные ставки — не украшение очереди, а причина, по которой
+          Незаданные ставки, не украшение очереди, а причина, по которой
           продукт не может назвать маржу. Пока они есть, «сколько мы
           заработали» остаётся без ответа, и знать об этом надо на главной, а
           не найдя случайно.
@@ -116,7 +116,7 @@ export default async function OpsPage() {
             <div className="label" style={{ color: 'var(--fail)' }}>Gross margin cannot be computed yet</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 12, maxWidth: '62ch' }}>
               {fill(
-                'Work has been accepted on {count} discipline/stage pair(s) with no fee rate, so the bureau owes an amount it has not named. A margin computed over part of the cost is always too high, never too low — so it is not shown at all until every rate is set.',
+                'Work has been accepted on {count} discipline/stage pair(s) with no fee rate, so the bureau owes an amount it has not named. A margin computed over part of the cost is always too high, never too low, so it is not shown at all until every rate is set.',
                 { count: unrated.length },
               )}
             </p>
@@ -156,7 +156,7 @@ export default async function OpsPage() {
                       <td>{row.purpose}</td>
                       <td className="num">{row.calls}</td>
                       <td className="num">
-                        {row.failed > 0 ? <span className="tag tag-wait">{row.failed}</span> : '—'}
+                        {row.failed > 0 ? <span className="tag tag-wait">{row.failed}</span> : 'n/a'}
                       </td>
                       <td className="num">{row.inputTokens.toLocaleString('en')}</td>
                       <td className="num">{row.outputTokens.toLocaleString('en')}</td>
@@ -168,7 +168,7 @@ export default async function OpsPage() {
 
             <p className="hint" style={{ marginTop: 14 }}>
               Tokens, not euro: the price per token lives with the provider, changes without us and
-              differs by country — a figure hard-coded here would one day be confidently wrong.
+              differs by country, a figure hard-coded here would one day be confidently wrong.
               Failed calls are counted too: an answer cut off at the ceiling is paid for in full.
               {spend.incomplete
                 ? ' Some calls came back with no token count, so the totals are lower than the truth.'
@@ -186,7 +186,7 @@ export default async function OpsPage() {
           )}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24 }}>
-          It watches and signals — it does not draw and does not run calculations. The drawings are made by the people the algorithm selected; the manager’s job is to keep the relay moving.
+          It watches and signals, it does not draw and does not run calculations. The drawings are made by the people the algorithm selected; the manager’s job is to keep the relay moving.
         </p>
 
         {alerts.length === 0 ? (
@@ -210,7 +210,7 @@ export default async function OpsPage() {
             <div style={{ marginBottom: 24 }}>
               <OpsAction action={planBureauQueue} label="Work through the queue" />
               <p className="hint" style={{ marginTop: 8 }}>
-                The assistant turns the queue into a list of actions for today. The order of urgency is computed by the engine — the assistant does not recompute it.
+                The assistant turns the queue into a list of actions for today. The order of urgency is computed by the engine, the assistant does not recompute it.
               </p>
             </div>
           </>
@@ -319,7 +319,7 @@ export default async function OpsPage() {
                       </OpsAction>
 
                       {/*
-                        Voiding sits alongside but is not highlighted: the gate issues the invoice, and it is a person who errs — a wrong floor area gives a wrong sum. A reason is required: the client has already seen the invoice.
+                        Voiding sits alongside but is not highlighted: the gate issues the invoice, and it is a person who errs, a wrong floor area gives a wrong sum. A reason is required: the client has already seen the invoice.
                       */}
                       <OpsAction
                         action={voidProjectInvoice}
@@ -340,13 +340,13 @@ export default async function OpsPage() {
 
               {/*
                 Список не бесконечный, и об этом сказано прямо. Неоплаченные
-                показаны все — это работа; оплаченные обрезаны последними,
+                показаны все, это работа; оплаченные обрезаны последними,
                 потому что их число растёт всю жизнь бюро, а нужны они здесь
                 только как подтверждение только что нажатого.
               */}
               <p className="dim" style={{ fontSize: '0.85rem' }}>
                 {fill(
-                  'Every unpaid invoice is shown. Of the paid ones — the latest {count}; the rest are on the project pages.',
+                  'Every unpaid invoice is shown. Of the paid ones, the latest {count}; the rest are on the project pages.',
                   { count: PAID_SHOWN },
                 )}
               </p>
@@ -368,7 +368,7 @@ export default async function OpsPage() {
             This does not stop the work, and that is the problem. The directions are prepared right
             after the team is assembled because the choice is needed before the first ticket, not
             once something has been drawn against it. While the client is silent the architect and
-            the visualiser work blind — and the rework is ours.
+            the visualiser work blind, and the rework is ours.
           </p>
 
           {directions.length === 0 ? (
@@ -409,7 +409,7 @@ export default async function OpsPage() {
 
         <div className="divider" style={{ marginTop: 48 }} />
 
-        {/* id — точка опоры для e2e: таблиц на панели несколько, и «первая
+        {/* id, точка опоры для e2e: таблиц на панели несколько, и «первая
             строка первой таблицы» указывает не на эту. */}
         <div id="approvals">
           <div
@@ -466,7 +466,7 @@ export default async function OpsPage() {
           )}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          This is the only channel the client has, and we are the party on the other end. Silence here does not read as busy — it reads as nobody working on the project.
+          This is the only channel the client has, and we are the party on the other end. Silence here does not read as busy, it reads as nobody working on the project.
         </p>
 
         {questions.length === 0 ? (
@@ -494,7 +494,7 @@ export default async function OpsPage() {
 
         {/*
           Кто ждёт открытия доступа. Человек прошёл разбор, стоит в базе
-          подтверждённым и читает у себя «ход бюро» — а бюро об этом нигде не
+          подтверждённым и читает у себя «ход бюро», а бюро об этом нигде не
           говорили. Он считается в пуле и при этом не рассматривается движком
           вовсе: ожидание молчаливое с обеих сторон.
         */}
@@ -510,7 +510,7 @@ export default async function OpsPage() {
             <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
               These people passed the review and are counted in the pool, yet the engine does not
               consider them at all: access is a gate, and it is closed. They are told the move is
-              the bureau’s, so this is that move — opened one at a time, on the person’s card.
+              the bureau’s, so this is that move, opened one at a time, on the person’s card.
             </p>
 
             <div className="table-scroll panel" style={{ padding: 0 }}>
@@ -557,7 +557,7 @@ export default async function OpsPage() {
 
         {/*
           Полисы. Тот же класс, что незакрытые гейты и несобравшиеся брифы:
-          ничего не происходит. Подрядчик не исчезает со скандалом — он просто
+          ничего не происходит. Подрядчик не исчезает со скандалом, он просто
           перестаёт проходить гейт, и короткий список молча становится короче.
           Узнать об этом по пустому списку значит узнать в тот день, когда он
           понадобился.
@@ -573,7 +573,7 @@ export default async function OpsPage() {
 
             <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>
               {fill(
-                'A policy does not end with a scandal — the contractor simply stops passing the gate, and the shortlist quietly gets shorter. Shown {days} days ahead, so a call is a call and not an emergency.',
+                'A policy does not end with a scandal, the contractor simply stops passing the gate, and the shortlist quietly gets shorter. Shown {days} days ahead, so a call is a call and not an emergency.',
                 { days: INSURANCE_HORIZON_DAYS },
               )}
             </p>
@@ -612,7 +612,7 @@ export default async function OpsPage() {
                       */}
                       <td className="dim" style={{ fontSize: '0.85rem' }}>
                         {row.loadBearing.length === 0
-                          ? 'nothing — there is someone to replace them'
+                          ? 'nothing, there is someone to replace them'
                           : row.loadBearing.map((trade) => TRADE_LABELS[trade] ?? trade).join(', ')}
                       </td>
                     </tr>
@@ -630,7 +630,7 @@ export default async function OpsPage() {
           {lost.total > 0 && <span className="tag tag-fail">{lost.total}</span>}
         </div>
         <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>
-          Briefs for which no team came together. This is not a list of failures but a hiring list — and the most expensive one there is: not “who might we hire”, but which commission we would already have been paid for, had we had this person.
+          Briefs for which no team came together. This is not a list of failures but a hiring list, and the most expensive one there is: not “who might we hire”, but which commission we would already have been paid for, had we had this person.
         </p>
 
         {lost.total === 0 ? (
@@ -639,12 +639,12 @@ export default async function OpsPage() {
           <>
             {/*
               Потолок назван вслух. Список не убывает сам: бриф, под который не
-              нашлось человека, остаётся в нём навсегда, — и молча показанная
+              нашлось человека, остаётся в нём навсегда,, и молча показанная
               сотня из трёх тысяч читалась бы как «всего сотня».
             */}
             {lost.total > lost.rows.length && (
               <p className="hint" style={{ marginBottom: 16 }}>
-                {fill('Shown {count} of {total} — the longest-waiting first.', {
+                {fill('Shown {count} of {total}, the longest-waiting first.', {
                   count: lost.rows.length,
                   total: lost.total,
                 })}
@@ -695,7 +695,7 @@ export default async function OpsPage() {
         {/*
           Расхождение после приёмки. Показывается, только когда оно есть, и в
           обычный день панель о нём не напоминает: это авария, а не очередь.
-          Зато когда оно есть — это деньги, которые бюро уже должно человеку, и
+          Зато когда оно есть, это деньги, которые бюро уже должно человеку, и
           человек о них не узнает, потому что смотрит на свои обязательства, а
           пропало именно обязательство.
         */}
@@ -704,7 +704,7 @@ export default async function OpsPage() {
             <div className="divider" style={{ marginTop: 48 }} />
             <h2>Accepted, but nothing is owed yet</h2>
             <p className="muted" style={{ marginTop: 12, marginBottom: 20 }}>
-              The work was accepted and the obligation was not booked — the accrual runs just
+              The work was accepted and the obligation was not booked, the accrual runs just
               after acceptance and outside its transaction, so a break leaves this behind. Catching
               up is safe to repeat: an obligation is unique in the schema and will not be booked
               twice.

@@ -1,5 +1,6 @@
 'use server'
 
+import { collectLicences } from '@/lib/licence-form'
 import { revalidatePath } from 'next/cache'
 import {
   applicationWithConsentSchema,
@@ -35,11 +36,11 @@ const MULTI = [
  *
  * Проверки те же, что и у публичной заявки, и это не экономия: одинаковые
  * данные обязаны проходить одинаковый контроль, иначе приглашение становится
- * дверью в обход правил. Имя и адрес при этом не трогаются — по адресу человека
+ * дверью в обход правил. Имя и адрес при этом не трогаются, по адресу человека
  * позвали, и подменять его через форму значило бы уводить чужую запись.
  *
  * По сохранению запись уходит на разбор портфолио: статус invited → pending.
- * Балл по-прежнему ставит бюро — человек даёт данные о себе, а не оценку себе.
+ * Балл по-прежнему ставит бюро, человек даёт данные о себе, а не оценку себе.
  */
 export async function completeProfile(
   _prev: ApplicationState,
@@ -60,7 +61,19 @@ export async function completeProfile(
   }
 
   // Имя и адрес берём из записи, а не из формы: они пришли из базы бюро.
-  const raw = { ...fromFormData(formData, MULTI), displayName: row.displayName, email: row.email }
+  const fields = fromFormData(formData, MULTI)
+
+  /*
+   * Имя и адрес берём из записи, а не из формы: они пришли из базы бюро.
+   * Лицензии собираются той же россыпью полей, что и в анкете: см.
+   * specialists/apply.
+   */
+  const raw = {
+    ...fields,
+    displayName: row.displayName,
+    email: row.email,
+    licences: collectLicences(formData, fields.signsIn, fields.residenceCountry),
+  }
   const parsed = applicationWithConsentSchema.safeParse(raw)
 
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw }
@@ -93,7 +106,7 @@ export async function completeProfile(
     data: {
       status: 'pending',
       // Приглашённого завели импортом из базы бюро, то есть до всякого его
-      // согласия. Дозаполнение профиля — первый момент, когда он может сказать
+      // согласия. Дозаполнение профиля, первый момент, когда он может сказать
       // «да», и молчаливо считать согласие полученным здесь нельзя.
       consentAt: new Date(),
       consentVersion: LEGAL_VERSION,
@@ -107,6 +120,11 @@ export async function completeProfile(
       climateZonesJson: toList(input.climateZones),
       jurisdictionsJson: toList(input.jurisdictions),
       signsInJson: toList(input.signsIn),
+      licencesJson: JSON.stringify(input.licences),
+      residenceCountry: input.residenceCountry,
+      linkedinUrl: input.linkedinUrl,
+      phone: input.phone,
+      phoneWhatsapp: input.phoneWhatsapp,
       softwareJson: toList(input.software),
       ifcLevel: input.ifcLevel,
       docStagesJson: toList(input.docStages),

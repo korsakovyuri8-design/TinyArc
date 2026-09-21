@@ -6,7 +6,7 @@ export type ResendConfig = { apiKey: string; from: string }
  * Отправка через Resend по HTTP.
  *
  * Провайдер выбран за отсутствие зависимости: обычный fetch вместо SMTP-клиента
- * и его сборки в образе. Заменяется адаптером рядом — интерфейс Mailer один.
+ * и его сборки в образе. Заменяется адаптером рядом, интерфейс Mailer один.
  */
 export class ResendMailer implements Mailer {
   readonly mode = 'resend'

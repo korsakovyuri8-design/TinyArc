@@ -9,7 +9,7 @@
  * отказом органа через полгода.
  *
  * Поэтому: имена столбцов ровно те, что названы ниже; словари закрыты;
- * первоисточник обязателен целиком — документ, статья, дата вступления, дата
+ * первоисточник обязателен целиком, документ, статья, дата вступления, дата
  * сверки. Строка, в которой чего-то нет, не берётся и называет, чего именно.
  */
 
@@ -42,7 +42,7 @@ export type ParsedRow = { ok: true; draft: RuleDraft } | { ok: false; line: numb
  *
  * Через подчёркивание, а не слитно. Разбор приводит имена столбцов, снимая
  * подчёркивания и дефисы, поэтому `effective_from` и `effectiveFrom` для него
- * одно и то же — а на экране слипшиеся слова читаются как опечатка и ловятся
+ * одно и то же, а на экране слипшиеся слова читаются как опечатка и ловятся
  * проверкой языка, которая ищет ровно её.
  */
 export const HEADER =
@@ -52,7 +52,7 @@ export const HEADER =
  * Дата в ISO и только в ISO.
  *
  * `Date.parse` понимает и «03/04/2026», но понимает по-разному в зависимости
- * от того, чей это формат: третье апреля и четвёртое марта — два разных дня,
+ * от того, чей это формат: третье апреля и четвёртое марта, два разных дня,
  * и на дате вступления нормы в силу разница между ними бывает решающей.
  */
 function isoDate(raw: string): Date | null {
@@ -67,7 +67,7 @@ function isoDate(raw: string): Date | null {
  *
  * Запятая как десятичный разделитель принимается: европейские документы пишут
  * «10,5», и требовать точку значило бы требовать переписывания первоисточника
- * руками — то есть заводить ещё одно место, где значение меняется по дороге.
+ * руками, то есть заводить ещё одно место, где значение меняется по дороге.
  */
 function ruleValue(raw: string): number | null {
   const normalised = raw.replace(',', '.')
@@ -83,26 +83,26 @@ function readRow(row: Record<string, string>, line: number): ParsedRow {
 
   const layer = at('layer').toLowerCase()
   if (!RULE_LAYERS.includes(layer as RuleLayer)) {
-    return fail(`layer “${layer || '—'}” is not one of ${RULE_LAYERS.join(', ')}`)
+    return fail(`layer “${layer || 'n/a'}” is not one of ${RULE_LAYERS.join(', ')}`)
   }
 
   const jurisdiction = at('jurisdiction').toUpperCase()
   if (!JURISDICTIONS.includes(jurisdiction as Jurisdiction)) {
-    return fail(`jurisdiction “${jurisdiction || '—'}” is not one of ${JURISDICTIONS.join(', ')}`)
+    return fail(`jurisdiction “${jurisdiction || 'n/a'}” is not one of ${JURISDICTIONS.join(', ')}`)
   }
 
   const subject = at('subject').toLowerCase()
   if (!RULE_SUBJECTS.includes(subject as RuleSubject)) {
-    return fail(`subject “${subject || '—'}” is not one the engine can check`)
+    return fail(`subject “${subject || 'n/a'}” is not one the engine can check`)
   }
 
   const operator = at('operator').toLowerCase()
   if (operator !== 'max' && operator !== 'min') {
-    return fail(`operator “${operator || '—'}” is neither max nor min`)
+    return fail(`operator “${operator || 'n/a'}” is neither max nor min`)
   }
 
   const value = ruleValue(at('value'))
-  if (value === null) return fail(`value “${at('value') || '—'}” is not a number`)
+  if (value === null) return fail(`value “${at('value') || 'n/a'}” is not a number`)
 
   const document = at('document')
   if (!document) return fail('document is empty: a rule with no source cannot be defended')
@@ -111,13 +111,13 @@ function readRow(row: Record<string, string>, line: number): ParsedRow {
   if (!article) return fail('article is empty: “somewhere in the law” is not a citation')
 
   const effectiveFrom = isoDate(at('effectivefrom'))
-  if (!effectiveFrom) return fail(`effectiveFrom “${at('effectivefrom') || '—'}” is not YYYY-MM-DD`)
+  if (!effectiveFrom) return fail(`effectiveFrom “${at('effectivefrom') || 'n/a'}” is not YYYY-MM-DD`)
 
   const checkedAt = isoDate(at('checkedat'))
-  if (!checkedAt) return fail(`checkedAt “${at('checkedat') || '—'}” is not YYYY-MM-DD`)
+  if (!checkedAt) return fail(`checkedAt “${at('checkedat') || 'n/a'}” is not YYYY-MM-DD`)
 
   /*
-   * Зонирование без муниципалитета — самая дорогая из возможных ошибок здесь.
+   * Зонирование без муниципалитета, самая дорогая из возможных ошибок здесь.
    * Странового отступа не существует: он живёт в местном плане, и записанный
    * на уровне страны молча применится в каждом городе, где план говорит другое.
    */
@@ -161,7 +161,7 @@ export function parseRules(text: string): ParseResult {
   const rejected: { line: number; reason: string }[] = []
 
   rows.forEach((row, index) => {
-    // Со второй: первая строка таблицы — шапка.
+    // Со второй: первая строка таблицы, шапка.
     const parsed = readRow(row, index + 2)
     if (parsed.ok) drafts.push(parsed.draft)
     else rejected.push({ line: parsed.line, reason: parsed.reason })

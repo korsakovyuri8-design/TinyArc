@@ -56,6 +56,8 @@ const APPLIED: Record<string, string> = {
   '0023_model_calls': '4cb32970510a9bbcb7633ccaed3b1272',
   '0024_accrual_drift_index': 'd24a37cbfd3eed44ccc99f53328315da',
   '0025_site_distance_and_height': 'b0c13fc980b989548ab591fc7880a603',
+  '0026_specialist_licences_and_contacts': '0bd137e0faa89d28f81302edb8501749',
+  '0027_specialist_residence_and_fractional_offset': '3c7870410d7c0a5c04a1e6ae3c90e753',
 }
 
 function checksum(name: string): string {

@@ -19,7 +19,7 @@ describe('что называет письмо с напоминанием', () 
       { projects: [], specialist: { accessKey: 'spec-1', status: 'active' } },
     )
 
-    expect(lines).toEqual(['Work board — key spec-1'])
+    expect(lines).toEqual(['Work board: key spec-1'])
   })
 
   it('называет её и приглашённому: он входит дозаполнять профиль', () => {

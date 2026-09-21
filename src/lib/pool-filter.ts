@@ -7,13 +7,13 @@
  *
  * Предикат вынесен из страницы, потому что у него есть углы, которые видно
  * только тестом: пустой запрос не должен вычёркивать никого, а поиск по
- * подстроке — находить человека, чьё имя оператор помнит с ошибкой в регистре.
+ * подстроке, находить человека, чьё имя оператор помнит с ошибкой в регистре.
  */
 
 import type { Discipline, Jurisdiction } from '@/engine/taxonomy'
 
 export type PoolCriteria = {
-  /** Подстрока имени или адреса. Пустая строка — не фильтр, а его отсутствие. */
+  /** Подстрока имени или адреса. Пустая строка, не фильтр, а его отсутствие. */
   query: string
   discipline: Discipline | ''
   jurisdiction: Jurisdiction | ''
@@ -42,7 +42,7 @@ export function isNarrowed(criteria: PoolCriteria): boolean {
 
 /**
  * Разбор строки запроса. Значения, которых нет в словаре, отбрасываются
- * молча — из адресной строки может прийти что угодно, и падать на этом
+ * молча, из адресной строки может прийти что угодно, и падать на этом
  * значило бы отдавать оператору ошибку вместо списка.
  */
 export function readCriteria(
@@ -75,7 +75,7 @@ export function matches(row: PoolRow, criteria: PoolCriteria): boolean {
 
   if (criteria.query) {
     // Адрес ищется наравне с именем: оператор приходит сюда из письма чаще,
-    // чем из памяти. Регистр не учитывается — имя пишут как придётся.
+    // чем из памяти. Регистр не учитывается, имя пишут как придётся.
     const needle = criteria.query.toLowerCase()
     const haystack = `${row.displayName} ${row.email}`.toLowerCase()
     if (!haystack.includes(needle)) return false

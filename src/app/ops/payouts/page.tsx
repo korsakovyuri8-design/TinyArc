@@ -11,7 +11,7 @@ import { teamShare } from '@/lib/services/settings'
 import { OpsAction } from '../OpsForms'
 import { markObligationPaid, setPayoutRate, setTeamBudgetShare } from '../actions'
 
-export const metadata = { title: 'Payouts — bureau panel' }
+export const metadata = { title: 'Payouts, bureau panel' }
 
 export default async function PayoutsPage() {
   if (!(await isOperator())) redirect('/ops')
@@ -42,7 +42,7 @@ export default async function PayoutsPage() {
           </Link>
         </div>
 
-        <p className="muted" style={{ marginTop: 12, maxWidth: '64ch' }}>An obligation is accrued the moment the bureau accepts the work — not when the client confirms the stage. Acceptance means “done as specified”, and a client who takes a week to confirm does not make the work undone. The fee is set per discipline per stage, not per ticket: tickets are how the relay split the work, and paying by their number would be paying for the split.</p>
+        <p className="muted" style={{ marginTop: 12, maxWidth: '64ch' }}>An obligation is accrued the moment the bureau accepts the work, not when the client confirms the stage. Acceptance means “done as specified”, and a client who takes a week to confirm does not make the work undone. The fee is set per discipline per stage, not per ticket: tickets are how the relay split the work, and paying by their number would be paying for the split.</p>
 
         <div className="grid grid-3" style={{ marginTop: 32 }}>
           <Stat value={`${money(owedKnown)} ${CURRENCY}`} label="owed, by known rates" />
@@ -56,7 +56,7 @@ export default async function PayoutsPage() {
         </div>
 
         {/*
-          Незакрытые пары — первыми и отдельно от таблицы ставок. Список всех
+          Незакрытые пары, первыми и отдельно от таблицы ставок. Список всех
           возможных пар в сорок с лишним строк означал бы «назови цену работе,
           которой у тебя никогда не было»; спрашивается ставка ровно там, где
           долг уже возник.
@@ -64,7 +64,7 @@ export default async function PayoutsPage() {
         {unrated.length > 0 && (
           <div className="panel" style={{ marginTop: 32, borderColor: 'var(--fail)' }}>
             <div className="label" style={{ color: 'var(--fail)' }}>Rates the ledger is waiting for</div>
-            <p className="muted" style={{ marginTop: 12, marginBottom: 16, maxWidth: '62ch' }}>Work has been accepted on these and the bureau owes for it, but the amount is unknown. Until every one of them has a rate, gross margin cannot be computed for the projects they belong to — and a margin computed over part of the cost is always too high, never too low.</p>
+            <p className="muted" style={{ marginTop: 12, marginBottom: 16, maxWidth: '62ch' }}>Work has been accepted on these and the bureau owes for it, but the amount is unknown. Until every one of them has a rate, gross margin cannot be computed for the projects they belong to, and a margin computed over part of the cost is always too high, never too low.</p>
 
             <div className="stack" style={{ gap: 8 }}>
               {unrated.map((row) => (
@@ -85,11 +85,11 @@ export default async function PayoutsPage() {
         {/*
           Доля, уходящая команде. Из неё считается потолок на гонорары при
           сборке: цена комплекта × доля. Пока не задана, бюджетного гейта не
-          существует — состав собирается как собирался, и это сказано словами,
+          существует, состав собирается как собирался, и это сказано словами,
           а не оставлено пустым полем.
         */}
         <h2>What the team may cost</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>Specialists name their own fees. This share turns the price of a set into a ceiling on those fees: a team whose fees exceed it is not assembled, and the client is told plainly that it is about money rather than about people. Price never enters the score — a cheaper specialist does not move up the ranking, only into reach.</p>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 20, maxWidth: '62ch' }}>Specialists name their own fees. This share turns the price of a set into a ceiling on those fees: a team whose fees exceed it is not assembled, and the client is told plainly that it is about money rather than about people. Price never enters the score, a cheaper specialist does not move up the ranking, only into reach.</p>
 
         <div className="panel" style={{ maxWidth: 460 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -101,7 +101,7 @@ export default async function PayoutsPage() {
 
           <p className="hint" style={{ marginTop: 12, marginBottom: 14 }}>
             {share === null
-              ? 'Not set, so nobody is filtered on price — assembly behaves exactly as it did before. That is deliberate: a share nobody named would start turning people away at a number nobody chose.'
+              ? 'Not set, so nobody is filtered on price, assembly behaves exactly as it did before. That is deliberate: a share nobody named would start turning people away at a number nobody chose.'
               : 'Set. Assembly now refuses teams whose fees exceed this share of the set’s price.'}
           </p>
 
@@ -195,7 +195,7 @@ export default async function PayoutsPage() {
         <div className="divider" style={{ marginTop: 44 }} />
 
         <h2>Owed now</h2>
-        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>Every open obligation is shown, with no cap: on the other side of each is a person who did the work and is waiting for the money, and one cut off the list is one nobody pays. There is no payment processing here — the bureau marks a payout once it has sent the money, the same way it marks an invoice once it sees it arrive.</p>
+        <p className="muted" style={{ marginTop: 12, marginBottom: 24, maxWidth: '62ch' }}>Every open obligation is shown, with no cap: on the other side of each is a person who did the work and is waiting for the money, and one cut off the list is one nobody pays. There is no payment processing here, the bureau marks a payout once it has sent the money, the same way it marks an invoice once it sees it arrive.</p>
 
         {open.length === 0 && paid.length === 0 ? (
           <div className="note">Nothing has been accrued yet. Obligations appear as the bureau accepts work.</div>

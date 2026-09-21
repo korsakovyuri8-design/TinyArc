@@ -13,7 +13,7 @@ const gap = (patch: Partial<AssemblyGap> = {}): AssemblyGap => ({
 
 describe('нехватка состава для заказчика', () => {
   it('называет роль по-русски', () => {
-    expect(roleName(gap())).toBe('Structures — Timber, framing, CLT')
+    expect(roleName(gap())).toBe('Structures: Timber, framing, CLT')
   })
 
   it('«все» читается как «и», «любая» — как «или»', () => {

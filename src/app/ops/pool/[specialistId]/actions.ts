@@ -1,5 +1,6 @@
 'use server'
 
+import { collectLicences } from '@/lib/licence-form'
 import { revalidatePath } from 'next/cache'
 import {
   applicationSchema,
@@ -34,18 +35,18 @@ const MULTI = [
 /**
  * Правка профиля специалиста бюро.
  *
- * Кабинет специалиста говорит ему: «изменить эти поля можно через бюро» — и до
+ * Кабинет специалиста говорит ему: «изменить эти поля можно через бюро», и до
  * сих пор это было обещанием без исполнителя. Ошибка в юрисдикции или в пакете
  * не исправлялась никем: человек не имеет права, а у бюро не было экрана.
  *
- * Что здесь можно и чего нельзя. Можно — двенадцать измерений таксономии:
- * это факты о человеке, и факты уточняются. Нельзя — рейтинг портфолио: он
+ * Что здесь можно и чего нельзя. Можно, двенадцать измерений таксономии:
+ * это факты о человеке, и факты уточняются. Нельзя, рейтинг портфолио: он
  * ставится разбором и меняется там же, отдельным действием, чтобы правка
  * фактов не превращалась незаметно в правку балла. Нельзя ёмкость и статус
  * доступности: своим временем распоряжается специалист, и это единственное,
  * чем он управляет напрямую.
  *
- * Проверки те же, что на публичной заявке. Оператор — не повод пропускать
+ * Проверки те же, что на публичной заявке. Оператор, не повод пропускать
  * контроль: специализация не из своей дисциплины ломает отбор одинаково,
  * кто бы её ни ввёл.
  */
@@ -59,9 +60,15 @@ export async function editSpecialist(
   const row = await prisma.specialist.findUnique({ where: { id } })
   if (!row) return { errors: { form: 'Specialist not found.' } }
 
-  // Имя и адрес — опознание человека, а не его характеристика. Меняются
+  // Имя и адрес, опознание человека, а не его характеристика. Меняются
   // отдельно и осознанно, а не заодно с уточнением специализации.
-  const raw = { ...fromFormData(formData, MULTI), displayName: row.displayName, email: row.email }
+  const fields = fromFormData(formData, MULTI)
+  const raw = {
+    ...fields,
+    displayName: row.displayName,
+    email: row.email,
+    licences: collectLicences(formData, fields.signsIn, fields.residenceCountry),
+  }
   const parsed = applicationSchema.safeParse(raw)
 
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: raw }
@@ -102,6 +109,11 @@ export async function editSpecialist(
       climateZonesJson: toList(input.climateZones),
       jurisdictionsJson: toList(input.jurisdictions),
       signsInJson: toList(input.signsIn),
+      residenceCountry: input.residenceCountry,
+      licencesJson: JSON.stringify(input.licences),
+      linkedinUrl: input.linkedinUrl,
+      phone: input.phone,
+      phoneWhatsapp: input.phoneWhatsapp,
       softwareJson: toList(input.software),
       ifcLevel: input.ifcLevel,
       docStagesJson: toList(input.docStages),
@@ -111,7 +123,7 @@ export async function editSpecialist(
       utcOffset: input.utcOffset,
       leadTimeDays: input.leadTimeDays,
       // Ёмкость и статус доступности сюда не попадают намеренно: временем
-      // человека распоряжается человек. Форма их спрашивает — значение
+      // человека распоряжается человек. Форма их спрашивает, значение
       // отбрасывается здесь, а не прячется в разметке.
     },
   })
@@ -159,7 +171,7 @@ export async function setSubscription(
   }
 
   /*
-   * «Доступ открыт» и «человек в отборе» — разные утверждения. Открытый доступ
+   * «Доступ открыт» и «человек в отборе», разные утверждения. Открытый доступ
    * ничего не даёт тому, у кого ноль свободных часов или портфолио ниже порога:
    * оператор нажал, прочитал «открыто» и ушёл, а человек как не появлялся в
    * прогонах, так и не появляется. Что осталось в пути, считает та же функция,

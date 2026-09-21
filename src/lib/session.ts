@@ -1,8 +1,8 @@
 /**
  * Идентификация в пилоте.
  *
- * Осознанно простая: клиент и специалист входят по ключу доступа, бюро — по
- * паролю из окружения. Настоящая аутентификация — работа перед первым платящим
+ * Осознанно простая: клиент и специалист входят по ключу доступа, бюро, по
+ * паролю из окружения. Настоящая аутентификация, работа перед первым платящим
  * клиентом, а не перед прототипом. Написано так, чтобы замена была локальной:
  * всё общение с cookie живёт здесь.
  *
@@ -63,7 +63,7 @@ export async function currentProjectId(): Promise<string | null> {
   return read(CLIENT_COOKIE)
 }
 
-/** Проект по ключу из письма. Ключ — единственный способ попасть в кабинет. */
+/** Проект по ключу из письма. Ключ, единственный способ попасть в кабинет. */
 export async function projectByKey(clientKey: string) {
   return prisma.project.findUnique({ where: { clientKey: clientKey.trim() } })
 }
@@ -99,7 +99,7 @@ export async function signInOperator(password: string): Promise<boolean> {
   const expected = secret('BUREAU_OPS_PASSWORD')
 
   // Сравнение постоянного времени: пароль здесь один на всех, и разница в
-  // скорости ответа — это подсказка подбирающему.
+  // скорости ответа, это подсказка подбирающему.
   if (!secretsMatch(password, expected)) return false
 
   const jar = await cookies()

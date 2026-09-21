@@ -12,7 +12,7 @@
  * а перед ними идёт статус: пул читается уже отфильтрованным по нему, поэтому
  * в движке его нет, а для человека он первый.
  *
- * Причина называется одна, и вместе с ней — чей ход. Человек, читающий
+ * Причина называется одна, и вместе с ней, чей ход. Человек, читающий
  * «портфолио ниже порога», должен понимать, ждёт он бюро или бюро ждёт его.
  */
 
@@ -21,17 +21,17 @@ import { PORTFOLIO_THRESHOLD } from '@/engine/taxonomy'
 export const SEAT_TONES = ['pass', 'wait', 'fail'] as const
 export type SeatTone = (typeof SEAT_TONES)[number]
 
-/** Чей ход. `null` — ничей: решение принято и не обсуждается по случаям. */
+/** Чей ход. `null`, ничей: решение принято и не обсуждается по случаям. */
 export type SeatTurn = 'you' | 'bureau' | null
 
 /**
  * Какая именно проверка остановила человека.
  *
  * Нужен экранам, у которых есть свой блок про одну из проверок. Страница
- * профиля решала про деньги сама, глядя на поле подписки, — и после того, как
+ * профиля решала про деньги сама, глядя на поле подписки,, и после того, как
  * новичок стал приходить с закрытым доступом, приглашённый читал там «дело в
  * оплате доступа» вместо «профиль не заполнен». Два экрана, называющие разные
- * причины, — это разговор, в котором один из них неправ; спрашивать надо тот,
+ * причины,, это разговор, в котором один из них неправ; спрашивать надо тот,
  * который считает, а не поле, по которому он считал.
  */
 export type SeatGate = 'status' | 'subscription' | 'portfolio' | 'capacity' | null
@@ -41,11 +41,11 @@ export type Seat = {
   inSelection: boolean
   /** Короткая строка: что происходит. */
   headline: string
-  /** Что стоит между человеком и отбором — словами, а не именем поля. */
+  /** Что стоит между человеком и отбором, словами, а не именем поля. */
   body: string
   tone: SeatTone
   turn: SeatTurn
-  /** Проверка, на которой человек остановился. `null` — он в отборе. */
+  /** Проверка, на которой человек остановился. `null`, он в отборе. */
   gate: SeatGate
 }
 
@@ -57,11 +57,11 @@ export type SeatInput = {
 }
 
 /**
- * Тон места — в класс метки.
+ * Тон места, в класс метки.
  *
  * Отдельной функцией по той же причине, что и у положения проекта: имена
  * тонов сверяются тестом с объявленными в `globals.css`, а разъехавшееся имя
- * ничего не ломает — метка просто теряет цвет на экране, где цвет и есть
+ * ничего не ломает, метка просто теряет цвет на экране, где цвет и есть
  * сообщение.
  */
 export function seatClass(tone: SeatTone): string {
@@ -71,14 +71,14 @@ export function seatClass(tone: SeatTone): string {
 export function seatOf(person: SeatInput): Seat {
   /*
    * Статус впереди денег и портфолио. Приглашённый с незаполненным профилем
-   * не «не прошёл по портфолио» — портфолио у него ещё не смотрели, и сказать
+   * не «не прошёл по портфолио», портфолио у него ещё не смотрели, и сказать
    * ему про порог значит отправить переделывать то, что мешает не сейчас.
    */
   if (person.status === 'invited') {
     return {
       inSelection: false,
       headline: 'Your profile is not filled in yet',
-      body: 'The bureau invited you from its own records, so the profile is half empty — and an empty field is not “neutral”, it is “does not pass”. Until it is filled in you are not in the pool, and no project can reach you.',
+      body: 'The bureau invited you from its own records, so the profile is half empty, and an empty field is not “neutral”, it is “does not pass”. Until it is filled in you are not in the pool, and no project can reach you.',
       tone: 'wait',
       turn: 'you',
       gate: 'status',
@@ -89,7 +89,7 @@ export function seatOf(person: SeatInput): Seat {
     return {
       inSelection: false,
       headline: 'Your application is with the bureau',
-      body: `Selection runs over the pool, and you are not in it until the portfolio is reviewed. The threshold is ${PORTFOLIO_THRESHOLD}/10 and the bureau sets the rating — there is nothing to send and nothing to apply to in the meantime.`,
+      body: `Selection runs over the pool, and you are not in it until the portfolio is reviewed. The threshold is ${PORTFOLIO_THRESHOLD}/10 and the bureau sets the rating, there is nothing to send and nothing to apply to in the meantime.`,
       tone: 'wait',
       turn: 'bureau',
       gate: 'status',
@@ -111,7 +111,7 @@ export function seatOf(person: SeatInput): Seat {
     return {
       inSelection: false,
       headline: 'You are out of selection',
-      body: 'The bureau has taken you out of the pool. Nothing about your work has changed and no metric has moved — write to the bureau to come back.',
+      body: 'The bureau has taken you out of the pool. Nothing about your work has changed and no metric has moved, write to the bureau to come back.',
       tone: 'wait',
       turn: 'bureau',
       gate: 'status',
@@ -119,7 +119,7 @@ export function seatOf(person: SeatInput): Seat {
   }
 
   /*
-   * Дальше — гейты движка, в его же порядке. Деньги идут раньше портфолио
+   * Дальше, гейты движка, в его же порядке. Деньги идут раньше портфолио
    * намеренно (п.14а): отказ по деньгам не должен выглядеть отказом по
    * квалификации, а при одном сообщении первым названным он и выглядит.
    */
@@ -127,7 +127,7 @@ export function seatOf(person: SeatInput): Seat {
     return {
       inSelection: false,
       headline: 'Access to projects is closed',
-      body: 'While access is closed the engine does not consider you — whatever your portfolio and metrics. This is about paying for access, not about the quality of your work.',
+      body: 'While access is closed the engine does not consider you, whatever your portfolio and metrics. This is about paying for access, not about the quality of your work.',
       tone: 'fail',
       turn: 'bureau',
       gate: 'subscription',
@@ -138,7 +138,7 @@ export function seatOf(person: SeatInput): Seat {
     return {
       inSelection: false,
       headline: 'The portfolio is below the threshold',
-      body: `Selection starts at ${PORTFOLIO_THRESHOLD}/10. The rating is set by the bureau from the work you show — not from what the profile claims.`,
+      body: `Selection starts at ${PORTFOLIO_THRESHOLD}/10. The rating is set by the bureau from the work you show, not from what the profile claims.`,
       tone: 'fail',
       turn: 'bureau',
       gate: 'portfolio',
@@ -146,7 +146,7 @@ export function seatOf(person: SeatInput): Seat {
   }
 
   /*
-   * Свободное время — единственный гейт, который человек двигает сам, и
+   * Свободное время, единственный гейт, который человек двигает сам, и
    * поэтому единственный, где ход его. Ноль часов это не поломка: так
    * выходят из отбора на время, не теряя ни ключа, ни метрик.
    */
@@ -154,7 +154,7 @@ export function seatOf(person: SeatInput): Seat {
     return {
       inSelection: false,
       headline: 'Your free capacity is zero',
-      body: 'Availability is a multiplier, not a term added on: at zero hours the engine leaves you out of every selection. This is the one gate you move yourself — set the hours in the profile and you are back.',
+      body: 'Availability is a multiplier, not a term added on: at zero hours the engine leaves you out of every selection. This is the one gate you move yourself, set the hours in the profile and you are back.',
       tone: 'wait',
       turn: 'you',
       gate: 'capacity',
@@ -164,7 +164,7 @@ export function seatOf(person: SeatInput): Seat {
   return {
     inSelection: true,
     headline: 'You are in the pool',
-    body: 'Tickets appear when the engine puts you on a project team. There is nothing to apply to — selection runs without your involvement.',
+    body: 'Tickets appear when the engine puts you on a project team. There is nothing to apply to, selection runs without your involvement.',
     tone: 'pass',
     turn: null,
     gate: null,

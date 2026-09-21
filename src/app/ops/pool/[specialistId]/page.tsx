@@ -1,11 +1,19 @@
+import { contactDefaults, readLicences } from '@/lib/licence-form'
+import { COUNTRY_NAMES } from '@/lib/countries'
 import Link from 'next/link'
 import { amount, date, dateTime } from '@/lib/format'
 import { notFound, redirect } from 'next/navigation'
 import { deliveryMetrics } from '@/engine/metrics'
 import { PORTFOLIO_THRESHOLD, SUBSCRIPTIONS } from '@/engine/taxonomy'
+import { authoritiesFor } from '@/engine/licensing'
 import { SpecialistForm } from '@/components/SpecialistForm'
 import { prisma } from '@/lib/db'
-import { AVAILABILITY_LABELS, SPECIALIST_STATUS_LABELS, SUBSCRIPTION_LABELS } from '@/lib/labels'
+import {
+  AVAILABILITY_LABELS,
+  LICENCE_STATUS_LABELS,
+  SPECIALIST_STATUS_LABELS,
+  SUBSCRIPTION_LABELS,
+} from '@/lib/labels'
 import { toProfile } from '@/lib/rows'
 import { isOperator } from '@/lib/session'
 import { seatClass, seatOf } from '@/lib/seat'
@@ -13,7 +21,7 @@ import { OpsAction } from '@/app/ops/OpsForms'
 import { editSpecialist, setSubscription } from './actions'
 import { anonymiseProfile } from '@/app/ops/actions'
 
-export const metadata = { title: 'Specialist profile — bureau panel' }
+export const metadata = { title: 'Specialist profile, bureau panel' }
 
 export default async function SpecialistPage({
   params,
@@ -28,7 +36,7 @@ export default async function SpecialistPage({
 
   // Выходы из проектов показываются, но в отбор не входят. Решение сознательное:
   // штраф за честный отказ учит молчать, а молчание вскрывается позже и дороже.
-  // Видеть их всё равно надо — по ним понятно, где заявленная ёмкость расходится
+  // Видеть их всё равно надо, по ним понятно, где заявленная ёмкость расходится
   // с настоящей.
   const withdrawals = await prisma.withdrawal.findMany({
     where: { specialistId },
@@ -37,6 +45,17 @@ export default async function SpecialistPage({
   })
 
   const profile = toProfile(row)
+
+  /*
+   * Лицензии читаются защищённо: это JSON из базы, а не наш тип. Строка могла
+   * прийти из импорта старой анкеты, и падать на карточке человека из-за
+   * кривой записи нельзя, карточка нужна именно тогда, когда с записью что-то
+   * не так.
+   */
+  const licences = readLicences(row.licencesJson)
+
+  const registries = [...new Set(licences.flatMap((l) => authoritiesFor(l.jurisdiction)))]
+    .map((a) => (a.registryUrl ? `${a.name} (${a.registryUrl})` : a.name))
   const seat = seatOf(row)
   const metrics = deliveryMetrics(profile.delivery)
 
@@ -55,7 +74,53 @@ export default async function SpecialistPage({
         <p className="dim" style={{ marginTop: 8, fontSize: '0.85rem' }}>
           {row.email} · key {row.accessKey} ·{' '}
           {row.source === 'import' ? 'created by database import' : 'applied on their own'}
+          {row.residenceCountry ? ` · lives in ${COUNTRY_NAMES[row.residenceCountry] ?? row.residenceCountry}` : ''}
+          {row.phone ? ` · ${row.phone}${row.phoneWhatsapp ? ' (WhatsApp)' : ''}` : ''}
         </p>
+
+        {row.linkedinUrl && (
+          <p className="dim" style={{ marginTop: 4, fontSize: '0.85rem' }}>
+            <a href={row.linkedinUrl} target="_blank" rel="noreferrer">
+              {row.linkedinUrl}
+            </a>
+          </p>
+        )}
+
+        {/*
+          Лицензии показываются вместе со статусом проверки, а не молча.
+
+          Номер без отметки «сверено» выглядит как доказательство, хотя
+          доказательством не является: его напечатал сам заявитель. Разделение
+          нужно тому, кто собирает первую команду и отвечает за подпись под
+          разделом.
+        */}
+        {licences.length > 0 && (
+          <div className="panel" style={{ marginTop: 24 }}>
+            <div className="label">
+              Licences · {LICENCE_STATUS_LABELS[row.licenceStatus] ?? row.licenceStatus}
+            </div>
+            {licences.map((lic, i) => (
+              <p key={i} style={{ marginTop: 10, marginBottom: 0 }}>
+                <strong>{COUNTRY_NAMES[lic.jurisdiction] ?? lic.jurisdiction}</strong>:{' '}
+                {lic.number || 'number not given'}
+                {lic.authority ? `, ${lic.authority}` : ''}
+                {lic.registryUrl ? (
+                  <>
+                    {' · '}
+                    <a href={lic.registryUrl} target="_blank" rel="noreferrer">
+                      registry entry
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            ))}
+            {registries.length > 0 && (
+              <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>
+                Check against: {registries.join(' · ')}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-3" style={{ marginTop: 32 }}>
           <Stat
@@ -79,7 +144,7 @@ export default async function SpecialistPage({
           <div className="panel" style={{ marginTop: 32 }}>
             <div className="label">Left projects · {withdrawals.length}</div>
             <p className="hint" style={{ marginTop: 8, marginBottom: 14 }}>
-              This does not enter selection and does not become a score: penalising an honest withdrawal teaches silence, and silence surfaces later and costs more. It is worth looking at here for a different reason — the gap between declared capacity and real capacity.
+              This does not enter selection and does not become a score: penalising an honest withdrawal teaches silence, and silence surfaces later and costs more. It is worth looking at here for a different reason, the gap between declared capacity and real capacity.
             </p>
             <div className="stack" style={{ gap: 10 }}>
               {withdrawals.map((w) => (
@@ -93,7 +158,7 @@ export default async function SpecialistPage({
         )}
 
         {/*
-          Что движок делает с этим человеком прямо сейчас — одной строкой и
+          Что движок делает с этим человеком прямо сейчас, одной строкой и
           той же функцией, которая говорит причину ему самому. Раньше карточка
           показывала поля, а вывод из них оператор делал в уме: подписка,
           рейтинг и часы лежали в разных блоках, и «почему он не появляется в
@@ -123,10 +188,10 @@ export default async function SpecialistPage({
           </p>
 
           {/*
-            Набор кнопок постоянный, текущая — просто нажатая быть не может.
+            Набор кнопок постоянный, текущая, просто нажатая быть не может.
             Пока кнопка текущего значения убиралась из набора, форма, только
             что отработавшая, исчезала вместе со своим ответом: оператор
-            переключал доступ и не читал ни строки — ни «сделано», ни того,
+            переключал доступ и не читал ни строки, ни «сделано», ни того,
             что человек всё равно не появится в прогонах.
           */}
           <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
@@ -150,7 +215,7 @@ export default async function SpecialistPage({
 
         {/*
           Право из политики, а не удобство панели. Обещание обезличить профиль
-          дано документом; кнопка — то, чем оно исполняется. Стоит выше правки
+          дано документом; кнопка, то, чем оно исполняется. Стоит выше правки
           профиля, потому что после обезличивания править нечего.
         */}
         <h2>At the person’s request</h2>
@@ -165,7 +230,7 @@ export default async function SpecialistPage({
           <div className="panel" style={{ marginTop: 20 }}>
             <div className="label">Anonymised</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-              {date(row.removedAt)} — the profile holds no personal data any more.
+              {date(row.removedAt)}, the profile holds no personal data any more.
             </p>
           </div>
         ) : (
@@ -173,8 +238,8 @@ export default async function SpecialistPage({
           <div className="panel" style={{ marginTop: 20 }}>
             <div className="label label-accent">A copy of their data</div>
             <p className="muted" style={{ marginTop: 12, marginBottom: 12 }}>
-              What they declared, their works, task events and money. Without the access key —
-              those are credentials, and a copy travels. Nothing belonging to anyone else is in it.
+              What they declared, their works, task events and money. The access key is left out:
+              it is a credential, and a copy travels. Nothing belonging to anyone else is in it.
             </p>
             <a className="btn btn-quiet" href={`/api/copy?subject=specialist&id=${row.id}`}>
               Download the copy
@@ -210,7 +275,7 @@ export default async function SpecialistPage({
           <div className="label label-accent">What is not here, and why</div>
           <ul className="muted" style={{ marginTop: 14, marginBottom: 0, paddingLeft: 18 }}>
             <li style={{ marginBottom: 8 }}>
-              <strong>Portfolio rating.</strong> It is set during application review and changed there, as a separate action — so that editing facts never quietly becomes editing the score.
+              <strong>Portfolio rating.</strong> It is set during application review and changed there, as a separate action, so that editing facts never quietly becomes editing the score.
             </li>
             <li style={{ marginBottom: 8 }}>
               <strong>Free capacity and availability status.</strong> A specialist governs their own time. It is the one thing they control directly, and taking it away would mean computing on a number nobody answers for.
@@ -227,6 +292,7 @@ export default async function SpecialistPage({
           showCapacity={false}
           hidden={{ specialistId: row.id }}
           defaults={{
+            ...contactDefaults(row),
             portfolioUrl: row.portfolioUrl,
             disciplines: profile.disciplines,
             specializations: profile.specializations,

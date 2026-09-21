@@ -2,21 +2,21 @@
  * Письма о том, что от человека чего-то ждут.
  *
  * До этого писем было два: ключ доступа и приглашение в пул. Всё остальное
- * человек узнавал, только зайдя в кабинет, — а он туда не заходит. Заказчику
+ * человек узнавал, только зайдя в кабинет,, а он туда не заходит. Заказчику
  * выставлен счёт, и он об этом не знает; стадия ждёт его подтверждения, и он
  * не знает; специалисту открыли задачу с часовым сроком, и он не знает, а срок
  * уже идёт. Последнее хуже всех: метрика поставки считается от открытия
  * задачи, то есть мы наказывали за молчание человека, которого не позвали.
  *
- * Поводы возникают внутри идемпотентных функций — гейт зовут после каждой
+ * Поводы возникают внутри идемпотентных функций, гейт зовут после каждой
  * приёмки, после подтверждения и после оплаты. Поэтому каждое письмо
  * отправляется ровно один раз, и сторожит это запись в базе, а не аккуратность
  * вызывающего кода.
  *
  * Границу между сторонами письма не пересекают (п.13): заказчику не уходит
- * ничего о конкретных исполнителях, специалисту — ничего о заказчике.
+ * ничего о конкретных исполнителях, специалисту, ничего о заказчике.
  *
- * Язык письма — тот, на котором человек читал документы, когда соглашался. Это
+ * Язык письма, тот, на котором человек читал документы, когда соглашался. Это
  * не угадывание по заголовку браузера, которого у фонового задания нет вовсе:
  * язык записан вместе с согласием (п.13а). Заказчик, оформивший бриф
  * по-английски, получает по-английски и счёт.
@@ -52,9 +52,9 @@ type Kind =
  *
  * Различаются четыре исхода, а не два, потому что тот, кто нажал кнопку,
  * должен узнать правду. «Ушло» и «не ушло» здесь мало: при выключенной почте
- * письмо не уходит и не может уйти, и человека придётся позвать руками — это
+ * письмо не уходит и не может уйти, и человека придётся позвать руками, это
  * не сбой и не повод, это режим. А молча выданное «отправлено» на выключенной
- * почте — та самая ложь, из-за которой оператор закрывает карточку, считая
+ * почте, та самая ложь, из-за которой оператор закрывает карточку, считая
  * дело сделанным.
  */
 export type Delivery =
@@ -71,11 +71,11 @@ export type Delivery =
  * Отправить письмо не более одного раза на повод.
  *
  * Порядок намеренный: сначала запись, потом отправка. Уникальный ключ решает
- * гонку двух одновременных вызовов гейта — второй просто ничего не сделает.
+ * гонку двух одновременных вызовов гейта, второй просто ничего не сделает.
  *
  * Если отправка провалилась, запись снимается, и следующий вызов попробует
  * снова. Дубликат письма неприятен, потерянное уведомление означает срок,
- * идущий на человеке, которого не позвали, — из двух рисков выбран первый.
+ * идущий на человеке, которого не позвали,, из двух рисков выбран первый.
  */
 async function once(
   kind: Kind,
@@ -95,11 +95,11 @@ async function once(
     /*
      * Запись по этому поводу уже есть. Дальше решает её исход.
      *
-     * Ушедшее письмо — не повод: сюда заходят по нескольку раз на событие,
-     * и второй раз человеку писать не надо. А вот неушедшее — повод: раньше
+     * Ушедшее письмо, не повод: сюда заходят по нескольку раз на событие,
+     * и второй раз человеку писать не надо. А вот неушедшее, повод: раньше
      * запись о неудаче удалялась, и следующий заход выглядел как первый.
      * Теперь она остаётся, и следующий заход становится честной второй
-     * попыткой — по тому же поводу, а не по новому.
+     * попыткой, по тому же поводу, а не по новому.
      */
     const existing = await prisma.notification.findUnique({
       where: { kind_targetId: { kind, targetId } },
@@ -131,7 +131,7 @@ async function once(
     return mailer().mode === 'stub' ? 'stub' : 'sent'
   } catch (error) {
     /*
-     * Запись не снимается. Снятая запись — это письмо, которого будто и не
+     * Запись не снимается. Снятая запись, это письмо, которого будто и не
      * было: в журнале пусто, а сказанное оператору «скажите сами» живёт до
      * перезагрузки страницы. Человек, которого не позвали, остаётся не
      * позванным, и узнать об этом потом неоткуда.
@@ -163,9 +163,9 @@ export function deliveryNote(delivery: Delivery, whom: string): string {
     case 'sent':
       return `${whom} has been told by email.`
     case 'stub':
-      return `Email delivery is off — tell ${whom.toLowerCase()} yourself.`
+      return `Email delivery is off, tell ${whom.toLowerCase()} yourself.`
     case 'failed':
-      return `The email did not go out — tell ${whom.toLowerCase()} yourself.`
+      return `The email did not go out, tell ${whom.toLowerCase()} yourself.`
     case 'skipped':
       return `No email was needed: ${whom.toLowerCase()} already knows.`
   }
@@ -192,7 +192,7 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
   await once('invoice_issued', invoice.id, invoice.project.clientEmail, async () => {
     await mailer().send({
       to: invoice.project.clientEmail,
-      subject: fill('Invoice for the “{stage}” stage — {project}', {
+      subject: fill('Invoice for the “{stage}” stage · {project}', {
         stage,
         project: invoice.project.title,
       }),
@@ -206,7 +206,7 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
           currency: invoice.currency,
         }),
         '',
-          'A stage is paid for before work on it begins: the team are real people, and their time starts the moment a task opens. The breakdown of the amount — what it is made of — is visible in the project workspace.',
+          'A stage is paid for before work on it begins: the team are real people, and their time starts the moment a task opens. The breakdown of the amount, what it is made of, is visible in the project workspace.',
         '',
         details.bank
           ? `Payment details:\n${details.bank}`
@@ -222,14 +222,14 @@ async function invoiceIssued(invoiceId: string): Promise<void> {
 /**
  * Платёж отмечен: деньги дошли.
  *
- * Приёма платежей в продукте нет — отметку ставит человек в бюро, увидев
+ * Приёма платежей в продукте нет, отметку ставит человек в бюро, увидев
  * поступление (п.14а). Значит, для заказчика перевод уходит в тишину: банк
  * сказал «отправлено», а дошло ли и засчитано ли, знает только бюро. Молчание
- * тут читается однозначно — деньги пропали, — и следующим действием человек
+ * тут читается однозначно, деньги пропали,, и следующим действием человек
  * пишет нам спрашивать. Письма о счёте это не закрывает: оно было про то, что
  * платить, а не про то, что заплачено.
  *
- * Про открытие стадии письмо не обещает ничего. Оплата — третий гейт наравне с
+ * Про открытие стадии письмо не обещает ничего. Оплата, третий гейт наравне с
  * графом и подтверждением (п.14а), и «стадия открыта» было бы неправдой ровно
  * там, где не закрыт один из двух других. Сказано то, что верно всегда: деньги
  * засчитаны, от заказчика больше ничего не нужно, остальное видно в кабинете.
@@ -247,7 +247,7 @@ export async function invoicePaid(invoiceId: string): Promise<Delivery> {
   return once('invoice_paid', invoice.id, invoice.project.clientEmail, async () => {
     await mailer().send({
       to: invoice.project.clientEmail,
-      subject: fill('Payment received — “{stage}”, {project}', {
+      subject: fill('Payment received for “{stage}” · {project}', {
         stage,
         project: invoice.project.title,
       }),
@@ -264,7 +264,7 @@ export async function invoicePaid(invoiceId: string): Promise<Delivery> {
           },
         ),
         '',
-        'Payment is one of the three conditions for a stage to open; the other two are the previous stage being accepted and confirmed by you. Where this stage stands right now is on the project workspace — it says which of the three is still outstanding, if any.',
+        'Payment is one of the three conditions for a stage to open; the other two are the previous stage being accepted and confirmed by you. Where this stage stands right now is on the project workspace, it says which of the three is still outstanding, if any.',
         '',
         `Project workspace: ${absolute('/enter')}`,
         ...SIGNATURE,
@@ -276,18 +276,18 @@ export async function invoicePaid(invoiceId: string): Promise<Delivery> {
 /**
  * Работа принята.
  *
- * Про возврат на круг человеку писали, про приёмку — нет, и получалась
+ * Про возврат на круг человеку писали, про приёмку, нет, и получалась
  * асимметрия, которая читается неправильно. Сдав работу, человек ждёт
  * вердикта; молчание в этом месте означает не «принято», а «ещё не смотрели»,
- * и отличить одно от другого он не может. Между тем приёмка — самое важное
+ * и отличить одно от другого он не может. Между тем приёмка, самое важное
  * для него событие: от неё считаются и срок, и первая сдача без правок, то
  * есть ровно то, что решает его доступ к следующим проектам.
  *
  * Оценки в письме нет и быть не может: поля для оценки специалиста в системе
- * нет ни у кого (п.12). Сказан факт — работа принята и засчитана.
+ * нет ни у кого (п.12). Сказан факт, работа принята и засчитана.
  *
- * Повод — задача. Приёмка у задачи одна: вернувшаяся на круг и принятая со
- * второго раза — это та же задача и то же письмо, а круги считаются отдельно
+ * Повод, задача. Приёмка у задачи одна: вернувшаяся на круг и принятая со
+ * второго раза, это та же задача и то же письмо, а круги считаются отдельно
  * и о них пишут отдельно.
  */
 export async function ticketAccepted(ticketId: string): Promise<Delivery> {
@@ -326,10 +326,10 @@ export async function ticketAccepted(ticketId: string): Promise<Delivery> {
  * Деньги за работу дошли до человека.
  *
  * Повод из того же правила, что и остальные: если человек чего-то ждёт, а
- * узнаёт об этом, только зайдя, — повода не хватает. Здесь он ждёт денег, и
+ * узнаёт об этом, только зайдя,, повода не хватает. Здесь он ждёт денег, и
  * это единственное ожидание, о котором продукт до сих пор молчал вовсе.
  *
- * Ключ повода — само обязательство: у человека их много, по одному на
+ * Ключ повода, само обязательство: у человека их много, по одному на
  * дисциплину на стадии, и письмо о втором не гасится письмом о первом.
  */
 export async function payoutPaid(payoutId: string): Promise<Delivery> {
@@ -344,7 +344,7 @@ export async function payoutPaid(payoutId: string): Promise<Delivery> {
   if (!payout || payout.status !== 'paid' || payout.amount === null) return 'skipped'
 
   const person = payout.specialist
-  /* Сумма уже проверена выше; отдельной константой — чтобы это было видно. */
+  /* Сумма уже проверена выше; отдельной константой, чтобы это было видно. */
   const amount = payout.amount
 
   return once('payout_paid', payout.id, person.email, async () => {
@@ -365,7 +365,7 @@ export async function payoutPaid(payoutId: string): Promise<Delivery> {
           },
         ),
         '',
-        'There is no payment processing on our side: the bureau marks a payout once it has sent the money. If it has not reached you, write back — the mark is ours, the transfer is the bank’s.',
+        'There is no payment processing on our side: the bureau marks a payout once it has sent the money. If it has not reached you, write back, the mark is ours, the transfer is the bank’s.',
         '',
         `Work board: ${absolute('/enter')}`,
         ...SIGNATURE,
@@ -388,7 +388,7 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
   await once('stage_awaiting', `${projectId}:${stage}`, project.clientEmail, async () => {
     await mailer().send({
       to: project.clientEmail,
-      subject: fill('The “{stage}” stage awaits your confirmation — {project}', {
+      subject: fill('The “{stage}” stage awaits your confirmation · {project}', {
         stage: label,
         project: project.title,
       }),
@@ -400,9 +400,9 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
           { project: project.title, stage: label },
         ),
         '',
-          'What remains is your word — “this is what was ordered”. Until it arrives the next stage does not begin: developing documentation on an unconfirmed concept is preparing rework.',
+          'What remains is your word, “this is what was ordered”. Until it arrives the next stage does not begin: developing documentation on an unconfirmed concept is preparing rework.',
         '',
-          'If you have comments, do not confirm — write to us from the workspace and we will turn them into a round of revisions.',
+          'If you have comments, do not confirm, write to us from the workspace and we will turn them into a round of revisions.',
         '',
         `Project workspace: ${absolute('/enter')}`,
         ...SIGNATURE,
@@ -414,7 +414,7 @@ async function stageAwaiting(projectId: string, stage: DocStage): Promise<void> 
 /**
  * Открыта задача, и срок по ней пошёл.
  *
- * Ничего о заказчике в письме нет — ни имени, ни адреса объекта. Специалист
+ * Ничего о заказчике в письме нет, ни имени, ни адреса объекта. Специалист
  * видит постановку в своей доске, а не в почте (п.11, п.13).
  */
 async function ticketOpen(ticketId: string): Promise<void> {
@@ -460,7 +460,7 @@ async function ticketOpen(ticketId: string): Promise<void> {
  * работу сдал, и в доску не заходит. До письма мы считали ему круг правок и
  * время, о которых он не знал.
  *
- * Ключ отправки — тикет вместе с номером круга: повод возникает на каждом
+ * Ключ отправки, тикет вместе с номером круга: повод возникает на каждом
  * возврате, и запись про первый не должна гасить письмо про второй.
  *
  * Причину бюро пишет комментарием в тикете, и в письме её нет намеренно:
@@ -510,14 +510,14 @@ export async function ticketReturned(ticketId: string): Promise<void> {
  * Бюро написало в тикет.
  *
  * Цифровой менеджер существует затем, чтобы сдвигать вставшую работу, и его
- * единственный инструмент — комментарий в тикете. Пока о комментарии никто не
+ * единственный инструмент, комментарий в тикете. Пока о комментарии никто не
  * писал, инструмент молчал: человек читал вопрос про срок в тот день, когда
  * сам заходил на доску, то есть после срока.
  *
  * Текста реплики в письме нет: разговор идёт в тикете, где рядом лежит работа
  * и входные файлы, а ответить на письмо всё равно нельзя.
  *
- * Своя же реплика письма не порождает — специалист пишет в тикет сам, и
+ * Своя же реплика письма не порождает, специалист пишет в тикет сам, и
  * сообщать ему об этом незачем.
  */
 export async function ticketCommented(commentId: string): Promise<Delivery> {
@@ -541,7 +541,7 @@ export async function ticketCommented(commentId: string): Promise<Delivery> {
         fill('Dear {name},', { name: comment.ticket.specialist!.displayName }),
         '',
         fill(
-          'There is a comment from the bureau on “{title}”. It is in the ticket, next to the work and the input files — that is where the conversation lives.',
+          'There is a comment from the bureau on “{title}”. It is in the ticket, next to the work and the input files, that is where the conversation lives.',
           { title: comment.ticket.title },
         ),
         '',
@@ -558,16 +558,16 @@ export async function ticketCommented(commentId: string): Promise<Delivery> {
  * Единственная петля, в которой человек ждал ответа, которого не существовало.
  * Прошедшему уходит ключ, не прошедшему не уходило ничего: он подал заявку и
  * остался ждать письма, которое никогда не будет написано. Молчание здесь
- * хуже отказа — отказ можно пережить за минуту, а ждать человек будет месяцами.
+ * хуже отказа, отказ можно пережить за минуту, а ждать человек будет месяцами.
  *
  * Письмо не открывает разговора, и это не грубость, а исполнение правила:
- * порог — условие допуска, а не балл, и он не обсуждается по случаям (п.9).
+ * порог, условие допуска, а не балл, и он не обсуждается по случаям (п.9).
  * Поэтому в письме нет ни оценки, ни разбора работ, ни адреса для возражений.
- * Названа дверь, которая осталась открытой: портфолио — главный вход, и с
+ * Названа дверь, которая осталась открытой: портфолио, главный вход, и с
  * другим портфолио заявка подаётся заново.
  *
- * Повод — сам человек, а не разбор: пересмотр той же заявки решает то же
- * самое, и второе письмо об одном отказе — это письмо ни о чём.
+ * Повод, сам человек, а не разбор: пересмотр той же заявки решает то же
+ * самое, и второе письмо об одном отказе, это письмо ни о чём.
  */
 export async function applicationDeclined(specialistId: string): Promise<Delivery> {
   const specialist = await prisma.specialist.findUnique({
@@ -586,9 +586,9 @@ export async function applicationDeclined(specialistId: string): Promise<Deliver
         '',
         'We have reviewed your portfolio. The application does not pass: the work is below the threshold the pool is held to.',
         '',
-        'The threshold is a condition of entry rather than a score, and it is not decided case by case — so there is nothing here to appeal, and we are not asking you to explain anything.',
+        'The threshold is a condition of entry rather than a score, and it is not decided case by case, so there is nothing here to appeal, and we are not asking you to explain anything.',
         '',
-        'The portfolio is the main entrance, and it is the part that can change. When there is work you would rather be judged on, apply again — a new application is reviewed from scratch.',
+        'The portfolio is the main entrance, and it is the part that can change. When there is work you would rather be judged on, apply again, a new application is reviewed from scratch.',
         '',
         `Apply: ${absolute('/specialists/apply')}`,
         ...SIGNATURE,
@@ -605,7 +605,7 @@ export async function applicationDeclined(specialistId: string): Promise<Deliver
  * ждёт и не знает, что ему уже ответили.
  *
  * Текста ответа в письме нет намеренно. Разговор идёт в кабинете, где к нему
- * приложен проект целиком; письмо говорит, что ответ есть, — на письмо
+ * приложен проект целиком; письмо говорит, что ответ есть,, на письмо
  * ответить всё равно нельзя.
  */
 export async function clientAnswered(messageId: string): Promise<Delivery> {
@@ -619,12 +619,12 @@ export async function clientAnswered(messageId: string): Promise<Delivery> {
   return once('client_answer', message.id, message.project.clientEmail, async () => {
     await mailer().send({
       to: message.project.clientEmail,
-      subject: fill('The bureau has answered — {project}', { project: message.project.title }),
+      subject: fill('The bureau has answered · {project}', { project: message.project.title }),
       body: [
         fill('Dear {name},', { name: message.project.clientName }),
         '',
         fill(
-          'There is an answer from the bureau on “{project}”. It is in the project workspace, next to the project itself — that is where the conversation lives.',
+          'There is an answer from the bureau on “{project}”. It is in the project workspace, next to the project itself, that is where the conversation lives.',
           { project: message.project.title },
         ),
         '',
@@ -638,11 +638,11 @@ export async function clientAnswered(messageId: string): Promise<Delivery> {
 /**
  * Арбитр вынес решение, и работа по задаче пошла дальше.
  *
- * Пока шёл спор, работа стояла — теперь она стоять перестала, и срок идёт
+ * Пока шёл спор, работа стояла, теперь она стоять перестала, и срок идёт
  * снова. Человек, который поднял конфликт и ждёт, узнаёт об этом из письма, а
  * не из ежедневного захода в доску, которого не будет.
  *
- * Ключ отправки — комментарий с решением: он создаётся один раз на решение,
+ * Ключ отправки, комментарий с решением: он создаётся один раз на решение,
  * и второе решение по тому же тикету письмо не погасит.
  */
 export async function conflictResolved(ticketId: string, rulingId: string): Promise<Delivery> {
@@ -675,7 +675,7 @@ export async function conflictResolved(ticketId: string, rulingId: string): Prom
 /**
  * Разослать всё, что назрело по проекту.
  *
- * Вызывается из гейта — там же, где меняется состояние. Разносить отправку по
+ * Вызывается из гейта, там же, где меняется состояние. Разносить отправку по
  * местам, где событие «происходит», значит однажды забыть одно из них; здесь
  * же достаточно одного вызова, а повторы гасит запись об отправке.
  */
@@ -741,10 +741,10 @@ export async function resend(kind: string, targetId: string): Promise<Delivery> 
     }
     case 'ticket_revision': {
       /*
-       * В ключе повода стоит номер круга: круг — это отдельное событие, и
+       * В ключе повода стоит номер круга: круг, это отдельное событие, и
        * письмо о втором не гасится письмом о первом. Повтор зовёт функцию по
        * задаче, и она соберёт ключ по нынешнему кругу. Если круг с тех пор
-       * сменился, письмо уйдёт про новый — это правда, а не подмена: про
+       * сменился, письмо уйдёт про новый, это правда, а не подмена: про
        * старый круг человеку писать уже поздно.
        */
       const [ticketId] = targetId.split(':')
@@ -754,7 +754,7 @@ export async function resend(kind: string, targetId: string): Promise<Delivery> 
       break
     }
     case 'conflict_resolved': {
-      // Ключ повода — само решение: арбитраж по одной задаче бывает не раз.
+      // Ключ повода, само решение: арбитраж по одной задаче бывает не раз.
       const ruling = await prisma.ticketComment.findUnique({
         where: { id: targetId },
         select: { ticketId: true },

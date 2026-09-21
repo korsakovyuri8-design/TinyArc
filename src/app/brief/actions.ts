@@ -26,7 +26,7 @@ const MULTI = ['software', 'languages']
 
 export async function submitBrief(_prev: BriefState, formData: FormData): Promise<BriefState> {
   // Одна отправка запускает прогон по всему пулу и пишет сотни строк. Без
-  // ограничения публичная форма стоит отправителю нажатия, а нам — прогона.
+  // ограничения публичная форма стоит отправителю нажатия, а нам, прогона.
   const verdict = await allow('brief')
   if (!verdict.allowed) {
     return { errors: { form: retryMessage(verdict.retryAfterSeconds) }, values: fromFormData(formData, MULTI) }
@@ -41,7 +41,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
 
   const input = parsed.data
 
-  // Форма прошла проверки — дальше начинается дорогое: прогон по всему пулу и
+  // Форма прошла проверки, дальше начинается дорогое: прогон по всему пулу и
   // сотни строк в базе. Вот за это и списывается бюджет, а не за опечатку.
   await spend('brief')
 
@@ -75,7 +75,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
       languagesJson: toList(input.languages),
       requiredHoursPerWeek: input.requiredHoursPerWeek,
       horizonDays: input.horizonDays,
-      // Часовой пояс — это пояс стройки, а не клиента: спрашивать его незачем.
+      // Часовой пояс, это пояс стройки, а не клиента: спрашивать его незачем.
       utcOffset: JURISDICTION_UTC_OFFSET[input.jurisdiction],
       briefNotes: input.briefNotes,
     },
@@ -91,7 +91,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
 
   await signInClient(project.id)
 
-  // Письмо — это удобство, а не единственный путь: ключ показывается на
+  // Письмо, это удобство, а не единственный путь: ключ показывается на
   // экране следующим шагом. Поэтому упавшая почта не должна ронять бриф,
   // над которым человек только что сидел двадцать минут.
   try {
@@ -118,7 +118,7 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
  *
  * Заполняются только те поля, которые в тексте названы прямо. Ненайденное
  * остаётся пустым и называется словами: пустое поле человек заполнит сам, а
- * угаданное — не заметит. Ничего не отправляется: разбор возвращает форму с
+ * угаданное, не заметит. Ничего не отправляется: разбор возвращает форму с
  * подставленными значениями, и отправляет её человек.
  */
 export async function readDescription(_prev: BriefState, formData: FormData): Promise<BriefState> {
@@ -143,7 +143,7 @@ export async function readDescription(_prev: BriefState, formData: FormData): Pr
 
     /*
      * Разобранное ложится поверх набранного, а не наоборот: человек нажал
-     * «прочитать», и результат чтения — это то, что он хотел увидеть. Но
+     * «прочитать», и результат чтения, это то, что он хотел увидеть. Но
      * ничего не стирается: поле, которого в тексте не было, остаётся таким,
      * каким он его оставил.
      */
@@ -158,7 +158,7 @@ export async function readDescription(_prev: BriefState, formData: FormData): Pr
      *
      * Это единственное место, где перевод стоит сделать. Дальше текст идёт
      * команде, собранной со всего мира: конструктор в Белграде получил бы
-     * описание участка по-немецки и понял бы его наугад — в разделе, который
+     * описание участка по-немецки и понял бы его наугад, в разделе, который
      * идёт под его подпись.
      *
      * Заказчик при этом видит, что подставилось, и может поправить: поле
@@ -174,7 +174,7 @@ export async function readDescription(_prev: BriefState, formData: FormData): Pr
     return {
       values: { ...raw, description: text },
       errors: {
-        description: assistantNote(error, 'Fill the fields in below — nothing has been lost.'),
+        description: assistantNote(error, 'Fill the fields in below, nothing has been lost.'),
       },
     }
   }
