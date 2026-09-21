@@ -1,0 +1,34 @@
+# Резервная копия базы раз в сутки. GitHub только запускает скрипт,
+# копия уходит в закрытое хранилище R2, в репозиторий не пишется ничего.
+name: Резервная копия
+
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BUREAU_STORAGE: s3
+      BUREAU_S3_ENDPOINT: ${{ secrets.BUREAU_S3_ENDPOINT }}
+      BUREAU_S3_BUCKET: ${{ secrets.BUREAU_S3_BUCKET }}
+      BUREAU_S3_REGION: auto
+      BUREAU_S3_ACCESS_KEY_ID: ${{ secrets.BUREAU_S3_ACCESS_KEY_ID }}
+      BUREAU_S3_SECRET_ACCESS_KEY: ${{ secrets.BUREAU_S3_SECRET_ACCESS_KEY }}
+    steps:
+      # Код берётся из рабочей ветки, а не из main: там актуальный
+      # список таблиц, и копия не пропустит новых.
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/tinyarc-cloud-bureau-hpmd83
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run backup
