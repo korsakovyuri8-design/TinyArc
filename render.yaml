@@ -79,7 +79,10 @@ services:
     name: tinyarc-bureau
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: free
+    # Starter, а не free: бесплатный сервис засыпает, и первый заход после
+    # паузы показывал человеку чужие логи и ждал полминуты. План сменён в
+    # панели Render; здесь записан, чтобы синхронизация не вернула бесплатный.
+    plan: starter
     region: frankfurt
     healthCheckPath: /api/health
     dockerCommand: sh ./scripts/start.sh
