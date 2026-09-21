@@ -10,6 +10,7 @@
  */
 
 import {
+  needsSignature,
   requiredRoles,
   SIGNED_DISCIPLINES,
   type Discipline,
@@ -406,6 +407,9 @@ export function signing(
   requirements: ProjectRequirements,
   partners: readonly SigningPartner[],
 ): { signOff: SignOff[]; unsigned: Discipline[] } {
+  // Концепцию никуда не подают, подпись под ней не нужна: см. SIGNATURE_STAGES.
+  if (!needsSignature(requirements.targetStage)) return { signOff: [], unsigned: [] }
+
   const needed = [...new Set(chosen.map((c) => c.discipline))].filter((d) =>
     SIGNED_DISCIPLINES.includes(d),
   )

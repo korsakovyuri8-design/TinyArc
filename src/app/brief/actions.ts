@@ -1,5 +1,8 @@
 'use server'
 
+import { fill } from '@/lib/fill'
+import { needsSignature, JURISDICTION_NAMES } from '@/engine/taxonomy'
+import { permitOpen } from '@/lib/services/open-countries'
 import { redirect } from 'next/navigation'
 import { JURISDICTION_UTC_OFFSET } from '@/engine/taxonomy'
 import { prisma } from '@/lib/db'
@@ -40,6 +43,28 @@ export async function submitBrief(_prev: BriefState, formData: FormData): Promis
   }
 
   const input = parsed.data
+
+  /*
+   * Разрешение только там, где есть кому подписать. Проверяется здесь, на
+   * сервере, а не одной подсказкой в форме: подсказку можно не прочесть, а
+   * бриф на разрешение в закрытой стране кончился бы прогоном, который
+   * честно скажет «подписать некому», уже после того как человек всё
+   * заполнил и ждал.
+   */
+  if (needsSignature(input.targetStage)) {
+    const open = await permitOpen()
+    if (!open.includes(input.jurisdiction)) {
+      return {
+        errors: {
+          targetStage: fill(
+            'In {country} the bureau can currently deliver the concept only. The permit stage opens there as soon as we have licensed signatories in the country.',
+            { country: JURISDICTION_NAMES[input.jurisdiction] },
+          ),
+        },
+        values: raw,
+      }
+    }
+  }
 
   // Форма прошла проверки, дальше начинается дорогое: прогон по всему пулу и
   // сотни строк в базе. Вот за это и списывается бюджет, а не за опечатку.

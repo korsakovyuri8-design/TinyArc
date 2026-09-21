@@ -267,6 +267,22 @@ export const LOCAL_ONLY_DISCIPLINES: readonly Discipline[] = ['permitting', 'sur
  */
 export const SIGNED_DISCIPLINES: readonly Discipline[] = ['architecture', 'structural', 'mep']
 
+/**
+ * Стадии, на которых комплект уходит в органы и потому нуждается в подписи.
+ *
+ * Концепция сюда не входит, и это решение, а не упущение. Концепция это
+ * работа для заказчика: как дом ляжет на участок, какие объёмы, какой бюджет.
+ * Её никуда не подают, и подписывать её некому и незачем. Поэтому концепцию
+ * бюро делает для любой страны, а дальше разрешения идёт только там, где в
+ * пуле есть подписант: страна со сложной системой не вычёркивается руками, а
+ * просто остаётся закрытой для разрешения, пока подписанта там нет.
+ */
+export const SIGNATURE_STAGES: readonly DocStage[] = ['permit', 'tender', 'construction']
+
+export function needsSignature(stage: DocStage): boolean {
+  return SIGNATURE_STAGES.includes(stage)
+}
+
 /** Язык, на котором в этой стране разговаривают органы. Для согласований, гейт. */
 export const OFFICIAL_LANGUAGE: Record<Jurisdiction, Language> = {
   ME: 'cnr',

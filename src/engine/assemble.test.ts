@@ -164,6 +164,26 @@ describe('сборка Tiny Team', () => {
     expect(result.signOff.every((o) => o.by === 'member')).toBe(true)
   })
 
+  /*
+   * Концепцию никуда не подают, поэтому подписант для неё не нужен: бюро
+   * делает её для любой страны, даже там, где до разрешения дойти не может.
+   */
+  it('концепция собирается без единого подписанта', () => {
+    const nobodySigns = fullPool().map((s) => ({ ...s, signsIn: [] as never[] }))
+    const result = assemble(nobodySigns, requirements({ targetStage: 'concept' }))
+
+    expect(result.outcome).toBe('ok')
+    expect(result.signOff).toEqual([])
+    expect(result.unsigned).toEqual([])
+  })
+
+  it('разрешение без подписанта по-прежнему не берётся', () => {
+    const nobodySigns = fullPool().map((s) => ({ ...s, signsIn: [] as never[] }))
+    const result = assemble(nobodySigns, requirements({ targetStage: 'permit' }))
+
+    expect(result.outcome).toBe('no_signatory')
+  })
+
   it('фирма из другой страны подпись не закрывает', () => {
     const nobodySigns = fullPool().map((s) => ({ ...s, signsIn: [] as never[] }))
     const foreign = { ...partnerFor(['architecture', 'structural', 'mep']), jurisdiction: 'RS' as const }

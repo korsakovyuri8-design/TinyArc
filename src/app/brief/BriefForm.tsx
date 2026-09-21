@@ -16,6 +16,7 @@ import {
   SOFTWARE,
   TERRAINS,
   TYPOLOGIES,
+  type Jurisdiction,
 } from '@/engine/taxonomy'
 import {
   CLIMATE_LABELS,
@@ -31,7 +32,7 @@ import { Consent } from '@/components/Consent'
 import { Choices, Field, Select, Submit } from '@/components/Fields'
 import { readDescription, submitBrief, type BriefState } from './actions'
 
-export function BriefForm() {
+export function BriefForm({ permitOpen }: { permitOpen: readonly Jurisdiction[] }) {
   const [state, action, pending] = useActionState<BriefState, FormData>(submitBrief, {})
   const [read, readAction, reading] = useActionState<BriefState, FormData>(readDescription, {})
 
@@ -48,7 +49,7 @@ export function BriefForm() {
   return (
     <>
       <Description action={readAction} pending={reading} state={read} />
-      <BriefFields action={action} pending={pending} errors={errors} values={values} />
+      <BriefFields action={action} pending={pending} errors={errors} values={values} permitOpen={permitOpen} />
     </>
   )
 }
@@ -117,11 +118,14 @@ function BriefFields({
   pending,
   errors,
   values,
+  permitOpen,
 }: {
   action: (formData: FormData) => void
   pending: boolean
   errors: Record<string, string>
   values: Record<string, string>
+  /** Страны, где сейчас можно дойти до разрешения. */
+  permitOpen: readonly Jurisdiction[]
 }) {
   /*
    * Незаполненные поля с их подписями. Подпись берётся из разметки самой
@@ -277,12 +281,29 @@ function BriefFields({
             />
           </Field>
 
-          <Field label="Documentation stage" name="targetStage" error={errors.targetStage}>
+          {/*
+            Концепция доступна для любой страны, разрешение только там, где в
+            пуле есть подписант. Заказчик видит это здесь, до отправки, а не
+            узнаёт из отказа после неё.
+          */}
+          <Field
+            label="Documentation stage"
+            name="targetStage"
+            error={errors.targetStage}
+            hint={
+              permitOpen.length === 0
+                ? 'The concept is available for every country. The permit and later stages open country by country, as soon as the bureau has licensed signatories there.'
+                : fill(
+                    'The concept is available for every country. The permit and later stages are currently available in: {countries}.',
+                    { countries: permitOpen.map((j) => JURISDICTION_NAMES[j]).join(', ') },
+                  )
+            }
+          >
             <Select
               name="targetStage"
               options={DOC_STAGES}
               labels={DOC_STAGE_LABELS}
-              defaultValue="permit"
+              defaultValue={permitOpen.length === 0 ? 'concept' : 'permit'}
             />
           </Field>
 

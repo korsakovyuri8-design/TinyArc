@@ -1,6 +1,7 @@
 import { PageHero } from '@/components/PageHero'
 import { pageMetadata } from '@/lib/metadata'
 import { BriefForm } from './BriefForm'
+import { permitOpen } from '@/lib/services/open-countries'
 
 export const generateMetadata = () =>
   pageMetadata(
@@ -9,6 +10,9 @@ export const generateMetadata = () =>
   )
 
 export default async function BriefPage() {
+  // Где сейчас можно дойти до разрешения: заказчик видит это до отправки,
+  // а не узнаёт из отказа после неё.
+  const open = await permitOpen()
 
   return (
     <>
@@ -20,7 +24,7 @@ export default async function BriefPage() {
       />
       <section>
         <div className="shell" style={{ maxWidth: 880 }}>
-          <BriefForm />
+          <BriefForm permitOpen={open} />
         </div>
       </section>
     </>

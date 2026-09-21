@@ -250,12 +250,7 @@ export function readiness(
    * человек с подписью, и архитектор с черногорской лицензией открывал
    * Черногорию целиком, хотя подписать конструкции было некому.
    */
-  const signable = SIGNED_DISCIPLINES.every(
-    (d) =>
-      usable.some((s) => s.disciplines.includes(d) && s.signsIn.includes(jurisdiction)) ||
-      partners.some((p) => p.jurisdiction === jurisdiction && p.disciplines.includes(d)),
-  )
-  if (!signable) return 0
+  if (!signableIn(usable, jurisdiction, partners)) return 0
 
   /*
    * Ответ «закрывает ли роль хоть кто-то» считается один раз на подпись роли.
@@ -287,4 +282,34 @@ export function readiness(
   const doable = shapes.filter((shape) => requiredRoles(shape).every(coveredBy))
 
   return doable.length / shapes.length
+}
+
+/**
+ * Может ли бюро довести проект в этой стране до разрешения: есть ли кому
+ * подписать каждый раздел, где нужна подпись.
+ *
+ * Отдельной функцией, потому что тот же вопрос задаёт форма брифа: какие
+ * страны предлагать заказчику для разрешения, а какие только для концепции.
+ * Ответ считается по живому пулу и фирмам-подписантам, а не по списку,
+ * составленному руками: появился подписант, страна открылась сама.
+ */
+export function signableIn(
+  pool: readonly SpecialistProfile[],
+  jurisdiction: Jurisdiction,
+  partners: readonly SigningPartner[] = [],
+): boolean {
+  return SIGNED_DISCIPLINES.every(
+    (d) =>
+      pool.some((s) => s.disciplines.includes(d) && s.signsIn.includes(jurisdiction)) ||
+      partners.some((p) => p.jurisdiction === jurisdiction && p.disciplines.includes(d)),
+  )
+}
+
+/** Страны, где бюро сейчас может довести проект до разрешения. */
+export function permitOpenCountries(
+  pool: SpecialistProfile[],
+  partners: readonly SigningPartner[] = [],
+): Jurisdiction[] {
+  const usable = eligible(pool)
+  return JURISDICTIONS.filter((j) => signableIn(usable, j, partners))
 }
