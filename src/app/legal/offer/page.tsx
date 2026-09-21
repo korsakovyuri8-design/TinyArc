@@ -49,9 +49,9 @@ export default async function OfferPage() {
         <Article title="1. Who provides the service">
           <p>
             The service is provided by {details.name || ' company name not set '}
-            {details.registration && `, $registration number ${details.registration}`}
-            {details.taxId && `, $tax number ${details.taxId}`}
-            {details.address && `, $address: ${details.address}`} (the “Bureau”).
+            {details.registration && `, registration number ${details.registration}`}
+            {details.taxId && `, tax number ${details.taxId}`}
+            {details.address && `, address: ${details.address}`} (the “Bureau”).
           </p>
           <p>The Bureau is registered in Montenegro and operates under Montenegrin law. The Client may be located in any country; this does not change the law governing the contract.</p>
         </Article>
@@ -94,7 +94,7 @@ export default async function OfferPage() {
         <Article title="4. Price and payment">
           <p>The price of a stage is calculated automatically from the floor area, the stage rate, the typology multiplier and the country multiplier, but never below the minimum set for that stage. The calculation is shown to the Client together with the invoice: they see not only the amount but what it is made of.</p>
           <p>
-            <strong>A stage is paid for before work on it begins.</strong>Opening a task means a specific specialist has taken it on, and the Bureau is not entitled to start a stage on credit against its contributors.</p>
+            <strong>A stage is paid for before work on it begins.</strong>: Opening a task means a specific specialist has taken it on, and the Bureau is not entitled to start a stage on credit against its contributors.</p>
           <p>An invoice for the next stage is issued only after the Client has confirmed the previous one. At no point does the Client pay in advance for work they have not yet accepted.</p>
           <p>The price stated on an issued invoice is not revised. A change in the Bureau’s rates applies only to invoices issued after the change.</p>
         </Article>

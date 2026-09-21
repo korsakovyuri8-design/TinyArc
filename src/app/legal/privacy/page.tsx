@@ -49,8 +49,8 @@ export default async function PrivacyPage() {
         <Article title="1. Who processes the data">
           <p>
             The controller is {details.name || ' company name not set '}
-            {details.registration && `, $registration number ${details.registration}`}
-            {details.address && `, $address: ${details.address}`}, Montenegro.
+            {details.registration && `, registration number ${details.registration}`}
+            {details.address && `, address: ${details.address}`}, Montenegro.
           </p>
           <p>
             Enquiries on any matter regarding this data:{' '}
@@ -81,11 +81,11 @@ export default async function PrivacyPage() {
         <Article title="4. Why, and on what basis">
           <ul>
             <li>
-              <strong>Performance of the contract.</strong>Project data and professional attributes are needed to assemble a team and issue documentation. Without them the service cannot be provided.</li>
+              <strong>Performance of the contract.</strong>: Project data and professional attributes are needed to assemble a team and issue documentation. Without them the service cannot be provided.</li>
             <li>
-              <strong>Consent.</strong>Applying to the pool and submitting a brief are voluntary acts; consent can be withdrawn by writing to the address above.</li>
+              <strong>Consent.</strong>: Applying to the pool and submitting a brief are voluntary acts; consent can be withdrawn by writing to the address above.</li>
             <li>
-              <strong>Legitimate interest.</strong>Keeping records of accepted work, issued invoices and stage confirmations, this is what reconstructs events if there is a dispute.</li>
+              <strong>Legitimate interest.</strong>: Keeping records of accepted work, issued invoices and stage confirmations, this is what reconstructs events if there is a dispute.</li>
           </ul>
         </Article>
 
@@ -104,7 +104,7 @@ export default async function PrivacyPage() {
              , accepted work becomes the input to the next task, credited to the author’s discipline but not their name. No direct channel between specialists exists.
             </li>
             <li>
-              <strong>To processors:</strong>application and database hosting, email delivery. They process data on our instructions and do not use it for their own purposes.</li>
+              <strong>To processors:</strong>: application and database hosting, email delivery. They process data on our instructions and do not use it for their own purposes.</li>
           </ul>
           <p>Data is not sold, not passed to advertising networks and not used for profiling beyond computing the team composition.</p>
         </Article>
