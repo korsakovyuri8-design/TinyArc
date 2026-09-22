@@ -16,7 +16,7 @@ import { DISCIPLINE_LABELS } from '@/lib/labels'
  * Песочница на первом экране.
  *
  * Считает настоящий движок, а не подобранные числа: состав ролей выводится тем
- * же `requiredRoles`, которым бюро собирает команду под реальный бриф, цена 
+ * же `requiredRoles`, которым бюро собирает команду под реальный бриф, цена —
  * тем же `priceProject`, которым выставляется счёт. Поэтому подвинуть ползунок
  * и увидеть, как из четырёх человек становится семь,, это не демонстрация
  * идеи, а сам продукт, только без брифа.
@@ -137,8 +137,8 @@ export function BriefSandbox() {
 
       <p className="hint sandbox-note">
         A villa to permit stage. The same functions that assemble a real team and issue a real
-        invoice, only without the brief. Only survey and permitting are tied to the country;
-        everyone else is drawn from wherever they are.
+        invoice, only without the brief. The design team is drawn from wherever it is; survey,
+        permitting and the licensed signature under each section are local to the country.
       </p>
     </div>
   )

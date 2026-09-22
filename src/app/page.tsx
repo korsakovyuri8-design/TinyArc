@@ -22,7 +22,7 @@ const DIMENSIONS = [
   { name: 'Storey count', values: `Up to ${MAX_STOREYS} storeys, where the bureau is sharpest` },
   { name: 'Structural system', values: 'Concrete · masonry · timber · steel · hybrid' },
   { name: 'Climate zone', values: 'Mediterranean · continental · alpine · arid' },
-  { name: 'Jurisdiction and signing rights', values: `${JURISDICTIONS.length} countries. Only survey and permitting are tied to one` },
+  { name: 'Jurisdiction and signing rights', values: `${JURISDICTIONS.length} countries for the concept. The permit needs a local licensed signature on every section` },
   { name: 'Software and IFC exchange', values: 'Revit · ArchiCAD · AutoCAD · Rhino · Tekla, and the IFC level between them' },
   { name: 'Documentation stage', values: 'Concept · permit · tender · construction' },
   { name: 'Regulatory track', values: 'Light zone · standard · heritage · flood-prone' },
@@ -85,8 +85,8 @@ export default async function Home() {
             <Figure value={`${PORTFOLIO_THRESHOLD}/10`} unit="threshold" note="Below the portfolio threshold a specialist does not pass" />
             <Figure
               value={`${JURISDICTIONS.length}`}
-              unit="countries"
-              note="Two roles are tied to the country. The rest of the team comes from wherever it is"
+              unit="countries for the concept"
+              note="The design team comes from wherever it is. The permit stage opens in a country once the bureau has licensed signatories there"
             />
           </div>
         </div>
